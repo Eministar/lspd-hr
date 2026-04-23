@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum OfficerStatus {
+  ACTIVE
+  AWAY
+  INACTIVE
+  TERMINATED
+}
+
+enum UserRole {
+  ADMIN
+  HR
+  LEADERSHIP
+  READONLY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  displayName  String
+  role         UserRole @default(READONLY)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  promotionsPerformed PromotionLog[] @relation("PerformedBy")
+  terminationsPerformed Termination[] @relation("TerminatedBy")
+  notesAuthored       Note[]         @relation("NoteAuthor")
+  auditLogs           AuditLog[]     @relation("AuditUser")
+  createdLists        RankChangeList[] @relation("ListCreator")
+}
+
+model Rank {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @unique
+  color     String   @default("#3B82F6")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  officers     Officer[]
+  oldRankLogs  PromotionLog[] @relation("OldRank")
+  newRankLogs  PromotionLog[] @relation("NewRank")
+  entryCurrentRanks  RankChangeListEntry[] @relation("EntryCurrentRank")
+  entryProposedRanks RankChangeListEntry[] @relation("EntryProposedRank")
+}
+
+model Training {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  officerTrainings OfficerTraining[]
+}
+
+model Officer {
+  id              String        @id @default(cuid())
+  badgeNumber     String        @unique
+  firstName       String
+  lastName        String
+  rankId          String
+  rank            Rank          @relation(fields: [rankId], references: [id])
+  discordId       String?
+  status          OfficerStatus @default(ACTIVE)
+  notes           String?
+  hireDate        DateTime      @default(now())
+  lastOnline      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  trainings       OfficerTraining[]
+  promotionLogs   PromotionLog[]
+  terminations    Termination[]
+  officerNotes    Note[]         @relation("OfficerNotes")
+  auditLogs       AuditLog[]     @relation("AuditOfficer")
+  rankChangeEntries RankChangeListEntry[]
+}
+
+model OfficerTraining {
+  id         String   @id @default(cuid())
+  officerId  String
+  officer    Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  trainingId String
+  training   Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([officerId, trainingId])
+}
+
+model PromotionLog {
+  id                String   @id @default(cuid())
+  officerId         String
+  officer           Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  oldRankId         String
+  oldRank           Rank     @relation("OldRank", fields: [oldRankId], references: [id])
+  newRankId         String
+  newRank           Rank     @relation("NewRank", fields: [newRankId], references: [id])
+  oldBadgeNumber    String?
+  newBadgeNumber    String?
+  performedByUserId String
+  performedBy       User     @relation("PerformedBy", fields: [performedByUserId], references: [id])
+  note              String?
+  createdAt         DateTime @default(now())
+}
+
+model Termination {
+  id                  String   @id @default(cuid())
+  officerId           String
+  officer             Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  reason              String
+  terminatedByUserId  String
+  terminatedBy        User     @relation("TerminatedBy", fields: [terminatedByUserId], references: [id])
+  terminatedAt        DateTime @default(now())
+  previousRank        String?
+  previousBadgeNumber String?
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  officerId String?
+  officer   Officer? @relation("OfficerNotes", fields: [officerId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  title     String?
+  content   String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  officerId   String?
+  officer     Officer? @relation("AuditOfficer", fields: [officerId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User     @relation("AuditUser", fields: [userId], references: [id])
+  oldValue    String?
+  newValue    String?
+  details     String?
+  createdAt   DateTime @default(now())
+}
+
+model RankChangeList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   @default("PROMOTION") // PROMOTION or DEMOTION
+  status      String   @default("DRAFT")     // DRAFT, COMPLETED
+  createdById String
+  createdBy   User     @relation("ListCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries RankChangeListEntry[]
+}
+
+model RankChangeListEntry {
+  id             String   @id @default(cuid())
+  listId         String
+  list           RankChangeList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  officerId      String
+  officer        Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  currentRankId  String
+  currentRank    Rank     @relation("EntryCurrentRank", fields: [currentRankId], references: [id])
+  proposedRankId String
+  proposedRank   Rank     @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
+  newBadgeNumber String?
+  note           String?
+  executed       Boolean  @default(false)
+  executedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  @@unique([listId, officerId])
+}
+
+model SystemSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
