@@ -7,6 +7,11 @@ import { ToastProvider } from '@/components/ui/toast'
 export const metadata: Metadata = {
   title: 'LSPD HR Dashboard',
   description: 'Personalverwaltung des Los Santos Police Department',
+  icons: {
+    icon: '/shield.webp',
+    shortcut: '/shield.webp',
+    apple: '/shield.webp',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

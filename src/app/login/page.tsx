@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useAuth } from '@/context/auth-context'
 import { Button } from '@/components/ui/button'
-import { Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/toast'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -38,8 +38,8 @@ export default function LoginPage() {
         className="w-full max-w-[300px]"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-11 w-11 rounded-[10px] bg-[#111] dark:bg-white mb-4">
-            <Shield size={20} className="text-white dark:text-[#111]" strokeWidth={1.75} />
+          <div className="inline-flex items-center justify-center h-11 w-11 rounded-[10px] bg-[#111] dark:bg-white mb-4 overflow-hidden">
+            <Image src="/shield.webp" alt="LSPD" width={20} height={20} className="invert dark:invert-0" />
           </div>
           <h1 className="text-[17px] font-semibold text-[#111] dark:text-white">LSPD HR</h1>
           <p className="text-[12.5px] text-[#999] mt-1">Personalverwaltung</p>
