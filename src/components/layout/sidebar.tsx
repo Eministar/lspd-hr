@@ -67,10 +67,10 @@ export function Sidebar() {
     <div className="flex flex-col h-full">
       <div className="px-4 pt-5 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="h-[30px] w-[30px] rounded-[8px] bg-[#111] dark:bg-white flex items-center justify-center overflow-hidden">
-            <Image src="/shield.webp" alt="LSPD" width={15} height={15} className="invert dark:invert-0" />
+          <div className="h-[42px] w-[42px] rounded-[10px] bg-[#111] dark:bg-white flex items-center justify-center overflow-hidden">
+            <Image src="/shield.webp" alt="LSPD" width={28} height={28} className="invert dark:invert-0" />
           </div>
-          <span className="text-[15px] font-semibold text-[#111] dark:text-white">LSPD HR</span>
+          <span className="text-[16px] font-semibold text-[#111] dark:text-white">LSPD HR</span>
         </div>
       </div>
 
