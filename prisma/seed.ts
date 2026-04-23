@@ -1,11 +1,7 @@
-import { PrismaClient } from '../src/generated/prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { PrismaClient } from '../src/generated/prisma'
 import bcrypt from 'bcryptjs'
-import path from 'path'
 
-const dbPath = path.resolve(__dirname, 'dev.db')
-const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` })
-const prisma = new PrismaClient({ adapter })
+const prisma = new PrismaClient()
 
 async function main() {
   console.log('Seeding database...')
@@ -67,52 +63,6 @@ async function main() {
     })
   }
   console.log('Trainings created:', trainings.length)
-
-  const allRanks = await prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } })
-  const allTrainings = await prisma.training.findMany()
-
-  const rookieRank = allRanks.find(r => r.name === 'Rookie')
-  const officer1Rank = allRanks.find(r => r.name === 'Officer 1')
-  const officer2Rank = allRanks.find(r => r.name === 'Officer 2')
-  const seniorRank = allRanks.find(r => r.name === 'Senior Officer')
-  const sgt1Rank = allRanks.find(r => r.name === 'Sergeant 1')
-
-  if (rookieRank && officer1Rank && officer2Rank && seniorRank && sgt1Rank) {
-    const sampleOfficers = [
-      { badgeNumber: '101', firstName: 'Max', lastName: 'Müller', rankId: sgt1Rank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '102', firstName: 'Sarah', lastName: 'Schmidt', rankId: seniorRank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '201', firstName: 'Tom', lastName: 'Weber', rankId: officer2Rank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '202', firstName: 'Lisa', lastName: 'Fischer', rankId: officer2Rank.id, status: 'AWAY' as const },
-      { badgeNumber: '301', firstName: 'Jan', lastName: 'Wagner', rankId: officer1Rank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '302', firstName: 'Anna', lastName: 'Becker', rankId: officer1Rank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '401', firstName: 'Felix', lastName: 'Hoffmann', rankId: rookieRank.id, status: 'ACTIVE' as const },
-      { badgeNumber: '402', firstName: 'Marie', lastName: 'Schulz', rankId: rookieRank.id, status: 'INACTIVE' as const },
-    ]
-
-    for (const data of sampleOfficers) {
-      const officer = await prisma.officer.upsert({
-        where: { badgeNumber: data.badgeNumber },
-        update: {},
-        create: {
-          ...data,
-          hireDate: new Date(2024, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-        },
-      })
-
-      for (const training of allTrainings) {
-        await prisma.officerTraining.upsert({
-          where: { officerId_trainingId: { officerId: officer.id, trainingId: training.id } },
-          update: {},
-          create: {
-            officerId: officer.id,
-            trainingId: training.id,
-            completed: Math.random() > 0.4,
-          },
-        })
-      }
-    }
-    console.log('Sample officers created:', sampleOfficers.length)
-  }
 
   console.log('Seeding completed!')
 }
