@@ -16,9 +16,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
+  if (!pathname.startsWith('/api/') && pathname !== '/login' && !token) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/login'],
+  matcher: ['/api/:path*', '/login', '/((?!_next/static|_next/image|favicon.ico|shield.webp|logo.webp).*)'],
 }
