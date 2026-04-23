@@ -38,8 +38,8 @@ export default function LoginPage() {
         className="w-full max-w-[300px]"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-11 w-11 rounded-[10px] bg-[#111] dark:bg-white mb-4 overflow-hidden">
-            <Image src="/shield.webp" alt="LSPD" width={20} height={20} className="invert dark:invert-0" />
+          <div className="inline-flex items-center justify-center h-24 w-24 rounded-[20px] bg-[#111] dark:bg-white mb-5 overflow-hidden">
+            <Image src="/shield.webp" alt="LSPD" width={64} height={64} className="invert dark:invert-0" />
           </div>
           <h1 className="text-[17px] font-semibold text-[#111] dark:text-white">LSPD HR</h1>
           <p className="text-[12.5px] text-[#999] mt-1">Personalverwaltung</p>
