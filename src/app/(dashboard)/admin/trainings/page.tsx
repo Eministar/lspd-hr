@@ -71,34 +71,34 @@ export default function TrainingsPage() {
         action={<Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neue Ausbildung</Button>}
       />
 
-      <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] overflow-hidden">
-        <div className="divide-y divide-[#f0f0f0] dark:divide-[#1a1a1a]">
+      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
+        <div className="divide-y divide-[#18385f]">
           {trainings?.map((t, i) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.02 }}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f5f5f5] dark:hover:bg-[#151515] transition-colors"
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
             >
               <span className="text-[12px] text-[#bbb] font-mono w-6 text-right">{t.sortOrder}</span>
               <div className="flex-1">
-                <span className="text-[13.5px] font-medium text-[#111] dark:text-[#eee]">{t.label}</span>
-                <span className="text-[11px] text-[#bbb] dark:text-[#555] ml-2 font-mono">({t.key})</span>
+                <span className="text-[13.5px] font-medium text-[#eee]">{t.label}</span>
+                <span className="text-[11px] text-[#4a6585] ml-2 font-mono">({t.key})</span>
               </div>
               <div className="flex gap-0.5">
-                <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-[#eee] dark:hover:bg-[#1a1a1a] transition-colors">
-                  <Edit size={13} className="text-[#ccc] dark:text-[#555]" />
+                <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
+                  <Edit size={13} className="text-[#4a6585]" />
                 </button>
-                <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-[6px] hover:bg-[#fef2f2] dark:hover:bg-[#1c1111] transition-colors">
-                  <Trash2 size={13} className="text-[#ccc] dark:text-[#555] hover:text-[#f87171]" />
+                <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
+                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
                 </button>
               </div>
             </motion.div>
           ))}
           {(!trainings || trainings.length === 0) && (
             <div className="text-center py-16">
-              <GraduationCap size={28} className="mx-auto mb-3 text-[#ddd] dark:text-[#333]" strokeWidth={1.5} />
+              <GraduationCap size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
               <p className="text-[13px] text-[#999]">Keine Ausbildungsarten vorhanden</p>
             </div>
           )}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/toast'
 import Image from 'next/image'
+import { Lock, User } from 'lucide-react'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -27,55 +28,73 @@ export default function LoginPage() {
     }
   }
 
-  const inputClass = 'w-full h-[40px] px-3.5 rounded-[10px] text-[14px] bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#111] dark:text-[#eee] placeholder:text-[#bbb] dark:placeholder:text-[#555] border border-transparent focus:outline-none focus:border-[#ddd] dark:focus:border-[#333] transition-colors'
+  const inputClass = 'w-full h-[42px] pl-10 pr-3.5 rounded-[10px] text-[14px] bg-[#0a1a33]/60 text-[#edf4fb] placeholder:text-[#4a6585] border border-[#18385f]/60 focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.1)] transition-all'
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0a0a0a] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#061426] bg-pattern p-4 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-40%] left-[-20%] w-[80%] h-[80%] rounded-full bg-[#d4af37]/[0.03] blur-[100px]" />
+        <div className="absolute bottom-[-30%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#071b33]/[0.04] blur-[80px]" />
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[300px]"
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[320px] relative z-10"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-24 w-24 rounded-[20px] bg-[#111] dark:bg-white mb-5 overflow-hidden">
-            <Image src="/shield.webp" alt="LSPD" width={64} height={64} className="invert dark:invert-0" />
-          </div>
-          <h1 className="text-[17px] font-semibold text-[#111] dark:text-white">LSPD HR</h1>
-          <p className="text-[12.5px] text-[#999] mt-1">Personalverwaltung</p>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center justify-center h-[88px] w-[88px] rounded-[20px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 mb-5 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.15),0_1px_3px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(212,175,55,0.08)]"
+          >
+            <Image src="/shield.webp" alt="LSPD" width={72} height={72} className="rounded-full" priority />
+          </motion.div>
+          <h1 className="text-[18px] font-semibold text-white tracking-[-0.01em]">LSPD HR</h1>
+          <p className="text-[12px] font-medium text-[#d4af37]/80 mt-1 tracking-[0.04em]">Personalverwaltung</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          <div>
-            <label className="block text-[12px] font-medium text-[#999] mb-1.5 ml-0.5">Benutzername</label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              autoComplete="username"
-              autoFocus
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-[#999] mb-1.5 ml-0.5">Passwort</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              className={inputClass}
-            />
-          </div>
-          <div className="pt-2">
-            <Button type="submit" className="w-full h-[40px] text-[13.5px]" loading={loading}>
-              Anmelden
-            </Button>
-          </div>
-        </form>
+        <div className="glass-panel-elevated rounded-[16px] p-6">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <div>
+              <label className="block text-[11.5px] font-semibold text-[#8ea4bd] mb-1.5 ml-0.5 uppercase tracking-[0.06em]">Benutzername</label>
+              <div className="relative">
+                <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="admin"
+                  autoComplete="username"
+                  autoFocus
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11.5px] font-semibold text-[#8ea4bd] mb-1.5 ml-0.5 uppercase tracking-[0.06em]">Passwort</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <div className="pt-1">
+              <Button type="submit" className="w-full h-[42px] text-[13.5px]" loading={loading}>
+                Anmelden
+              </Button>
+            </div>
+          </form>
+        </div>
 
-        <p className="text-center text-[11px] text-[#ccc] dark:text-[#333] mt-10 tracking-wide">
+        <p className="text-center text-[10.5px] text-[#4a6585] mt-8 tracking-[0.06em] uppercase font-medium">
           Los Santos Police Department
         </p>
       </motion.div>

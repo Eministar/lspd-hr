@@ -9,12 +9,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
 
+    const bMin = body.badgeMin === undefined
+      ? undefined
+      : body.badgeMin === null || body.badgeMin === ''
+        ? null
+        : parseInt(String(body.badgeMin), 10)
+    const bMax = body.badgeMax === undefined
+      ? undefined
+      : body.badgeMax === null || body.badgeMax === ''
+        ? null
+        : parseInt(String(body.badgeMax), 10)
+    if (bMin != null && bMax != null && bMin > bMax) {
+      return error('Dienstnummer-Minimum darf nicht größer als Maximum sein')
+    }
+
     const rank = await prisma.rank.update({
       where: { id },
       data: {
         name: body.name,
         sortOrder: body.sortOrder,
         color: body.color,
+        badgeMin: bMin,
+        badgeMax: bMax,
       },
     })
 

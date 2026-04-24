@@ -102,9 +102,9 @@ export default function TerminationsPage() {
         }
       />
 
-      <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] overflow-hidden">
+      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
         {terminations && terminations.length > 0 ? (
-          <div className="divide-y divide-[#f0f0f0] dark:divide-[#1a1a1a]">
+          <div className="divide-y divide-[#18385f]">
             {terminations.map((t, i) => (
               <motion.div
                 key={t.id}
@@ -113,21 +113,21 @@ export default function TerminationsPage() {
                 transition={{ delay: i * 0.03 }}
                 className="flex items-start gap-4 px-5 py-4"
               >
-                <div className="h-9 w-9 rounded-[9px] bg-[#f0f0f0] dark:bg-[#1a1a1a] flex items-center justify-center shrink-0 mt-0.5">
+                <div className="h-9 w-9 rounded-[9px] bg-[#0f2340] flex items-center justify-center shrink-0 mt-0.5">
                   <UserX size={16} className="text-[#999]" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-[13px] font-medium text-[#111] dark:text-[#eee]">
+                    <p className="text-[13px] font-medium text-[#eee]">
                       {t.officer.firstName} {t.officer.lastName}
                     </p>
-                    <span className="text-[11px] text-[#bbb] dark:text-[#555] font-mono">DN: {t.previousBadgeNumber || t.officer.badgeNumber}</span>
+                    <span className="text-[11px] text-[#4a6585] font-mono">DN: {t.previousBadgeNumber || t.officer.badgeNumber}</span>
                   </div>
                   <p className="text-[12px] text-[#999] mb-1">
-                    Ehem. Rang: <span className="text-[#666] dark:text-[#aaa] font-medium">{t.previousRank || '—'}</span>
+                    Ehem. Rang: <span className="text-[#aaa] font-medium">{t.previousRank || '—'}</span>
                   </p>
-                  <p className="text-[13px] text-[#666] dark:text-[#999]">{t.reason}</p>
-                  <p className="text-[11px] text-[#bbb] dark:text-[#555] mt-1.5">
+                  <p className="text-[13px] text-[#999]">{t.reason}</p>
+                  <p className="text-[11px] text-[#4a6585] mt-1.5">
                     {formatDate(t.terminatedAt)} · von {t.terminatedBy.displayName}
                   </p>
                 </div>
@@ -146,7 +146,7 @@ export default function TerminationsPage() {
           </div>
         ) : (
           <div className="text-center py-20">
-            <UserX size={28} className="mx-auto mb-3 text-[#ddd] dark:text-[#333]" strokeWidth={1.5} />
+            <UserX size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
             <p className="text-[13px] text-[#999]">Keine Kündigungen</p>
           </div>
         )}
@@ -162,9 +162,9 @@ export default function TerminationsPage() {
             placeholder="Officer wählen..."
           />
           {selectedOfficer && (
-            <div className="px-3 py-2.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] rounded-[8px]">
+            <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
               <p className="text-[13px] text-[#888]">
-                <span className="font-medium text-[#111] dark:text-[#eee]">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {selectedOfficer.badgeNumber}
+                <span className="font-medium text-[#eee]">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {selectedOfficer.badgeNumber}
               </p>
             </div>
           )}

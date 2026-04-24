@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -28,6 +27,13 @@ export function useToast() {
 }
 
 const icons = { success: CheckCircle, error: XCircle, warning: AlertCircle, info: Info }
+
+const typeColors = {
+  success: 'text-emerald-400',
+  error: 'text-red-400',
+  warning: 'text-[#d4af37]',
+  info: 'text-blue-400',
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -56,14 +62,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-start gap-2.5 px-4 py-3 rounded-[10px] bg-white dark:bg-[#1a1a1a] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] border border-[#f0f0f0] dark:border-[#222]"
+                className="glass-panel-elevated rounded-[12px] flex items-start gap-2.5 px-4 py-3"
               >
-                <Icon size={16} className="mt-0.5 shrink-0 text-[#999]" strokeWidth={1.75} />
+                <Icon size={16} className={`mt-0.5 shrink-0 ${typeColors[toast.type]}`} strokeWidth={1.75} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#111] dark:text-[#eee]">{toast.title}</p>
-                  {toast.message && <p className="text-[11.5px] text-[#888] mt-0.5">{toast.message}</p>}
+                  <p className="text-[13px] font-medium text-white">{toast.title}</p>
+                  {toast.message && <p className="text-[11.5px] text-[#8ea4bd] mt-0.5">{toast.message}</p>}
                 </div>
-                <button onClick={() => removeToast(toast.id)} className="p-0.5 text-[#ccc] dark:text-[#444] hover:text-[#888] shrink-0">
+                <button onClick={() => removeToast(toast.id)} className="p-0.5 text-[#6b8299] hover:text-[#d4af37] shrink-0">
                   <X size={12} />
                 </button>
               </motion.div>

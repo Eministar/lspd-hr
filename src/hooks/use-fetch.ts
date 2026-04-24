@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from 'react'
 
 interface UseFetchResult<T> {
   data: T | null
   loading: boolean
   error: string | null
   refetch: () => Promise<void>
+  setData: Dispatch<SetStateAction<T | null>>
 }
 
 export function useFetch<T>(url: string | null): UseFetchResult<T> {
@@ -40,5 +41,5 @@ export function useFetch<T>(url: string | null): UseFetchResult<T> {
     fetchData()
   }, [fetchData])
 
-  return { data, loading, error, refetch: fetchData }
+  return { data, loading, error, refetch: fetchData, setData }
 }

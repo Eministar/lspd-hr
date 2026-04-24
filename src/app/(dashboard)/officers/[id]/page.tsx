@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateField } from '@/components/ui/date-field'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -23,7 +24,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params)
   const router = useRouter()
   const { addToast } = useToast()
-  const { data: officer, loading, refetch } = useFetch<any>(`/api/officers/${id}`)
+  const { data: officer, loading, refetch, setData: setOfficer } = useFetch<any>(`/api/officers/${id}`)
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
   const { execute } = useApi()
 
@@ -142,22 +143,31 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
     if (!officer) return
+    const previous = officer
+    const trainings = officer.trainings.map((t: any) => ({
+      trainingId: t.trainingId,
+      completed: t.trainingId === trainingId ? completed : t.completed,
+    }))
+    setOfficer((o: any) => ({
+      ...o,
+      trainings: o.trainings.map((t: any) =>
+        t.trainingId === trainingId ? { ...t, completed } : t
+      ),
+    }))
     try {
-      const trainings = officer.trainings.map((t: any) => ({
-        trainingId: t.trainingId,
-        completed: t.trainingId === trainingId ? completed : t.completed,
-      }))
       const res = await fetch(`/api/officers/${id}/trainings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trainings }),
       })
-      if (!res.ok) throw new Error('Fehler')
-      await refetch()
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Fehler')
+      if (json.data?.officer) setOfficer(json.data.officer)
     } catch {
+      setOfficer(previous)
       addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
     }
-  }, [officer, id, refetch, addToast])
+  }, [officer, id, setOfficer, addToast])
 
   if (loading) return <PageLoader />
   if (!officer) return <div className="text-center py-16 text-[#999]">Officer nicht gefunden</div>
@@ -192,8 +202,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-2 space-y-4">
           {/* Personal data */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-            className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Persönliche Daten</h3>
+            className="glass-panel-elevated rounded-[14px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Persönliche Daten</h3>
             {editing ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -211,7 +221,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     { value: 'INACTIVE', label: 'Inaktiv' },
                     { value: 'TERMINATED', label: 'Gekündigt' },
                   ]} />
-                  <Input label="Einstellungsdatum" type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} />
+                  <DateField
+                    label="Einstellungsdatum"
+                    value={form.hireDate}
+                    onChange={(v) => setForm({ ...form, hireDate: v })}
+                  />
                 </div>
                 <Input label="Discord ID" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} />
                 <Textarea label="Notizen" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
@@ -222,13 +236,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />
-                    <span className="text-[13.5px] text-[#111] dark:text-[#eee]">{officer.rank?.name}</span>
+                    <span className="text-[13.5px] text-[#eee]">{officer.rank?.name}</span>
                   </span>
                 </InfoRow>
                 <InfoRow label="Status">
                   <span className="inline-flex items-center gap-1.5">
                     <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
-                    <span className="text-[13.5px] text-[#111] dark:text-[#eee]">{getStatusLabel(officer.status)}</span>
+                    <span className="text-[13.5px] text-[#eee]">{getStatusLabel(officer.status)}</span>
                   </span>
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
@@ -245,8 +259,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Trainings -- toggleable directly */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-            className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Ausbildungen</h3>
+            className="glass-panel-elevated rounded-[14px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ausbildungen</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {officer.trainings?.map((t: any) => (
                 <button
@@ -255,19 +269,19 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all duration-150 text-left',
                     t.completed
-                      ? 'bg-[#f0f0f0] dark:bg-[#1a1a1a] hover:bg-[#e8e8e8] dark:hover:bg-[#1e1e1e]'
-                      : 'hover:bg-[#f5f5f5] dark:hover:bg-[#151515]'
+                      ? 'bg-[#0f2340] hover:bg-[#142d52]'
+                      : 'hover:bg-[#0f2340]'
                   )}
                 >
                   <div className={cn(
                     'h-[18px] w-[18px] rounded-[4px] flex items-center justify-center shrink-0 transition-colors',
-                    t.completed ? 'bg-[#111] dark:bg-white' : 'bg-[#e5e5e5] dark:bg-[#222]'
+                    t.completed ? 'bg-[#d4af37]' : 'bg-[#18385f]'
                   )}>
-                    {t.completed && <Check size={11} className="text-white dark:text-[#111]" strokeWidth={3} />}
+                    {t.completed && <Check size={11} className="text-[#0b1f3a]" strokeWidth={3} />}
                   </div>
                   <span className={cn(
                     'text-[13px]',
-                    t.completed ? 'text-[#111] dark:text-[#eee]' : 'text-[#aaa] dark:text-[#555]'
+                    t.completed ? 'text-[#eee]' : 'text-[#4a6585]'
                   )}>{t.training.label}</span>
                 </button>
               ))}
@@ -277,16 +291,16 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           {/* Promotion history */}
           {officer.promotionLogs?.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Ranghistorie</h3>
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ranghistorie</h3>
               <div className="space-y-3">
                 {officer.promotionLogs.map((log: any) => (
                   <div key={log.id} className="flex items-start gap-3">
                     <div className={cn(
                       'h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 mt-0.5',
                       log.oldRank.sortOrder > log.newRank.sortOrder
-                        ? 'bg-[#f0f0f0] dark:bg-[#1a1a1a]'
-                        : 'bg-[#f0f0f0] dark:bg-[#1a1a1a]'
+                        ? 'bg-[#0f2340]'
+                        : 'bg-[#0f2340]'
                     )}>
                       {log.oldRank.sortOrder > log.newRank.sortOrder
                         ? <TrendingUp size={13} className="text-[#999]" strokeWidth={1.75} />
@@ -294,11 +308,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                       }
                     </div>
                     <div className="flex-1">
-                      <p className="text-[13px] font-medium text-[#111] dark:text-[#eee]">
+                      <p className="text-[13px] font-medium text-[#eee]">
                         {log.oldRank.name} → {log.newRank.name}
                       </p>
                       <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(log.createdAt)} · {log.performedBy.displayName}</p>
-                      {log.note && <p className="text-[11.5px] text-[#bbb] dark:text-[#666] mt-0.5">{log.note}</p>}
+                      {log.note && <p className="text-[11.5px] text-[#666] mt-0.5">{log.note}</p>}
                     </div>
                   </div>
                 ))}
@@ -312,38 +326,38 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           {/* Quick actions */}
           {!editing && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-              className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-3">Aktionen</h3>
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Aktionen</h3>
               <div className="space-y-1.5">
                 {officer.status !== 'TERMINATED' && higherRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setPromoteModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#666] dark:text-[#999] hover:bg-[#f0f0f0] dark:hover:bg-[#1a1a1a] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <TrendingUp size={15} strokeWidth={1.75} /> Befördern
                   </button>
                 )}
                 {officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setDemoteModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#666] dark:text-[#999] hover:bg-[#f0f0f0] dark:hover:bg-[#1a1a1a] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <TrendingDown size={15} strokeWidth={1.75} /> Degradieren
                   </button>
                 )}
                 <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#666] dark:text-[#999] hover:bg-[#f0f0f0] dark:hover:bg-[#1a1a1a] transition-colors text-left">
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                   <StickyNote size={15} strokeWidth={1.75} /> Notiz hinzufügen
                 </button>
                 {officer.status === 'TERMINATED' ? (
                   <button onClick={handleReactivate}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#34d399] hover:bg-[#f0f0f0] dark:hover:bg-[#1a1a1a] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#34d399] hover:bg-[#0f2340] transition-colors text-left">
                     <UserCheck size={15} strokeWidth={1.75} /> Reaktivieren
                   </button>
                 ) : (
                   <button onClick={() => { setTerminateReason(''); setTerminateModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#fef2f2] dark:hover:bg-[#1c1111] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
                     <UserX size={15} strokeWidth={1.75} /> Kündigen
                   </button>
                 )}
                 <button onClick={() => setDeleteModal(true)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#fef2f2] dark:hover:bg-[#1c1111] transition-colors text-left">
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
                   <Trash2 size={15} strokeWidth={1.75} /> Löschen
                 </button>
               </div>
@@ -352,26 +366,26 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Notes */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
+            className="glass-panel-elevated rounded-[14px] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee]">Notizen</h3>
+              <h3 className="text-[13.5px] font-semibold text-[#eee]">Notizen</h3>
               <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                className="p-1 rounded-[6px] hover:bg-[#eee] dark:hover:bg-[#1a1a1a] transition-colors">
-                <Plus size={14} className="text-[#bbb] dark:text-[#555]" />
+                className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
+                <Plus size={14} className="text-[#4a6585]" />
               </button>
             </div>
             {officer.officerNotes?.length > 0 ? (
               <div className="space-y-2.5">
                 {officer.officerNotes.map((note: any) => (
-                  <div key={note.id} className="bg-[#f0f0f0] dark:bg-[#1a1a1a] rounded-[8px] p-3">
-                    {note.title && <p className="text-[13px] font-medium text-[#111] dark:text-[#eee] mb-1">{note.title}</p>}
-                    <p className="text-[13px] text-[#666] dark:text-[#999] leading-relaxed">{note.content}</p>
-                    <p className="text-[11px] text-[#bbb] dark:text-[#555] mt-2">{formatDate(note.createdAt)} · {note.author.displayName}</p>
+                  <div key={note.id} className="bg-[#0f2340] rounded-[8px] p-3">
+                    {note.title && <p className="text-[13px] font-medium text-[#eee] mb-1">{note.title}</p>}
+                    <p className="text-[13px] text-[#999] leading-relaxed">{note.content}</p>
+                    <p className="text-[11px] text-[#4a6585] mt-2">{formatDate(note.createdAt)} · {note.author.displayName}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[12.5px] text-[#bbb] dark:text-[#555]">Keine Notizen vorhanden</p>
+              <p className="text-[12.5px] text-[#4a6585]">Keine Notizen vorhanden</p>
             )}
           </motion.div>
         </div>
@@ -380,7 +394,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Delete modal */}
       <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Officer löschen">
         <p className="text-[13px] text-[#888] mb-5">
-          Soll <strong className="text-[#111] dark:text-[#eee]">{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
+          Soll <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setDeleteModal(false)}>Abbrechen</Button>
@@ -392,7 +406,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       <Modal open={terminateModal} onClose={() => setTerminateModal(false)} title="Officer kündigen">
         <div className="space-y-4">
           <p className="text-[13px] text-[#888]">
-            <strong className="text-[#111] dark:text-[#eee]">{officer.firstName} {officer.lastName}</strong> wird gekündigt.
+            <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong> wird gekündigt.
           </p>
           <Textarea label="Kündigungsgrund" value={terminateReason} onChange={(e) => setTerminateReason(e.target.value)} rows={3} required placeholder="Grund..." />
           <div className="flex justify-end gap-2">
@@ -405,8 +419,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Promote modal */}
       <Modal open={promoteModal} onClose={() => setPromoteModal(false)} title="Beförderung">
         <div className="space-y-4">
-          <div className="px-3 py-2.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] rounded-[8px]">
-            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#111] dark:text-[#eee]">{officer.rank?.name}</strong></p>
+          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
+            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#eee]">{officer.rank?.name}</strong></p>
           </div>
           <Select label="Neuer Rang (höher)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={higherRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
@@ -422,8 +436,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Demote modal */}
       <Modal open={demoteModal} onClose={() => setDemoteModal(false)} title="Degradierung">
         <div className="space-y-4">
-          <div className="px-3 py-2.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] rounded-[8px]">
-            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#111] dark:text-[#eee]">{officer.rank?.name}</strong></p>
+          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
+            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#eee]">{officer.rank?.name}</strong></p>
           </div>
           <Select label="Neuer Rang (niedriger)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={lowerRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
@@ -455,7 +469,7 @@ function InfoRow({ label, value, mono, children }: { label: string; value?: stri
   return (
     <div>
       <p className="text-[11.5px] text-[#999] mb-1">{label}</p>
-      {children || <p className={cn('text-[13.5px] text-[#111] dark:text-[#eee]', mono && 'font-mono')}>{value || '—'}</p>}
+      {children || <p className={cn('text-[13.5px] text-[#eee]', mono && 'font-mono')}>{value || '—'}</p>}
     </div>
   )
 }

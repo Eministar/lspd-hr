@@ -156,7 +156,7 @@ export default function PromotionsPage() {
 
       {(!lists || lists.length === 0) && (
         <div className="text-center py-20">
-          <FileText size={28} className="mx-auto mb-3 text-[#ddd] dark:text-[#333]" strokeWidth={1.5} />
+          <FileText size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
           <p className="text-[13px] text-[#999] mb-3">Noch keine Beförderungslisten</p>
           <Button size="sm" variant="secondary" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
             <Plus size={13} /> Erste Liste erstellen
@@ -176,18 +176,18 @@ export default function PromotionsPage() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] overflow-hidden"
+              className="glass-panel-elevated rounded-[14px] overflow-hidden"
             >
               <button
                 onClick={() => toggleExpand(list.id)}
-                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#f5f5f5] dark:hover:bg-[#151515] transition-colors text-left"
+                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#0f2340] transition-colors text-left"
               >
-                <ChevronDown size={14} strokeWidth={2} className={cn('text-[#bbb] dark:text-[#555] transition-transform duration-200', !isExpanded && '-rotate-90')} />
+                <ChevronDown size={14} strokeWidth={2} className={cn('text-[#4a6585] transition-transform duration-200', !isExpanded && '-rotate-90')} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee]">{list.name}</span>
+                    <span className="text-[13.5px] font-semibold text-[#eee]">{list.name}</span>
                     <span className={cn('text-[11px] px-1.5 py-[1px] rounded-[4px] font-medium',
-                      isDraft ? 'bg-[#fef3c7] text-[#92400e] dark:bg-[#1c1a11] dark:text-[#fbbf24]' : 'bg-[#d1fae5] text-[#065f46] dark:bg-[#0d1f17] dark:text-[#34d399]'
+                      isDraft ? 'bg-[#1c1a11] text-[#fbbf24]' : 'bg-[#0d1f17] text-[#34d399]'
                     )}>
                       {isDraft ? 'Entwurf' : 'Abgeschlossen'}
                     </span>
@@ -198,7 +198,7 @@ export default function PromotionsPage() {
                   </p>
                 </div>
                 {isDraft && pendingCount > 0 && (
-                  <span className="text-[12px] text-[#888] bg-[#f0f0f0] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-[5px]">
+                  <span className="text-[12px] text-[#888] bg-[#0f2340] px-2 py-0.5 rounded-[5px]">
                     {pendingCount} offen
                   </span>
                 )}
@@ -209,16 +209,16 @@ export default function PromotionsPage() {
                   {list.entries.length > 0 ? (
                     <div className="space-y-1.5 mb-3">
                       {list.entries.map((entry) => (
-                        <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-[#f5f5f5] dark:bg-[#1a1a1a] rounded-[8px]">
+                        <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-[#0f2340] rounded-[8px]">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium text-[#111] dark:text-[#eee]">
+                            <p className="text-[13px] font-medium text-[#eee]">
                               {entry.officer.firstName} {entry.officer.lastName}
                               <span className="text-[#bbb] font-normal ml-1">({entry.officer.badgeNumber})</span>
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[11.5px] text-[#888]">{entry.currentRank.name}</span>
                               <ArrowRight size={10} className="text-[#ccc]" />
-                              <span className="text-[11.5px] text-[#111] dark:text-[#eee] font-medium">{entry.proposedRank.name}</span>
+                              <span className="text-[11.5px] text-[#eee] font-medium">{entry.proposedRank.name}</span>
                               {entry.note && <span className="text-[11px] text-[#bbb] ml-1">· {entry.note}</span>}
                             </div>
                           </div>
@@ -226,15 +226,15 @@ export default function PromotionsPage() {
                             <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>
                           ) : isDraft ? (
                             <button onClick={() => handleRemoveEntry(list.id, entry.id)}
-                              className="p-1 rounded-[5px] hover:bg-[#eee] dark:hover:bg-[#222] transition-colors shrink-0">
-                              <X size={13} className="text-[#ccc] dark:text-[#555]" />
+                              className="p-1 rounded-[5px] hover:bg-[#142d52] transition-colors shrink-0">
+                              <X size={13} className="text-[#4a6585]" />
                             </button>
                           ) : null}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[12.5px] text-[#bbb] dark:text-[#555] mb-3 px-1">Noch keine Officers in dieser Liste</p>
+                    <p className="text-[12.5px] text-[#4a6585] mb-3 px-1">Noch keine Officers in dieser Liste</p>
                   )}
 
                   {isDraft && (
@@ -286,8 +286,8 @@ export default function PromotionsPage() {
           />
           {selectedOfficer && (
             <>
-              <div className="px-3 py-2.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] rounded-[8px]">
-                <p className="text-[13px] text-[#888]">Aktueller Rang: <strong className="text-[#111] dark:text-[#eee]">{selectedOfficer.rank.name}</strong></p>
+              <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
+                <p className="text-[13px] text-[#888]">Aktueller Rang: <strong className="text-[#eee]">{selectedOfficer.rank.name}</strong></p>
               </div>
               <Select
                 label="Neuer Rang (höher)"

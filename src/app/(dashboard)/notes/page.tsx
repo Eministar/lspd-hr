@@ -122,8 +122,8 @@ export default function NotesPage() {
             className={cn(
               'px-3.5 py-[7px] rounded-[8px] text-[13px] font-medium transition-colors duration-100',
               filter === f
-                ? 'bg-[#111] text-white dark:bg-white dark:text-[#111]'
-                : 'text-[#888] hover:text-[#111] hover:bg-[#f5f5f5] dark:hover:text-[#eee] dark:hover:bg-[#151515]'
+                ? 'bg-[#d4af37] text-[#0b1f3a]'
+                : 'text-[#888] hover:text-[#eee] hover:bg-[#0f2340]'
             )}
           >
             {f === 'all' ? 'Alle' : f === 'global' ? 'Global' : 'Mitarbeiter'}
@@ -140,7 +140,7 @@ export default function NotesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
               className={cn(
-                'bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-4',
+                'glass-panel-elevated rounded-[14px] p-4',
                 note.pinned && 'ring-1 ring-[#fbbf24]/30'
               )}
             >
@@ -148,34 +148,34 @@ export default function NotesPage() {
                 <div className="flex items-center gap-2">
                   {note.pinned && <Pin size={12} className="text-[#fbbf24]" />}
                   {note.officer ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-[#888] bg-[#f0f0f0] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-[5px]">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-[#888] bg-[#0f2340] px-2 py-0.5 rounded-[5px]">
                       <User size={9} />
                       {note.officer.firstName} {note.officer.lastName}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-[#888] bg-[#f0f0f0] dark:bg-[#1a1a1a] px-2 py-0.5 rounded-[5px]">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-[#888] bg-[#0f2340] px-2 py-0.5 rounded-[5px]">
                       <Globe size={9} />
                       Global
                     </span>
                   )}
                 </div>
                 <div className="flex gap-0.5">
-                  <button onClick={() => handleTogglePin(note)} className="p-1 rounded-[6px] hover:bg-[#eee] dark:hover:bg-[#1a1a1a] transition-colors">
-                    <Pin size={13} className={cn(note.pinned ? 'text-[#fbbf24]' : 'text-[#ccc] dark:text-[#555]')} />
+                  <button onClick={() => handleTogglePin(note)} className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
+                    <Pin size={13} className={cn(note.pinned ? 'text-[#fbbf24]' : 'text-[#4a6585]')} />
                   </button>
-                  <button onClick={() => startEdit(note)} className="p-1 rounded-[6px] hover:bg-[#eee] dark:hover:bg-[#1a1a1a] transition-colors">
-                    <Edit size={13} className="text-[#ccc] dark:text-[#555]" />
+                  <button onClick={() => startEdit(note)} className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
+                    <Edit size={13} className="text-[#4a6585]" />
                   </button>
-                  <button onClick={() => handleDelete(note.id)} className="p-1 rounded-[6px] hover:bg-[#fef2f2] dark:hover:bg-[#1c1111] transition-colors">
-                    <Trash2 size={13} className="text-[#ccc] dark:text-[#555] hover:text-[#f87171]" />
+                  <button onClick={() => handleDelete(note.id)} className="p-1 rounded-[6px] hover:bg-[#1c1111] transition-colors">
+                    <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
                   </button>
                 </div>
               </div>
               {note.title && (
-                <h4 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-1">{note.title}</h4>
+                <h4 className="text-[13.5px] font-semibold text-[#eee] mb-1">{note.title}</h4>
               )}
-              <p className="text-[13px] text-[#666] dark:text-[#999] whitespace-pre-wrap leading-relaxed">{note.content}</p>
-              <p className="text-[11px] text-[#bbb] dark:text-[#555] mt-3">
+              <p className="text-[13px] text-[#999] whitespace-pre-wrap leading-relaxed">{note.content}</p>
+              <p className="text-[11px] text-[#4a6585] mt-3">
                 {note.author.displayName} · {formatDateTime(note.createdAt)}
               </p>
             </motion.div>
@@ -183,7 +183,7 @@ export default function NotesPage() {
         </div>
       ) : (
         <div className="text-center py-20">
-          <StickyNote size={28} className="mx-auto mb-3 text-[#ddd] dark:text-[#333]" strokeWidth={1.5} />
+          <StickyNote size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
           <p className="text-[13px] text-[#999]">Keine Notizen vorhanden</p>
         </div>
       )}
@@ -193,8 +193,8 @@ export default function NotesPage() {
           <Input label="Titel (optional)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Textarea label="Inhalt" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4} required />
           <label className="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="rounded accent-[#111]" />
-            <span className="text-[13px] text-[#666] dark:text-[#999]">Notiz anpinnen</span>
+            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="rounded accent-[#d4af37]" />
+            <span className="text-[13px] text-[#999]">Notiz anpinnen</span>
           </label>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setCreateModal(false)}>Abbrechen</Button>
@@ -208,8 +208,8 @@ export default function NotesPage() {
           <Input label="Titel" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <Textarea label="Inhalt" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4} />
           <label className="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="rounded accent-[#111]" />
-            <span className="text-[13px] text-[#666] dark:text-[#999]">Notiz anpinnen</span>
+            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="rounded accent-[#d4af37]" />
+            <span className="text-[13px] text-[#999]">Notiz anpinnen</span>
           </label>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setEditNote(null)}>Abbrechen</Button>

@@ -34,7 +34,7 @@ export function Modal({ open, onClose, title, description, children, className, 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-[2px] z-50"
+                className="fixed inset-0 bg-[#061426]/60 backdrop-blur-[2px] z-50"
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
@@ -46,8 +46,7 @@ export function Modal({ open, onClose, title, description, children, className, 
                 className={cn(
                   'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50',
                   'w-[calc(100%-2rem)]', sizes[size],
-                  'bg-white dark:bg-[#111] rounded-[14px]',
-                  'shadow-[0_20px_60px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]',
+                  'glass-panel-elevated rounded-[16px]',
                   'max-h-[85vh] overflow-y-auto',
                   className
                 )}
@@ -55,11 +54,11 @@ export function Modal({ open, onClose, title, description, children, className, 
                 <div className="p-6">
                   {title && (
                     <div className="mb-5">
-                      <Dialog.Title className="text-[15px] font-semibold text-[#111] dark:text-white">
+                      <Dialog.Title className="text-[15px] font-semibold text-white">
                         {title}
                       </Dialog.Title>
                       {description && (
-                        <Dialog.Description className="text-[13px] text-[#888] mt-1">
+                        <Dialog.Description className="text-[13px] text-[#8ea4bd] mt-1">
                           {description}
                         </Dialog.Description>
                       )}
@@ -69,7 +68,7 @@ export function Modal({ open, onClose, title, description, children, className, 
                 </div>
                 <Dialog.Close asChild>
                   <button
-                    className="absolute top-4 right-4 p-1.5 rounded-[8px] text-[#bbb] dark:text-[#555] hover:text-[#666] dark:hover:text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
+                    className="absolute top-4 right-4 p-1.5 rounded-[8px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/60 transition-colors"
                     aria-label="Schließen"
                   >
                     <X size={15} strokeWidth={2} />

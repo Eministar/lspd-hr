@@ -12,11 +12,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, disabled, children, ...props }, ref) => {
     const variants = {
-      primary: 'bg-[#111] text-white hover:bg-[#333] dark:bg-white dark:text-[#111] dark:hover:bg-[#e5e5e5]',
-      secondary: 'bg-[#f5f5f5] text-[#333] hover:bg-[#eee] dark:bg-[#1a1a1a] dark:text-[#ddd] dark:hover:bg-[#222]',
-      danger: 'bg-[#f5f5f5] text-[#dc2626] hover:bg-[#fef2f2] dark:bg-[#1a1a1a] dark:text-[#f87171] dark:hover:bg-[#1c1111]',
-      ghost: 'text-[#666] hover:text-[#111] hover:bg-[#f5f5f5] dark:text-[#888] dark:hover:text-white dark:hover:bg-[#1a1a1a]',
-      outline: 'border border-[#e5e5e5] dark:border-[#2a2a2a] text-[#333] dark:text-[#ccc] hover:bg-[#f9f9f9] dark:hover:bg-[#151515]',
+      primary: 'bg-gradient-to-b from-[#d4af37] to-[#c29d32] text-[#071b33] hover:from-[#dcba48] hover:to-[#d4af37] shadow-[0_1px_3px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]',
+      secondary: 'bg-[#102542] text-[#edf4fb] hover:bg-[#17375f] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
+      danger: 'bg-gradient-to-b from-[#2a1620] to-[#231218] text-[#fca5a5] hover:from-[#341b27] hover:to-[#2a1620] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
+      ghost: 'text-[#9fb0c4] hover:text-white hover:bg-[#102542]/70',
+      outline: 'border border-[#234568] text-[#edf4fb] hover:bg-[#102542]/50 shadow-[0_1px_2px_rgba(0,0,0,0.08)]',
     }
 
     const sizes = {
@@ -31,7 +31,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={cn(
           'inline-flex items-center justify-center font-medium transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111]/20 dark:focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0a0a0a]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#061426]',
           'disabled:opacity-35 disabled:pointer-events-none',
           'active:scale-[0.98]',
           variants[variant],

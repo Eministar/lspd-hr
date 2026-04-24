@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
@@ -16,14 +15,12 @@ export default function SettingsPage() {
   const { execute } = useApi()
   const { addToast } = useToast()
 
-  const [defaultTheme, setDefaultTheme] = useState('dark')
   const [orgName, setOrgName] = useState('LSPD')
   const [badgePrefix, setBadgePrefix] = useState('')
   const [webhookUrl, setWebhookUrl] = useState('')
 
   useEffect(() => {
     if (settings) {
-      setDefaultTheme(settings['defaultTheme'] || 'dark')
       setOrgName(settings['orgName'] || 'LSPD')
       setBadgePrefix(settings['badgePrefix'] || '')
       setWebhookUrl(settings['webhookUrl'] || '')
@@ -47,8 +44,8 @@ export default function SettingsPage() {
       <PageHeader title="Einstellungen" description="Systemweite Konfiguration" />
 
       <div className="space-y-4 max-w-2xl">
-        <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Allgemein</h3>
+        <div className="glass-panel-elevated rounded-[14px] p-5">
+          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Allgemein</h3>
           <div className="space-y-3">
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -56,22 +53,11 @@ export default function SettingsPage() {
               </div>
               <Button variant="secondary" size="sm" onClick={() => saveSetting('orgName', orgName)}><Save size={13} /></Button>
             </div>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Select
-                  label="Standard-Theme"
-                  value={defaultTheme}
-                  onChange={(e) => setDefaultTheme(e.target.value)}
-                  options={[{ value: 'dark', label: 'Dark Mode' }, { value: 'light', label: 'Light Mode' }]}
-                />
-              </div>
-              <Button variant="secondary" size="sm" onClick={() => saveSetting('defaultTheme', defaultTheme)}><Save size={13} /></Button>
-            </div>
           </div>
         </div>
 
-        <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Dienstnummern</h3>
+        <div className="glass-panel-elevated rounded-[14px] p-5">
+          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Dienstnummern</h3>
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
@@ -80,8 +66,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#111] dark:text-[#eee] mb-4">Integrationen</h3>
+        <div className="glass-panel-elevated rounded-[14px] p-5">
+          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Integrationen</h3>
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Input label="Discord Webhook URL" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://discord.com/api/webhooks/..." />

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { success, error, unauthorized } from '@/lib/api-response'
+import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateTrainingsSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 
@@ -21,6 +21,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
+    const officer = await prisma.officer.findUnique({
+      where: { id },
+      include: {
+        rank: true,
+        trainings: { include: { training: true } },
+      },
+    })
+    if (!officer) return notFound('Officer')
+
     await createAuditLog({
       action: 'TRAININGS_UPDATED',
       userId: user.id,
@@ -28,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       details: 'Ausbildungsstände aktualisiert',
     })
 
-    return success({ message: 'Ausbildungen aktualisiert' })
+    return success({ message: 'Ausbildungen aktualisiert', officer })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

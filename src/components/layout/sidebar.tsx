@@ -6,15 +6,29 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
-  Shield, GraduationCap, UserCog, Settings, LogOut, Moon, Sun,
-  Menu, X
+  Shield, GraduationCap, UserCog, Settings, LogOut,
+  Menu, X, ExternalLink,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/context/theme-context'
+import { GITHUB_REPO_URL } from '@/lib/site'
 import { useAuth } from '@/context/auth-context'
 import Image from 'next/image'
 
-const mainNav = [
+interface NavItem {
+  name: string
+  href: string
+  icon: LucideIcon
+}
+
+interface NavContentProps {
+  pathname: string
+  onNavigate: () => void
+  user: { displayName: string; role: string } | null
+  logout: () => Promise<void>
+}
+
+const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Officers', href: '/officers', icon: Users },
   { name: 'Beförderungen', href: '/promotions', icon: TrendingUp },
@@ -24,109 +38,150 @@ const mainNav = [
   { name: 'Protokoll', href: '/logs', icon: ScrollText },
 ]
 
-const adminNav = [
+const adminNav: NavItem[] = [
   { name: 'Ränge', href: '/admin/ranks', icon: Shield },
   { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings },
 ]
 
-export function Sidebar() {
-  const pathname = usePathname()
-  const { theme, toggleTheme } = useTheme()
-  const { user, logout } = useAuth()
-  const [mobileOpen, setMobileOpen] = useState(false)
+function GitHubLogo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+      />
+    </svg>
+  )
+}
 
+function isActivePath(pathname: string, href: string) {
+  if (href === '/') return pathname === '/'
+  return pathname.startsWith(href)
+}
+
+function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate: () => void }) {
+  const active = isActivePath(pathname, item.href)
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        'group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-all duration-150',
+        active
+          ? 'bg-gradient-to-r from-[#d4af37] to-[#c9a52f] text-[#071b33] font-semibold shadow-[0_2px_8px_rgba(212,175,55,0.25)]'
+          : 'text-[#8ea4bd] hover:bg-[#0d2444] hover:text-[#d4d4d4]'
+      )}
+    >
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] rounded-r-full bg-[#f0d060]" />
+      )}
+      <Icon size={18} strokeWidth={active ? 2 : 1.75} />
+      {item.name}
+    </Link>
+  )
+}
+
+function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR'
 
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === '/'
-    return pathname.startsWith(href)
-  }
-
-  const NavLink = ({ item }: { item: typeof mainNav[0] }) => {
-    const active = isActive(item.href)
-    return (
-      <Link
-        href={item.href}
-        onClick={() => setMobileOpen(false)}
-        className={cn(
-          'flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-colors duration-100',
-          active
-            ? 'bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#111] dark:text-white font-medium'
-            : 'text-[#666] dark:text-[#888] hover:bg-[#f9f9f9] dark:hover:bg-[#151515] hover:text-[#111] dark:hover:text-[#ddd]'
-        )}
-      >
-        <item.icon size={18} strokeWidth={1.75} />
-        {item.name}
-      </Link>
-    )
-  }
-
-  const NavContent = () => (
+  return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="h-[42px] w-[42px] rounded-[10px] bg-[#111] dark:bg-white flex items-center justify-center overflow-hidden">
-            <Image src="/shield.webp" alt="LSPD" width={28} height={28} className="invert dark:invert-0" />
+      <div className="px-4 pt-5 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
+            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full" priority />
           </div>
-          <span className="text-[16px] font-semibold text-[#111] dark:text-white">LSPD HR</span>
+          <div>
+            <span className="block text-[15px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD HR</span>
+            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.1em] uppercase mt-0.5">Department</span>
+          </div>
         </div>
+        <div className="gold-line mt-4" />
       </div>
 
-      <nav className="flex-1 px-2 space-y-[2px] overflow-y-auto">
-        {mainNav.map((item) => <NavLink key={item.href} item={item} />)}
+      <nav className="flex-1 px-2.5 space-y-[2px] overflow-y-auto">
+        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Navigation</p>
+        {mainNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
         {isAdmin && (
           <>
-            <div className="h-px bg-[#eee] dark:bg-[#1a1a1a] my-3 mx-2" />
-            {adminNav.map((item) => <NavLink key={item.href} item={item} />)}
+            <div className="gold-line my-3 mx-2" />
+            <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Administration</p>
+            {adminNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
       </nav>
 
-      <div className="px-2 pb-3 space-y-[2px]">
-        <div className="h-px bg-[#eee] dark:bg-[#1a1a1a] mb-2 mx-2" />
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-3 w-full px-3 py-[9px] rounded-lg text-[13.5px] text-[#666] dark:text-[#888] hover:bg-[#f9f9f9] dark:hover:bg-[#151515] hover:text-[#111] dark:hover:text-[#ddd] transition-colors duration-100"
+      <div className="px-2.5 pt-1 pb-2 shrink-0">
+        <div className="gold-line mb-2.5 mx-2" />
+        <a
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNavigate}
+          className={cn(
+            'mb-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-[#234568]/80 bg-[#0a1a33]/50 py-1.5 text-[11px] font-medium text-[#8ea4bd] transition-colors',
+            'hover:border-[#d4af37]/35 hover:text-white hover:bg-[#0d2444]/80'
+          )}
         >
-          {theme === 'dark' ? <Sun size={18} strokeWidth={1.75} /> : <Moon size={18} strokeWidth={1.75} />}
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
+          <GitHubLogo className="h-4 w-4 shrink-0 text-[#f0f0f0]" />
+          <span>Repository</span>
+          <ExternalLink size={9} className="opacity-40 shrink-0" />
+        </a>
+        <p className="px-1 text-center text-[10px] leading-snug text-[#4a6585]">
+          Crafted with <span className="text-[#d4af37]/80">&lt;3</span> by{' '}
+          <span className="text-[#6b8299]">Eministar</span>
+        </p>
+      </div>
 
+      <div className="px-2.5 pb-2.5 shrink-0">
+        <div className="gold-line mb-2 mx-2" />
         {user && (
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="h-[28px] w-[28px] rounded-full bg-gradient-to-br from-[#e0e0e0] to-[#c0c0c0] dark:from-[#333] dark:to-[#222] flex items-center justify-center text-[11px] font-semibold text-[#666] dark:text-[#aaa]">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0a1e38]/50 border border-white/[0.04]">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b89930] flex items-center justify-center text-[10px] font-bold text-[#071b33] shadow-[0_1px_3px_rgba(212,175,55,0.25)]">
               {user.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-[#111] dark:text-[#ddd] truncate leading-tight">{user.displayName}</p>
+              <p className="text-[11.5px] font-medium text-white/90 truncate leading-tight">{user.displayName}</p>
             </div>
             <button
+              type="button"
               onClick={logout}
-              className="p-1 rounded-md text-[#ccc] dark:text-[#555] hover:text-[#666] dark:hover:text-[#aaa] transition-colors"
+              className="p-1 rounded-md text-[#6b8299] hover:text-[#d4af37] transition-colors -mr-0.5"
               title="Abmelden"
             >
-              <LogOut size={15} strokeWidth={1.75} />
+              <LogOut size={13} strokeWidth={1.75} />
             </button>
           </div>
         )}
       </div>
     </div>
   )
+}
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const closeMobile = () => setMobileOpen(false)
 
   return (
     <>
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2.5 rounded-xl bg-white dark:bg-[#111] shadow-sm"
+        className="lg:hidden fixed top-4 left-4 z-40 p-2.5 rounded-xl sidebar-gradient border border-[#d4af37]/25 shadow-lg"
       >
-        <Menu size={18} className="text-[#666]" />
+        <Menu size={18} className="text-[#d4af37]" />
       </button>
 
-      <aside className="hidden lg:flex lg:flex-col lg:w-[240px] lg:min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] border-r border-[#f0f0f0] dark:border-[#1a1a1a] fixed left-0 top-0 bottom-0 z-30">
-        <NavContent />
+      <aside className="hidden lg:flex lg:flex-col lg:w-[244px] lg:min-h-screen sidebar-gradient border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
+        <NavContent pathname={pathname} onNavigate={closeMobile} user={user} logout={logout} />
       </aside>
 
       <AnimatePresence>
@@ -137,28 +192,28 @@ export function Sidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
+              className="lg:hidden fixed inset-0 bg-[#061426]/75 backdrop-blur-sm z-40"
             />
             <motion.aside
               initial={{ x: -260 }}
               animate={{ x: 0 }}
               exit={{ x: -260 }}
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-[240px] bg-[#fafafa] dark:bg-[#0a0a0a] border-r border-[#f0f0f0] dark:border-[#1a1a1a] z-50"
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-[244px] sidebar-gradient border-r border-[#d4af37]/10 z-50 shadow-2xl"
             >
               <button
                 onClick={() => setMobileOpen(false)}
-                className="absolute top-4 right-3 p-1.5 rounded-md text-[#999] hover:text-[#666]"
+                className="absolute top-4 right-3 p-1.5 rounded-md text-[#6b8299] hover:text-[#d4af37]"
               >
                 <X size={16} />
               </button>
-              <NavContent />
+              <NavContent pathname={pathname} onNavigate={closeMobile} user={user} logout={logout} />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      <div className="hidden lg:block lg:w-[240px] lg:shrink-0" />
+      <div className="hidden lg:block lg:w-[244px] lg:shrink-0" />
     </>
   )
 }

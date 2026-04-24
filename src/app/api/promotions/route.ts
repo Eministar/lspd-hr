@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -26,11 +28,28 @@ export async function POST(req: NextRequest) {
     const user = await requireAuth(['ADMIN', 'HR'])
     const body = await req.json()
 
-    const { officerId, newRankId, newBadgeNumber, note } = body
+    const { officerId, newRankId, newBadgeNumber: bodyBadge, note } = body
     if (!officerId || !newRankId) return error('Officer und neuer Rang sind erforderlich')
 
     const officer = await prisma.officer.findUnique({ where: { id: officerId }, include: { rank: true } })
     if (!officer) return error('Officer nicht gefunden')
+
+    const newRank = await prisma.rank.findUnique({ where: { id: newRankId } })
+    if (!newRank) return error('Rang nicht gefunden')
+
+    let newBadgeNumber: string = typeof bodyBadge === 'string' && bodyBadge.trim() ? bodyBadge.trim() : ''
+
+    if (!newBadgeNumber) {
+      if (rankHasBadgeRange(newRank)) {
+        const prefix = await getBadgePrefix()
+        const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+        const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber)
+        if (!assigned) return error('Keine freie Dienstnummer im Bereich des Ziel-Rangs')
+        newBadgeNumber = assigned.str
+      } else {
+        newBadgeNumber = officer.badgeNumber
+      }
+    }
 
     if (newBadgeNumber && newBadgeNumber !== officer.badgeNumber) {
       const dup = await prisma.officer.findUnique({ where: { badgeNumber: newBadgeNumber } })
@@ -57,14 +76,13 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const newRank = await prisma.rank.findUnique({ where: { id: newRankId } })
     await createAuditLog({
       action: 'OFFICER_PROMOTED',
       userId: user.id,
       officerId,
       oldValue: officer.rank.name,
-      newValue: newRank?.name || 'Unbekannt',
-      details: `${officer.firstName} ${officer.lastName}: ${officer.rank.name} → ${newRank?.name}`,
+      newValue: newRank.name,
+      details: `${officer.firstName} ${officer.lastName}: ${officer.rank.name} → ${newRank.name}`,
     })
 
     return success(promotion, 201)

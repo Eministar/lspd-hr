@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateField } from '@/components/ui/date-field'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader } from '@/components/layout/page-header'
@@ -66,7 +67,7 @@ export default function NewOfficerPage() {
         }
       />
 
-      <div className="bg-[#fafafa] dark:bg-[#111] rounded-[12px] p-6 max-w-2xl">
+      <div className="glass-panel-elevated rounded-[14px] p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
@@ -106,12 +107,11 @@ export default function NewOfficerPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
+            <DateField
               id="hireDate"
               label="Einstellungsdatum"
-              type="date"
               value={form.hireDate}
-              onChange={(e) => update('hireDate', e.target.value)}
+              onChange={(v) => update('hireDate', v)}
             />
             <Input
               id="discordId"

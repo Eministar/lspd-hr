@@ -4,7 +4,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get('auth-token')?.value
 
-  if (pathname.startsWith('/api/auth/login')) {
+  if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/me')) {
     return NextResponse.next()
   }
 
