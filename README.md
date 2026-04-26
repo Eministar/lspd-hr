@@ -60,8 +60,7 @@
 
 | | |
 | :--: | :-- |
-| 👤 **Benutzername** | `admin` |
-| 🔐 **Passwort** | `admin123` |
+
 
 *Dieselben Werte legt `prisma/seed.ts` an — lokal identisch, wenn du seetest.*
 
