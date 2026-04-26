@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
-  Shield, GraduationCap, UserCog, Settings, LogOut,
+  Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, ExternalLink,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -36,6 +36,11 @@ const mainNav: NavItem[] = [
   { name: 'Kündigungen', href: '/terminations', icon: UserX },
   { name: 'Notizen', href: '/notes', icon: StickyNote },
   { name: 'Protokoll', href: '/logs', icon: ScrollText },
+]
+
+const tasksNav: NavItem[] = [
+  { name: 'Academy', href: '/academy', icon: ListChecks },
+  { name: 'HR Abteilung', href: '/hr', icon: Briefcase },
 ]
 
 const adminNav: NavItem[] = [
@@ -107,6 +112,10 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
       <nav className="flex-1 px-2.5 space-y-[2px] overflow-y-auto">
         <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Navigation</p>
         {mainNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+
+        <div className="gold-line my-3 mx-2" />
+        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>
+        {tasksNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
         {isAdmin && (
           <>

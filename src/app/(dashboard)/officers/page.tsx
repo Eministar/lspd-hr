@@ -134,19 +134,25 @@ function DraggableOfficerRow({
           <span className="inline-block w-5" />
         )}
       </td>
-      <td className="px-2 py-2.5 font-mono text-[12px] text-[#b7c5d8]">
+      <td className="px-2 py-2.5 font-mono text-[12px] text-[#b7c5d8] align-middle">
         {officer.badgeNumber}
       </td>
-      <td className="px-3 py-2.5 whitespace-nowrap min-w-0">
+      <td className="px-3 py-2.5 align-middle min-w-0 max-w-0 overflow-hidden">
         <Link
           href={`/officers/${officer.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-[13px] font-medium text-[#eee] hover:text-[#d4af37] transition-colors"
+          className="block text-[13px] font-medium text-[#eee] hover:text-[#d4af37] transition-colors truncate"
+          title={`${officer.firstName} ${officer.lastName}`}
         >
           {officer.firstName} {officer.lastName}
         </Link>
         {officer.discordId && (
-          <span className="text-[11px] text-[#4a6585] font-mono ml-2">{officer.discordId}</span>
+          <span
+            className="block text-[10.5px] text-[#4a6585] font-mono truncate leading-tight"
+            title={officer.discordId}
+          >
+            {officer.discordId}
+          </span>
         )}
       </td>
       {allTrainings.map((t) => {
@@ -452,19 +458,19 @@ export default function OfficersPage() {
                             <thead>
                               <tr>
                                 <th className="w-8 px-1 py-2.5" />
-                                <th className="px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-14">DN</th>
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Name</th>
+                                <th className="px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-16">DN</th>
+                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] min-w-[160px]">Name</th>
                                 {allTrainings.map((t) => (
                                   <th
                                     key={t.id}
-                                    className="px-2.5 py-2.5 text-left text-[11px] font-medium text-[#6b8299] whitespace-nowrap"
+                                    className="px-2.5 py-2.5 text-left text-[11px] font-medium text-[#6b8299] whitespace-nowrap w-[88px]"
                                   >
                                     {t.label}
                                   </th>
                                 ))}
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Status</th>
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Einstellung</th>
-                                <th className="px-2 py-2.5 w-6" />
+                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Status</th>
+                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[100px]">Einstellung</th>
+                                <th className="px-2 py-2.5 w-8" />
                               </tr>
                             </thead>
                             <tbody>
