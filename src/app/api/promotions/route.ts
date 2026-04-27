@@ -5,6 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { notifyDiscordBot } from '@/lib/discord/notifier'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -83,6 +84,16 @@ export async function POST(req: NextRequest) {
       oldValue: officer.rank.name,
       newValue: newRank.name,
       details: `${officer.firstName} ${officer.lastName}: ${officer.rank.name} → ${newRank.name}`,
+    })
+
+    const isPromotion = newRank.sortOrder > officer.rank.sortOrder
+    void notifyDiscordBot({
+      type: isPromotion ? 'OFFICER_PROMOTED' : 'OFFICER_DEMOTED',
+      officerId,
+      actorDisplayName: user.displayName,
+      oldRankName: officer.rank.name,
+      newRankName: newRank.name,
+      note: note || undefined,
     })
 
     return success(promotion, 201)

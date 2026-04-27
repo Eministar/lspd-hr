@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, type ReactNode, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import * as Popover from '@radix-ui/react-popover'
 import {
   DndContext,
   type DragEndEvent,
@@ -16,7 +17,7 @@ import {
   rectIntersection,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical } from 'lucide-react'
+import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -24,7 +25,19 @@ import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuth } from '@/context/auth-context'
-import { cn, formatDate, getStatusLabel, getStatusDot } from '@/lib/utils'
+import {
+  cn,
+  formatDate,
+  getStatusLabel,
+  getStatusDot,
+  getUnitLabel,
+  getUnitBadgeClass,
+  getFlagLabel,
+  getFlagColor,
+  getFlagRowClass,
+  compareBadgeNumbers,
+} from '@/lib/utils'
+import { OFFICER_UNIT_VALUES, OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
 
 interface Training {
   id: string
@@ -58,6 +71,8 @@ interface Officer {
   rankId: string
   discordId: string | null
   status: string
+  unit: string | null
+  flag: string | null
   notes: string | null
   hireDate: string
   lastOnline: string | null
@@ -87,18 +102,99 @@ function DropRankZone({ rankId, canHighlight, children }: { rankId: string; canH
   )
 }
 
+const FLAG_OPTIONS: Array<{ id: string | null; label: string; color: string }> = [
+  { id: null, label: 'Keine', color: 'transparent' },
+  { id: 'RED', label: 'Rot', color: '#ef4444' },
+  { id: 'ORANGE', label: 'Orange', color: '#f97316' },
+  { id: 'YELLOW', label: 'Gelb', color: '#facc15' },
+]
+
+function FlagButton({
+  value,
+  disabled,
+  onChange,
+  size = 'md',
+}: {
+  value: string | null
+  disabled: boolean
+  onChange: (v: string | null) => void
+  size?: 'md' | 'lg'
+}) {
+  const dim = size === 'lg' ? 'h-[24px] w-[24px]' : 'h-[18px] w-[18px]'
+  const trigger = (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={value ? `Markierung: ${getFlagLabel(value)}` : 'Markierung setzen'}
+      className={cn(
+        'inline-flex items-center justify-center rounded-full border transition-all',
+        dim,
+        disabled && 'opacity-50 cursor-not-allowed',
+        !disabled && 'hover:scale-110',
+        value ? 'border-transparent shadow-sm' : 'border-[#4a6585]/60 hover:border-[#d4af37]/60'
+      )}
+      style={{ backgroundColor: value ? getFlagColor(value) : 'transparent' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {!value && <Flag size={size === 'lg' ? 13 : 10} className="text-[#4a6585]" strokeWidth={1.75} />}
+    </button>
+  )
+
+  if (disabled) return trigger
+
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={6}
+          className="z-[200] glass-panel-elevated rounded-[10px] p-1.5 border border-[#234568]/90 shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-1">
+            {FLAG_OPTIONS.map((opt) => {
+              const active = (opt.id ?? null) === (value ?? null)
+              return (
+                <Popover.Close key={String(opt.id)} asChild>
+                  <button
+                    type="button"
+                    onClick={() => onChange(opt.id)}
+                    title={opt.label}
+                    className={cn(
+                      'h-[28px] w-[28px] rounded-full border flex items-center justify-center transition-all',
+                      active ? 'ring-2 ring-[#d4af37] ring-offset-1 ring-offset-[#0b1f3a] border-transparent' : 'border-[#234568]/70 hover:border-[#d4af37]/60'
+                    )}
+                    style={{ backgroundColor: opt.id ? opt.color : 'transparent' }}
+                  >
+                    {!opt.id && <Flag size={12} className="text-[#8ea4bd]" strokeWidth={1.75} />}
+                  </button>
+                </Popover.Close>
+              )
+            })}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
 function DraggableOfficerRow({
   officer,
   canDrag,
+  canEdit,
   allTrainings,
   rowIndex,
   onTrainToggle,
+  onFlagChange,
 }: {
   officer: Officer
   canDrag: boolean
+  canEdit: boolean
   allTrainings: Training[]
   rowIndex: number
   onTrainToggle: (id: string, trainingId: string, done: boolean) => void
+  onFlagChange: (id: string, flag: string | null) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `drag-${officer.id}`,
@@ -113,12 +209,21 @@ function DraggableOfficerRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'hover:bg-[#0f2340] transition-colors duration-100',
+        'transition-colors duration-100',
+        officer.flag ? getFlagRowClass(officer.flag) : 'hover:bg-[#0f2340]',
         isDragging && 'opacity-40 z-10',
         rowIndex > 0 && 'border-t border-[#18385f]'
       )}
     >
-      <td className="px-1.5 py-2 w-8 text-center">
+      <td className="px-0 py-0 w-[3px]" aria-hidden>
+        {officer.flag && (
+          <span
+            className="block h-full w-[3px]"
+            style={{ backgroundColor: getFlagColor(officer.flag) }}
+          />
+        )}
+      </td>
+      <td className="px-1 py-2 w-7 text-center">
         {canDrag ? (
           <button
             type="button"
@@ -174,16 +279,153 @@ function DraggableOfficerRow({
         )
       })}
       <td className="px-3 py-2.5 whitespace-nowrap">
+        {officer.unit ? (
+          <span
+            className={cn(
+              'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
+              getUnitBadgeClass(officer.unit)
+            )}
+          >
+            {getUnitLabel(officer.unit)}
+          </span>
+        ) : (
+          <span className="text-[11px] text-[#4a6585]">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
           <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
           <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
         </span>
       </td>
       <td className="px-3 py-2.5 text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</td>
-      <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
-        {officer.notes && <StickyNote size={12} className="text-[#4a6585]" strokeWidth={1.75} />}
+      <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex items-center gap-1.5">
+          <FlagButton
+            value={officer.flag}
+            disabled={!canEdit}
+            onChange={(v) => onFlagChange(officer.id, v)}
+          />
+          {officer.notes && <StickyNote size={12} className="text-[#4a6585]" strokeWidth={1.75} />}
+        </div>
       </td>
     </tr>
+  )
+}
+
+function MobileOfficerCard({
+  officer,
+  allTrainings,
+  canEdit,
+  onTrainToggle,
+  onFlagChange,
+}: {
+  officer: Officer
+  allTrainings: Training[]
+  canEdit: boolean
+  onTrainToggle: (id: string, trainingId: string, done: boolean) => void
+  onFlagChange: (id: string, flag: string | null) => void
+}) {
+  return (
+    <div
+      className={cn(
+        'relative rounded-[10px] border border-[#18385f]/40 px-3.5 py-3 transition-colors',
+        officer.flag ? getFlagRowClass(officer.flag) : 'bg-[#0a1a33]/60 hover:bg-[#0f2340]'
+      )}
+    >
+      {officer.flag && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-[10px]"
+          style={{ backgroundColor: getFlagColor(officer.flag) }}
+        />
+      )}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="font-mono text-[11px] text-[#b7c5d8] shrink-0">
+              {officer.badgeNumber}
+            </span>
+            {officer.unit && (
+              <span
+                className={cn(
+                  'inline-flex items-center px-1.5 py-[1px] rounded-full text-[9.5px] font-medium border',
+                  getUnitBadgeClass(officer.unit)
+                )}
+              >
+                {getUnitLabel(officer.unit)}
+              </span>
+            )}
+          </div>
+          <Link
+            href={`/officers/${officer.id}`}
+            className="block text-[14px] font-semibold text-[#eee] hover:text-[#d4af37] transition-colors truncate"
+          >
+            {officer.firstName} {officer.lastName}
+          </Link>
+          {officer.discordId && (
+            <span className="block text-[10.5px] text-[#4a6585] font-mono truncate">
+              {officer.discordId}
+            </span>
+          )}
+        </div>
+        <div className="shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+          <FlagButton
+            value={officer.flag}
+            disabled={!canEdit}
+            onChange={(v) => onFlagChange(officer.id, v)}
+            size="lg"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-2.5">
+        <span className="inline-flex items-center gap-1.5">
+          <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
+          <span className="text-[11.5px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
+        </span>
+        <span className="text-[11px] text-[#4a6585]">·</span>
+        <span className="text-[11.5px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
+        {officer.notes && (
+          <>
+            <span className="text-[11px] text-[#4a6585]">·</span>
+            <StickyNote size={11} className="text-[#4a6585]" strokeWidth={1.75} />
+          </>
+        )}
+      </div>
+
+      {allTrainings.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {allTrainings.map((t) => {
+            const ot = officer.trainings.find((x) => x.trainingId === t.id)
+            const completed = ot?.completed || false
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onTrainToggle(officer.id, t.id, !completed)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[10.5px] font-medium border transition-colors',
+                  completed
+                    ? 'bg-[#d4af37]/15 border-[#d4af37]/40 text-[#e6d27a]'
+                    : 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299] hover:border-[#234568]'
+                )}
+              >
+                <span
+                  className={cn(
+                    'h-[10px] w-[10px] rounded-[3px] flex items-center justify-center',
+                    completed ? 'bg-[#d4af37]' : 'bg-[#18385f]'
+                  )}
+                >
+                  {completed && <Check size={7} className="text-[#0b1f3a]" strokeWidth={3} />}
+                </span>
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -192,11 +434,14 @@ export default function OfficersPage() {
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
   const { addToast } = useToast()
   const { user } = useAuth()
-  const canMove = user?.role === 'ADMIN' || user?.role === 'HR'
+  const canEdit = user?.role === 'ADMIN' || user?.role === 'HR'
+  const canMove = canEdit
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [rankFilter, setRankFilter] = useState('')
+  const [unitFilter, setUnitFilter] = useState('')
+  const [flagFilter, setFlagFilter] = useState('')
   const [collapsedRanks, setCollapsedRanks] = useState<Set<string>>(new Set())
   const [movePending, setMovePending] = useState(false)
 
@@ -219,9 +464,15 @@ export default function OfficersPage() {
       }
       if (statusFilter && o.status !== statusFilter) return false
       if (rankFilter && o.rankId !== rankFilter) return false
+      if (unitFilter) {
+        if (unitFilter === '__none__' ? o.unit != null : o.unit !== unitFilter) return false
+      }
+      if (flagFilter) {
+        if (flagFilter === '__any__' ? !o.flag : o.flag !== flagFilter) return false
+      }
       return true
     })
-  }, [officers, search, statusFilter, rankFilter])
+  }, [officers, search, statusFilter, rankFilter, unitFilter, flagFilter])
 
   const groupedByRank = useMemo(() => {
     const groups: Map<string, { rank: Rank; officers: Officer[] }> = new Map()
@@ -232,7 +483,13 @@ export default function OfficersPage() {
       }
       groups.get(key)!.officers.push(officer)
     }
-    return Array.from(groups.values()).sort((a, b) => a.rank.sortOrder - b.rank.sortOrder)
+    const result = Array.from(groups.values()).sort(
+      (a, b) => a.rank.sortOrder - b.rank.sortOrder
+    )
+    for (const group of result) {
+      group.officers.sort((a, b) => compareBadgeNumbers(a.badgeNumber, b.badgeNumber))
+    }
+    return result
   }, [filteredOfficers])
 
   const allTrainings = useMemo(() => {
@@ -300,6 +557,36 @@ export default function OfficersPage() {
     [officers, setData, addToast]
   )
 
+  const handleFlagChange = useCallback(
+    async (officerId: string, flag: string | null) => {
+      const previous = officers?.find((x) => x.id === officerId)?.flag ?? null
+      setData((prev) => {
+        if (!prev) return prev
+        return prev.map((row) => (row.id === officerId ? { ...row, flag } : row))
+      })
+      try {
+        const res = await fetch(`/api/officers/${officerId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flag }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Fehler')
+      } catch (e) {
+        setData((prev) => {
+          if (!prev) return prev
+          return prev.map((row) => (row.id === officerId ? { ...row, flag: previous } : row))
+        })
+        addToast({
+          type: 'error',
+          title: 'Markierung konnte nicht gespeichert werden',
+          message: e instanceof Error ? e.message : '',
+        })
+      }
+    },
+    [officers, setData, addToast]
+  )
+
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event
@@ -342,9 +629,10 @@ export default function OfficersPage() {
   if (loading) return <PageLoader />
 
   const filterClass =
-    'h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
+    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
   const totalActive = officers?.filter((o) => o.status === 'ACTIVE').length || 0
   const totalAway = officers?.filter((o) => o.status === 'AWAY').length || 0
+  const totalFlagged = officers?.filter((o) => o.flag).length || 0
 
   return (
     <div>
@@ -352,12 +640,12 @@ export default function OfficersPage() {
         title="Officers"
         description={
           canMove
-            ? `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet · Ziehen: Rang wechseln`
-            : `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet`
+            ? `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet${totalFlagged ? ` · ${totalFlagged} markiert` : ''} · Ziehen: Rang wechseln`
+            : `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet${totalFlagged ? ` · ${totalFlagged} markiert` : ''}`
         }
         action={
-          <Link href="/officers/new">
-            <Button size="sm" disabled={movePending}>
+          <Link href="/officers/new" className="block sm:inline-block">
+            <Button size="sm" disabled={movePending} className="w-full sm:w-auto">
               <Plus size={14} strokeWidth={2} />
               Hinzufügen
             </Button>
@@ -365,8 +653,8 @@ export default function OfficersPage() {
         }
       />
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-6">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-2 mb-5 sm:mb-6">
+        <div className="relative">
           <Search
             size={15}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
@@ -380,30 +668,52 @@ export default function OfficersPage() {
           />
         </div>
 
-        <Select
-          size="sm"
-          className="sm:flex-1 sm:min-w-[160px]"
-          value={statusFilter}
-          onValueChange={setStatusFilter}
-          options={[
-            { value: '', label: 'Alle Status' },
-            { value: 'ACTIVE', label: 'Aktiv' },
-            { value: 'AWAY', label: 'Abgemeldet' },
-            { value: 'INACTIVE', label: 'Inaktiv' },
-            { value: 'TERMINATED', label: 'Gekündigt' },
-          ]}
-        />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Select
+            size="sm"
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+            options={[
+              { value: '', label: 'Alle Status' },
+              { value: 'ACTIVE', label: 'Aktiv' },
+              { value: 'AWAY', label: 'Abgemeldet' },
+              { value: 'INACTIVE', label: 'Inaktiv' },
+              { value: 'TERMINATED', label: 'Gekündigt' },
+            ]}
+          />
 
-        <Select
-          size="sm"
-          className="sm:flex-1 sm:min-w-[200px]"
-          value={rankFilter}
-          onValueChange={setRankFilter}
-          options={[
-            { value: '', label: 'Alle Ränge' },
-            ...(ranks?.map((r) => ({ value: r.id, label: r.name })) || []),
-          ]}
-        />
+          <Select
+            size="sm"
+            value={rankFilter}
+            onValueChange={setRankFilter}
+            options={[
+              { value: '', label: 'Alle Ränge' },
+              ...(ranks?.map((r) => ({ value: r.id, label: r.name })) || []),
+            ]}
+          />
+
+          <Select
+            size="sm"
+            value={unitFilter}
+            onValueChange={setUnitFilter}
+            options={[
+              { value: '', label: 'Alle Units' },
+              { value: '__none__', label: 'Ohne Unit' },
+              ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+            ]}
+          />
+
+          <Select
+            size="sm"
+            value={flagFilter}
+            onValueChange={setFlagFilter}
+            options={[
+              { value: '', label: 'Alle Markierungen' },
+              { value: '__any__', label: 'Markiert' },
+              ...OFFICER_FLAG_VALUES.map((f) => ({ value: f, label: getFlagLabel(f) })),
+            ]}
+          />
+        </div>
       </div>
 
       <DndContext
@@ -427,18 +737,18 @@ export default function OfficersPage() {
                   <button
                     type="button"
                     onClick={() => toggleRankCollapse(rank.id)}
-                    className="w-full flex items-center gap-2.5 px-4 py-2 rounded-[8px] hover:bg-[#0f2340] transition-colors group"
+                    className="w-full flex items-center gap-2.5 px-3 sm:px-4 py-2 rounded-[8px] hover:bg-[#0f2340] transition-colors group"
                   >
                     <ChevronDown
                       size={14}
                       strokeWidth={2}
-                      className={cn('text-[#4a6585] transition-transform duration-200', isCollapsed && '-rotate-90')}
+                      className={cn('text-[#4a6585] transition-transform duration-200 shrink-0', isCollapsed && '-rotate-90')}
                     />
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: rank.color }} />
-                    <span className="text-[13px] font-semibold text-[#eee]">{rank.name}</span>
-                    <span className="text-[12px] text-[#4a6585] font-normal">{groupOfficers.length}</span>
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: rank.color }} />
+                    <span className="text-[13px] font-semibold text-[#eee] truncate">{rank.name}</span>
+                    <span className="text-[12px] text-[#4a6585] font-normal shrink-0">{groupOfficers.length}</span>
                     {rank.badgeMin != null && rank.badgeMax != null && (
-                      <span className="text-[10px] text-[#4a6585] ml-auto font-mono">
+                      <span className="hidden sm:inline text-[10px] text-[#4a6585] ml-auto font-mono">
                         DN {rank.badgeMin}–{rank.badgeMax}
                       </span>
                     )}
@@ -453,11 +763,13 @@ export default function OfficersPage() {
                         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
+                        {/* Desktop / tablet: table view */}
+                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
                           <table className="w-full table-fixed">
                             <thead>
                               <tr>
-                                <th className="w-8 px-1 py-2.5" />
+                                <th className="w-[3px] p-0" />
+                                <th className="w-7 px-1 py-2.5" />
                                 <th className="px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-16">DN</th>
                                 <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] min-w-[160px]">Name</th>
                                 {allTrainings.map((t) => (
@@ -468,9 +780,12 @@ export default function OfficersPage() {
                                     {t.label}
                                   </th>
                                 ))}
+                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Unit</th>
                                 <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Status</th>
                                 <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[100px]">Einstellung</th>
-                                <th className="px-2 py-2.5 w-8" />
+                                <th className="px-2 py-2.5 w-[56px] text-center text-[11px] font-medium text-[#6b8299]">
+                                  <Flag size={11} className="inline" strokeWidth={1.75} />
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -479,13 +794,29 @@ export default function OfficersPage() {
                                   key={officer.id}
                                   officer={officer}
                                   canDrag={canMove}
+                                  canEdit={canEdit}
                                   allTrainings={allTrainings}
                                   rowIndex={i}
                                   onTrainToggle={handleTrainingToggle}
+                                  onFlagChange={handleFlagChange}
                                 />
                               ))}
                             </tbody>
                           </table>
+                        </div>
+
+                        {/* Mobile / tablet: card view */}
+                        <div className="lg:hidden mt-1 mb-2 space-y-1.5">
+                          {groupOfficers.map((officer) => (
+                            <MobileOfficerCard
+                              key={officer.id}
+                              officer={officer}
+                              allTrainings={allTrainings}
+                              canEdit={canEdit}
+                              onTrainToggle={handleTrainingToggle}
+                              onFlagChange={handleFlagChange}
+                            />
+                          ))}
                         </div>
                       </motion.div>
                     )}

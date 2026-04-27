@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
     const bMax = body.badgeMax != null && body.badgeMax !== '' ? parseInt(String(body.badgeMax), 10) : null
     if (bMin != null && bMax != null && bMin > bMax) return error('Dienstnummer-Minimum darf nicht größer als Maximum sein')
     
+    const discordRoleId =
+      typeof body.discordRoleId === 'string' && body.discordRoleId.trim() !== ''
+        ? body.discordRoleId.trim()
+        : null
+
     const rank = await prisma.rank.create({
       data: {
         name: body.name,
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
         color: body.color ?? '#3B82F6',
         badgeMin: bMin,
         badgeMax: bMax,
+        discordRoleId,
       },
     })
 

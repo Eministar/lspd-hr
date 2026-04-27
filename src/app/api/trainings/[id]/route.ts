@@ -9,9 +9,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
 
+    const discordRoleId =
+      body.discordRoleId === undefined
+        ? undefined
+        : body.discordRoleId === null || (typeof body.discordRoleId === 'string' && body.discordRoleId.trim() === '')
+          ? null
+          : String(body.discordRoleId).trim()
+
     const training = await prisma.training.update({
       where: { id },
-      data: { key: body.key, label: body.label, sortOrder: body.sortOrder },
+      data: { key: body.key, label: body.label, sortOrder: body.sortOrder, discordRoleId },
     })
 
     return success(training)

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { notifyDiscordBot } from '@/lib/discord/notifier'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -50,6 +51,13 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId,
       details: `${officer.firstName} ${officer.lastName} gekündigt. Grund: ${reason}`,
+    })
+
+    void notifyDiscordBot({
+      type: 'OFFICER_TERMINATED',
+      officerId,
+      actorDisplayName: user.displayName,
+      reason,
     })
 
     return success(termination, 201)

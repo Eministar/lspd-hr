@@ -39,6 +39,20 @@ enum TaskPriority {
   URGENT
 }
 
+enum OfficerUnit {
+  HR_LEITUNG
+  HR_TRAINEE
+  HR_OFFICER
+  ACADEMY
+  SRU
+}
+
+enum OfficerFlag {
+  RED
+  ORANGE
+  YELLOW
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -65,6 +79,8 @@ model Rank {
   /// Inklusiver Zahlenbereich für Dienstnummern (nur Ziffern / Prefix+Ziffern). Null = kein autom. Bereich.
   badgeMin  Int?
   badgeMax  Int?
+  /// Discord Role ID, die automatisch beim Setzen dieses Rangs vergeben wird.
+  discordRoleId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -80,6 +96,8 @@ model Training {
   key       String   @unique
   label     String
   sortOrder Int      @default(0)
+  /// Discord Role ID, die nach Abschluss dieser Ausbildung automatisch vergeben wird.
+  discordRoleId String?
   createdAt DateTime @default(now())
 
   officerTrainings OfficerTraining[]
@@ -94,6 +112,8 @@ model Officer {
   rank            Rank          @relation(fields: [rankId], references: [id])
   discordId       String?
   status          OfficerStatus @default(ACTIVE)
+  unit            OfficerUnit?
+  flag            OfficerFlag?
   notes           String?
   hireDate        DateTime      @default(now())
   lastOnline      DateTime?

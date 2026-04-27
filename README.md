@@ -83,6 +83,7 @@
 | 📜 | **Protokoll** | Audit-Log |
 | 🎨 | **UI** | Dark-Mode, Glaspanele, **Gold-Akzente** · responsive |
 | 🔐 | **Auth** | JWT, Rollen (z. B. Admin, HR) |
+| 🤖 | **Discord-Bot** | Slash-Commands, Embeds, Buttons, Auto-Rollen-Sync für Ränge & Ausbildungen → siehe `bot/` |
 
 ---
 
@@ -148,6 +149,37 @@ Dann: **http://localhost:3000** — Login nach Seed: `admin` / `admin123`
 | `npm run db:push` | Schema an die DB |
 | `npm run db:seed` | Admin, Ränge, Ausbildungen |
 | `npm run db:studio` | Prisma Studio |
+
+---
+
+## 🤖 · Discord-Bot
+
+Der Bot lebt im Unterordner [`bot/`](./bot) und wird **separat** gestartet.
+
+```bash
+cd bot
+cp .env.example .env       # Token, Guild ID, BACKEND_URL, BACKEND_API_KEY ...
+npm install
+npm run register           # Slash-Commands in der Guild registrieren
+npm run dev                # Bot starten (Watch-Mode)
+```
+
+In der HR-Web-UI: **Admin → Discord-Bot** → Bot API Key, Bot URL, Guild ID
+und Channels eintragen. Anschließend für jeden Rang / jede Ausbildung
+die Discord Rollen-ID hinterlegen (Admin → Ränge / Ausbildungen).
+
+Der Bot bietet u. a.:
+
+* **Slash-Commands** — `/officer info|search|sync`, `/training list|set`,
+  `/rank list`, `/sync-all`, `/help`
+* **Auto-Rollen-Sync** bei Beförderung, Degradierung, Ausbildungs-Änderung,
+  Einstellung und Kündigung — entfernt nur Rollen, die durch das HR-System
+  verwaltet werden, alles andere bleibt unangetastet.
+* **Embeds + Buttons** im Officer-Profil (Rollen syncen, Ausbildungen
+  togglen, im Web öffnen).
+* **HTTP-Endpoint** `/events` — die HR-App schickt Events automatisch dorthin.
+
+Details: [`bot/README.md`](./bot/README.md).
 
 ---
 

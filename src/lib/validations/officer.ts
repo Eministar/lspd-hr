@@ -1,5 +1,19 @@
 import { z } from 'zod'
 
+export const OFFICER_UNIT_VALUES = [
+  'HR_LEITUNG',
+  'HR_TRAINEE',
+  'HR_OFFICER',
+  'ACADEMY',
+  'SRU',
+] as const
+
+export type OfficerUnitValue = (typeof OFFICER_UNIT_VALUES)[number]
+
+export const OFFICER_FLAG_VALUES = ['RED', 'ORANGE', 'YELLOW'] as const
+
+export type OfficerFlagValue = (typeof OFFICER_FLAG_VALUES)[number]
+
 export const createOfficerSchema = z.object({
   badgeNumber: z.string().min(1, 'Dienstnummer ist erforderlich'),
   firstName: z.string().min(1, 'Vorname ist erforderlich'),
@@ -9,6 +23,8 @@ export const createOfficerSchema = z.object({
   notes: z.string().optional().nullable(),
   hireDate: z.string().optional(),
   status: z.enum(['ACTIVE', 'AWAY', 'INACTIVE', 'TERMINATED']).optional(),
+  unit: z.enum(OFFICER_UNIT_VALUES).nullable().optional(),
+  flag: z.enum(OFFICER_FLAG_VALUES).nullable().optional(),
 })
 
 export const updateOfficerSchema = createOfficerSchema.partial()

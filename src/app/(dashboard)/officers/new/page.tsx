@@ -13,6 +13,8 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { OFFICER_UNIT_VALUES } from '@/lib/validations/officer'
+import { getUnitLabel } from '@/lib/utils'
 
 interface Rank {
   id: string
@@ -33,15 +35,17 @@ export default function NewOfficerPage() {
     rankId: '',
     discordId: '',
     notes: '',
+    unit: '',
     hireDate: new Date().toISOString().split('T')[0],
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const payload = { ...form, unit: form.unit ? form.unit : null }
       await execute('/api/officers', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       addToast({ type: 'success', title: 'Officer erstellt' })
       router.push('/officers')
@@ -113,14 +117,26 @@ export default function NewOfficerPage() {
               value={form.hireDate}
               onChange={(v) => update('hireDate', v)}
             />
-            <Input
-              id="discordId"
-              label="Discord ID"
-              value={form.discordId}
-              onChange={(e) => update('discordId', e.target.value)}
-              placeholder="Optional"
+            <Select
+              id="unit"
+              label="Unit"
+              value={form.unit}
+              onValueChange={(v) => update('unit', v)}
+              placeholder="Keine Unit"
+              options={[
+                { value: '', label: 'Keine Unit' },
+                ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+              ]}
             />
           </div>
+
+          <Input
+            id="discordId"
+            label="Discord ID"
+            value={form.discordId}
+            onChange={(e) => update('discordId', e.target.value)}
+            placeholder="Optional"
+          />
 
           <Textarea
             id="notes"

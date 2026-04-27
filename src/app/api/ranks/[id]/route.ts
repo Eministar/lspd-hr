@@ -23,6 +23,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return error('Dienstnummer-Minimum darf nicht größer als Maximum sein')
     }
 
+    const discordRoleId =
+      body.discordRoleId === undefined
+        ? undefined
+        : body.discordRoleId === null || (typeof body.discordRoleId === 'string' && body.discordRoleId.trim() === '')
+          ? null
+          : String(body.discordRoleId).trim()
+
     const rank = await prisma.rank.update({
       where: { id },
       data: {
@@ -31,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         color: body.color,
         badgeMin: bMin,
         badgeMax: bMax,
+        discordRoleId,
       },
     })
 

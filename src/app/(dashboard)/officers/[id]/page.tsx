@@ -16,7 +16,18 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
-import { cn, formatDate, formatDateTime, getStatusLabel, getStatusDot } from '@/lib/utils'
+import {
+  cn,
+  formatDate,
+  formatDateTime,
+  getStatusLabel,
+  getStatusDot,
+  getUnitLabel,
+  getUnitBadgeClass,
+  getFlagLabel,
+  getFlagColor,
+} from '@/lib/utils'
+import { OFFICER_UNIT_VALUES } from '@/lib/validations/officer'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 
@@ -50,6 +61,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       discordId: officer.discordId || '',
       notes: officer.notes || '',
       status: officer.status,
+      unit: officer.unit ?? '',
+      flag: officer.flag ?? '',
       hireDate: officer.hireDate?.split('T')[0] || '',
     })
     setEditing(true)
@@ -57,9 +70,27 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   const handleSave = async () => {
     try {
-      await execute(`/api/officers/${id}`, { method: 'PATCH', body: JSON.stringify(form) })
+      const payload = {
+        ...form,
+        unit: form.unit ? form.unit : null,
+        flag: form.flag ? form.flag : null,
+      }
+      await execute(`/api/officers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
       addToast({ type: 'success', title: 'Officer aktualisiert' })
       setEditing(false)
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleFlagChange = async (next: string | null) => {
+    try {
+      await execute(`/api/officers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ flag: next }),
+      })
+      addToast({ type: 'success', title: next ? `Markierung: ${getFlagLabel(next)}` : 'Markierung entfernt' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -206,15 +237,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Persönliche Daten</h3>
             {editing ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Vorname" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                   <Input label="Nachname" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Dienstnummer" value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
                   <Select label="Rang" value={form.rankId} onChange={(e) => setForm({ ...form, rankId: e.target.value })} options={ranks?.map(r => ({ value: r.id, label: r.name })) || []} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={[
                     { value: 'ACTIVE', label: 'Aktiv' },
                     { value: 'AWAY', label: 'Abgemeldet' },
@@ -227,11 +258,27 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     onChange={(v) => setForm({ ...form, hireDate: v })}
                   />
                 </div>
-                <Input label="Discord ID" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Select
+                    label="Unit"
+                    value={form.unit ?? ''}
+                    onValueChange={(v) => setForm({ ...form, unit: v })}
+                    placeholder="Keine Unit"
+                    options={[
+                      { value: '', label: 'Keine Unit' },
+                      ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+                    ]}
+                  />
+                  <Input label="Discord ID" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
+                  <FlagPicker value={form.flag ?? null} onChange={(v) => setForm({ ...form, flag: v ?? '' })} />
+                </div>
                 <Textarea label="Notizen" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-5 gap-x-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-6">
                 <InfoRow label="Dienstnummer" value={officer.badgeNumber} mono />
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
@@ -246,7 +293,34 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
+                <InfoRow label="Unit">
+                  {officer.unit ? (
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-2 py-[3px] rounded-full text-[11.5px] font-medium border',
+                        getUnitBadgeClass(officer.unit)
+                      )}
+                    >
+                      {getUnitLabel(officer.unit)}
+                    </span>
+                  ) : (
+                    <span className="text-[13.5px] text-[#4a6585]">—</span>
+                  )}
+                </InfoRow>
                 <InfoRow label="Discord ID" value={officer.discordId || '—'} mono />
+                <InfoRow label="Markierung">
+                  {officer.flag ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-[10px] w-[10px] rounded-full"
+                        style={{ backgroundColor: getFlagColor(officer.flag) }}
+                      />
+                      <span className="text-[13.5px] text-[#eee]">{getFlagLabel(officer.flag)}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[13.5px] text-[#4a6585]">—</span>
+                  )}
+                </InfoRow>
                 <InfoRow label="Zuletzt Online" value={formatDateTime(officer.lastOnline)} />
                 {officer.notes && (
                   <div className="col-span-full">
@@ -327,6 +401,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           {!editing && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
               className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Markierung</h3>
+              <div className="mb-4">
+                <FlagPicker value={officer.flag ?? null} onChange={handleFlagChange} />
+              </div>
+              <div className="gold-line my-3" />
               <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Aktionen</h3>
               <div className="space-y-1.5">
                 {officer.status !== 'TERMINATED' && higherRanks.length > 0 && (
@@ -470,6 +549,47 @@ function InfoRow({ label, value, mono, children }: { label: string; value?: stri
     <div>
       <p className="text-[11.5px] text-[#999] mb-1">{label}</p>
       {children || <p className={cn('text-[13.5px] text-[#eee]', mono && 'font-mono')}>{value || '—'}</p>}
+    </div>
+  )
+}
+
+function FlagPicker({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (v: string | null) => void
+}) {
+  const buttons: Array<{ id: string | null; label: string; ring: string; bg: string }> = [
+    { id: null, label: 'Keine', ring: 'ring-[#234568]', bg: 'bg-[#0a1a33]' },
+    { id: 'RED', label: 'Rot', ring: 'ring-[#ef4444]/70', bg: 'bg-[#ef4444]' },
+    { id: 'ORANGE', label: 'Orange', ring: 'ring-[#f97316]/70', bg: 'bg-[#f97316]' },
+    { id: 'YELLOW', label: 'Gelb', ring: 'ring-[#facc15]/70', bg: 'bg-[#facc15]' },
+  ]
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {buttons.map((b) => {
+        const active = value === b.id
+        return (
+          <button
+            key={String(b.id)}
+            type="button"
+            onClick={() => onChange(b.id)}
+            className={cn(
+              'inline-flex items-center gap-2 h-[34px] px-3 rounded-[8px] text-[12.5px] font-medium border transition-all',
+              active ? `${b.ring} ring-2 ring-inset border-transparent text-white` : 'border-[#18385f]/60 text-[#8ea4bd] hover:text-white hover:border-[#234568]'
+            )}
+          >
+            <span
+              className={cn(
+                'h-[12px] w-[12px] rounded-full border',
+                b.id ? `${b.bg} border-transparent` : 'bg-transparent border-[#4a6585]'
+              )}
+            />
+            {b.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

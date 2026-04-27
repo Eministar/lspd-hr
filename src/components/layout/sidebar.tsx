@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, ExternalLink,
+  Menu, X, ExternalLink, Bot,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -47,6 +47,7 @@ const adminNav: NavItem[] = [
   { name: 'Ränge', href: '/admin/ranks', icon: Shield },
   { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog },
+  { name: 'Discord-Bot', href: '/admin/discord', icon: Bot },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings },
 ]
 
@@ -182,12 +183,21 @@ export function Sidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2.5 rounded-xl sidebar-gradient border border-[#d4af37]/25 shadow-lg"
-      >
-        <Menu size={18} className="text-[#d4af37]" />
-      </button>
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-12 flex items-center justify-between px-3 sidebar-gradient border-b border-[#d4af37]/15 backdrop-blur-md">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-[#d4af37] hover:bg-[#0d2444] transition-colors"
+          aria-label="Menü öffnen"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="flex items-center gap-2">
+          <Image src="/shield.webp" alt="LSPD" width={22} height={22} className="rounded-full" priority />
+          <span className="text-[13px] font-semibold text-white tracking-[-0.01em]">LSPD HR</span>
+        </div>
+        <div className="w-9" aria-hidden />
+      </div>
 
       <aside className="hidden lg:flex lg:flex-col lg:w-[244px] lg:min-h-screen sidebar-gradient border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
         <NavContent pathname={pathname} onNavigate={closeMobile} user={user} logout={logout} />

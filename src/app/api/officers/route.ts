@@ -4,6 +4,7 @@ import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
+import { notifyDiscordBot } from '@/lib/discord/notifier'
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
       rank: true,
       trainings: { include: { training: true } },
     },
-    orderBy: [{ rank: { sortOrder: 'asc' } }, { lastName: 'asc' }],
+    orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
   })
 
   return success(officers)
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
         notes: parsed.data.notes || null,
         hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate) : new Date(),
         status: parsed.data.status || 'ACTIVE',
+        unit: parsed.data.unit ?? null,
+        flag: parsed.data.flag ?? null,
       },
       include: { rank: true },
     })
@@ -79,6 +82,13 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId: officer.id,
       newValue: `${officer.firstName} ${officer.lastName} (${officer.badgeNumber})`,
+    })
+
+    void notifyDiscordBot({
+      type: 'OFFICER_HIRED',
+      officerId: officer.id,
+      actorDisplayName: user.displayName,
+      newRankName: officer.rank.name,
     })
 
     return success(officer, 201)

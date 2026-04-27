@@ -4,6 +4,7 @@ import { requireAuth, getCurrentUser } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
+import { notifyDiscordBot } from '@/lib/discord/notifier'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -65,6 +66,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) changes.push(`Dienstnummer: ${existing.badgeNumber} → ${parsed.data.badgeNumber}`)
     if (parsed.data.status && parsed.data.status !== existing.status) changes.push(`Status: ${existing.status} → ${parsed.data.status}`)
     if (parsed.data.rankId && parsed.data.rankId !== existing.rankId) changes.push(`Rang geändert`)
+    if ('unit' in parsed.data && parsed.data.unit !== existing.unit) {
+      changes.push(`Unit: ${existing.unit ?? '—'} → ${parsed.data.unit ?? '—'}`)
+    }
+    if ('flag' in parsed.data && parsed.data.flag !== existing.flag) {
+      changes.push(`Markierung: ${existing.flag ?? '—'} → ${parsed.data.flag ?? '—'}`)
+    }
 
     if (changes.length > 0) {
       await createAuditLog({
@@ -73,6 +80,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         officerId: id,
         details: changes.join('; '),
       })
+
+      // Trigger a Discord role re-sync whenever rank or status changes (and on
+      // discordId assignment so newly linked officers get their roles).
+      const triggersSync =
+        (parsed.data.rankId && parsed.data.rankId !== existing.rankId) ||
+        (parsed.data.status && parsed.data.status !== existing.status) ||
+        ('discordId' in parsed.data && parsed.data.discordId !== existing.discordId)
+      if (triggersSync) {
+        void notifyDiscordBot({
+          type: 'OFFICER_UPDATED',
+          officerId: id,
+          actorDisplayName: user.displayName,
+        })
+      }
     }
 
     return success(updated)
