@@ -1,10 +1,6 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals.js";
-import nextTs from "eslint-config-next/typescript.js";
-
-function toArray(configs) {
-  return Array.isArray(configs) ? configs : [configs];
-}
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
 function withLegacyContext(rule) {
   if (!rule || typeof rule.create !== "function") return rule;
@@ -22,7 +18,7 @@ function withLegacyContext(rule) {
 }
 
 function patchReactPlugin(configs) {
-  return toArray(configs).map((config) => {
+  return configs.map((config) => {
     const reactPlugin = config.plugins?.react;
     if (!reactPlugin?.rules) return config;
 
@@ -33,10 +29,7 @@ function patchReactPlugin(configs) {
         react: {
           ...reactPlugin,
           rules: Object.fromEntries(
-            Object.entries(reactPlugin.rules).map(([name, rule]) => [
-              name,
-              withLegacyContext(rule),
-            ])
+            Object.entries(reactPlugin.rules).map(([name, rule]) => [name, withLegacyContext(rule)])
           ),
         },
       },
@@ -46,9 +39,10 @@ function patchReactPlugin(configs) {
 
 const eslintConfig = defineConfig([
   ...patchReactPlugin(nextVitals),
-  ...toArray(nextTs),
-
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
   globalIgnores([
+    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

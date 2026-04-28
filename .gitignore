@@ -47,7 +47,11 @@ next-env.d.ts
 *.db
 *.db-journal
 
-# Plesk / IIS live files
-App_Data/
-public/App_Data/
+# local debug / comparison files
+critical-diff.txt
+update-diff.txt
+dsadasdasda
+
+# Plesk local ini files
 .user.ini
+public/.user.ini

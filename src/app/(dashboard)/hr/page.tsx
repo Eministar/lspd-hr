@@ -1,8 +1,14 @@
-﻿import PageClient from './PageClient'
+'use client'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { TaskBoard } from '@/components/tasks/task-board'
 
-export default function Page() {
-  return <PageClient />
+export default function HrDepartmentPage() {
+  return (
+    <TaskBoard
+      module="HR"
+      title="HR Abteilung"
+      description="Aufgabenlisten der Personalabteilung – Onboarding, Gespräche, Audits und mehr."
+      accentLabel="Personalabteilung"
+    />
+  )
 }

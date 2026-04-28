@@ -7,9 +7,9 @@
   },
   "scripts": {
     "dev": "prisma db push && prisma generate && next dev",
-    "build": "cd /d C:\\Inetpub\\vhosts\\nerovlspd.de\\httpdocs && next build",
+    "build": "next build",
     "prebuild": "prisma generate && prisma db push",
-    "start": "next start",
+    "start": "prisma db push --accept-data-loss && tsx prisma/seed.ts && next start",
     "lint": "eslint",
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
@@ -39,27 +39,27 @@
     "framer-motion": "^12.38.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.9.0",
-    "next": "15.5.7",
+    "next": "16.2.4",
     "node-cron": "^4.2.1",
     "prisma": "^7.8.0",
-   	"react": "19.1.0",
+    "react": "19.2.5",
     "react-day-picker": "^9.14.0",
-    "react-dom": "19.1.0",
+    "react-dom": "19.2.5",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22",
+    "@types/node": "^25",
     "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "15.5.7",
+    "eslint": "^10.2.1",
+    "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }
