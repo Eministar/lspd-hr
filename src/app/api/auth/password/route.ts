@@ -1,11 +1,18 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser, hashPassword, verifyPassword } from '@/lib/auth'
+import { hashPassword, requirePermission, verifyPassword } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function PATCH(req: NextRequest) {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) return unauthorized()
+  let currentUser
+  try {
+    currentUser = await requirePermission('password:change')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const body = await req.json()
   const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : ''

@@ -21,6 +21,7 @@ import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
@@ -298,9 +299,11 @@ function DraggableOfficerRow({
             <button
               type="button"
               onClick={() => onTrainToggle(officer.id, t.id, !completed)}
+              disabled={!canEdit}
               className={cn(
                 'mx-auto h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
-                completed ? 'bg-[#d4af37]' : 'bg-[#18385f] hover:bg-[#1e3a5f]'
+                completed ? 'bg-[#d4af37]' : 'bg-[#18385f]',
+                canEdit ? 'hover:bg-[#1e3a5f]' : 'cursor-not-allowed opacity-70'
               )}
             >
               {completed && <Check size={11} className="text-[#0b1f3a]" strokeWidth={3} />}
@@ -411,11 +414,13 @@ function MobileOfficerCard({
                 key={t.id}
                 type="button"
                 onClick={() => onTrainToggle(officer.id, t.id, !completed)}
+                disabled={!canEdit}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[10.5px] font-medium border transition-colors',
                   completed
                     ? 'bg-[#d4af37]/15 border-[#d4af37]/40 text-[#e6d27a]'
-                    : 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299] hover:border-[#234568]'
+                    : 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299]',
+                  canEdit ? 'hover:border-[#234568]' : 'cursor-not-allowed opacity-70'
                 )}
               >
                 <span
@@ -437,13 +442,14 @@ function MobileOfficerCard({
 }
 
 export default function OfficersPage() {
-  const { data: officers, loading, refetch, setData } = useFetch<Officer[]>('/api/officers')
-  const { data: ranks } = useFetch<Rank[]>('/api/ranks')
-  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { addToast } = useToast()
   const { user } = useAuth()
+  const canView = hasPermission(user, 'officers:view')
   const canEdit = hasPermission(user, 'officers:write')
   const canMove = hasPermission(user, 'rank-changes:manage')
+  const { data: officers, loading, refetch, setData } = useFetch<Officer[]>(canView ? '/api/officers' : null)
+  const { data: ranks } = useFetch<Rank[]>(canView ? '/api/ranks' : null)
+  const { data: units } = useFetch<Unit[]>(canView ? '/api/units?active=true' : null)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -636,6 +642,7 @@ export default function OfficersPage() {
     [officers, setData, addToast, refetch]
   )
 
+  if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   const filterClass =
@@ -653,14 +660,14 @@ export default function OfficersPage() {
             ? `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet${totalFlagged ? ` · ${totalFlagged} markiert` : ''} · Ziehen: Rang wechseln`
             : `${filteredOfficers.length} Mitarbeiter · ${totalActive} aktiv · ${totalAway} abgemeldet${totalFlagged ? ` · ${totalFlagged} markiert` : ''}`
         }
-        action={
+        action={canEdit ? (
           <Link href="/officers/new" className="block sm:inline-block">
             <Button size="sm" disabled={movePending} className="w-full sm:w-auto">
               <Plus size={14} strokeWidth={2} />
               Hinzufügen
             </Button>
           </Link>
-        }
+        ) : undefined}
       />
 
       <div className="flex flex-col gap-2 mb-5 sm:mb-6">

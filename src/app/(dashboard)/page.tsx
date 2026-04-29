@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useFetch } from '@/hooks/use-fetch'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Button } from '@/components/ui/button'
 import { cn, formatDate, formatDateTime, getStatusDot, getStatusLabel } from '@/lib/utils'
 import {
@@ -28,6 +29,8 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useAuth } from '@/context/auth-context'
+import { hasPermission, type Permission } from '@/lib/permissions'
 
 interface RankSummary {
   name: string
@@ -99,20 +102,20 @@ const panelClass =
   'glass-panel-elevated rounded-[15px] p-5 border border-[#1e3a5c]/40 shadow-sm shadow-black/10'
 const surfaceClass = 'glass-panel rounded-[10px] border border-white/[0.04]'
 
-const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string }[] = [
-  { key: 'activeOfficers', label: 'Aktive Officers', icon: UserCheck, href: '/officers' },
-  { key: 'awayOfficers', label: 'Abgemeldet', icon: Clock, href: '/officers' },
-  { key: 'inactiveOfficers', label: 'Inaktiv', icon: AlertTriangle, href: '/officers' },
-  { key: 'totalOfficers', label: 'Gesamt', icon: Users, href: '/officers' },
-  { key: 'recentPromotions', label: 'Beförderungen', icon: TrendingUp, href: '/promotions' },
-  { key: 'recentTerminations', label: 'Kündigungen', icon: UserMinus, href: '/terminations' },
+const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string; permission: Permission }[] = [
+  { key: 'activeOfficers', label: 'Aktive Officers', icon: UserCheck, href: '/officers', permission: 'officers:view' },
+  { key: 'awayOfficers', label: 'Abgemeldet', icon: Clock, href: '/officers', permission: 'officers:view' },
+  { key: 'inactiveOfficers', label: 'Inaktiv', icon: AlertTriangle, href: '/officers', permission: 'officers:view' },
+  { key: 'totalOfficers', label: 'Gesamt', icon: Users, href: '/officers', permission: 'officers:view' },
+  { key: 'recentPromotions', label: 'Beförderungen', icon: TrendingUp, href: '/promotions', permission: 'rank-changes:view' },
+  { key: 'recentTerminations', label: 'Kündigungen', icon: UserMinus, href: '/terminations', permission: 'terminations:view' },
 ]
 
-const quickActions: { label: string; description: string; href: string; icon: LucideIcon }[] = [
-  { label: 'Roster prüfen', description: 'Status, Ränge und Ausbildungen kontrollieren', href: '/officers', icon: Users },
-  { label: 'Beförderungen', description: 'Beförderungslisten öffnen oder ausführen', href: '/promotions', icon: TrendingUp },
-  { label: 'Degradierungen', description: 'Degradierungslisten prüfen', href: '/demotions', icon: TrendingDown },
-  { label: 'Notizen', description: 'Globale und personenbezogene Notizen verwalten', href: '/notes', icon: FileText },
+const quickActions: { label: string; description: string; href: string; icon: LucideIcon; permission: Permission }[] = [
+  { label: 'Roster prüfen', description: 'Status, Ränge und Ausbildungen kontrollieren', href: '/officers', icon: Users, permission: 'officers:view' },
+  { label: 'Beförderungen', description: 'Beförderungslisten prüfen', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },
+  { label: 'Degradierungen', description: 'Degradierungslisten prüfen', href: '/demotions', icon: TrendingDown, permission: 'rank-changes:view' },
+  { label: 'Notizen', description: 'Globale und personenbezogene Notizen verwalten', href: '/notes', icon: FileText, permission: 'notes:view' },
 ]
 
 const actionLabels: Record<string, string> = {
@@ -181,7 +184,9 @@ function truncateText(text: string, length: number) {
 }
 
 export default function DashboardPage() {
-  const { data: stats, loading, error, refetch } = useFetch<Stats>('/api/stats')
+  const { user } = useAuth()
+  const canViewDashboard = hasPermission(user, 'dashboard:view')
+  const { data: stats, loading, error, refetch } = useFetch<Stats>(canViewDashboard ? '/api/stats' : null)
   const dateLine = useMemo(
     () =>
       new Intl.DateTimeFormat('de-DE', {
@@ -193,6 +198,7 @@ export default function DashboardPage() {
     []
   )
 
+  if (!canViewDashboard) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   if (error || !stats) {
@@ -238,7 +244,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {statCards.map((card, i) => {
+        {statCards.filter((card) => hasPermission(user, card.permission)).map((card, i) => {
           const Icon = card.icon
           const label = card.key === 'recentPromotions' || card.key === 'recentTerminations'
             ? `${card.label} (${stats.recentWindowDays}T)`
@@ -326,7 +332,7 @@ export default function DashboardPage() {
         >
           <SectionTitle icon={ArrowUpRight} title="Schnellzugriffe" description="Direkt zu den häufigsten HR-Aufgaben" />
           <div className="space-y-2">
-            {quickActions.map((action) => {
+            {quickActions.filter((action) => hasPermission(user, action.permission)).map((action) => {
               const Icon = action.icon
               return (
                 <Link

@@ -14,6 +14,9 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/context/auth-context'
+import { hasPermission } from '@/lib/permissions'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 
 interface Rank {
   id: string
@@ -33,6 +36,8 @@ export default function NewOfficerPage() {
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
   const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { execute, loading } = useApi()
+  const { user } = useAuth()
+  const canCreate = hasPermission(user, 'officers:write')
 
   const [form, setForm] = useState({
     badgeNumber: '',
@@ -61,6 +66,8 @@ export default function NewOfficerPage() {
   }
 
   const update = (key: string, value: string | string[]) => setForm(prev => ({ ...prev, [key]: value }))
+
+  if (!canCreate) return <UnauthorizedContent />
 
   return (
     <div>

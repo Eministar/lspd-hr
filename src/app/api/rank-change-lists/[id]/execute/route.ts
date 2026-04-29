@@ -11,12 +11,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
+    const body = await req.json().catch(() => ({}))
+    const entryId = typeof body.entryId === 'string' ? body.entryId : null
 
     const list = await prisma.rankChangeList.findUnique({
       where: { id },
       include: {
         entries: {
-          where: { executed: false },
+          where: entryId ? { id: entryId, executed: false } : { executed: false },
           include: {
             officer: true,
             currentRank: true,
@@ -27,7 +29,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     if (!list) return error('Liste nicht gefunden', 404)
-    if (list.entries.length === 0) return error('Keine offenen Einträge vorhanden')
+    if (list.entries.length === 0) {
+      return error(entryId ? 'Eintrag nicht gefunden oder bereits durchgeführt' : 'Keine offenen Einträge vorhanden')
+    }
 
     const prefix = await getBadgePrefix()
     const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
@@ -97,10 +101,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       executed++
     }
 
-    await prisma.rankChangeList.update({
-      where: { id },
-      data: { status: 'COMPLETED' },
-    })
+    const remainingEntries = entryId
+      ? await prisma.rankChangeListEntry.count({ where: { listId: id, executed: false } })
+      : 0
+
+    if (remainingEntries === 0) {
+      await prisma.rankChangeList.update({
+        where: { id },
+        data: { status: 'COMPLETED' },
+      })
+    }
 
     return success({ executed, total: list.entries.length })
   } catch (e: unknown) {

@@ -31,6 +31,7 @@ import { Select } from '@/components/ui/select'
 import { DateField } from '@/components/ui/date-field'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -314,13 +315,14 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
 
 export function TaskBoard({ module, title, description, accentLabel }: TaskBoardProps) {
   const { user } = useAuth()
+  const canView = hasPermission(user, 'tasks:view')
   const canEdit = hasPermission(user, 'tasks:manage')
 
   const [showArchived, setShowArchived] = useState(false)
-  const queryUrl = `/api/task-lists?module=${module}${showArchived ? '&archived=true' : ''}`
+  const queryUrl = canView ? `/api/task-lists?module=${module}${showArchived ? '&archived=true' : ''}` : null
 
   const { data: lists, loading, refetch, setData } = useFetch<TaskList[]>(queryUrl)
-  const { data: officers } = useFetch<OfficerForPicker[]>('/api/officers')
+  const { data: officers } = useFetch<OfficerForPicker[]>(canEdit ? '/api/officers' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
 
@@ -554,6 +556,7 @@ export function TaskBoard({ module, title, description, accentLabel }: TaskBoard
     }
   }
 
+  if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   const visibleLists = lists ?? []

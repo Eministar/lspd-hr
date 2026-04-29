@@ -10,10 +10,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { formatDate, cn } from '@/lib/utils'
+import { useAuth } from '@/context/auth-context'
+import { hasPermission } from '@/lib/permissions'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer { id: string; badgeNumber: string; firstName: string; lastName: string; rank: Rank; rankId: string; status: string }
@@ -41,15 +44,18 @@ interface RankChangeList {
 }
 
 export default function PromotionsPage() {
-  const { data: lists, loading, refetch } = useFetch<RankChangeList[]>('/api/rank-change-lists?type=PROMOTION')
-  const { data: officers } = useFetch<Officer[]>('/api/officers')
-  const { data: ranks } = useFetch<Rank[]>('/api/ranks')
+  const { user } = useAuth()
+  const canView = hasPermission(user, 'rank-changes:view')
+  const canManage = hasPermission(user, 'rank-changes:manage')
+  const { data: lists, loading, refetch } = useFetch<RankChangeList[]>(canView ? '/api/rank-change-lists?type=PROMOTION' : null)
+  const { data: officers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
+  const { data: ranks } = useFetch<Rank[]>(canManage ? '/api/ranks' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
 
   const [createModal, setCreateModal] = useState(false)
   const [addEntryListId, setAddEntryListId] = useState<string | null>(null)
-  const [executeListId, setExecuteListId] = useState<string | null>(null)
+  const [executeEntry, setExecuteEntry] = useState<{ listId: string; entryId: string; name: string } | null>(null)
   const [expandedLists, setExpandedLists] = useState<Set<string>>(new Set())
 
   const [listForm, setListForm] = useState({ name: '', description: '' })
@@ -128,18 +134,22 @@ export default function PromotionsPage() {
     }
   }
 
-  const handleExecuteList = async () => {
-    if (!executeListId) return
+  const handleExecuteEntry = async () => {
+    if (!executeEntry) return
     try {
-      const result = await execute(`/api/rank-change-lists/${executeListId}/execute`, { method: 'POST' }) as { executed: number } | null
-      addToast({ type: 'success', title: `${result?.executed ?? 0} Beförderungen durchgeführt` })
-      setExecuteListId(null)
+      const result = await execute(`/api/rank-change-lists/${executeEntry.listId}/execute`, {
+        method: 'POST',
+        body: JSON.stringify({ entryId: executeEntry.entryId }),
+      }) as { executed: number } | null
+      addToast({ type: 'success', title: `${result?.executed ?? 0} Beförderung durchgeführt` })
+      setExecuteEntry(null)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
     }
   }
 
+  if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   return (
@@ -147,21 +157,21 @@ export default function PromotionsPage() {
       <PageHeader
         title="Beförderungen"
         description={`${lists?.length || 0} Listen`}
-        action={
+        action={canManage ? (
           <Button size="sm" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
             <Plus size={14} strokeWidth={2} />
             Neue Liste
           </Button>
-        }
+        ) : undefined}
       />
 
       {(!lists || lists.length === 0) && (
         <div className="text-center py-20">
           <FileText size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
           <p className="text-[13px] text-[#999] mb-3">Noch keine Beförderungslisten</p>
-          <Button size="sm" variant="secondary" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
+          {canManage && <Button size="sm" variant="secondary" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
             <Plus size={13} /> Erste Liste erstellen
-          </Button>
+          </Button>}
         </div>
       )}
 
@@ -225,11 +235,20 @@ export default function PromotionsPage() {
                           </div>
                           {entry.executed ? (
                             <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>
-                          ) : isDraft ? (
-                            <button onClick={() => handleRemoveEntry(list.id, entry.id)}
-                              className="p-1 rounded-[5px] hover:bg-[#142d52] transition-colors shrink-0">
-                              <X size={13} className="text-[#4a6585]" />
-                            </button>
+                          ) : isDraft && canManage ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button size="sm" onClick={() => setExecuteEntry({
+                                listId: list.id,
+                                entryId: entry.id,
+                                name: `${entry.officer.firstName} ${entry.officer.lastName}`,
+                              })}>
+                                <Play size={13} /> Durchführen
+                              </Button>
+                              <button onClick={() => handleRemoveEntry(list.id, entry.id)}
+                                className="p-1 rounded-[5px] hover:bg-[#142d52] transition-colors">
+                                <X size={13} className="text-[#4a6585]" />
+                              </button>
+                            </div>
                           ) : null}
                         </div>
                       ))}
@@ -238,7 +257,7 @@ export default function PromotionsPage() {
                     <p className="text-[12.5px] text-[#4a6585] mb-3 px-1">Noch keine Officers in dieser Liste</p>
                   )}
 
-                  {isDraft && (
+                  {isDraft && canManage && (
                     <div className="flex gap-1.5">
                       <Button variant="secondary" size="sm" onClick={() => {
                         setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
@@ -246,11 +265,6 @@ export default function PromotionsPage() {
                       }}>
                         <Plus size={13} /> Officer hinzufügen
                       </Button>
-                      {pendingCount > 0 && (
-                        <Button size="sm" onClick={() => setExecuteListId(list.id)}>
-                          <Play size={13} /> Alle ausführen ({pendingCount})
-                        </Button>
-                      )}
                       <Button variant="danger" size="sm" onClick={() => handleDeleteList(list.id)}>
                         <Trash2 size={13} />
                       </Button>
@@ -309,13 +323,13 @@ export default function PromotionsPage() {
       </Modal>
 
       {/* Execute confirmation */}
-      <Modal open={!!executeListId} onClose={() => setExecuteListId(null)} title="Beförderungen ausführen">
+      <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title="Beförderung ausführen">
         <p className="text-[13px] text-[#888] mb-5">
-          Alle offenen Beförderungen in dieser Liste werden jetzt durchgeführt. Die Ränge der Officers werden sofort geändert. Fortfahren?
+          Die Beförderung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setExecuteListId(null)}>Abbrechen</Button>
-          <Button size="sm" onClick={handleExecuteList}>Alle ausführen</Button>
+          <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
+          <Button size="sm" onClick={handleExecuteEntry}>Durchführen</Button>
         </div>
       </Modal>
     </div>

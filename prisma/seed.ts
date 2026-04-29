@@ -44,12 +44,13 @@ async function main() {
         'ranks:view',
         'trainings:view',
         'units:view',
+        'password:change',
       ],
     },
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['dashboard:view', 'officers:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view'],
+      permissions: ['dashboard:view', 'officers:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view', 'password:change'],
     },
   ]
 

@@ -21,6 +21,7 @@ export const PERMISSIONS = [
   'users:manage',
   'groups:manage',
   'settings:manage',
+  'password:change',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -48,6 +49,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'users:manage': 'Benutzer verwalten',
   'groups:manage': 'Benutzergruppen verwalten',
   'settings:manage': 'Einstellungen verwalten',
+  'password:change': 'Eigenes Passwort ändern',
 }
 
 const PERMISSION_SET = new Set<string>(PERMISSIONS)

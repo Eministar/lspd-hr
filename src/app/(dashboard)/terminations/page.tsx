@@ -9,10 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { formatDate } from '@/lib/utils'
+import { useAuth } from '@/context/auth-context'
+import { hasPermission } from '@/lib/permissions'
 
 interface Officer {
   id: string
@@ -49,8 +52,11 @@ function terminationOfficerNames(t: Termination): { first: string; last: string 
 }
 
 export default function TerminationsPage() {
-  const { data: terminations, loading, refetch } = useFetch<Termination[]>('/api/terminations')
-  const { data: officers, refetch: refetchOfficers } = useFetch<Officer[]>('/api/officers')
+  const { user } = useAuth()
+  const canView = hasPermission(user, 'terminations:view')
+  const canManage = hasPermission(user, 'terminations:manage')
+  const { data: terminations, loading, refetch } = useFetch<Termination[]>(canView ? '/api/terminations' : null)
+  const { data: officers, refetch: refetchOfficers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
 
@@ -95,6 +101,7 @@ export default function TerminationsPage() {
     }
   }
 
+  if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   return (
@@ -102,12 +109,12 @@ export default function TerminationsPage() {
       <PageHeader
         title="Kündigungen"
         description={`${terminations?.length || 0} Einträge`}
-        action={
+        action={canManage ? (
           <Button size="sm" onClick={() => setCreateModal(true)}>
             <Plus size={14} strokeWidth={2} />
             Neue Kündigung
           </Button>
-        }
+        ) : undefined}
       />
 
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
@@ -148,6 +155,7 @@ export default function TerminationsPage() {
                     {formatDate(t.terminatedAt)} · von {t.terminatedBy.displayName}
                   </p>
                 </div>
+                {canManage && (
                 <div className="shrink-0">
                   {t.officer?.status === 'TERMINATED' ? (
                     <Button variant="secondary" size="sm" onClick={() => setRehireId(t.officer!.id)}>
@@ -160,6 +168,7 @@ export default function TerminationsPage() {
                     <span className="text-[11px] text-[#4a6585]" title="Datensatz ohne Officer-Profil">—</span>
                   )}
                 </div>
+                )}
               </motion.div>
             )})}
           </div>
