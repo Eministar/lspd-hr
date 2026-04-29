@@ -17,6 +17,19 @@ npm run db:push
 npm run db:seed
 ```
 
+## Warum Plesk nach einer „komischen“ `server.js` verlangt
+
+Die **Node.js-Anwendungs**-Maske ist für klassische Apps gebaut (eine `.js`-Datei, oft **Application Startup File:** `server.js`). **Next.js** hat keinen solchen Einstieg aus dem Repo – Produktion ist **`npm run build`** und dann **`next start`** über die eingebaute CLI.
+
+Üblich sind zwei Varianten:
+
+- **Startup-Datei** wie im Repo: **`start.js`** (gleicher Start wie `next start`; **Port** weiter über **`PORT`**, wie Plesk ihn setzt). In der Plesk-Maske **Application Startup File** auf **`start.js`** setzen — nicht einen leeren `server.js` verwenden.
+- Oder dort, wo unterstützt: Start über **`npm`** / **`start`** ohne eigene `.js`-Datei.
+
+Siehe auch: [Tenbyte – Next.js 15 & 16 auf Plesk](https://tenbyte.de/blog/run-next-js-15-and-16-on-plesk-with-nodejs); für **Static Assets**: **Document Root** oft auf **`…/PfadProjekt/.next/static`** (relativ zum Anwendungsstamm).
+
+Bei weißer/leerer Seite oder kaputten CSS-Dateien: Document Root `.next/static` prüfen. In **Apache & nginx** evtl. **Proxy-Modus** für die Domain wie in der [Plesk-Doku zu Next.js](https://support.plesk.com/hc/en-us/articles/16950957557783).
+
 ## Checkliste Plesk
 
 1. **Node.js 22** im Plesk-Abonnement aktivieren (passend zu `"engines": { "node": "22.x" }` in `package.json`).
@@ -30,8 +43,7 @@ npm run db:seed
    - ggf. weitere aus `.env.example`
 5. **Build** auf dem Server (nach Pull/Upload):
    - `npm run build`
-6. **Startbefehl** in Plesk: `npm run start` (oder das, was die Oberfläche für „npm script“ erwartet — oft `npm` mit Argument `start`).
-7. **`PORT`** setzt Plesk/Reverse-Proxy oft selbst — Next.js liest **`PORT`**; falls nötig den Port aus der Plesk-Doku übernehmen.
+6. **Start:** Entweder **Application Startup File** = **`start.js`** (wie in diesem Repo) **oder**, falls die Oberfläche es hergibt, **`npm`** mit Script **`start`**. **`PORT`** setzt Plesk meist automatisch — `start.js` liest ihn (nicht einen festen Port hardcodieren).
 
 ## Datenbank
 
