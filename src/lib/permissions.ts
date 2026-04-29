@@ -1,13 +1,22 @@
 export const PERMISSIONS = [
+  'dashboard:view',
+  'officers:view',
   'officers:write',
   'officers:delete',
+  'terminations:view',
   'terminations:manage',
+  'rank-changes:view',
   'rank-changes:manage',
+  'tasks:view',
   'tasks:manage',
+  'notes:view',
   'notes:manage',
   'logs:view',
+  'ranks:view',
   'ranks:manage',
+  'trainings:view',
   'trainings:manage',
+  'units:view',
   'units:manage',
   'users:manage',
   'groups:manage',
@@ -17,15 +26,24 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
+  'dashboard:view': 'Dashboard ansehen',
+  'officers:view': 'Officers ansehen',
   'officers:write': 'Officers bearbeiten',
   'officers:delete': 'Officers löschen',
+  'terminations:view': 'Kündigungen ansehen',
   'terminations:manage': 'Kündigungen verwalten',
+  'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
   'rank-changes:manage': 'Beförderungen/Degradierungen',
+  'tasks:view': 'Aufgaben ansehen',
   'tasks:manage': 'Aufgaben verwalten',
+  'notes:view': 'Notizen ansehen',
   'notes:manage': 'Notizen verwalten',
   'logs:view': 'Protokoll ansehen',
+  'ranks:view': 'Ränge ansehen',
   'ranks:manage': 'Ränge verwalten',
+  'trainings:view': 'Ausbildungen ansehen',
   'trainings:manage': 'Ausbildungen verwalten',
+  'units:view': 'Units ansehen',
   'units:manage': 'Units verwalten',
   'users:manage': 'Benutzer verwalten',
   'groups:manage': 'Benutzergruppen verwalten',
@@ -34,11 +52,33 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 
 const PERMISSION_SET = new Set<string>(PERMISSIONS)
 
+const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
+  'officers:write': ['officers:view', 'ranks:view', 'trainings:view', 'units:view'],
+  'officers:delete': ['officers:view'],
+  'terminations:manage': ['terminations:view', 'officers:view'],
+  'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view'],
+  'tasks:manage': ['tasks:view', 'officers:view'],
+  'notes:manage': ['notes:view', 'officers:view'],
+  'ranks:manage': ['ranks:view'],
+  'trainings:manage': ['trainings:view'],
+  'units:manage': ['units:view'],
+  'users:manage': ['groups:manage'],
+  'groups:manage': ['users:manage'],
+  'settings:manage': ['dashboard:view'],
+}
+
 export function normalizePermissions(value: unknown): Permission[] {
   if (!Array.isArray(value)) return []
-  return Array.from(new Set(value.filter((item): item is Permission => (
+  const explicit = value.filter((item): item is Permission => (
     typeof item === 'string' && PERMISSION_SET.has(item)
-  ))))
+  ))
+  const permissions = new Set<Permission>(explicit)
+  for (const permission of explicit) {
+    for (const implied of IMPLIED_PERMISSIONS[permission] ?? []) {
+      permissions.add(implied)
+    }
+  }
+  return Array.from(permissions)
 }
 
 export function resolvePermissions(groupPermissions?: unknown): Permission[] {

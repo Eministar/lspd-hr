@@ -1,11 +1,17 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, getCurrentUser } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function GET() {
-  const user = await getCurrentUser()
-  if (!user) return unauthorized()
+  try {
+    await requireAuth(['ADMIN'], ['settings:manage'])
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const settings = await prisma.systemSetting.findMany()
   const map: Record<string, string> = {}

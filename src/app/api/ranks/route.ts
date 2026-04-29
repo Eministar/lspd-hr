@@ -1,11 +1,17 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser, requireAuth } from '@/lib/auth'
+import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function GET() {
-  const user = await getCurrentUser()
-  if (!user) return unauthorized()
+  try {
+    await requirePermission('ranks:view')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const ranks = await prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } })
   return success(ranks)

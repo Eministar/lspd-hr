@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser, requireAuth } from '@/lib/auth'
+import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
@@ -10,8 +10,14 @@ import { nextBadgeForRank } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return unauthorized()
+  try {
+    await requirePermission('officers:view')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search')

@@ -102,12 +102,12 @@ function UnitBadges({ officer, unitsByKey }: { officer: Pick<Officer, 'unit' | '
           <span
             key={unitKey}
             className={cn(
-              'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
+              'inline-flex min-w-0 max-w-full items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border',
               unitInfo ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unitKey)
             )}
             style={unitInfo ? { borderColor: `${unitInfo.color}66`, color: unitInfo.color } : undefined}
           >
-            {unitInfo?.name ?? getUnitLabel(unitKey)}
+            <span className="min-w-0 truncate">{unitInfo?.name ?? getUnitLabel(unitKey)}</span>
           </span>
         )
       })}
@@ -363,12 +363,9 @@ function MobileOfficerCard({
       )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-mono text-[11px] text-[#b7c5d8] shrink-0">
-              {officer.badgeNumber}
-            </span>
-            {officerUnitKeys(officer).length > 0 && <UnitBadges officer={officer} unitsByKey={unitsByKey} />}
-          </div>
+          <span className="block font-mono text-[11px] text-[#b7c5d8] mb-1">
+            {officer.badgeNumber}
+          </span>
           <Link
             href={`/officers/${officer.id}`}
             className="block text-[14px] font-semibold text-[#eee] hover:text-[#d4af37] transition-colors truncate"
@@ -386,19 +383,22 @@ function MobileOfficerCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-2.5">
-        <span className="inline-flex items-center gap-1.5">
-          <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 mb-2.5">
+        <div className="min-w-0">
+          {officerUnitKeys(officer).length > 0 ? (
+            <UnitBadges officer={officer} unitsByKey={unitsByKey} />
+          ) : (
+            <span className="text-[11px] text-[#4a6585]">—</span>
+          )}
+        </div>
+        <span className="inline-flex items-center gap-1.5 justify-self-end whitespace-nowrap pt-[3px]">
+          <span className={cn('h-[6px] w-[6px] rounded-full shrink-0', getStatusDot(officer.status))} />
           <span className="text-[11.5px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
         </span>
-        <span className="text-[11px] text-[#4a6585]">·</span>
-        <span className="text-[11.5px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
-        {officer.notes && (
-          <>
-            <span className="text-[11px] text-[#4a6585]">·</span>
-            <StickyNote size={11} className="text-[#4a6585]" strokeWidth={1.75} />
-          </>
-        )}
+        <div className="col-span-2 flex items-center gap-2">
+          <span className="text-[11.5px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
+          {officer.notes && <StickyNote size={11} className="text-[#4a6585]" strokeWidth={1.75} />}
+        </div>
       </div>
 
       {allTrainings.length > 0 && (

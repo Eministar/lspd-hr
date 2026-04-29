@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser, requireAuth } from '@/lib/auth'
+import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
@@ -15,8 +15,14 @@ function createUnitKey(name: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return unauthorized()
+  try {
+    await requirePermission('units:view')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const activeOnly = req.nextUrl.searchParams.get('active') === 'true'
   const units = await prisma.unit.findMany({

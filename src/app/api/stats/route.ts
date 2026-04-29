@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-import { success, unauthorized } from '@/lib/api-response'
+import { requirePermission } from '@/lib/auth'
+import { success, error, unauthorized } from '@/lib/api-response'
+import { hasPermission } from '@/lib/permissions'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -11,10 +12,20 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export async function GET() {
-  const user = await getCurrentUser()
-  if (!user) return unauthorized()
+  let user
+  try {
+    user = await requirePermission('dashboard:view')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
 
   const recentSince = new Date(Date.now() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+
+  const canViewLogs = hasPermission(user, 'logs:view')
+  const canViewNotes = hasPermission(user, 'notes:view')
 
   const [
     officers,
@@ -23,8 +34,6 @@ export async function GET() {
     totalPromotions,
     recentPromotions,
     recentTerminations,
-    recentActivity,
-    pinnedNotes,
     draftRankChangeLists,
   ] = await Promise.all([
     prisma.officer.findMany({
@@ -51,24 +60,31 @@ export async function GET() {
     prisma.termination.count({
       where: { terminatedAt: { gte: recentSince } },
     }),
-    prisma.auditLog.findMany({
-      include: {
-        user: { select: { displayName: true } },
-        officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 8,
-    }),
-    prisma.note.findMany({
-      where: { pinned: true },
-      include: {
-        author: { select: { displayName: true } },
-        officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 3,
-    }),
     prisma.rankChangeList.count({ where: { status: 'DRAFT' } }),
+  ])
+
+  const [recentActivity, pinnedNotes] = await Promise.all([
+    canViewLogs
+      ? prisma.auditLog.findMany({
+        include: {
+          user: { select: { displayName: true } },
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+      })
+      : Promise.resolve([]),
+    canViewNotes
+      ? prisma.note.findMany({
+        where: { pinned: true },
+        include: {
+          author: { select: { displayName: true } },
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 3,
+      })
+      : Promise.resolve([]),
   ])
 
   const totalOfficers = officers.length

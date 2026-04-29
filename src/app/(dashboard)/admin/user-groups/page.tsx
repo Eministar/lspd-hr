@@ -23,6 +23,9 @@ interface UserGroup {
   _count: { users: number }
 }
 
+const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
+const MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
+
 export default function UserGroupsPage() {
   const { data: groups, loading, refetch } = useFetch<UserGroup[]>('/api/user-groups')
   const { execute } = useApi()
@@ -142,9 +145,23 @@ export default function UserGroupsPage() {
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Textarea label="Beschreibung" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Optional" />
           <div>
-            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rechte</p>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Leserechte</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {PERMISSIONS.map((permission) => (
+              {READ_PERMISSIONS.map((permission) => (
+                <Checkbox
+                  key={permission}
+                  checked={form.permissions.includes(permission)}
+                  onCheckedChange={(checked) => togglePermission(permission, checked)}
+                  label={PERMISSION_LABELS[permission]}
+                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Verwaltungsrechte</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {MANAGE_PERMISSIONS.map((permission) => (
                 <Checkbox
                   key={permission}
                   checked={form.permissions.includes(permission)}

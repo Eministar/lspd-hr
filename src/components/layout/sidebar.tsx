@@ -32,21 +32,20 @@ interface NavContentProps {
 }
 
 const mainNav: NavItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Mein Konto', href: '/account', icon: KeyRound },
-  { name: 'Officers', href: '/officers', icon: Users },
-  { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive },
-  { name: 'Beförderungen', href: '/promotions', icon: TrendingUp },
-  { name: 'Degradierungen', href: '/demotions', icon: TrendingDown },
-  { name: 'Kündigungen', href: '/terminations', icon: UserX },
-  { name: 'Notizen', href: '/notes', icon: StickyNote },
-  { name: 'Protokoll', href: '/logs', icon: ScrollText },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard:view' },
+  { name: 'Officers', href: '/officers', icon: Users, permission: 'officers:view' },
+  { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive, permission: 'officers:view' },
+  { name: 'Beförderungen', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },
+  { name: 'Degradierungen', href: '/demotions', icon: TrendingDown, permission: 'rank-changes:view' },
+  { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
+  { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
+  { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
 ]
 
 const tasksNav: NavItem[] = [
-  { name: 'Academy', href: '/academy', icon: ListChecks },
-  { name: 'HR Abteilung', href: '/hr', icon: Briefcase },
-  { name: 'SRU', href: '/sru', icon: Shield },
+  { name: 'Academy', href: '/academy', icon: ListChecks, permission: 'tasks:view' },
+  { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'tasks:view' },
+  { name: 'SRU', href: '/sru', icon: Shield, permission: 'tasks:view' },
 ]
 
 const adminNav: NavItem[] = [
@@ -56,6 +55,10 @@ const adminNav: NavItem[] = [
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
+]
+
+const accountNav: NavItem[] = [
+  { name: 'Mein Konto', href: '/account', icon: KeyRound },
 ]
 
 function GitHubLogo({ className }: { className?: string }) {
@@ -126,11 +129,19 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
 
       <nav className="flex-1 px-2.5 space-y-[2px] overflow-y-auto">
         <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Navigation</p>
-        {mainNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+        {mainNav
+          .filter((item) => !item.permission || hasPermission(user, item.permission))
+          .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        <div className="gold-line my-3 mx-2" />
-        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>
-        {tasksNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+        {hasAnyPermission(user, ['tasks:view']) && (
+          <>
+            <div className="gold-line my-3 mx-2" />
+            <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>
+            {tasksNav
+              .filter((item) => !item.permission || hasPermission(user, item.permission))
+              .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+          </>
+        )}
 
         {showAdmin && (
           <>
@@ -141,6 +152,10 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
               .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
+
+        <div className="gold-line my-3 mx-2" />
+        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Konto</p>
+        {accountNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
       </nav>
 
       <div className="px-2.5 pt-1 pb-1.5 shrink-0 space-y-1.5">

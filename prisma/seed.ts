@@ -31,17 +31,25 @@ async function main() {
       description: 'Personalverwaltung, Aufgaben, Kündigungen und Rangänderungen.',
       permissions: [
         'officers:write',
+        'officers:view',
         'terminations:manage',
+        'terminations:view',
         'rank-changes:manage',
+        'rank-changes:view',
         'tasks:manage',
+        'tasks:view',
         'notes:manage',
+        'notes:view',
         'logs:view',
+        'ranks:view',
+        'trainings:view',
+        'units:view',
       ],
     },
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['tasks:manage', 'notes:manage', 'logs:view'],
+      permissions: ['dashboard:view', 'officers:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view'],
     },
   ]
 
