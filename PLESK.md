@@ -59,3 +59,10 @@ npm run build
 ```
 
 Bei Schema-Änderungen: erst `npm run db:push` oder Migrationsworkflow, dann wieder bauen/neu starten — nicht alles automatisch beim `npm start`.
+
+## 404 auf `/_next/static/...` oder leere Seite mit Fehlern in der Konsole
+
+1. **Projektverzeichnis:** `start.js` übergibt Next den Ordner von `start.js` als App-Root (nicht `process.cwd()`). Ohne das liefert Plesk oft ein falsches **Working Directory** → Build wird nicht gefunden.
+2. **Build auf dem Server:** `npm run build` muss **auf Linux** im Anwendungsstamm gelaufen sein; nach Deploy fehlt sonst `.next` oder ist veraltet.
+3. **Document Root / Nginx:** Wenn **Document Root** auf `…/.next/static` steht, muss dein Webserver die URL `/_next/static/…` wirklich auf diesen Ordner abbilden. Viele Setups lassen **alles** an den Node-Prozess gehen — dann **Application Root** = Ordner mit `package.json` / `start.js`, **kein** getrenntes Ausliefern alter Pfade testen. Weiße Seite: [Plesk-Hinweis zu Next.js / Proxy](https://support.plesk.com/hc/en-us/articles/16950957557783).
+4. **Im Browser (F12 → Netzwerk):** die **genaue URL** des 404 notieren (z. B. `/favicon.ico` ist oft harmlos; fehlende `/_next/static/chunks/...` ist kritisch).

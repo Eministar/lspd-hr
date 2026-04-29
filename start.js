@@ -9,12 +9,16 @@
 
 process.env.NODE_ENV = 'production'
 
+const path = require('node:path')
 const { nextStart } = require('next/dist/cli/next-start')
 
 const port = Number.parseInt(process.env.PORT ?? '3000', 10)
 
-// Nur `port` — auf Linux ist `process.env.HOSTNAME` oft der Servername (nicht 0.0.0.0).
-nextStart({ port }).catch((err) => {
+// Zweites Argument = Projektroot: Plesk startet Node oft mit falschem `cwd`, dann findet
+// Next die `.next`-Build nicht → 404 für `/_next/static/...`.
+const projectDir = path.resolve(__dirname)
+
+nextStart({ port }, projectDir).catch((err) => {
   console.error(err)
   process.exit(1)
 })
