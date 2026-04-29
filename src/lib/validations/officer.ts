@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
 export const OFFICER_FLAG_VALUES = ['RED', 'ORANGE', 'YELLOW'] as const
+export const OFFICER_UNIT_VALUES = ['HR_LEITUNG', 'HR_TRAINEE', 'HR_OFFICER', 'ACADEMY', 'SRU'] as const
 
 export type OfficerFlagValue = (typeof OFFICER_FLAG_VALUES)[number]
+export type OfficerUnitValue = (typeof OFFICER_UNIT_VALUES)[number]
 
 /** Discord Snowflake-Ziffernkette (ohne Bot; nur Speicher auf dem Officer). */
 export const discordIdSchema = z

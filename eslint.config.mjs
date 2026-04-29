@@ -56,6 +56,7 @@ const eslintConfig = defineConfig([
     "*.config.mjs",
     "next.config.ts",
     "prisma.config.ts",
+    "prisma/**",
   ]),
 ]);
 
