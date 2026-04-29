@@ -12,7 +12,6 @@ process.env.NODE_ENV = 'production'
 const path = require('node:path')
 const http = require('node:http')
 const { parse } = require('node:url')
-const { spawnSync } = require('node:child_process')
 
 const projectDir = path.resolve(__dirname)
 
@@ -74,22 +73,6 @@ async function startWithTcpPort(portNum) {
 }
 
 async function main() {
-  for (const step of [
-    { command: 'npm', args: ['run', 'db:backup'] },
-    { command: 'npx', args: ['prisma', 'db', 'push'] },
-    { command: 'npx', args: ['prisma', 'generate'] },
-  ]) {
-    const result = spawnSync(step.command, step.args, {
-      cwd: projectDir,
-      stdio: 'inherit',
-      shell: process.platform === 'win32',
-      env: process.env,
-    })
-    if (result.status !== 0) {
-      process.exit(result.status ?? 1)
-    }
-  }
-
   const lt = resolveListenTargetFromEnv()
   if (lt.mode === 'pipe') {
     await startWithIisnodePipe(lt.target)

@@ -138,10 +138,15 @@ if exist ".next" (
   call :logline ".next existiert nicht. Cache-Löschung übersprungen."
 )
 
-call :section "9/10" "Projekt bauen"
+call :section "9/11" "Datenbank aktualisieren"
+call :run "Datenbank-Backup erstellen" "npm run db:backup" || goto failed
+call :run "Prisma db push ausführen" "npx prisma db push" || goto failed
+call :run "Prisma Client generieren" "npx prisma generate" || goto failed
+
+call :section "10/11" "Projekt bauen"
 call :run "npm run build" "npm run build" || goto build_failed
 
-call :section "10/10" "Abschluss prüfen"
+call :section "11/11" "Abschluss prüfen"
 call :run "Aktuellen Commit anzeigen" "git log -1 --oneline" || goto failed
 call :run "Finalen Git Status anzeigen" "git status --short" || goto failed
 

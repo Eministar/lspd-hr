@@ -2,7 +2,7 @@
 
 Die Windows-Deploy-Skripte (`deploy.bat` / `deploy.ps1`) sind nur für deinen lokalen Rechner. Auf dem Plesk-Server (Linux) läuft alles über **npm** und die **Plesk Node.js**-Integration.
 
-## Warum `npm start` nur noch `next start` ist
+## Warum `npm start` nur `next start` ist
 
 Ein typischer Plesk-Prozess startet die App bei jedem Deploy und bei Problemen **neu**. Das alte `start`-Skript hat dabei bei **jedem** Start ein `db push --accept-data-loss` und **Seed** ausgeführt — das ist für eine echte Datenbank unbrauchbar und kann Daten gefährden.
 
@@ -10,7 +10,9 @@ Ein typischer Plesk-Prozess startet die App bei jedem Deploy und bei Problemen *
 - **Optional (nur wenn du genau das willst, z. B. Demo):**  
   `npm run start:with-migrate-and-seed`
 
-Schema/Seed für die **erste** Einrichtung einmal per SSH ausführen, nicht im Startbefehl:
+Schema-Updates laufen im Windows-Update-Skript `scripts/live-update.bat` vor dem Build. Beim reinen App-Start darf kein `npm`/`npx` laufen, weil iisnode sonst vor dem Next-Server crashen kann und IIS nur `500 - Internal Server Error` zeigt.
+
+Schema/Seed für die **erste** Einrichtung einmal per Konsole ausführen, nicht im Startbefehl:
 
 ```bash
 npm run db:push
@@ -54,6 +56,7 @@ MySQL/MariaDB muss für die App erreichbar sein (bei vielen Hosting-Paketen **lo
 ```bash
 git pull origin main    # oder dein Branch
 npm ci
+npm run db:push
 npm run build
 # App in Plesk neu starten (Button / „restart“)
 ```

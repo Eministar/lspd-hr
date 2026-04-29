@@ -9,7 +9,7 @@
     "postinstall": "prisma generate",
     "dev": "npm run db:backup && prisma db push && prisma generate && next dev",
     "build": "prisma generate && next build",
-    "start": "npm run db:backup && prisma db push && prisma generate && next start",
+    "start": "next start",
     "start:with-migrate-and-seed": "npm run db:backup && prisma db push --accept-data-loss && tsx prisma/seed.ts && next start",
     "lint": "eslint",
     "db:generate": "npx prisma generate",
