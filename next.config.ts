@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
   serverExternalPackages: ['better-sqlite3'],
+  env: {
+    NEXT_PUBLIC_BUILD_ID:
+      process.env.VERCEL_GIT_COMMIT_SHA ??
+      process.env.GITHUB_SHA ??
+      process.env.NEXT_PUBLIC_BUILD_ID ??
+      'local',
+  },
 };
 
 export default nextConfig;
