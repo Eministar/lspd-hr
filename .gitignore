@@ -49,3 +49,6 @@ next-env.d.ts
 
 # lokale DB-JSON-Backups (Passwort-Hashes u. a. – nicht committen)
 /.backup/
+
+# lokale Deployment-Logs
+/deploy-logs/
