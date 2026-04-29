@@ -4,12 +4,13 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { normalizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { userGroupDelegate } from '@/lib/prisma-delegates'
 
 export async function GET() {
   try {
     await requireAuth(['ADMIN'], ['groups:manage', 'users:manage'])
 
-    const groups = await prisma.userGroup.findMany({
+    const groups = await userGroupDelegate(prisma).findMany({
       include: { _count: { select: { users: true } } },
       orderBy: { name: 'asc' },
     })
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     if (!name) return error('Name ist erforderlich')
 
-    const group = await prisma.userGroup.create({
+    const group = await userGroupDelegate(prisma).create({
       data: {
         name,
         description: typeof body.description === 'string' && body.description.trim()

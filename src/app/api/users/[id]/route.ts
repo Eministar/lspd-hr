@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, hashPassword } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { userGroupDelegate } from '@/lib/prisma-delegates'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.role) data.role = body.role
     if ('groupId' in body) {
       if (body.groupId) {
-        const group = await prisma.userGroup.findUnique({ where: { id: String(body.groupId) } })
+        const group = await userGroupDelegate(prisma).findUnique({ where: { id: String(body.groupId) } })
         if (!group) return error('Benutzergruppe nicht gefunden')
         data.groupId = group.id
       } else {

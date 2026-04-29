@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hashPassword } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createUserSchema } from '@/lib/validations/auth'
+import { userGroupDelegate } from '@/lib/prisma-delegates'
 
 export async function GET() {
   try {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (existing) return error('Benutzername bereits vergeben')
 
     if (parsed.data.groupId) {
-      const group = await prisma.userGroup.findUnique({ where: { id: parsed.data.groupId } })
+      const group = await userGroupDelegate(prisma).findUnique({ where: { id: parsed.data.groupId } })
       if (!group) return error('Benutzergruppe nicht gefunden')
     }
 

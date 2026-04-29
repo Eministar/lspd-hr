@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { normalizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { userGroupDelegate } from '@/lib/prisma-delegates'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if ('permissions' in body) data.permissions = normalizePermissions(body.permissions)
 
-    const group = await prisma.userGroup.update({
+    const group = await userGroupDelegate(prisma).update({
       where: { id },
       data,
       include: { _count: { select: { users: true } } },
@@ -45,14 +46,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await requireAuth(['ADMIN'], ['groups:manage'])
     const { id } = await params
 
-    const group = await prisma.userGroup.findUnique({
+    const group = await userGroupDelegate(prisma).findUnique({
       where: { id },
       include: { _count: { select: { users: true } } },
     })
     if (!group) return notFound('Benutzergruppe')
     if (group._count.users > 0) return error('Benutzergruppe wird noch verwendet')
 
-    await prisma.userGroup.delete({ where: { id } })
+    await userGroupDelegate(prisma).delete({ where: { id } })
     return success({ message: 'Benutzergruppe gelöscht' })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'

@@ -7,11 +7,24 @@ import { PERMISSIONS } from '../src/lib/permissions'
 const adapter = new PrismaMariaDb(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
 
+type UpsertDelegate = {
+  upsert: (args: unknown) => Promise<unknown>
+}
+
+function getUpsertDelegate(names: readonly string[]): UpsertDelegate {
+  const client = prisma as unknown as Record<string, UpsertDelegate | undefined>
+  const delegate = names.map((name) => client[name]).find(Boolean)
+  if (!delegate) {
+    throw new Error(`Prisma-Delegate nicht gefunden: ${names.join(' / ')}`)
+  }
+  return delegate
+}
+
 async function main() {
   console.log('Seeding database...')
 
   const passwordHash = await bcrypt.hash('admin123', 12)
-  const admin = await prisma.user.upsert({
+  const admin = await getUpsertDelegate(['user']).upsert({
     where: { username: 'admin' },
     update: {},
     create: {
@@ -20,7 +33,7 @@ async function main() {
       displayName: 'Administrator',
       role: 'ADMIN',
     },
-  })
+  }) as { username: string }
   console.log('Admin user created:', admin.username)
 
   const groups = [
@@ -45,7 +58,7 @@ async function main() {
   ]
 
   for (const group of groups) {
-    await prisma.userGroup.upsert({
+    await getUpsertDelegate(['userGroup', 'usergroup']).upsert({
       where: { name: group.name },
       update: { description: group.description, permissions: group.permissions },
       create: group,
@@ -62,7 +75,7 @@ async function main() {
   ]
 
   for (const unit of units) {
-    await prisma.unit.upsert({
+    await getUpsertDelegate(['unit']).upsert({
       where: { key: unit.key },
       update: { name: unit.name, sortOrder: unit.sortOrder, color: unit.color, active: true },
       create: unit,
@@ -89,7 +102,7 @@ async function main() {
   ]
 
   for (const rank of ranks) {
-    await prisma.rank.upsert({
+    await getUpsertDelegate(['rank']).upsert({
       where: { name: rank.name },
       update: { sortOrder: rank.sortOrder, color: rank.color },
       create: rank,
@@ -107,7 +120,7 @@ async function main() {
   ]
 
   for (const training of trainings) {
-    await prisma.training.upsert({
+    await getUpsertDelegate(['training']).upsert({
       where: { key: training.key },
       update: { label: training.label, sortOrder: training.sortOrder },
       create: training,
