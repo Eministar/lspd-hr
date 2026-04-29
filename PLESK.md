@@ -69,4 +69,7 @@ Bei Schema-Änderungen: erst `npm run db:push` oder Migrationsworkflow, dann wie
 
 ## Windows IIS / iisnode
 
-Unter **iisnode** kann **`PORT` leer** sein oder kein Integer — dann war `start.js` früher mit **NaN** abgestürzt (`ERR_SOCKET_BAD_PORT`). `start.js` fällt in dem Fall auf **3000** zurück; zuverlässiger: in der **web.config** (oder den Site-Umgebungsvariablen) **`PORT`** auf eine **freie Portnummer** setzen, die zu deiner IIS-/Proxy-Konfiguration passt (und die App danach neu starten). Hinweis: klassisches **Named-Pipe‑Setup** von iisnode deckt nicht dasselbe ab wie **`server.listen/tcp`** in Next.js — bei weiteren IIS-Problemen lohnt sich oft ein **Reverse-Proxy vor Node** oder ein anderer Hosting-Stack statt Roh-iisnode.
+**iisnode** setzt `process.env.PORT` auf eine **Windows-Named Pipe** (`\\.\pipe\...`), keine TCP-Zahl. `start.js` erkennt das und nutzt einen **programmatischen Next‑Server**, der **`http.createServer(...).listen(pipe)`** nutzt — so wie iisnode es erwartet. Ohne diese Pipe lauscht die App nirgends, wo IIS anbindet → 500.
+
+- Im Repo: **`web.config`** für IIS/iisnode (URL Rewrite alle Anfragen → `start.js`, Handler registriert). Im **Website-/`httpdocs`-Ordner** neben `start.js` ablegen; **URL-Rewrite-Modul** und **iisnode** müssen installiert sein.
+- Vorher auf dem Server: **`npm install`**, **`npm run build`**. `devErrorsEnabled` in `web.config` kann man bei Fehlersuche auf `true` stellen (`false` zeigt weniger Details in Production).
