@@ -127,6 +127,7 @@ model Officer {
   rank            Rank          @relation(fields: [rankId], references: [id])
   status          OfficerStatus @default(ACTIVE)
   unit            String?
+  units           Json?
   flag            OfficerFlag?
   notes           String?
   hireDate        DateTime      @default(now())

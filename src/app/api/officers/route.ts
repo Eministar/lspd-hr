@@ -5,6 +5,9 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { nextBadgeForRank } from '@/lib/badge-number'
+import { normalizeUnitKeys } from '@/lib/officer-units'
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
@@ -49,7 +52,19 @@ export async function POST(req: NextRequest) {
       return error(parsed.error.issues.map(e => e.message).join(', '))
     }
 
-    const existingBadge = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
+    const rank = await prisma.rank.findUnique({ where: { id: parsed.data.rankId } })
+    if (!rank) return error('Rang nicht gefunden')
+
+    let badgeNumber = parsed.data.badgeNumber?.trim() ?? ''
+    if (!badgeNumber) {
+      const prefix = await getBadgePrefix()
+      const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+      const assigned = nextBadgeForRank(rank, allRows, prefix, null)
+      if (!assigned) return error('Keine freie Dienstnummer im Bereich des ausgewählten Rangs')
+      badgeNumber = assigned.str
+    }
+
+    const existingBadge = await prisma.officer.findUnique({ where: { badgeNumber } })
     if (existingBadge) return error('Dienstnummer bereits vergeben')
 
     const did = parsed.data.discordId ?? null
@@ -58,15 +73,17 @@ export async function POST(req: NextRequest) {
       if (existingDiscord) return error('Discord-ID bereits vergeben')
     }
 
-    const unitKey = parsed.data.unit ?? null
-    if (unitKey) {
-      const unit = await prisma.unit.findUnique({ where: { key: unitKey } })
-      if (!unit || !unit.active) return error('Unit nicht gefunden')
+    const unitKeys = normalizeUnitKeys(parsed.data.units ?? (parsed.data.unit ? [parsed.data.unit] : []))
+    if (unitKeys.length > 0) {
+      const activeUnits = await prisma.unit.findMany({ where: { key: { in: unitKeys }, active: true } })
+      const activeKeys = new Set(activeUnits.map((unit) => unit.key))
+      const missing = unitKeys.find((key) => !activeKeys.has(key))
+      if (missing) return error('Unit nicht gefunden')
     }
 
     const officer = await prisma.officer.create({
       data: {
-        badgeNumber: parsed.data.badgeNumber,
+        badgeNumber,
         firstName: parsed.data.firstName,
         lastName: parsed.data.lastName,
         rankId: parsed.data.rankId,
@@ -74,7 +91,8 @@ export async function POST(req: NextRequest) {
         notes: parsed.data.notes || null,
         hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate) : new Date(),
         status: parsed.data.status || 'ACTIVE',
-        unit: unitKey,
+        unit: unitKeys[0] ?? null,
+        units: unitKeys,
         flag: parsed.data.flag ?? null,
       },
       include: { rank: true },

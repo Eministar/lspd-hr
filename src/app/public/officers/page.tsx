@@ -13,7 +13,8 @@ interface Officer {
   lastName: string
   status: string
   unit: string | null
-  unitInfo: { key: string; name: string; color: string } | null
+  units: string[] | null
+  unitInfo: { key: string; name: string; color: string }[]
   rank: { name: string; color: string; sortOrder: number }
 }
 
@@ -30,7 +31,7 @@ export default function PublicOfficersPage() {
       officer.lastName.toLowerCase().includes(s) ||
       officer.badgeNumber.toLowerCase().includes(s) ||
       officer.rank.name.toLowerCase().includes(s) ||
-      (officer.unitInfo?.name.toLowerCase().includes(s) ?? false)
+      officer.unitInfo.some((unit) => unit.name.toLowerCase().includes(s))
     ))
   }, [officers, search])
 
@@ -71,14 +72,17 @@ export default function PublicOfficersPage() {
                     <p className="truncate text-[13.5px] font-medium text-[#eee]">{officer.firstName} {officer.lastName}</p>
                     <p className="truncate text-[11.5px] text-[#4a6585]">{officer.rank.name}</p>
                   </div>
-                  {officer.unitInfo && (
-                    <span
-                      className="hidden sm:inline-flex items-center rounded-full border bg-[#0f2340]/70 px-2 py-[3px] text-[10.5px] font-medium"
-                      style={{ color: officer.unitInfo.color, borderColor: `${officer.unitInfo.color}66` }}
-                    >
-                      {officer.unitInfo.name}
-                    </span>
-                  )}
+                  <span className="hidden sm:inline-flex items-center gap-1">
+                    {officer.unitInfo.map((unit) => (
+                      <span
+                        key={unit.key}
+                        className="inline-flex items-center rounded-full border bg-[#0f2340]/70 px-2 py-[3px] text-[10.5px] font-medium"
+                        style={{ color: unit.color, borderColor: `${unit.color}66` }}
+                      >
+                        {unit.name}
+                      </span>
+                    ))}
+                  </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
                     <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>

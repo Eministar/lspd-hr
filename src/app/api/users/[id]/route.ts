@@ -12,7 +12,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const data: Record<string, unknown> = {}
     if (body.displayName) data.displayName = body.displayName
-    if (body.role) data.role = body.role
     if ('groupId' in body) {
       if (body.groupId) {
         const group = await userGroupDelegate(prisma).findUnique({ where: { id: String(body.groupId) } })
@@ -31,7 +30,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         id: true,
         username: true,
         displayName: true,
-        role: true,
         groupId: true,
         group: { select: { id: true, name: true } },
         createdAt: true,

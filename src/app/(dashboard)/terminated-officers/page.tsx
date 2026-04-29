@@ -12,6 +12,7 @@ import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { formatDate, getUnitLabel } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
+import { officerUnitKeys } from '@/lib/officer-units'
 
 interface Officer {
   id: string
@@ -20,6 +21,7 @@ interface Officer {
   lastName: string
   status: string
   unit: string | null
+  units: string[] | null
   hireDate: string
   rank: { name: string; color: string }
 }
@@ -37,9 +39,10 @@ export default function TerminatedOfficersPage() {
   const { user } = useAuth()
   const canEdit = hasPermission(user, 'officers:write')
 
-  const unitName = (key: string | null) => {
-    if (!key) return '—'
-    return units?.find((unit) => unit.key === key)?.name ?? getUnitLabel(key)
+  const unitNames = (officer: Officer) => {
+    const keys = officerUnitKeys(officer)
+    if (keys.length === 0) return '—'
+    return keys.map((key) => units?.find((unit) => unit.key === key)?.name ?? getUnitLabel(key)).join(', ')
   }
 
   const reactivate = async (officerId: string) => {
@@ -83,7 +86,7 @@ export default function TerminatedOfficersPage() {
                     {officer.firstName} {officer.lastName}
                   </Link>
                   <p className="text-[11.5px] text-[#4a6585]">
-                    DN {officer.badgeNumber} · {officer.rank.name} · {unitName(officer.unit)} · Eingestellt {formatDate(officer.hireDate)}
+                    DN {officer.badgeNumber} · {officer.rank.name} · {unitNames(officer)} · Eingestellt {formatDate(officer.hireDate)}
                   </p>
                 </div>
                 {canEdit && (

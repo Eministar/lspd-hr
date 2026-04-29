@@ -84,7 +84,7 @@
 | ⚙️ | **Admin** | Ränge, Ausbildungen, Units, Benutzergruppen, Benutzer, Einstellungen |
 | 📜 | **Protokoll** | Audit-Log |
 | 🎨 | **UI** | Dark-Mode, Glaspanele, **Gold-Akzente** · responsive |
-| 🔐 | **Auth** | JWT, Rollen und frei konfigurierbare Benutzergruppen |
+| 🔐 | **Auth** | JWT und frei konfigurierbare Benutzergruppen |
 | 🌐 | **Öffentliche Ansicht** | `/public/officers` zeigt Officers ohne Anmeldung im Lesemodus |
 
 ---

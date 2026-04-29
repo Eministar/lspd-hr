@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -29,6 +30,7 @@ import {
   getFlagColor,
 } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
+import { officerUnitKeys } from '@/lib/officer-units'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
@@ -58,6 +60,7 @@ interface OfficerDetail {
   rank: Rank
   status: string
   unit: string | null
+  units: string[] | null
   flag: string | null
   notes: string | null
   hireDate: string
@@ -74,7 +77,7 @@ interface OfficerForm {
   rankId: string
   notes: string
   status: string
-  unit: string
+  units: string[]
   flag: string
   hireDate: string
   discordId: string
@@ -87,7 +90,7 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
   rankId: '',
   notes: '',
   status: 'ACTIVE',
-  unit: '',
+  units: [],
   flag: '',
   hireDate: '',
   discordId: '',
@@ -130,7 +133,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       rankId: officer.rankId,
       notes: officer.notes || '',
       status: officer.status,
-      unit: officer.unit ?? '',
+      units: officerUnitKeys(officer),
       flag: officer.flag ?? '',
       hireDate: officer.hireDate?.split('T')[0] || '',
       discordId: officer.discordId ?? '',
@@ -142,7 +145,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     try {
       const payload = {
         ...form,
-        unit: form.unit ? form.unit : null,
+        units: form.units,
         flag: form.flag ? form.flag : null,
         discordId: form.discordId.trim() === '' ? null : form.discordId.trim(),
       }
@@ -339,16 +342,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select
-                    label="Unit"
-                    value={form.unit ?? ''}
-                    onValueChange={(v) => setForm({ ...form, unit: v })}
-                    placeholder="Keine Unit"
-                    options={[
-                      { value: '', label: 'Keine Unit' },
-                      ...(units?.map((u) => ({ value: u.key, label: u.name })) || []),
-                    ]}
-                  />
+                  <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
                 </div>
                 <div>
                   <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
@@ -373,16 +367,25 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
-                <InfoRow label="Unit">
-                  {officer.unit ? (
-                    <span
-                      className={cn(
-                        'inline-flex items-center px-2 py-[3px] rounded-full text-[11.5px] font-medium border',
-                        getUnitBadgeClass(officer.unit)
-                      )}
-                    >
-                    {units?.find((u) => u.key === officer.unit)?.name ?? getUnitLabel(officer.unit)}
-                  </span>
+                <InfoRow label="Units">
+                  {officerUnitKeys(officer).length > 0 ? (
+                    <span className="inline-flex flex-wrap gap-1.5">
+                      {officerUnitKeys(officer).map((unitKey) => {
+                        const unit = units?.find((u) => u.key === unitKey)
+                        return (
+                          <span
+                            key={unitKey}
+                            className={cn(
+                              'inline-flex items-center px-2 py-[3px] rounded-full text-[11.5px] font-medium border',
+                              unit ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unitKey)
+                            )}
+                            style={unit ? { borderColor: `${unit.color}66`, color: unit.color } : undefined}
+                          >
+                            {unit?.name ?? getUnitLabel(unitKey)}
+                          </span>
+                        )
+                      })}
+                    </span>
                   ) : (
                     <span className="text-[13.5px] text-[#4a6585]">—</span>
                   )}

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const valid = await verifyPassword(parsed.data.password, user.passwordHash)
     if (!valid) return error('Benutzername oder Passwort falsch', 401)
 
-    const token = signToken({ userId: user.id, username: user.username, role: user.role })
+    const token = signToken({ userId: user.id, username: user.username })
     const cookieStore = await cookies()
     cookieStore.set('auth-token', token, {
       httpOnly: true,
@@ -36,9 +36,8 @@ export async function POST(req: NextRequest) {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
-        role: user.role,
         group: user.group ? { id: user.group.id, name: user.group.name } : null,
-        permissions: resolvePermissions(user.role, user.group?.permissions),
+        permissions: resolvePermissions(user.group?.permissions),
       },
     })
   } catch {

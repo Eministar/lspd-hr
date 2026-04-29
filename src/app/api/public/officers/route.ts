@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { success } from '@/lib/api-response'
+import { officerUnitKeys } from '@/lib/officer-units'
 
 export async function GET() {
   const [officers, units] = await Promise.all([
@@ -11,6 +12,7 @@ export async function GET() {
         lastName: true,
         status: true,
         unit: true,
+        units: true,
         rank: { select: { name: true, color: true, sortOrder: true } },
       },
       orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
@@ -22,6 +24,6 @@ export async function GET() {
 
   return success(officers.map((officer) => ({
     ...officer,
-    unitInfo: officer.unit ? unitMap.get(officer.unit) ?? null : null,
+    unitInfo: officerUnitKeys(officer).map((unitKey) => unitMap.get(unitKey)).filter((unit) => unit != null),
   })))
 }

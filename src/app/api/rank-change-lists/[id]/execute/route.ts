@@ -4,6 +4,8 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -27,9 +29,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!list) return error('Liste nicht gefunden', 404)
     if (list.entries.length === 0) return error('Keine offenen Einträge vorhanden')
 
+    const prefix = await getBadgePrefix()
+    const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+    const usedBadgeInts = collectUsedBadgeInts(allRows, prefix)
     const requestedBadges = new Map<string, string>()
     for (const entry of list.entries) {
-      const nextBadge = entry.newBadgeNumber?.trim()
+      let nextBadge = entry.newBadgeNumber?.trim() ?? ''
+      if (!nextBadge && rankHasBadgeRange(entry.proposedRank)) {
+        const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
+        const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, usedBadgeInts, current)
+        if (assigned === null) return error(`Keine freie Dienstnummer im Bereich für ${entry.officer.firstName} ${entry.officer.lastName}`)
+        nextBadge = formatBadgeNumber(assigned, prefix)
+        usedBadgeInts.add(assigned)
+      }
       if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
       const duplicateEntry = requestedBadges.get(nextBadge)
       if (duplicateEntry) {
@@ -39,6 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
       if (owner && owner.id !== entry.officerId) return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
+      entry.newBadgeNumber = nextBadge
     }
 
     let executed = 0

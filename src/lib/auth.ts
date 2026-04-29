@@ -9,14 +9,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 export interface JWTPayload {
   userId: string
   username: string
-  role: string
 }
 
 export interface CurrentUser {
   id: string
   username: string
   displayName: string
-  role: string
   group: { id: string; name: string } | null
   permissions: Permission[]
 }
@@ -55,7 +53,6 @@ export async function getCurrentUser() {
       id: true,
       username: true,
       displayName: true,
-      role: true,
       group: { select: { id: true, name: true, permissions: true } },
     },
   })
@@ -66,19 +63,17 @@ export async function getCurrentUser() {
     id: user.id,
     username: user.username,
     displayName: user.displayName,
-    role: user.role,
     group: user.group ? { id: user.group.id, name: user.group.name } : null,
-    permissions: resolvePermissions(user.role, user.group?.permissions),
+    permissions: resolvePermissions(user.group?.permissions),
   } satisfies CurrentUser
 }
 
-export async function requireAuth(allowedRoles?: string[], allowedPermissions?: Permission[]) {
+export async function requireAuth(_allowedRoles?: string[], allowedPermissions?: Permission[]) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
-  const hasRestriction = !!allowedRoles || !!allowedPermissions
-  const roleAllowed = allowedRoles ? allowedRoles.includes(user.role) : false
+  const hasRestriction = !!allowedPermissions
   const permissionAllowed = allowedPermissions ? hasAnyPermission(user, allowedPermissions) : false
-  if (hasRestriction && !roleAllowed && !permissionAllowed) {
+  if (hasRestriction && !permissionAllowed) {
     throw new Error('Forbidden')
   }
   return user

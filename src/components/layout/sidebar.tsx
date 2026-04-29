@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, ExternalLink, Archive,
+  Menu, X, ExternalLink, Archive, KeyRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,12 +27,13 @@ interface NavItem {
 interface NavContentProps {
   pathname: string
   onNavigate: () => void
-  user: { displayName: string; role: string; permissions?: string[] | null } | null
+  user: { displayName: string; permissions?: string[] | null } | null
   logout: () => Promise<void>
 }
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Mein Konto', href: '/account', icon: KeyRound },
   { name: 'Officers', href: '/officers', icon: Users },
   { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive },
   { name: 'Beförderungen', href: '/promotions', icon: TrendingUp },

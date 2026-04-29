@@ -37,7 +37,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const unit = await prisma.unit.findUnique({ where: { id } })
     if (!unit) return notFound('Unit')
 
-    const officerCount = await prisma.officer.count({ where: { unit: unit.key } })
+    const officerCount = await prisma.officer.count({
+      where: {
+        OR: [
+          { unit: unit.key },
+          { units: { array_contains: unit.key } },
+        ],
+      },
+    })
     if (officerCount > 0) return error('Unit wird noch von Officers verwendet')
 
     await prisma.unit.delete({ where: { id } })

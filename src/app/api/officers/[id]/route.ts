@@ -5,6 +5,7 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { normalizeUnitKeys } from '@/lib/officer-units'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -58,17 +59,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (dup) return error('Discord-ID bereits vergeben')
     }
 
-    if ('unit' in parsed.data && parsed.data.unit) {
-      const unit = await prisma.unit.findUnique({ where: { key: parsed.data.unit } })
-      if (!unit || !unit.active) return error('Unit nicht gefunden')
+    const unitKeys = 'units' in parsed.data
+      ? normalizeUnitKeys(parsed.data.units)
+      : ('unit' in parsed.data && parsed.data.unit ? normalizeUnitKeys([parsed.data.unit]) : undefined)
+    if (unitKeys && unitKeys.length > 0) {
+      const activeUnits = await prisma.unit.findMany({ where: { key: { in: unitKeys }, active: true } })
+      const activeKeys = new Set(activeUnits.map((unit) => unit.key))
+      const missing = unitKeys.find((key) => !activeKeys.has(key))
+      if (missing) return error('Unit nicht gefunden')
     }
+
+    const data: Record<string, unknown> = { ...parsed.data }
+    if (data.badgeNumber === null || data.badgeNumber === '') delete data.badgeNumber
+    delete data.unit
+    delete data.units
+    if (unitKeys) {
+      data.unit = unitKeys[0] ?? null
+      data.units = unitKeys
+    }
+    if (parsed.data.hireDate) data.hireDate = new Date(parsed.data.hireDate)
 
     const updated = await prisma.officer.update({
       where: { id },
-      data: {
-        ...parsed.data,
-        hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate) : undefined,
-      },
+      data,
       include: { rank: true },
     })
 
@@ -78,8 +91,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) changes.push(`Dienstnummer: ${existing.badgeNumber} → ${parsed.data.badgeNumber}`)
     if (parsed.data.status && parsed.data.status !== existing.status) changes.push(`Status: ${existing.status} → ${parsed.data.status}`)
     if (parsed.data.rankId && parsed.data.rankId !== existing.rankId) changes.push(`Rang geändert`)
-    if ('unit' in parsed.data && parsed.data.unit !== existing.unit) {
-      changes.push(`Unit: ${existing.unit ?? '—'} → ${parsed.data.unit ?? '—'}`)
+    if (unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))) {
+      changes.push(`Units: ${normalizeUnitKeys(existing.units).join(', ') || '—'} → ${unitKeys.join(', ') || '—'}`)
     }
     if ('flag' in parsed.data && parsed.data.flag !== existing.flag) {
       changes.push(`Markierung: ${existing.flag ?? '—'} → ${parsed.data.flag ?? '—'}`)

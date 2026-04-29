@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,13 +20,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const officer = await prisma.officer.findUnique({ where: { id: officerId } })
     if (!officer) return error('Officer nicht gefunden')
+    const proposedRank = await prisma.rank.findUnique({ where: { id: proposedRankId } })
+    if (!proposedRank) return error('Vorgeschlagener Rang nicht gefunden')
 
     const existing = await prisma.rankChangeListEntry.findUnique({
       where: { listId_officerId: { listId: id, officerId } },
     })
     if (existing) return error('Officer ist bereits in dieser Liste')
 
-    const nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
+    let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
+    if (!nextBadge && rankHasBadgeRange(proposedRank)) {
+      const prefix = await getBadgePrefix()
+      const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+      const pendingBadges = await prisma.rankChangeListEntry.findMany({
+        where: { listId: id, executed: false, newBadgeNumber: { not: null } },
+        select: { newBadgeNumber: true },
+      })
+      const assigned = nextBadgeForRank(
+        proposedRank,
+        [
+          ...allRows,
+          ...pendingBadges
+            .map((entry) => entry.newBadgeNumber)
+            .filter((badgeNumber): badgeNumber is string => !!badgeNumber)
+            .map((badgeNumber) => ({ badgeNumber })),
+        ],
+        prefix,
+        officer.badgeNumber,
+      )
+      if (!assigned) return error('Keine freie Dienstnummer im Bereich des vorgeschlagenen Rangs')
+      nextBadge = assigned.str
+    }
     if (nextBadge && nextBadge !== officer.badgeNumber) {
       const badgeOwner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
       if (badgeOwner) return error('Dienstnummer bereits vergeben')

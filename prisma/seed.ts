@@ -24,19 +24,6 @@ function getUpsertDelegate(names: readonly string[]): UpsertDelegate {
 async function main() {
   console.log('Seeding database...')
 
-  const passwordHash = await bcrypt.hash('admin123', 12)
-  const admin = await getUpsertDelegate(['user']).upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      username: 'admin',
-      passwordHash,
-      displayName: 'Administrator',
-      role: 'ADMIN',
-    },
-  }) as { username: string }
-  console.log('Admin user created:', admin.username)
-
   const groups = [
     { name: 'Administration', description: 'Voller Zugriff auf alle Bereiche.', permissions: [...PERMISSIONS] },
     {
@@ -58,14 +45,31 @@ async function main() {
     },
   ]
 
+  let adminGroup: { id: string } | null = null
   for (const group of groups) {
-    await getUpsertDelegate(['userGroup', 'usergroup']).upsert({
+    const savedGroup = await getUpsertDelegate(['userGroup', 'usergroup']).upsert({
       where: { name: group.name },
       update: { description: group.description, permissions: group.permissions },
       create: group,
-    })
+    }) as { id: string }
+    if (group.name === 'Administration') adminGroup = savedGroup
   }
   console.log('User groups created:', groups.length)
+
+  if (!adminGroup) throw new Error('Administrationsgruppe konnte nicht erstellt werden')
+
+  const passwordHash = await bcrypt.hash('admin123', 12)
+  const admin = await getUpsertDelegate(['user']).upsert({
+    where: { username: 'admin' },
+    update: { groupId: adminGroup.id },
+    create: {
+      username: 'admin',
+      passwordHash,
+      displayName: 'Administrator',
+      groupId: adminGroup.id,
+    },
+  }) as { username: string }
+  console.log('Admin user created:', admin.username)
 
   const units = [
     { key: 'HR_LEITUNG', name: 'HR Leitung', sortOrder: 1, color: '#7c3aed' },

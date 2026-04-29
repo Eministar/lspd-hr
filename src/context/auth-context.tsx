@@ -7,7 +7,6 @@ interface User {
   id: string
   username: string
   displayName: string
-  role: string
   group: { id: string; name: string } | null
   permissions: string[]
 }

@@ -50,16 +50,6 @@ export function getStatusColor(status: string): string {
   return colors[status] || 'text-[#888]'
 }
 
-export function getRoleLabel(role: string): string {
-  const labels: Record<string, string> = {
-    ADMIN: 'Administrator',
-    HR: 'HR',
-    LEADERSHIP: 'Führungsebene',
-    READONLY: 'Nur Lesen',
-  }
-  return labels[role] || role
-}
-
 export function getUnitLabel(unit: string | null | undefined): string {
   if (!unit) return '—'
   const labels: Record<string, string> = {

@@ -39,6 +39,7 @@ import {
 } from '@/lib/utils'
 import { OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
 import { hasPermission } from '@/lib/permissions'
+import { officerUnitKeys } from '@/lib/officer-units'
 
 interface Training {
   id: string
@@ -81,6 +82,7 @@ interface Officer {
   rankId: string
   status: string
   unit: string | null
+  units: string[] | null
   flag: string | null
   notes: string | null
   hireDate: string
@@ -89,18 +91,26 @@ interface Officer {
   trainings: OfficerTraining[]
 }
 
-function UnitBadge({ unit, unitsByKey }: { unit: string | null; unitsByKey: Map<string, Unit> }) {
-  if (!unit) return <span className="text-[11px] text-[#4a6585]">—</span>
-  const unitInfo = unitsByKey.get(unit)
+function UnitBadges({ officer, unitsByKey }: { officer: Pick<Officer, 'unit' | 'units'>; unitsByKey: Map<string, Unit> }) {
+  const keys = officerUnitKeys(officer)
+  if (keys.length === 0) return <span className="text-[11px] text-[#4a6585]">—</span>
   return (
-    <span
-      className={cn(
-        'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
-        unitInfo ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unit)
-      )}
-      style={unitInfo ? { borderColor: `${unitInfo.color}66`, color: unitInfo.color } : undefined}
-    >
-      {unitInfo?.name ?? getUnitLabel(unit)}
+    <span className="inline-flex flex-wrap gap-1">
+      {keys.map((unitKey) => {
+        const unitInfo = unitsByKey.get(unitKey)
+        return (
+          <span
+            key={unitKey}
+            className={cn(
+              'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
+              unitInfo ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unitKey)
+            )}
+            style={unitInfo ? { borderColor: `${unitInfo.color}66`, color: unitInfo.color } : undefined}
+          >
+            {unitInfo?.name ?? getUnitLabel(unitKey)}
+          </span>
+        )
+      })}
     </span>
   )
 }
@@ -284,12 +294,12 @@ function DraggableOfficerRow({
         const ot = officer.trainings.find((x) => x.trainingId === t.id)
         const completed = ot?.completed || false
         return (
-          <td key={t.id} className="px-2.5 py-2.5" onClick={(e) => e.stopPropagation()}>
+          <td key={t.id} className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => onTrainToggle(officer.id, t.id, !completed)}
               className={cn(
-                'h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
+                'mx-auto h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
                 completed ? 'bg-[#d4af37]' : 'bg-[#18385f] hover:bg-[#1e3a5f]'
               )}
             >
@@ -299,7 +309,7 @@ function DraggableOfficerRow({
         )
       })}
       <td className="px-3 py-2.5 whitespace-nowrap">
-        <UnitBadge unit={officer.unit} unitsByKey={unitsByKey} />
+        <UnitBadges officer={officer} unitsByKey={unitsByKey} />
       </td>
       <td className="px-3 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
@@ -357,7 +367,7 @@ function MobileOfficerCard({
             <span className="font-mono text-[11px] text-[#b7c5d8] shrink-0">
               {officer.badgeNumber}
             </span>
-            {officer.unit && <UnitBadge unit={officer.unit} unitsByKey={unitsByKey} />}
+            {officerUnitKeys(officer).length > 0 && <UnitBadges officer={officer} unitsByKey={unitsByKey} />}
           </div>
           <Link
             href={`/officers/${officer.id}`}
@@ -462,7 +472,8 @@ export default function OfficersPage() {
       if (statusFilter && o.status !== statusFilter) return false
       if (rankFilter && o.rankId !== rankFilter) return false
       if (unitFilter) {
-        if (unitFilter === '__none__' ? o.unit != null : o.unit !== unitFilter) return false
+        const officerUnits = officerUnitKeys(o)
+        if (unitFilter === '__none__' ? officerUnits.length > 0 : !officerUnits.includes(unitFilter)) return false
       }
       if (flagFilter) {
         if (flagFilter === '__any__' ? !o.flag : o.flag !== flagFilter) return false
@@ -773,9 +784,12 @@ export default function OfficersPage() {
                                 {allTrainings.map((t) => (
                                   <th
                                     key={t.id}
-                                    className="px-2.5 py-2.5 text-left text-[11px] font-medium text-[#6b8299] whitespace-nowrap w-[88px]"
+                                    className="px-2 py-2.5 text-center text-[10.5px] font-medium text-[#6b8299] w-[104px]"
+                                    title={t.label}
                                   >
-                                    {t.label}
+                                    <span className="block mx-auto max-w-[92px] whitespace-normal break-words leading-tight">
+                                      {t.label}
+                                    </span>
                                   </th>
                                 ))}
                                 <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Unit</th>

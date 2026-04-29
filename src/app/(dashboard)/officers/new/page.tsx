@@ -8,6 +8,7 @@ import { DateField } from '@/components/ui/date-field'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader } from '@/components/layout/page-header'
+import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -40,14 +41,14 @@ export default function NewOfficerPage() {
     rankId: '',
     discordId: '',
     notes: '',
-    unit: '',
+    units: [] as string[],
     hireDate: new Date().toISOString().split('T')[0],
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const payload = { ...form, unit: form.unit ? form.unit : null, discordId: form.discordId.trim() || null }
+      const payload = { ...form, discordId: form.discordId.trim() || null }
       await execute('/api/officers', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -59,7 +60,7 @@ export default function NewOfficerPage() {
     }
   }
 
-  const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }))
+  const update = (key: string, value: string | string[]) => setForm(prev => ({ ...prev, [key]: value }))
 
   return (
     <div>
@@ -101,8 +102,7 @@ export default function NewOfficerPage() {
               label="Dienstnummer"
               value={form.badgeNumber}
               onChange={(e) => update('badgeNumber', e.target.value)}
-              required
-              placeholder="z.B. 101"
+              placeholder="Automatisch nach Rang"
             />
             <Select
               id="rankId"
@@ -133,17 +133,7 @@ export default function NewOfficerPage() {
               value={form.hireDate}
               onChange={(v) => update('hireDate', v)}
             />
-            <Select
-              id="unit"
-              label="Unit"
-              value={form.unit}
-              onValueChange={(v) => update('unit', v)}
-              placeholder="Keine Unit"
-              options={[
-                { value: '', label: 'Keine Unit' },
-                ...(units?.map((u) => ({ value: u.key, label: u.name })) || []),
-              ]}
-            />
+            <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
           </div>
 
           <Textarea

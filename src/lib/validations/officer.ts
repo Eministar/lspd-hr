@@ -21,7 +21,7 @@ export const discordIdSchema = z
   })
 
 export const createOfficerSchema = z.object({
-  badgeNumber: z.string().min(1, 'Dienstnummer ist erforderlich'),
+  badgeNumber: z.string().trim().optional().nullable(),
   firstName: z.string().min(1, 'Vorname ist erforderlich'),
   lastName: z.string().min(1, 'Nachname ist erforderlich'),
   rankId: z.string().min(1, 'Rang ist erforderlich'),
@@ -30,6 +30,7 @@ export const createOfficerSchema = z.object({
   hireDate: z.string().optional(),
   status: z.enum(['ACTIVE', 'AWAY', 'INACTIVE', 'TERMINATED']).optional(),
   unit: z.string().trim().min(1).nullable().optional(),
+  units: z.array(z.string().trim().min(1)).nullable().optional(),
   flag: z.enum(OFFICER_FLAG_VALUES).nullable().optional(),
 })
 

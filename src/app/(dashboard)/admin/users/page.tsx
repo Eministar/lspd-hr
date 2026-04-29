@@ -13,13 +13,12 @@ import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
-import { getRoleLabel, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 interface User {
   id: string
   username: string
   displayName: string
-  role: string
   groupId: string | null
   group: { id: string; name: string } | null
   createdAt: string
@@ -30,13 +29,6 @@ interface UserGroup {
   name: string
 }
 
-const roleOptions = [
-  { value: 'ADMIN', label: 'Administrator' },
-  { value: 'HR', label: 'HR' },
-  { value: 'LEADERSHIP', label: 'Führungsebene' },
-  { value: 'READONLY', label: 'Nur Lesen' },
-]
-
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
   const { data: groups } = useFetch<UserGroup[]>('/api/user-groups')
@@ -46,15 +38,15 @@ export default function UsersPage() {
 
   const [createModal, setCreateModal] = useState(false)
   const [editUser, setEditUser] = useState<User | null>(null)
-  const [form, setForm] = useState({ username: '', password: '', displayName: '', role: 'READONLY', groupId: '' })
+  const [form, setForm] = useState({ username: '', password: '', displayName: '', groupId: '' })
 
   const openCreate = () => {
-    setForm({ username: '', password: '', displayName: '', role: 'READONLY', groupId: '' })
+    setForm({ username: '', password: '', displayName: '', groupId: '' })
     setCreateModal(true)
   }
 
   const openEdit = (u: User) => {
-    setForm({ username: u.username, password: '', displayName: u.displayName, role: u.role, groupId: u.groupId ?? '' })
+    setForm({ username: u.username, password: '', displayName: u.displayName, groupId: u.groupId ?? '' })
     setEditUser(u)
   }
 
@@ -72,7 +64,7 @@ export default function UsersPage() {
   const handleUpdate = async () => {
     if (!editUser) return
     try {
-      const data: Record<string, string | null> = { displayName: form.displayName, role: form.role, groupId: form.groupId || null }
+      const data: Record<string, string | null> = { displayName: form.displayName, groupId: form.groupId || null }
       if (form.password) data.password = form.password
       await execute(`/api/users/${editUser.id}`, { method: 'PATCH', body: JSON.stringify(data) })
       addToast({ type: 'success', title: 'Benutzer aktualisiert' })
@@ -99,7 +91,7 @@ export default function UsersPage() {
     <div>
       <PageHeader
         title="Benutzer verwalten"
-        description="Dashboard-Benutzer und Rollen verwalten"
+        description="Dashboard-Benutzer und Benutzergruppen verwalten"
         action={<Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neuer Benutzer</Button>}
       />
 
@@ -123,7 +115,7 @@ export default function UsersPage() {
                 </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
-                {getRoleLabel(u.role)}
+                {u.group?.name || 'Keine Gruppe'}
               </span>
               <div className="flex gap-0.5">
                 <button onClick={() => openEdit(u)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
@@ -151,7 +143,6 @@ export default function UsersPage() {
           <Input label="Benutzername" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
           <Input label="Passwort" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-          <Select label="Rolle" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
           <Select
             label="Benutzergruppe"
             value={form.groupId}
@@ -172,7 +163,6 @@ export default function UsersPage() {
         <div className="space-y-4">
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label="Neues Passwort (optional)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leer lassen um nicht zu ändern" />
-          <Select label="Rolle" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
           <Select
             label="Benutzergruppe"
             value={form.groupId}
