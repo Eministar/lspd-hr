@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { APP_VERSION_LABEL, releaseBuildShort } from '@/lib/release'
 import { GITHUB_REPO_URL } from '@/lib/site'
 import { useAuth } from '@/context/auth-context'
 import { hasAnyPermission, hasPermission, type Permission } from '@/lib/permissions'
@@ -141,25 +142,40 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
         )}
       </nav>
 
-      <div className="px-2.5 pt-1 pb-2 shrink-0">
-        <div className="gold-line mb-2.5 mx-2" />
+      <div className="px-2.5 pt-1 pb-1.5 shrink-0 space-y-1.5">
+        <div className="gold-line mb-2 mx-2 opacity-70" />
+
+        <div className="flex flex-wrap items-center justify-center gap-1 px-1">
+          <span className="inline-flex items-center rounded border border-[#d4af37]/28 bg-[#07182e]/70 px-[5px] py-[1px] text-[9px] font-semibold tracking-tight text-[#c9b068] shadow-[inset_0_1px_0_rgba(212,175,55,0.06)]">
+            {APP_VERSION_LABEL}
+          </span>
+          <span
+            className="inline-flex items-center gap-0.5 rounded border border-[#234568]/70 bg-[#0a1a33]/55 px-[5px] py-[1px] font-mono text-[9px] text-[#5c7490] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+            title="Build / Commit"
+          >
+            <span className="text-[7px] font-sans font-medium text-[#4a6585]">build</span>
+            {releaseBuildShort()}
+          </span>
+        </div>
+
         <a
           href={GITHUB_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           onClick={onNavigate}
+          title="Repository"
           className={cn(
-            'mb-2.5 flex w-full items-center justify-center gap-2 rounded-lg border border-[#234568]/80 bg-[#0a1a33]/50 py-1.5 text-[11px] font-medium text-[#8ea4bd] transition-colors',
-            'hover:border-[#d4af37]/35 hover:text-white hover:bg-[#0d2444]/80'
+            'flex items-center justify-center gap-1 rounded-md border border-[#234568]/50 bg-[#0a1a33]/35 py-[3px] text-[9px] font-medium text-[#6b8299] transition-colors',
+            'hover:border-[#d4af37]/30 hover:text-[#b8c5d4] hover:bg-[#0d2444]/60'
           )}
         >
-          <GitHubLogo className="h-4 w-4 shrink-0 text-[#f0f0f0]" />
-          <span>Repository</span>
-          <ExternalLink size={9} className="opacity-40 shrink-0" />
+          <GitHubLogo className="h-3 w-3 shrink-0 text-[#b0b8c2]" />
+          <span>GitHub</span>
+          <ExternalLink size={8} className="opacity-45 shrink-0" />
         </a>
-        <p className="px-1 text-center text-[10px] leading-snug text-[#4a6585]">
-          Crafted with <span className="text-[#d4af37]/80">&lt;3</span> by{' '}
-          <span className="text-[#6b8299]">Eministar</span>
+
+        <p className="px-1 text-center text-[8px] leading-tight text-[#4a6585]/95">
+          <span className="text-[#d4af37]/55">&lt;3</span> Eministar
         </p>
       </div>
 
