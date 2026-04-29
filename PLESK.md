@@ -66,3 +66,7 @@ Bei Schema-Änderungen: erst `npm run db:push` oder Migrationsworkflow, dann wie
 2. **Build auf dem Server:** `npm run build` muss **auf Linux** im Anwendungsstamm gelaufen sein; nach Deploy fehlt sonst `.next` oder ist veraltet.
 3. **Document Root / Nginx:** Wenn **Document Root** auf `…/.next/static` steht, muss dein Webserver die URL `/_next/static/…` wirklich auf diesen Ordner abbilden. Viele Setups lassen **alles** an den Node-Prozess gehen — dann **Application Root** = Ordner mit `package.json` / `start.js`, **kein** getrenntes Ausliefern alter Pfade testen. Weiße Seite: [Plesk-Hinweis zu Next.js / Proxy](https://support.plesk.com/hc/en-us/articles/16950957557783).
 4. **Im Browser (F12 → Netzwerk):** die **genaue URL** des 404 notieren (z. B. `/favicon.ico` ist oft harmlos; fehlende `/_next/static/chunks/...` ist kritisch).
+
+## Windows IIS / iisnode
+
+Unter **iisnode** kann **`PORT` leer** sein oder kein Integer — dann war `start.js` früher mit **NaN** abgestürzt (`ERR_SOCKET_BAD_PORT`). `start.js` fällt in dem Fall auf **3000** zurück; zuverlässiger: in der **web.config** (oder den Site-Umgebungsvariablen) **`PORT`** auf eine **freie Portnummer** setzen, die zu deiner IIS-/Proxy-Konfiguration passt (und die App danach neu starten). Hinweis: klassisches **Named-Pipe‑Setup** von iisnode deckt nicht dasselbe ab wie **`server.listen/tcp`** in Next.js — bei weiteren IIS-Problemen lohnt sich oft ein **Reverse-Proxy vor Node** oder ein anderer Hosting-Stack statt Roh-iisnode.
