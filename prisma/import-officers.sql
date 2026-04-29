@@ -1,6 +1,10 @@
--- Officers-Import aus phpMyAdmin JSON
--- VORAUSSETZUNG: npm run db:seed oder identische Rank-Zeilen (sortOrder 1..15)
--- Doppelte discordId: nur erster Eintrag mit Wert, weitere NULL (Unique)
+-- =============================================================================
+-- Officers: kompletter Import (alle Datensätze fest in dieser Datei, kein JSON/Node)
+-- Schema: Prisma-Modell Officer (MySQL)
+-- Vorher: npm run db:seed — Tabelle Rank muss sortOrder 1..15 enthalten
+-- rankId: je Zeile per Subquery auf den aktuellen Rang in deiner DB
+-- Doppelte discordId: bei Philipp/Willy zweites Vorkommen NULL (Unique-Constraint)
+-- =============================================================================
 
 SET NAMES utf8mb4;
 
