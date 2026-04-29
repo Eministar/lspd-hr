@@ -6,17 +6,18 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "prisma db push --accept-data-loss && prisma generate && next dev",
+    "dev": "npm run db:backup && prisma db push && prisma generate && next dev",
     "build": "next build",
-    "prebuild": "prisma generate && prisma db push --accept-data-loss",
-    "start": "prisma db push --accept-data-loss && tsx prisma/seed.ts && next start",
+    "prebuild": "prisma generate && npm run db:backup && prisma db push",
+    "start": "npm run db:backup && prisma db push --accept-data-loss && tsx prisma/seed.ts && next start",
     "lint": "eslint",
     "db:generate": "npx prisma generate",
-    "db:push": "npx prisma db push --accept-data-loss",
+    "db:push": "npm run db:backup && npx prisma db push",
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "npx prisma studio",
-    "db:setup": "npx prisma db push --accept-data-loss && npx tsx prisma/seed.ts"
+    "db:setup": "npm run db:backup && npx prisma db push && npx tsx prisma/seed.ts",
+    "db:backup": "npx tsx prisma/backup.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -40,6 +41,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.9.0",
     "next": "16.2.4",
+    "node-cron": "^4.2.1",
     "prisma": "^7.8.0",
     "react": "19.2.5",
     "react-day-picker": "^9.14.0",
@@ -51,6 +53,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",

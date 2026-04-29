@@ -46,3 +46,6 @@ next-env.d.ts
 # sqlite database
 *.db
 *.db-journal
+
+# lokale DB-JSON-Backups (Passwort-Hashes u. a. – nicht committen)
+/.backup/
