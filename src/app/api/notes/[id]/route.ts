@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { hasPermission } from '@/lib/permissions'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -10,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const note = await prisma.note.findUnique({ where: { id } })
   if (!note) return notFound('Notiz')
-  if (note.authorId !== user.id && user.role !== 'ADMIN') return error('Keine Berechtigung', 403)
+  if (note.authorId !== user.id && !hasPermission(user, 'notes:manage')) return error('Keine Berechtigung', 403)
 
   const body = await req.json()
   const updated = await prisma.note.update({
@@ -33,7 +34,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const note = await prisma.note.findUnique({ where: { id } })
   if (!note) return notFound('Notiz')
-  if (note.authorId !== user.id && user.role !== 'ADMIN') return error('Keine Berechtigung', 403)
+  if (note.authorId !== user.id && !hasPermission(user, 'notes:manage')) return error('Keine Berechtigung', 403)
 
   await prisma.note.delete({ where: { id } })
   return success({ message: 'Notiz gelöscht' })

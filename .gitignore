@@ -47,11 +47,16 @@ next-env.d.ts
 *.db
 *.db-journal
 
+# lokale DB-JSON-Backups (Passwort-Hashes u. a. – nicht committen)
+/.backup/
+
+# Plesk / IIS live files
+App_Data/
+public/App_Data/
+.user.ini
+public/.user.ini
+
 # local debug / comparison files
 critical-diff.txt
 update-diff.txt
 dsadasdasda
-
-# Plesk local ini files
-.user.ini
-public/.user.ini

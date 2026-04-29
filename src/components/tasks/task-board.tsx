@@ -36,8 +36,9 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { cn, formatDate } from '@/lib/utils'
+import { hasPermission } from '@/lib/permissions'
 
-type TaskModule = 'ACADEMY' | 'HR'
+type TaskModule = 'ACADEMY' | 'HR' | 'SRU'
 type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
 type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
@@ -313,7 +314,7 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
 
 export function TaskBoard({ module, title, description, accentLabel }: TaskBoardProps) {
   const { user } = useAuth()
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'HR' || user?.role === 'LEADERSHIP'
+  const canEdit = hasPermission(user, 'tasks:manage')
 
   const [showArchived, setShowArchived] = useState(false)
   const queryUrl = `/api/task-lists?module=${module}${showArchived ? '&archived=true' : ''}`

@@ -37,7 +37,8 @@ import {
   getFlagRowClass,
   compareBadgeNumbers,
 } from '@/lib/utils'
-import { OFFICER_UNIT_VALUES, OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
+import { OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
+import { hasPermission } from '@/lib/permissions'
 
 interface Training {
   id: string
@@ -62,6 +63,15 @@ interface Rank {
   badgeMax: number | null
 }
 
+interface Unit {
+  id: string
+  key: string
+  name: string
+  color: string
+  sortOrder: number
+  active: boolean
+}
+
 interface Officer {
   id: string
   badgeNumber: string
@@ -69,7 +79,6 @@ interface Officer {
   lastName: string
   rank: Rank
   rankId: string
-  discordId: string | null
   status: string
   unit: string | null
   flag: string | null
@@ -77,6 +86,22 @@ interface Officer {
   hireDate: string
   lastOnline: string | null
   trainings: OfficerTraining[]
+}
+
+function UnitBadge({ unit, unitsByKey }: { unit: string | null; unitsByKey: Map<string, Unit> }) {
+  if (!unit) return <span className="text-[11px] text-[#4a6585]">—</span>
+  const unitInfo = unitsByKey.get(unit)
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
+        unitInfo ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unit)
+      )}
+      style={unitInfo ? { borderColor: `${unitInfo.color}66`, color: unitInfo.color } : undefined}
+    >
+      {unitInfo?.name ?? getUnitLabel(unit)}
+    </span>
+  )
 }
 
 const rankDropCollision: CollisionDetection = (args) => {
@@ -184,6 +209,7 @@ function DraggableOfficerRow({
   canDrag,
   canEdit,
   allTrainings,
+  unitsByKey,
   rowIndex,
   onTrainToggle,
   onFlagChange,
@@ -192,6 +218,7 @@ function DraggableOfficerRow({
   canDrag: boolean
   canEdit: boolean
   allTrainings: Training[]
+  unitsByKey: Map<string, Unit>
   rowIndex: number
   onTrainToggle: (id: string, trainingId: string, done: boolean) => void
   onFlagChange: (id: string, flag: string | null) => void
@@ -251,14 +278,6 @@ function DraggableOfficerRow({
         >
           {officer.firstName} {officer.lastName}
         </Link>
-        {officer.discordId && (
-          <span
-            className="block text-[10.5px] text-[#4a6585] font-mono truncate leading-tight"
-            title={officer.discordId}
-          >
-            {officer.discordId}
-          </span>
-        )}
       </td>
       {allTrainings.map((t) => {
         const ot = officer.trainings.find((x) => x.trainingId === t.id)
@@ -279,18 +298,7 @@ function DraggableOfficerRow({
         )
       })}
       <td className="px-3 py-2.5 whitespace-nowrap">
-        {officer.unit ? (
-          <span
-            className={cn(
-              'inline-flex items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border whitespace-nowrap',
-              getUnitBadgeClass(officer.unit)
-            )}
-          >
-            {getUnitLabel(officer.unit)}
-          </span>
-        ) : (
-          <span className="text-[11px] text-[#4a6585]">—</span>
-        )}
+        <UnitBadge unit={officer.unit} unitsByKey={unitsByKey} />
       </td>
       <td className="px-3 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
@@ -316,12 +324,14 @@ function DraggableOfficerRow({
 function MobileOfficerCard({
   officer,
   allTrainings,
+  unitsByKey,
   canEdit,
   onTrainToggle,
   onFlagChange,
 }: {
   officer: Officer
   allTrainings: Training[]
+  unitsByKey: Map<string, Unit>
   canEdit: boolean
   onTrainToggle: (id: string, trainingId: string, done: boolean) => void
   onFlagChange: (id: string, flag: string | null) => void
@@ -346,16 +356,7 @@ function MobileOfficerCard({
             <span className="font-mono text-[11px] text-[#b7c5d8] shrink-0">
               {officer.badgeNumber}
             </span>
-            {officer.unit && (
-              <span
-                className={cn(
-                  'inline-flex items-center px-1.5 py-[1px] rounded-full text-[9.5px] font-medium border',
-                  getUnitBadgeClass(officer.unit)
-                )}
-              >
-                {getUnitLabel(officer.unit)}
-              </span>
-            )}
+            {officer.unit && <UnitBadge unit={officer.unit} unitsByKey={unitsByKey} />}
           </div>
           <Link
             href={`/officers/${officer.id}`}
@@ -363,11 +364,6 @@ function MobileOfficerCard({
           >
             {officer.firstName} {officer.lastName}
           </Link>
-          {officer.discordId && (
-            <span className="block text-[10.5px] text-[#4a6585] font-mono truncate">
-              {officer.discordId}
-            </span>
-          )}
         </div>
         <div className="shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
           <FlagButton
@@ -432,10 +428,11 @@ function MobileOfficerCard({
 export default function OfficersPage() {
   const { data: officers, loading, refetch, setData } = useFetch<Officer[]>('/api/officers')
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
+  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { addToast } = useToast()
   const { user } = useAuth()
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'HR'
-  const canMove = canEdit
+  const canEdit = hasPermission(user, 'officers:write')
+  const canMove = hasPermission(user, 'rank-changes:manage')
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -457,8 +454,7 @@ export default function OfficersPage() {
         if (
           !o.firstName.toLowerCase().includes(s) &&
           !o.lastName.toLowerCase().includes(s) &&
-          !o.badgeNumber.toLowerCase().includes(s) &&
-          !(o.discordId || '').toLowerCase().includes(s)
+          !o.badgeNumber.toLowerCase().includes(s)
         )
           return false
       }
@@ -473,6 +469,8 @@ export default function OfficersPage() {
       return true
     })
   }, [officers, search, statusFilter, rankFilter, unitFilter, flagFilter])
+
+  const unitsByKey = useMemo(() => new Map((units ?? []).map((unit) => [unit.key, unit])), [units])
 
   const groupedByRank = useMemo(() => {
     const groups: Map<string, { rank: Rank; officers: Officer[] }> = new Map()
@@ -663,7 +661,7 @@ export default function OfficersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suche nach Name, Dienstnummer oder Discord..."
+            placeholder="Suche nach Name oder Dienstnummer..."
             className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
           />
         </div>
@@ -678,7 +676,6 @@ export default function OfficersPage() {
               { value: 'ACTIVE', label: 'Aktiv' },
               { value: 'AWAY', label: 'Abgemeldet' },
               { value: 'INACTIVE', label: 'Inaktiv' },
-              { value: 'TERMINATED', label: 'Gekündigt' },
             ]}
           />
 
@@ -699,7 +696,7 @@ export default function OfficersPage() {
             options={[
               { value: '', label: 'Alle Units' },
               { value: '__none__', label: 'Ohne Unit' },
-              ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+              ...(units?.map((u) => ({ value: u.key, label: u.name })) || []),
             ]}
           />
 
@@ -796,6 +793,7 @@ export default function OfficersPage() {
                                   canDrag={canMove}
                                   canEdit={canEdit}
                                   allTrainings={allTrainings}
+                                  unitsByKey={unitsByKey}
                                   rowIndex={i}
                                   onTrainToggle={handleTrainingToggle}
                                   onFlagChange={handleFlagChange}
@@ -812,6 +810,7 @@ export default function OfficersPage() {
                               key={officer.id}
                               officer={officer}
                               allTrainings={allTrainings}
+                              unitsByKey={unitsByKey}
                               canEdit={canEdit}
                               onTrainToggle={handleTrainingToggle}
                               onFlagChange={handleFlagChange}

@@ -4,7 +4,7 @@ import { requireAuth, getCurrentUser } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
-import { notifyDiscordBot } from '@/lib/discord/notifier'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['officers:write'])
     const { id } = await params
     const body = await req.json()
     const parsed = updateOfficerSchema.safeParse(body)
@@ -49,6 +49,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) {
       const dup = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
       if (dup) return error('Dienstnummer bereits vergeben')
+    }
+
+    if ('unit' in parsed.data && parsed.data.unit) {
+      const unit = await prisma.unit.findUnique({ where: { key: parsed.data.unit } })
+      if (!unit || !unit.active) return error('Unit nicht gefunden')
     }
 
     const updated = await prisma.officer.update({
@@ -80,24 +85,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         officerId: id,
         details: changes.join('; '),
       })
-
-      // Trigger a Discord role re-sync whenever rank or status changes (and on
-      // discordId assignment so newly linked officers get their roles).
-      const triggersSync =
-        (parsed.data.rankId && parsed.data.rankId !== existing.rankId) ||
-        (parsed.data.status && parsed.data.status !== existing.status) ||
-        ('discordId' in parsed.data && parsed.data.discordId !== existing.discordId)
-      if (triggersSync) {
-        void notifyDiscordBot({
-          type: 'OFFICER_UPDATED',
-          officerId: id,
-          actorDisplayName: user.displayName,
-        })
-      }
     }
 
     return success(updated)
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
@@ -107,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN'])
+    const user = await requireAuth(['ADMIN'], ['officers:delete'])
     const { id } = await params
 
     const officer = await prisma.officer.findUnique({ where: { id } })

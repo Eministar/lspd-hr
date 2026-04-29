@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const body = await req.json()
 
     const { name, description, type } = body

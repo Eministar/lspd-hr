@@ -10,4 +10,5 @@ export const createUserSchema = z.object({
   password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
   displayName: z.string().min(1, 'Anzeigename ist erforderlich'),
   role: z.enum(['ADMIN', 'HR', 'LEADERSHIP', 'READONLY']),
+  groupId: z.string().nullable().optional(),
 })

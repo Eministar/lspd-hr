@@ -5,20 +5,13 @@ import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['trainings:manage'])
     const { id } = await params
     const body = await req.json()
 
-    const discordRoleId =
-      body.discordRoleId === undefined
-        ? undefined
-        : body.discordRoleId === null || (typeof body.discordRoleId === 'string' && body.discordRoleId.trim() === '')
-          ? null
-          : String(body.discordRoleId).trim()
-
     const training = await prisma.training.update({
       where: { id },
-      data: { key: body.key, label: body.label, sortOrder: body.sortOrder, discordRoleId },
+      data: { key: body.key, label: body.label, sortOrder: body.sortOrder },
     })
 
     return success(training)
@@ -31,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['trainings:manage'])
     const { id } = await params
     await prisma.training.delete({ where: { id } })
     return success({ message: 'Ausbildung gelöscht' })

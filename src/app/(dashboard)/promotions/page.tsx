@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, ArrowRight, Plus, Trash2, Play, FileText, ChevronDown, X } from 'lucide-react'
+import { ArrowRight, Plus, Trash2, Play, FileText, ChevronDown, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -82,7 +82,8 @@ export default function PromotionsPage() {
       addToast({ type: 'success', title: 'Liste erstellt' })
       setCreateModal(false)
       setListForm({ name: '', description: '' })
-      setExpandedLists(prev => new Set([...prev, (result as any).id]))
+      const created = result as { id: string } | null
+      if (created) setExpandedLists(prev => new Set([...prev, created.id]))
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -130,8 +131,8 @@ export default function PromotionsPage() {
   const handleExecuteList = async () => {
     if (!executeListId) return
     try {
-      const result = await execute(`/api/rank-change-lists/${executeListId}/execute`, { method: 'POST' }) as any
-      addToast({ type: 'success', title: `${result.executed} Beförderungen durchgeführt` })
+      const result = await execute(`/api/rank-change-lists/${executeListId}/execute`, { method: 'POST' }) as { executed: number } | null
+      addToast({ type: 'success', title: `${result?.executed ?? 0} Beförderungen durchgeführt` })
       setExecuteListId(null)
       await refetch()
     } catch (err) {

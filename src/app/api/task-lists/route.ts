@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 
-const VALID_MODULES = ['ACADEMY', 'HR'] as const
+const VALID_MODULES = ['ACADEMY', 'HR', 'SRU'] as const
 type ModuleKey = (typeof VALID_MODULES)[number]
 
 function isModule(value: string | null): value is ModuleKey {
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const body = await req.json()
 
     if (!isModule(body.module)) return error('Ungültiges Modul')

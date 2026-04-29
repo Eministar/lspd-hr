@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['logs:view'])
     
     const { searchParams } = new URL(req.url)
     const take = parseInt(searchParams.get('take') || '50')

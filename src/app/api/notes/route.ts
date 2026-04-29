@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['notes:manage'])
     const body = await req.json()
 
     if (!body.content) return error('Inhalt ist erforderlich')

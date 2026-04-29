@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['settings:manage'])
     const body = await req.json()
 
     if (!body.key || body.value === undefined) return error('Key und Value sind erforderlich')

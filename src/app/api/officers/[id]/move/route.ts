@@ -5,6 +5,7 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { createAuditLog } from '@/lib/audit'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 const includeOfficer = {
   rank: true,
@@ -17,7 +18,7 @@ const includeOfficer = {
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
     const body = await req.json()
     const targetRankId = body?.targetRankId as string | undefined
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return success(updated)
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

@@ -4,7 +4,7 @@ import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
-import { notifyDiscordBot } from '@/lib/discord/notifier'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     ]
   }
   if (status) where.status = status
+  else where.status = { not: 'TERMINATED' }
   if (rankId) where.rankId = rankId
 
   const officers = await prisma.officer.findMany({
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['officers:write'])
     const body = await req.json()
     const parsed = createOfficerSchema.safeParse(body)
     if (!parsed.success) {
@@ -50,17 +51,22 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
     if (existing) return error('Dienstnummer bereits vergeben')
 
+    const unitKey = parsed.data.unit ?? null
+    if (unitKey) {
+      const unit = await prisma.unit.findUnique({ where: { key: unitKey } })
+      if (!unit || !unit.active) return error('Unit nicht gefunden')
+    }
+
     const officer = await prisma.officer.create({
       data: {
         badgeNumber: parsed.data.badgeNumber,
         firstName: parsed.data.firstName,
         lastName: parsed.data.lastName,
         rankId: parsed.data.rankId,
-        discordId: parsed.data.discordId || null,
         notes: parsed.data.notes || null,
         hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate) : new Date(),
         status: parsed.data.status || 'ACTIVE',
-        unit: parsed.data.unit ?? null,
+        unit: unitKey,
         flag: parsed.data.flag ?? null,
       },
       include: { rank: true },
@@ -84,15 +90,9 @@ export async function POST(req: NextRequest) {
       newValue: `${officer.firstName} ${officer.lastName} (${officer.badgeNumber})`,
     })
 
-    void notifyDiscordBot({
-      type: 'OFFICER_HIRED',
-      officerId: officer.id,
-      actorDisplayName: user.displayName,
-      newRankName: officer.rank.name,
-    })
-
     return success(officer, 201)
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

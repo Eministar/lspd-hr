@@ -24,7 +24,7 @@ const taskInclude = {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id: listId } = await params
     const body = await req.json()
 

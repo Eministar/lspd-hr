@@ -13,22 +13,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['trainings:manage'])
     const body = await req.json()
 
     if (!body.key || !body.label) return error('Key und Label sind erforderlich')
     
-    const discordRoleId =
-      typeof body.discordRoleId === 'string' && body.discordRoleId.trim() !== ''
-        ? body.discordRoleId.trim()
-        : null
-
     const training = await prisma.training.create({
       data: {
         key: body.key,
         label: body.label,
         sortOrder: body.sortOrder ?? 0,
-        discordRoleId,
       },
     })
 

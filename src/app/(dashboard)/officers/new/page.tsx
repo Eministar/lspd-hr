@@ -13,8 +13,6 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { OFFICER_UNIT_VALUES } from '@/lib/validations/officer'
-import { getUnitLabel } from '@/lib/utils'
 
 interface Rank {
   id: string
@@ -22,10 +20,17 @@ interface Rank {
   sortOrder: number
 }
 
+interface Unit {
+  id: string
+  key: string
+  name: string
+}
+
 export default function NewOfficerPage() {
   const router = useRouter()
   const { addToast } = useToast()
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
+  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { execute, loading } = useApi()
 
   const [form, setForm] = useState({
@@ -33,7 +38,6 @@ export default function NewOfficerPage() {
     firstName: '',
     lastName: '',
     rankId: '',
-    discordId: '',
     notes: '',
     unit: '',
     hireDate: new Date().toISOString().split('T')[0],
@@ -125,18 +129,10 @@ export default function NewOfficerPage() {
               placeholder="Keine Unit"
               options={[
                 { value: '', label: 'Keine Unit' },
-                ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+                ...(units?.map((u) => ({ value: u.key, label: u.name })) || []),
               ]}
             />
           </div>
-
-          <Input
-            id="discordId"
-            label="Discord ID"
-            value={form.discordId}
-            onChange={(e) => update('discordId', e.target.value)}
-            placeholder="Optional"
-          />
 
           <Textarea
             id="notes"
