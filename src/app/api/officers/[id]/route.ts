@@ -51,6 +51,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (dup) return error('Dienstnummer bereits vergeben')
     }
 
+    if ('discordId' in parsed.data && parsed.data.discordId && parsed.data.discordId !== existing.discordId) {
+      const dup = await prisma.officer.findFirst({
+        where: { discordId: parsed.data.discordId, NOT: { id } },
+      })
+      if (dup) return error('Discord-ID bereits vergeben')
+    }
+
     if ('unit' in parsed.data && parsed.data.unit) {
       const unit = await prisma.unit.findUnique({ where: { key: parsed.data.unit } })
       if (!unit || !unit.active) return error('Unit nicht gefunden')
@@ -77,6 +84,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if ('flag' in parsed.data && parsed.data.flag !== existing.flag) {
       changes.push(`Markierung: ${existing.flag ?? '—'} → ${parsed.data.flag ?? '—'}`)
     }
+    if ('discordId' in parsed.data && parsed.data.discordId !== existing.discordId) {
+      changes.push(
+        `Discord-ID: ${existing.discordId ?? '—'} → ${parsed.data.discordId ?? '—'}`,
+      )
+    }
 
     if (changes.length > 0) {
       await createAuditLog({
@@ -89,7 +101,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return success(updated)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Dienstnummer oder Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
