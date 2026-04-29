@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser, requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
-import { notifyDiscordBot } from '@/lib/discord/notifier'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -22,7 +21,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage'])
     const body = await req.json()
 
     const { officerId, reason } = body
@@ -30,6 +29,7 @@ export async function POST(req: NextRequest) {
 
     const officer = await prisma.officer.findUnique({ where: { id: officerId }, include: { rank: true } })
     if (!officer) return error('Officer nicht gefunden')
+    if (officer.status === 'TERMINATED') return error('Officer ist bereits gekündigt')
 
     const termination = await prisma.termination.create({
       data: {
@@ -51,13 +51,6 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId,
       details: `${officer.firstName} ${officer.lastName} gekündigt. Grund: ${reason}`,
-    })
-
-    void notifyDiscordBot({
-      type: 'OFFICER_TERMINATED',
-      officerId,
-      actorDisplayName: user.displayName,
-      reason,
     })
 
     return success(termination, 201)

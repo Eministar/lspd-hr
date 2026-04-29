@@ -72,7 +72,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
     onChange,
     onValueChange,
     disabled,
-    name: _name,
+    name,
     size = 'default',
     required,
   },
@@ -103,6 +103,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
         </label>
       )}
       <SelectPrimitive.Root
+        name={name}
         value={value !== undefined ? rootValue : undefined}
         defaultValue={value === undefined ? rootDefault : undefined}
         onValueChange={handleChange}

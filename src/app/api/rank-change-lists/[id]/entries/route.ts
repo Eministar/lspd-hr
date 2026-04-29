@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR'])
+    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -24,13 +24,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
     if (existing) return error('Officer ist bereits in dieser Liste')
 
+    const nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
+    if (nextBadge && nextBadge !== officer.badgeNumber) {
+      const badgeOwner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
+      if (badgeOwner) return error('Dienstnummer bereits vergeben')
+      const badgeInList = await prisma.rankChangeListEntry.findFirst({
+        where: {
+          listId: id,
+          newBadgeNumber: nextBadge,
+          executed: false,
+        },
+      })
+      if (badgeInList) return error('Dienstnummer ist bereits in dieser Liste vorgesehen')
+    }
+
     const entry = await prisma.rankChangeListEntry.create({
       data: {
         listId: id,
         officerId,
         currentRankId: officer.rankId,
         proposedRankId,
-        newBadgeNumber: newBadgeNumber || null,
+        newBadgeNumber: nextBadge || null,
         note: note || null,
       },
       include: {
@@ -51,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR'])
+    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
     const { entryId } = await req.json()
 

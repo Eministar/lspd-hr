@@ -7,30 +7,33 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, ExternalLink, Bot,
+  Menu, X, ExternalLink, Archive,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GITHUB_REPO_URL } from '@/lib/site'
 import { useAuth } from '@/context/auth-context'
+import { hasAnyPermission, hasPermission, type Permission } from '@/lib/permissions'
 import Image from 'next/image'
 
 interface NavItem {
   name: string
   href: string
   icon: LucideIcon
+  permission?: Permission
 }
 
 interface NavContentProps {
   pathname: string
   onNavigate: () => void
-  user: { displayName: string; role: string } | null
+  user: { displayName: string; role: string; permissions?: string[] | null } | null
   logout: () => Promise<void>
 }
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Officers', href: '/officers', icon: Users },
+  { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive },
   { name: 'Beförderungen', href: '/promotions', icon: TrendingUp },
   { name: 'Degradierungen', href: '/demotions', icon: TrendingDown },
   { name: 'Kündigungen', href: '/terminations', icon: UserX },
@@ -41,14 +44,16 @@ const mainNav: NavItem[] = [
 const tasksNav: NavItem[] = [
   { name: 'Academy', href: '/academy', icon: ListChecks },
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase },
+  { name: 'SRU', href: '/sru', icon: Shield },
 ]
 
 const adminNav: NavItem[] = [
-  { name: 'Ränge', href: '/admin/ranks', icon: Shield },
-  { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap },
-  { name: 'Benutzer', href: '/admin/users', icon: UserCog },
-  { name: 'Discord-Bot', href: '/admin/discord', icon: Bot },
-  { name: 'Einstellungen', href: '/admin/settings', icon: Settings },
+  { name: 'Ränge', href: '/admin/ranks', icon: Shield, permission: 'ranks:manage' },
+  { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap, permission: 'trainings:manage' },
+  { name: 'Units', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
+  { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
+  { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
+  { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
 ]
 
 function GitHubLogo({ className }: { className?: string }) {
@@ -93,7 +98,14 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
 }
 
 function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR'
+  const showAdmin = hasAnyPermission(user, [
+    'ranks:manage',
+    'trainings:manage',
+    'units:manage',
+    'users:manage',
+    'groups:manage',
+    'settings:manage',
+  ])
 
   return (
     <div className="flex flex-col h-full">
@@ -118,11 +130,13 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
         <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>
         {tasksNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        {isAdmin && (
+        {showAdmin && (
           <>
             <div className="gold-line my-3 mx-2" />
             <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Administration</p>
-            {adminNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+            {adminNav
+              .filter((item) => !item.permission || hasPermission(user, item.permission))
+              .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
       </nav>

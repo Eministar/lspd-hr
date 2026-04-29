@@ -15,7 +15,20 @@ import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { getRoleLabel, formatDate } from '@/lib/utils'
 
-interface User { id: string; username: string; displayName: string; role: string; createdAt: string }
+interface User {
+  id: string
+  username: string
+  displayName: string
+  role: string
+  groupId: string | null
+  group: { id: string; name: string } | null
+  createdAt: string
+}
+
+interface UserGroup {
+  id: string
+  name: string
+}
 
 const roleOptions = [
   { value: 'ADMIN', label: 'Administrator' },
@@ -26,21 +39,22 @@ const roleOptions = [
 
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
+  const { data: groups } = useFetch<UserGroup[]>('/api/user-groups')
   const { user: currentUser } = useAuth()
   const { execute } = useApi()
   const { addToast } = useToast()
 
   const [createModal, setCreateModal] = useState(false)
   const [editUser, setEditUser] = useState<User | null>(null)
-  const [form, setForm] = useState({ username: '', password: '', displayName: '', role: 'READONLY' })
+  const [form, setForm] = useState({ username: '', password: '', displayName: '', role: 'READONLY', groupId: '' })
 
   const openCreate = () => {
-    setForm({ username: '', password: '', displayName: '', role: 'READONLY' })
+    setForm({ username: '', password: '', displayName: '', role: 'READONLY', groupId: '' })
     setCreateModal(true)
   }
 
   const openEdit = (u: User) => {
-    setForm({ username: u.username, password: '', displayName: u.displayName, role: u.role })
+    setForm({ username: u.username, password: '', displayName: u.displayName, role: u.role, groupId: u.groupId ?? '' })
     setEditUser(u)
   }
 
@@ -58,7 +72,7 @@ export default function UsersPage() {
   const handleUpdate = async () => {
     if (!editUser) return
     try {
-      const data: Record<string, string> = { displayName: form.displayName, role: form.role }
+      const data: Record<string, string | null> = { displayName: form.displayName, role: form.role, groupId: form.groupId || null }
       if (form.password) data.password = form.password
       await execute(`/api/users/${editUser.id}`, { method: 'PATCH', body: JSON.stringify(data) })
       addToast({ type: 'success', title: 'Benutzer aktualisiert' })
@@ -103,8 +117,10 @@ export default function UsersPage() {
                 {u.displayName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13.5px] font-medium text-[#eee]">{u.displayName}</p>
-                <p className="text-[11.5px] text-[#4a6585]">@{u.username} · Erstellt: {formatDate(u.createdAt)}</p>
+              <p className="text-[13.5px] font-medium text-[#eee]">{u.displayName}</p>
+                <p className="text-[11.5px] text-[#4a6585]">
+                  @{u.username} · {u.group?.name || 'Keine Gruppe'} · Erstellt: {formatDate(u.createdAt)}
+                </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
                 {getRoleLabel(u.role)}
@@ -136,6 +152,15 @@ export default function UsersPage() {
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
           <Input label="Passwort" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <Select label="Rolle" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
+          <Select
+            label="Benutzergruppe"
+            value={form.groupId}
+            onValueChange={(groupId) => setForm({ ...form, groupId })}
+            options={[
+              { value: '', label: 'Keine Gruppe' },
+              ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
+            ]}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setCreateModal(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleCreate} disabled={!form.username || !form.password || !form.displayName}>Erstellen</Button>
@@ -148,6 +173,15 @@ export default function UsersPage() {
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label="Neues Passwort (optional)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leer lassen um nicht zu ändern" />
           <Select label="Rolle" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
+          <Select
+            label="Benutzergruppe"
+            value={form.groupId}
+            onValueChange={(groupId) => setForm({ ...form, groupId })}
+            options={[
+              { value: '', label: 'Keine Gruppe' },
+              ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
+            ]}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setEditUser(null)}>Abbrechen</Button>
             <Button size="sm" onClick={handleUpdate}>Speichern</Button>

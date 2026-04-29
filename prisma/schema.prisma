@@ -24,6 +24,7 @@ enum UserRole {
 enum TaskModule {
   ACADEMY
   HR
+  SRU
 }
 
 enum TaskStatus {
@@ -39,18 +40,21 @@ enum TaskPriority {
   URGENT
 }
 
-enum OfficerUnit {
-  HR_LEITUNG
-  HR_TRAINEE
-  HR_OFFICER
-  ACADEMY
-  SRU
-}
-
 enum OfficerFlag {
   RED
   ORANGE
   YELLOW
+}
+
+model UserGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
 }
 
 model User {
@@ -59,6 +63,8 @@ model User {
   passwordHash String
   displayName  String
   role         UserRole @default(READONLY)
+  groupId      String?
+  group        UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -71,6 +77,17 @@ model User {
   tasksCreated        Task[]         @relation("TaskCreator")
 }
 
+model Unit {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  color     String   @default("#d4af37")
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Rank {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -79,8 +96,6 @@ model Rank {
   /// Inklusiver Zahlenbereich für Dienstnummern (nur Ziffern / Prefix+Ziffern). Null = kein autom. Bereich.
   badgeMin  Int?
   badgeMax  Int?
-  /// Discord Role ID, die automatisch beim Setzen dieses Rangs vergeben wird.
-  discordRoleId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -96,8 +111,6 @@ model Training {
   key       String   @unique
   label     String
   sortOrder Int      @default(0)
-  /// Discord Role ID, die nach Abschluss dieser Ausbildung automatisch vergeben wird.
-  discordRoleId String?
   createdAt DateTime @default(now())
 
   officerTrainings OfficerTraining[]
@@ -110,9 +123,8 @@ model Officer {
   lastName        String
   rankId          String
   rank            Rank          @relation(fields: [rankId], references: [id])
-  discordId       String?
   status          OfficerStatus @default(ACTIVE)
-  unit            OfficerUnit?
+  unit            String?
   flag            OfficerFlag?
   notes           String?
   hireDate        DateTime      @default(now())

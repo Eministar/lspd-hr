@@ -12,7 +12,9 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
+import { useAuth } from '@/context/auth-context'
 import { formatDateTime, cn } from '@/lib/utils'
+import { hasPermission } from '@/lib/permissions'
 
 interface Note {
   id: string
@@ -30,6 +32,8 @@ export default function NotesPage() {
   const { data: notes, loading, refetch } = useFetch<Note[]>('/api/notes')
   const { execute } = useApi()
   const { addToast } = useToast()
+  const { user } = useAuth()
+  const canManageNotes = hasPermission(user, 'notes:manage')
 
   const [createModal, setCreateModal] = useState(false)
   const [editNote, setEditNote] = useState<Note | null>(null)
@@ -107,10 +111,12 @@ export default function NotesPage() {
         title="Notizen"
         description="Globale und mitarbeiterbezogene Notizen"
         action={
-          <Button size="sm" onClick={() => { setForm({ title: '', content: '', pinned: false }); setCreateModal(true) }}>
-            <Plus size={14} strokeWidth={2} />
-            Neue Notiz
-          </Button>
+          canManageNotes ? (
+            <Button size="sm" onClick={() => { setForm({ title: '', content: '', pinned: false }); setCreateModal(true) }}>
+              <Plus size={14} strokeWidth={2} />
+              Neue Notiz
+            </Button>
+          ) : undefined
         }
       />
 
@@ -159,6 +165,7 @@ export default function NotesPage() {
                     </span>
                   )}
                 </div>
+                {canManageNotes && (
                 <div className="flex gap-0.5">
                   <button onClick={() => handleTogglePin(note)} className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
                     <Pin size={13} className={cn(note.pinned ? 'text-[#fbbf24]' : 'text-[#4a6585]')} />
@@ -170,6 +177,7 @@ export default function NotesPage() {
                     <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
                   </button>
                 </div>
+                )}
               </div>
               {note.title && (
                 <h4 className="text-[13.5px] font-semibold text-[#eee] mb-1">{note.title}</h4>

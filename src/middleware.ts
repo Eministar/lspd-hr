@@ -8,6 +8,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  if (pathname.startsWith('/public') || pathname.startsWith('/api/public/')) {
+    return NextResponse.next()
+  }
+
   if (pathname.startsWith('/api/') && !token) {
     return NextResponse.json({ success: false, error: 'Nicht autorisiert' }, { status: 401 })
   }

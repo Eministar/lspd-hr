@@ -5,19 +5,36 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const currentUser = await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['users:manage'])
     const { id } = await params
     const body = await req.json()
 
     const data: Record<string, unknown> = {}
     if (body.displayName) data.displayName = body.displayName
     if (body.role) data.role = body.role
+    if ('groupId' in body) {
+      if (body.groupId) {
+        const group = await prisma.userGroup.findUnique({ where: { id: String(body.groupId) } })
+        if (!group) return error('Benutzergruppe nicht gefunden')
+        data.groupId = group.id
+      } else {
+        data.groupId = null
+      }
+    }
     if (body.password) data.passwordHash = await hashPassword(body.password)
 
     const user = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, username: true, displayName: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        groupId: true,
+        group: { select: { id: true, name: true } },
+        createdAt: true,
+      },
     })
 
     return success(user)
@@ -30,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const currentUser = await requireAuth(['ADMIN'])
+    const currentUser = await requireAuth(['ADMIN'], ['users:manage'])
     const { id } = await params
 
     if (currentUser.id === id) return error('Du kannst dich nicht selbst löschen')

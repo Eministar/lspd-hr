@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import bcrypt from 'bcryptjs'
+import { PERMISSIONS } from '../src/lib/permissions'
 
 const adapter = new PrismaMariaDb(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
@@ -20,6 +22,53 @@ async function main() {
     },
   })
   console.log('Admin user created:', admin.username)
+
+  const groups = [
+    { name: 'Administration', description: 'Voller Zugriff auf alle Bereiche.', permissions: [...PERMISSIONS] },
+    {
+      name: 'HR',
+      description: 'Personalverwaltung, Aufgaben, Kündigungen und Rangänderungen.',
+      permissions: [
+        'officers:write',
+        'terminations:manage',
+        'rank-changes:manage',
+        'tasks:manage',
+        'notes:manage',
+        'logs:view',
+      ],
+    },
+    {
+      name: 'Führungsebene',
+      description: 'Aufgaben, Notizen und Protokolle.',
+      permissions: ['tasks:manage', 'notes:manage', 'logs:view'],
+    },
+  ]
+
+  for (const group of groups) {
+    await prisma.userGroup.upsert({
+      where: { name: group.name },
+      update: { description: group.description, permissions: group.permissions },
+      create: group,
+    })
+  }
+  console.log('User groups created:', groups.length)
+
+  const units = [
+    { key: 'HR_LEITUNG', name: 'HR Leitung', sortOrder: 1, color: '#7c3aed' },
+    { key: 'HR_TRAINEE', name: 'HR Trainee', sortOrder: 2, color: '#3b82f6' },
+    { key: 'HR_OFFICER', name: 'HR Officer', sortOrder: 3, color: '#06b6d4' },
+    { key: 'ACADEMY', name: 'Academy', sortOrder: 4, color: '#d4af37' },
+    { key: 'SRU', name: 'SRU', sortOrder: 5, color: '#dc2626' },
+  ]
+
+  for (const unit of units) {
+    await prisma.unit.upsert({
+      where: { key: unit.key },
+      update: { name: unit.name, sortOrder: unit.sortOrder, color: unit.color, active: true },
+      create: unit,
+    })
+  }
+  console.log('Units created:', units.length)
 
   const ranks = [
     { name: 'Chief of Police', sortOrder: 1, color: '#DC2626' },

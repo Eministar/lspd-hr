@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR'])
+    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
 
     await prisma.rankChangeList.delete({ where: { id } })

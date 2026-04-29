@@ -16,6 +16,7 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
+import { useAuth } from '@/context/auth-context'
 import {
   cn,
   formatDate,
@@ -27,17 +28,82 @@ import {
   getFlagLabel,
   getFlagColor,
 } from '@/lib/utils'
-import { OFFICER_UNIT_VALUES } from '@/lib/validations/officer'
+import { hasPermission } from '@/lib/permissions'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
+interface Unit { id: string; key: string; name: string; color: string; active: boolean }
+interface Training { id: string; key: string; label: string; sortOrder: number }
+interface OfficerTraining { id: string; trainingId: string; completed: boolean; training: Training }
+interface PromotionLog {
+  id: string
+  note: string | null
+  createdAt: string
+  oldRank: Rank
+  newRank: Rank
+  performedBy: { displayName: string }
+}
+interface OfficerNote {
+  id: string
+  title: string | null
+  content: string
+  createdAt: string
+  author: { displayName: string }
+}
+interface OfficerDetail {
+  id: string
+  badgeNumber: string
+  firstName: string
+  lastName: string
+  rankId: string
+  rank: Rank
+  status: string
+  unit: string | null
+  flag: string | null
+  notes: string | null
+  hireDate: string
+  lastOnline: string | null
+  trainings: OfficerTraining[]
+  promotionLogs: PromotionLog[]
+  officerNotes: OfficerNote[]
+}
+interface OfficerForm {
+  badgeNumber: string
+  firstName: string
+  lastName: string
+  rankId: string
+  notes: string
+  status: string
+  unit: string
+  flag: string
+  hireDate: string
+}
+
+const EMPTY_OFFICER_FORM: OfficerForm = {
+  badgeNumber: '',
+  firstName: '',
+  lastName: '',
+  rankId: '',
+  notes: '',
+  status: 'ACTIVE',
+  unit: '',
+  flag: '',
+  hireDate: '',
+}
 
 export default function OfficerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { addToast } = useToast()
-  const { data: officer, loading, refetch, setData: setOfficer } = useFetch<any>(`/api/officers/${id}`)
+  const { user } = useAuth()
+  const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(`/api/officers/${id}`)
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
+  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { execute } = useApi()
+  const canEditOfficer = hasPermission(user, 'officers:write')
+  const canDeleteOfficer = hasPermission(user, 'officers:delete')
+  const canRankChange = hasPermission(user, 'rank-changes:manage')
+  const canTerminate = hasPermission(user, 'terminations:manage')
+  const canManageNotes = hasPermission(user, 'notes:manage')
 
   const [editing, setEditing] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -50,15 +116,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
   const [noteForm, setNoteForm] = useState({ title: '', content: '' })
-  const [form, setForm] = useState<any>({})
+  const [form, setForm] = useState<OfficerForm>(EMPTY_OFFICER_FORM)
 
   const startEditing = () => {
+    if (!officer) return
     setForm({
       badgeNumber: officer.badgeNumber,
       firstName: officer.firstName,
       lastName: officer.lastName,
       rankId: officer.rankId,
-      discordId: officer.discordId || '',
       notes: officer.notes || '',
       status: officer.status,
       unit: officer.unit ?? '',
@@ -175,23 +241,23 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
     if (!officer) return
     const previous = officer
-    const trainings = officer.trainings.map((t: any) => ({
+    const trainings = officer.trainings.map((t) => ({
       trainingId: t.trainingId,
       completed: t.trainingId === trainingId ? completed : t.completed,
     }))
-    setOfficer((o: any) => ({
+    setOfficer((o) => o ? ({
       ...o,
-      trainings: o.trainings.map((t: any) =>
+      trainings: o.trainings.map((t) =>
         t.trainingId === trainingId ? { ...t, completed } : t
       ),
-    }))
+    }) : o)
     try {
       const res = await fetch(`/api/officers/${id}/trainings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trainings }),
       })
-      const json = await res.json()
+      const json = await res.json() as { data?: { officer?: OfficerDetail }; error?: string }
       if (!res.ok) throw new Error(json.error || 'Fehler')
       if (json.data?.officer) setOfficer(json.data.officer)
     } catch {
@@ -217,7 +283,9 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <Button variant="ghost" size="sm"><ArrowLeft size={15} strokeWidth={1.75} /> Zurück</Button>
             </Link>
             {!editing ? (
-              <Button variant="secondary" size="sm" onClick={startEditing}><Edit size={14} strokeWidth={1.75} /> Bearbeiten</Button>
+              canEditOfficer && (
+                <Button variant="secondary" size="sm" onClick={startEditing}><Edit size={14} strokeWidth={1.75} /> Bearbeiten</Button>
+              )
             ) : (
               <>
                 <Button variant="secondary" size="sm" onClick={() => setEditing(false)}><X size={14} /> Abbrechen</Button>
@@ -250,7 +318,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     { value: 'ACTIVE', label: 'Aktiv' },
                     { value: 'AWAY', label: 'Abgemeldet' },
                     { value: 'INACTIVE', label: 'Inaktiv' },
-                    { value: 'TERMINATED', label: 'Gekündigt' },
+                      { value: 'TERMINATED', label: 'Gekündigt' },
                   ]} />
                   <DateField
                     label="Einstellungsdatum"
@@ -266,10 +334,9 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     placeholder="Keine Unit"
                     options={[
                       { value: '', label: 'Keine Unit' },
-                      ...OFFICER_UNIT_VALUES.map((u) => ({ value: u, label: getUnitLabel(u) })),
+                      ...(units?.map((u) => ({ value: u.key, label: u.name })) || []),
                     ]}
                   />
-                  <Input label="Discord ID" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
@@ -301,13 +368,12 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                         getUnitBadgeClass(officer.unit)
                       )}
                     >
-                      {getUnitLabel(officer.unit)}
-                    </span>
+                    {units?.find((u) => u.key === officer.unit)?.name ?? getUnitLabel(officer.unit)}
+                  </span>
                   ) : (
                     <span className="text-[13.5px] text-[#4a6585]">—</span>
                   )}
                 </InfoRow>
-                <InfoRow label="Discord ID" value={officer.discordId || '—'} mono />
                 <InfoRow label="Markierung">
                   {officer.flag ? (
                     <span className="inline-flex items-center gap-2">
@@ -336,15 +402,17 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             className="glass-panel-elevated rounded-[14px] p-5">
             <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ausbildungen</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {officer.trainings?.map((t: any) => (
+              {officer.trainings?.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => handleTrainingToggle(t.trainingId, !t.completed)}
+                  disabled={!canEditOfficer}
+                  onClick={() => canEditOfficer && handleTrainingToggle(t.trainingId, !t.completed)}
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all duration-150 text-left',
                     t.completed
                       ? 'bg-[#0f2340] hover:bg-[#142d52]'
-                      : 'hover:bg-[#0f2340]'
+                      : 'hover:bg-[#0f2340]',
+                    !canEditOfficer && 'cursor-not-allowed opacity-75'
                   )}
                 >
                   <div className={cn(
@@ -368,7 +436,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               className="glass-panel-elevated rounded-[14px] p-5">
               <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ranghistorie</h3>
               <div className="space-y-3">
-                {officer.promotionLogs.map((log: any) => (
+                {officer.promotionLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-3">
                     <div className={cn(
                       'h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 mt-0.5',
@@ -403,42 +471,50 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               className="glass-panel-elevated rounded-[14px] p-5">
               <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Markierung</h3>
               <div className="mb-4">
-                <FlagPicker value={officer.flag ?? null} onChange={handleFlagChange} />
+                {canEditOfficer ? (
+                  <FlagPicker value={officer.flag ?? null} onChange={handleFlagChange} />
+                ) : (
+                  <p className="text-[12.5px] text-[#4a6585]">Keine Bearbeitungsrechte</p>
+                )}
               </div>
               <div className="gold-line my-3" />
               <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Aktionen</h3>
               <div className="space-y-1.5">
-                {officer.status !== 'TERMINATED' && higherRanks.length > 0 && (
+                {canRankChange && officer.status !== 'TERMINATED' && higherRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setPromoteModal(true) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <TrendingUp size={15} strokeWidth={1.75} /> Befördern
                   </button>
                 )}
-                {officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
+                {canRankChange && officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setDemoteModal(true) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <TrendingDown size={15} strokeWidth={1.75} /> Degradieren
                   </button>
                 )}
-                <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
-                  <StickyNote size={15} strokeWidth={1.75} /> Notiz hinzufügen
-                </button>
-                {officer.status === 'TERMINATED' ? (
+                {canManageNotes && (
+                  <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    <StickyNote size={15} strokeWidth={1.75} /> Notiz hinzufügen
+                  </button>
+                )}
+                {canEditOfficer && officer.status === 'TERMINATED' ? (
                   <button onClick={handleReactivate}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#34d399] hover:bg-[#0f2340] transition-colors text-left">
                     <UserCheck size={15} strokeWidth={1.75} /> Reaktivieren
                   </button>
-                ) : (
+                ) : canTerminate ? (
                   <button onClick={() => { setTerminateReason(''); setTerminateModal(true) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
                     <UserX size={15} strokeWidth={1.75} /> Kündigen
                   </button>
+                ) : null}
+                {canDeleteOfficer && (
+                  <button onClick={() => setDeleteModal(true)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
+                    <Trash2 size={15} strokeWidth={1.75} /> Löschen
+                  </button>
                 )}
-                <button onClick={() => setDeleteModal(true)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
-                  <Trash2 size={15} strokeWidth={1.75} /> Löschen
-                </button>
               </div>
             </motion.div>
           )}
@@ -448,14 +524,16 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             className="glass-panel-elevated rounded-[14px] p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[13.5px] font-semibold text-[#eee]">Notizen</h3>
-              <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                <Plus size={14} className="text-[#4a6585]" />
-              </button>
+              {canManageNotes && (
+                <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
+                  className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
+                  <Plus size={14} className="text-[#4a6585]" />
+                </button>
+              )}
             </div>
             {officer.officerNotes?.length > 0 ? (
               <div className="space-y-2.5">
-                {officer.officerNotes.map((note: any) => (
+                {officer.officerNotes.map((note) => (
                   <div key={note.id} className="bg-[#0f2340] rounded-[8px] p-3">
                     {note.title && <p className="text-[13px] font-medium text-[#eee] mb-1">{note.title}</p>}
                     <p className="text-[13px] text-[#999] leading-relaxed">{note.content}</p>

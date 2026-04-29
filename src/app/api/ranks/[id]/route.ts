@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized } from '@/lib/api-response'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['ranks:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -23,13 +23,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return error('Dienstnummer-Minimum darf nicht größer als Maximum sein')
     }
 
-    const discordRoleId =
-      body.discordRoleId === undefined
-        ? undefined
-        : body.discordRoleId === null || (typeof body.discordRoleId === 'string' && body.discordRoleId.trim() === '')
-          ? null
-          : String(body.discordRoleId).trim()
-
     const rank = await prisma.rank.update({
       where: { id },
       data: {
@@ -38,7 +31,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         color: body.color,
         badgeMin: bMin,
         badgeMax: bMax,
-        discordRoleId,
       },
     })
 
@@ -53,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['ranks:manage'])
     const { id } = await params
 
     const officerCount = await prisma.officer.count({ where: { rankId: id } })

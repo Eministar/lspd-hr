@@ -17,13 +17,11 @@ export default function SettingsPage() {
 
   const [orgName, setOrgName] = useState('LSPD')
   const [badgePrefix, setBadgePrefix] = useState('')
-  const [webhookUrl, setWebhookUrl] = useState('')
 
   useEffect(() => {
     if (settings) {
       setOrgName(settings['orgName'] || 'LSPD')
       setBadgePrefix(settings['badgePrefix'] || '')
-      setWebhookUrl(settings['webhookUrl'] || '')
     }
   }, [settings])
 
@@ -63,16 +61,6 @@ export default function SettingsPage() {
               <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
             </div>
             <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
-          </div>
-        </div>
-
-        <div className="glass-panel-elevated rounded-[14px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Integrationen</h3>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <Input label="Discord Webhook URL" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://discord.com/api/webhooks/..." />
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => saveSetting('webhookUrl', webhookUrl)}><Save size={13} /></Button>
           </div>
         </div>
       </div>

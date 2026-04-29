@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'])
+    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
 
     const list = await prisma.taskList.findUnique({ where: { id } })

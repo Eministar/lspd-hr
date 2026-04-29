@@ -6,9 +6,17 @@ import { createUserSchema } from '@/lib/validations/auth'
 
 export async function GET() {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['users:manage'])
     const users = await prisma.user.findMany({
-      select: { id: true, username: true, displayName: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        groupId: true,
+        group: { select: { id: true, name: true } },
+        createdAt: true,
+      },
       orderBy: { createdAt: 'asc' },
     })
     return success(users)
@@ -21,13 +29,18 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth(['ADMIN'])
+    await requireAuth(['ADMIN'], ['users:manage'])
     const body = await req.json()
     const parsed = createUserSchema.safeParse(body)
     if (!parsed.success) return error(parsed.error.issues.map(e => e.message).join(', '))
 
     const existing = await prisma.user.findUnique({ where: { username: parsed.data.username } })
     if (existing) return error('Benutzername bereits vergeben')
+
+    if (parsed.data.groupId) {
+      const group = await prisma.userGroup.findUnique({ where: { id: parsed.data.groupId } })
+      if (!group) return error('Benutzergruppe nicht gefunden')
+    }
 
     const passwordHash = await hashPassword(parsed.data.password)
     const user = await prisma.user.create({
@@ -36,8 +49,17 @@ export async function POST(req: NextRequest) {
         passwordHash,
         displayName: parsed.data.displayName,
         role: parsed.data.role,
+        groupId: parsed.data.groupId || null,
       },
-      select: { id: true, username: true, displayName: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        groupId: true,
+        group: { select: { id: true, name: true } },
+        createdAt: true,
+      },
     })
 
     return success(user, 201)

@@ -17,7 +17,6 @@ interface Training {
   key: string
   label: string
   sortOrder: number
-  discordRoleId: string | null
 }
 
 export default function TrainingsPage() {
@@ -27,16 +26,16 @@ export default function TrainingsPage() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editTraining, setEditTraining] = useState<Training | null>(null)
-  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0, discordRoleId: '' as string })
+  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0 })
 
   const openCreate = () => {
-    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1, discordRoleId: '' })
+    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1 })
     setEditTraining(null)
     setModalOpen(true)
   }
 
   const openEdit = (t: Training) => {
-    setForm({ key: t.key, label: t.label, sortOrder: t.sortOrder, discordRoleId: t.discordRoleId ?? '' })
+    setForm({ key: t.key, label: t.label, sortOrder: t.sortOrder })
     setEditTraining(t)
     setModalOpen(true)
   }
@@ -46,7 +45,6 @@ export default function TrainingsPage() {
       key: form.key,
       label: form.label,
       sortOrder: form.sortOrder,
-      discordRoleId: form.discordRoleId.trim() === '' ? null : form.discordRoleId.trim(),
     }
     try {
       if (editTraining) {
@@ -97,12 +95,6 @@ export default function TrainingsPage() {
               <div className="flex-1">
                 <span className="text-[13.5px] font-medium text-[#eee]">{t.label}</span>
                 <span className="text-[11px] text-[#4a6585] ml-2 font-mono">({t.key})</span>
-                {t.discordRoleId && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-[#7c8ad9] font-mono" title={`Discord-Rolle ${t.discordRoleId}`}>
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#5865F2]" />
-                    {t.discordRoleId.slice(-6)}
-                  </span>
-                )}
               </div>
               <div className="flex gap-0.5">
                 <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
@@ -128,17 +120,6 @@ export default function TrainingsPage() {
           <Input label="Label (Anzeigename)" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required placeholder="z.B. Erste Hilfe" />
           <Input label="Key (intern)" value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} required placeholder="z.B. erste_hilfe" />
           <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
-          <div className="border-t border-[#18385f] pt-3">
-            <Input
-              label="Discord Rollen-ID (optional)"
-              value={form.discordRoleId}
-              onChange={(e) => setForm({ ...form, discordRoleId: e.target.value })}
-              placeholder="z. B. 1234567890123456789"
-            />
-            <p className="text-[11px] text-[#6b8299] mt-1">
-              Wird automatisch vergeben, sobald diese Ausbildung als &quot;abgeschlossen&quot; markiert wird.
-            </p>
-          </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleSave} disabled={!form.key.trim() || !form.label.trim()}>Speichern</Button>

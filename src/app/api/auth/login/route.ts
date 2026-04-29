@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { verifyPassword, signToken } from '@/lib/auth'
 import { success, error } from '@/lib/api-response'
 import { loginSchema } from '@/lib/validations/auth'
+import { resolvePermissions } from '@/lib/permissions'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,10 @@ export async function POST(req: NextRequest) {
     const parsed = loginSchema.safeParse(body)
     if (!parsed.success) return error('Ungültige Anmeldedaten')
 
-    const user = await prisma.user.findUnique({ where: { username: parsed.data.username } })
+    const user = await prisma.user.findUnique({
+      where: { username: parsed.data.username },
+      include: { group: { select: { id: true, name: true, permissions: true } } },
+    })
     if (!user) return error('Benutzername oder Passwort falsch', 401)
 
     const valid = await verifyPassword(parsed.data.password, user.passwordHash)
@@ -28,9 +32,16 @@ export async function POST(req: NextRequest) {
     })
 
     return success({
-      user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role }
+      user: {
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role,
+        group: user.group ? { id: user.group.id, name: user.group.name } : null,
+        permissions: resolvePermissions(user.role, user.group?.permissions),
+      },
     })
-  } catch (e) {
+  } catch {
     return error('Serverfehler', 500)
   }
 }

@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
-import { notifyDiscordBot } from '@/lib/discord/notifier'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const body = await req.json()
 
     const { officerId, newRankId, newBadgeNumber: bodyBadge, note } = body
@@ -86,18 +86,9 @@ export async function POST(req: NextRequest) {
       details: `${officer.firstName} ${officer.lastName}: ${officer.rank.name} → ${newRank.name}`,
     })
 
-    const isPromotion = newRank.sortOrder > officer.rank.sortOrder
-    void notifyDiscordBot({
-      type: isPromotion ? 'OFFICER_PROMOTED' : 'OFFICER_DEMOTED',
-      officerId,
-      actorDisplayName: user.displayName,
-      oldRankName: officer.rank.name,
-      newRankName: newRank.name,
-      note: note || undefined,
-    })
-
     return success(promotion, 201)
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Neue Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

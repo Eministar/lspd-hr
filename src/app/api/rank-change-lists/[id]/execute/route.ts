@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
 
     const list = await prisma.rankChangeList.findUnique({
@@ -25,6 +26,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (!list) return error('Liste nicht gefunden', 404)
     if (list.entries.length === 0) return error('Keine offenen Einträge vorhanden')
+
+    const requestedBadges = new Map<string, string>()
+    for (const entry of list.entries) {
+      const nextBadge = entry.newBadgeNumber?.trim()
+      if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
+      const duplicateEntry = requestedBadges.get(nextBadge)
+      if (duplicateEntry) {
+        return error(`Dienstnummer ${nextBadge} ist mehrfach in dieser Liste vorgesehen`)
+      }
+      requestedBadges.set(nextBadge, entry.officerId)
+
+      const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
+      if (owner && owner.id !== entry.officerId) return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
+    }
 
     let executed = 0
 
@@ -76,6 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return success({ executed, total: list.entries.length })
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

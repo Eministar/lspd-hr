@@ -19,7 +19,6 @@ interface Rank {
   color: string
   badgeMin: number | null
   badgeMax: number | null
-  discordRoleId: string | null
 }
 
 export default function RanksPage() {
@@ -35,7 +34,6 @@ export default function RanksPage() {
     color: '#3B82F6',
     badgeMin: '' as string,
     badgeMax: '' as string,
-    discordRoleId: '' as string,
   })
 
   const openCreate = () => {
@@ -45,7 +43,6 @@ export default function RanksPage() {
       color: '#3B82F6',
       badgeMin: '',
       badgeMax: '',
-      discordRoleId: '',
     })
     setEditRank(null)
     setModalOpen(true)
@@ -58,7 +55,6 @@ export default function RanksPage() {
       color: rank.color,
       badgeMin: rank.badgeMin != null ? String(rank.badgeMin) : '',
       badgeMax: rank.badgeMax != null ? String(rank.badgeMax) : '',
-      discordRoleId: rank.discordRoleId ?? '',
     })
     setEditRank(rank)
     setModalOpen(true)
@@ -71,7 +67,6 @@ export default function RanksPage() {
       color: form.color,
       badgeMin: form.badgeMin.trim() === '' ? null : form.badgeMin,
       badgeMax: form.badgeMax.trim() === '' ? null : form.badgeMax,
-      discordRoleId: form.discordRoleId.trim() === '' ? null : form.discordRoleId.trim(),
     }
     try {
       if (editRank) {
@@ -125,12 +120,6 @@ export default function RanksPage() {
                 {rank.badgeMin != null && rank.badgeMax != null && (
                   <span className="ml-2 text-[10px] text-[#4a6585] font-mono">DN {rank.badgeMin}–{rank.badgeMax}</span>
                 )}
-                {rank.discordRoleId && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-[#7c8ad9] font-mono" title={`Discord-Rolle ${rank.discordRoleId}`}>
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#5865F2]" />
-                    {rank.discordRoleId.slice(-6)}
-                  </span>
-                )}
               </div>
               <div className="flex gap-0.5">
                 <button onClick={() => openEdit(rank)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
@@ -178,17 +167,6 @@ export default function RanksPage() {
               onChange={(e) => setForm({ ...form, badgeMax: e.target.value })}
               placeholder="z. B. 10"
             />
-          </div>
-          <div className="border-t border-[#18385f] pt-3">
-            <Input
-              label="Discord Rollen-ID (optional)"
-              value={form.discordRoleId}
-              onChange={(e) => setForm({ ...form, discordRoleId: e.target.value })}
-              placeholder="z. B. 1234567890123456789"
-            />
-            <p className="text-[11px] text-[#6b8299] mt-1">
-              Wird automatisch vergeben, wenn ein Officer auf diesen Rang gesetzt wird. (Discord ID — Rechtsklick auf Rolle → ID kopieren)
-            </p>
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
