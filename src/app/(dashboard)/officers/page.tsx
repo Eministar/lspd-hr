@@ -85,6 +85,7 @@ interface Officer {
   notes: string | null
   hireDate: string
   lastOnline: string | null
+  discordId: string | null
   trainings: OfficerTraining[]
 }
 

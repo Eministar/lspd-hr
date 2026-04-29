@@ -62,6 +62,7 @@ interface OfficerDetail {
   notes: string | null
   hireDate: string
   lastOnline: string | null
+  discordId: string | null
   trainings: OfficerTraining[]
   promotionLogs: PromotionLog[]
   officerNotes: OfficerNote[]
@@ -76,6 +77,7 @@ interface OfficerForm {
   unit: string
   flag: string
   hireDate: string
+  discordId: string
 }
 
 const EMPTY_OFFICER_FORM: OfficerForm = {
@@ -88,6 +90,7 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
   unit: '',
   flag: '',
   hireDate: '',
+  discordId: '',
 }
 
 export default function OfficerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -130,6 +133,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       unit: officer.unit ?? '',
       flag: officer.flag ?? '',
       hireDate: officer.hireDate?.split('T')[0] || '',
+      discordId: officer.discordId ?? '',
     })
     setEditing(true)
   }
@@ -140,6 +144,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         ...form,
         unit: form.unit ? form.unit : null,
         flag: form.flag ? form.flag : null,
+        discordId: form.discordId.trim() === '' ? null : form.discordId.trim(),
       }
       await execute(`/api/officers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
       addToast({ type: 'success', title: 'Officer aktualisiert' })
@@ -313,6 +318,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   <Input label="Dienstnummer" value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
                   <Select label="Rang" value={form.rankId} onChange={(e) => setForm({ ...form, rankId: e.target.value })} options={ranks?.map(r => ({ value: r.id, label: r.name })) || []} />
                 </div>
+                <Input
+                  label="Discord-ID"
+                  value={form.discordId}
+                  onChange={(e) => setForm({ ...form, discordId: e.target.value })}
+                  placeholder="Optional (Snowflake)"
+                  className="font-mono"
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={[
                     { value: 'ACTIVE', label: 'Aktiv' },
@@ -347,6 +359,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-6">
                 <InfoRow label="Dienstnummer" value={officer.badgeNumber} mono />
+                <InfoRow label="Discord-ID" value={officer.discordId ?? undefined} mono />
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />

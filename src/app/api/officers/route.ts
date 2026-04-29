@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
       { firstName: { contains: search } },
       { lastName: { contains: search } },
       { badgeNumber: { contains: search } },
+      { discordId: { contains: search } },
     ]
   }
   if (status) where.status = status
@@ -48,8 +49,14 @@ export async function POST(req: NextRequest) {
       return error(parsed.error.issues.map(e => e.message).join(', '))
     }
 
-    const existing = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
-    if (existing) return error('Dienstnummer bereits vergeben')
+    const existingBadge = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
+    if (existingBadge) return error('Dienstnummer bereits vergeben')
+
+    const did = parsed.data.discordId ?? null
+    if (did) {
+      const existingDiscord = await prisma.officer.findFirst({ where: { discordId: did } })
+      if (existingDiscord) return error('Discord-ID bereits vergeben')
+    }
 
     const unitKey = parsed.data.unit ?? null
     if (unitKey) {
@@ -63,6 +70,7 @@ export async function POST(req: NextRequest) {
         firstName: parsed.data.firstName,
         lastName: parsed.data.lastName,
         rankId: parsed.data.rankId,
+        discordId: did,
         notes: parsed.data.notes || null,
         hireDate: parsed.data.hireDate ? new Date(parsed.data.hireDate) : new Date(),
         status: parsed.data.status || 'ACTIVE',
@@ -92,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     return success(officer, 201)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Dienstnummer oder Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

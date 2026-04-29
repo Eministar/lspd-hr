@@ -119,6 +119,8 @@ model Training {
 model Officer {
   id              String        @id @default(cuid())
   badgeNumber     String        @unique
+  /// Discord-Snowflake (nur Dashboard / Verknüpfung; ohne Bot-Anbindung)
+  discordId       String?       @unique
   firstName       String
   lastName        String
   rankId          String

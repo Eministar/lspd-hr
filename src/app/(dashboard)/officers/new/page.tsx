@@ -38,6 +38,7 @@ export default function NewOfficerPage() {
     firstName: '',
     lastName: '',
     rankId: '',
+    discordId: '',
     notes: '',
     unit: '',
     hireDate: new Date().toISOString().split('T')[0],
@@ -46,7 +47,7 @@ export default function NewOfficerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const payload = { ...form, unit: form.unit ? form.unit : null }
+      const payload = { ...form, unit: form.unit ? form.unit : null, discordId: form.discordId.trim() || null }
       await execute('/api/officers', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -111,6 +112,17 @@ export default function NewOfficerPage() {
               options={ranks?.map(r => ({ value: r.id, label: r.name })) || []}
               placeholder="Rang auswählen"
               required
+            />
+          </div>
+
+          <div className="max-w-xl">
+            <Input
+              id="discordId"
+              label="Discord-ID"
+              value={form.discordId}
+              onChange={(e) => update('discordId', e.target.value)}
+              placeholder="Optional (Snowflake)"
+              className="font-mono"
             />
           </div>
 
