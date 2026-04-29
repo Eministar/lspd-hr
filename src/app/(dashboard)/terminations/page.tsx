@@ -29,6 +29,8 @@ interface Termination {
   terminatedAt: string
   previousRank: string | null
   previousBadgeNumber: string | null
+  previousFirstName: string | null
+  previousLastName: string | null
   officer: {
     id: string
     firstName: string
@@ -36,8 +38,14 @@ interface Termination {
     badgeNumber: string
     status: string
     rank: { name: string; color: string }
-  }
+  } | null
   terminatedBy: { displayName: string }
+}
+
+function terminationOfficerNames(t: Termination): { first: string; last: string } {
+  const first = t.officer?.firstName ?? t.previousFirstName ?? ''
+  const last = t.officer?.lastName ?? t.previousLastName ?? ''
+  return { first, last }
 }
 
 export default function TerminationsPage() {
@@ -105,7 +113,11 @@ export default function TerminationsPage() {
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
         {terminations && terminations.length > 0 ? (
           <div className="divide-y divide-[#18385f]">
-            {terminations.map((t, i) => (
+            {terminations.map((t, i) => {
+              const { first: fn, last: ln } = terminationOfficerNames(t)
+              const displayName = [fn, ln].filter(Boolean).join(' ') || '—'
+              const badgeDn = t.previousBadgeNumber || t.officer?.badgeNumber || '—'
+              return (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0 }}
@@ -117,14 +129,19 @@ export default function TerminationsPage() {
                   <UserX size={16} className="text-[#999]" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <p className="text-[13px] font-medium text-[#eee]">
-                      {t.officer.firstName} {t.officer.lastName}
+                      {displayName}
                     </p>
-                    <span className="text-[11px] text-[#4a6585] font-mono">DN: {t.previousBadgeNumber || t.officer.badgeNumber}</span>
+                    <span className="text-[11px] text-[#4a6585] font-mono">DN: {badgeDn}</span>
+                    {!t.officer && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1a3050] text-[#8ea4bd] border border-[#234568]">
+                        Profil gelöscht
+                      </span>
+                    )}
                   </div>
                   <p className="text-[12px] text-[#999] mb-1">
-                    Ehem. Rang: <span className="text-[#aaa] font-medium">{t.previousRank || '—'}</span>
+                    Ehem. Rang: <span className="text-[#aaa] font-medium">{t.previousRank || t.officer?.rank?.name || '—'}</span>
                   </p>
                   <p className="text-[13px] text-[#999]">{t.reason}</p>
                   <p className="text-[11px] text-[#4a6585] mt-1.5">
@@ -132,17 +149,19 @@ export default function TerminationsPage() {
                   </p>
                 </div>
                 <div className="shrink-0">
-                  {t.officer.status === 'TERMINATED' ? (
-                    <Button variant="secondary" size="sm" onClick={() => setRehireId(t.officer.id)}>
+                  {t.officer?.status === 'TERMINATED' ? (
+                    <Button variant="secondary" size="sm" onClick={() => setRehireId(t.officer!.id)}>
                       <UserPlus size={13} strokeWidth={1.75} />
                       Wiedereinstellen
                     </Button>
-                  ) : (
+                  ) : t.officer ? (
                     <span className="text-[11.5px] text-[#34d399] font-medium">Wiedereingestellt</span>
+                  ) : (
+                    <span className="text-[11px] text-[#4a6585]" title="Datensatz ohne Officer-Profil">—</span>
                   )}
                 </div>
               </motion.div>
-            ))}
+            )})}
           </div>
         ) : (
           <div className="text-center py-20">

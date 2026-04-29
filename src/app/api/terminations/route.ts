@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
         terminatedByUserId: user.id,
         previousRank: officer.rank.name,
         previousBadgeNumber: officer.badgeNumber,
+        previousFirstName: officer.firstName,
+        previousLastName: officer.lastName,
       },
     })
 
