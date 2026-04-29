@@ -112,7 +112,10 @@ if "!STATUS_SIZE!"=="0" (
   type "%STATUS_FILE%" >> "%LOG_FILE%"
   echo.
   call :run "Lokale Änderungen als Sicherheits-Commit vormerken" "git add -A" || goto failed
-  call :run "Sicherheits-Commit erstellen" "git commit -m ""%BACKUP_MESSAGE%""" || goto failed
+  set "BACKUP_COMMIT_MSG=%TEMP%\lspd_backup_commit_msg_%RANDOM%%RANDOM%.txt"
+  > "!BACKUP_COMMIT_MSG!" echo %BACKUP_MESSAGE%
+  call :run "Sicherheits-Commit erstellen" "git commit -F !BACKUP_COMMIT_MSG!" || goto failed
+  del /q "!BACKUP_COMMIT_MSG!" >nul 2>&1
 )
 del /q "%STATUS_FILE%" >nul 2>&1
 
@@ -121,7 +124,7 @@ git merge-base --is-ancestor HEAD %REMOTE%/%BRANCH% >nul 2>> "%LOG_FILE%"
 if "!errorlevel!"=="0" (
   call :run "Fast-forward Merge ausführen" "git merge --ff-only %REMOTE%/%BRANCH%" || goto merge_failed
 ) else (
-  call :run "Merge-Commit ausführen" "git merge --no-ff --no-edit -m ""%MERGE_MESSAGE%"" %REMOTE%/%BRANCH%" || goto merge_failed
+  call :run "Merge-Commit ausführen" "git merge --no-ff --no-edit %REMOTE%/%BRANCH%" || goto merge_failed
 )
 
 call :section "7/10" "Pakete installieren"
