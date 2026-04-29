@@ -114,10 +114,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const user = await requireAuth(['ADMIN'], ['officers:delete'])
     const { id } = await params
 
-    const officer = await prisma.officer.findUnique({ where: { id } })
+    const officer = await prisma.officer.findUnique({ where: { id }, include: { rank: true } })
     if (!officer) return notFound('Officer')
 
-    await prisma.officer.delete({ where: { id } })
+    await prisma.$transaction([
+      prisma.termination.updateMany({
+        where: { officerId: id },
+        data: {
+          previousFirstName: officer.firstName,
+          previousLastName: officer.lastName,
+        },
+      }),
+      prisma.officer.delete({ where: { id } }),
+    ])
 
     await createAuditLog({
       action: 'OFFICER_DELETED',

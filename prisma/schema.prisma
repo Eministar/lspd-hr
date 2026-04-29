@@ -173,15 +173,18 @@ model PromotionLog {
 }
 
 model Termination {
-  id                  String   @id @default(cuid())
-  officerId           String
-  officer             Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  /// Bei Löschen des Officers: null bleibt; Anzeige über previous*-Felder.
+  officerId           String?
+  officer             Officer?  @relation(fields: [officerId], references: [id], onDelete: SetNull)
   reason              String
   terminatedByUserId  String
-  terminatedBy        User     @relation("TerminatedBy", fields: [terminatedByUserId], references: [id])
-  terminatedAt        DateTime @default(now())
+  terminatedBy        User      @relation("TerminatedBy", fields: [terminatedByUserId], references: [id])
+  terminatedAt        DateTime  @default(now())
   previousRank        String?
   previousBadgeNumber String?
+  previousFirstName   String?
+  previousLastName    String?
 }
 
 model Note {
