@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { verifyPassword, signToken } from '@/lib/auth'
 import { success, error } from '@/lib/api-response'
 import { loginSchema } from '@/lib/validations/auth'
-import { resolvePermissions } from '@/lib/permissions'
+import { resolveEffectivePermissions } from '@/lib/permissions'
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         username: user.username,
         displayName: user.displayName,
         group: user.group ? { id: user.group.id, name: user.group.name } : null,
-        permissions: resolvePermissions(user.group?.permissions),
+        permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
       },
     })
   } catch {

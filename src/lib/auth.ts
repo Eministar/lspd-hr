@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
-import { hasAnyPermission, resolvePermissions, type Permission } from './permissions'
+import { hasAnyPermission, resolveEffectivePermissions, type Permission } from './permissions'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -65,10 +65,7 @@ export async function getCurrentUser() {
     username: user.username,
     displayName: user.displayName,
     group: user.group ? { id: user.group.id, name: user.group.name } : null,
-    permissions: Array.from(new Set([
-      ...resolvePermissions(user.group?.permissions),
-      ...resolvePermissions(user.permissions),
-    ])),
+    permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
   } satisfies CurrentUser
 }
 

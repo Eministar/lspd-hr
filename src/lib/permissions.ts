@@ -92,6 +92,12 @@ export function resolvePermissions(groupPermissions?: unknown): Permission[] {
   return normalizePermissions(groupPermissions)
 }
 
+export function resolveEffectivePermissions(userPermissions?: unknown, groupPermissions?: unknown): Permission[] {
+  const userHasDirectPermissions = Array.isArray(userPermissions) && userPermissions.length > 0
+  if (userHasDirectPermissions) return normalizePermissions(userPermissions)
+  return normalizePermissions(groupPermissions)
+}
+
 export function hasPermission(
   user: { permissions?: string[] | null } | null | undefined,
   permission: Permission,
