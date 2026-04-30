@@ -28,6 +28,7 @@ if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "STAMP=%%I"
 set "LOG_FILE=%LOG_DIR%\live-update-%STAMP%.log"
 set "BUILD_LOG=%LOG_DIR%\build-%STAMP%.log"
+set "STATIC_BACKUP=%TEMP%\lspd_next_static_%STAMP%"
 
 echo Logdatei:
 echo   %LOG_FILE%
@@ -135,6 +136,7 @@ call :run "npm install" "npm install" || goto failed
 call :section "8/10" "Next.js Build-Cache behalten"
 echo .next wird vor dem Build nicht gelöscht, damit aktive Clients keine alten Chunk-Dateien verlieren.
 call :logline ".next wird vor dem Build nicht gelöscht, damit aktive Clients keine alten Chunk-Dateien verlieren."
+call :backup_static || goto failed
 
 call :section "9/11" "Datenbank aktualisieren"
 call :run "Datenbank-Backup erstellen" "npm run db:backup" || goto failed
@@ -282,7 +284,77 @@ if not "!RUN_CODE!"=="0" (
 
 echo [OK] npm run build
 call :logline "[OK] npm run build"
+call :restore_static
+if errorlevel 1 exit /b !errorlevel!
 call :webhook "success" "Build erfolgreich" "Der Produktionsbuild wurde erfolgreich abgeschlossen." "%BUILD_LOG%"
+exit /b 0
+
+:backup_static
+echo.
+echo -- Next.js Static-Chunks sichern
+call :logline ""
+call :logline "-- Next.js Static-Chunks sichern"
+
+if exist "%STATIC_BACKUP%" rmdir /s /q "%STATIC_BACKUP%" >nul 2>&1
+
+if not exist ".next\static" (
+  echo Keine .next\static-Dateien zum Sichern vorhanden.
+  call :logline "Keine .next\static-Dateien zum Sichern vorhanden."
+  exit /b 0
+)
+
+set "ROBO_LOG=%TEMP%\lspd_static_backup_%RANDOM%%RANDOM%.log"
+robocopy ".next\static" "%STATIC_BACKUP%" /E /NFL /NDL /NJH /NJS /NC /NS > "%ROBO_LOG%" 2>&1
+set "ROBO_CODE=!errorlevel!"
+
+if exist "%ROBO_LOG%" (
+  type "%ROBO_LOG%"
+  type "%ROBO_LOG%" >> "%LOG_FILE%"
+  del /q "%ROBO_LOG%" >nul 2>&1
+)
+
+if !ROBO_CODE! GEQ 8 (
+  echo [FEHLER] Next.js Static-Chunks sichern ist fehlgeschlagen. Exitcode: !ROBO_CODE!
+  call :logline "[FEHLER] Next.js Static-Chunks sichern ist fehlgeschlagen. Exitcode: !ROBO_CODE!"
+  exit /b !ROBO_CODE!
+)
+
+echo [OK] Next.js Static-Chunks gesichert
+call :logline "[OK] Next.js Static-Chunks gesichert"
+exit /b 0
+
+:restore_static
+echo.
+echo -- Alte Next.js Static-Chunks wiederherstellen
+call :logline ""
+call :logline "-- Alte Next.js Static-Chunks wiederherstellen"
+
+if not exist "%STATIC_BACKUP%" (
+  echo Keine gesicherten Static-Chunks vorhanden.
+  call :logline "Keine gesicherten Static-Chunks vorhanden."
+  exit /b 0
+)
+
+if not exist ".next\static" mkdir ".next\static" >nul 2>&1
+
+set "ROBO_LOG=%TEMP%\lspd_static_restore_%RANDOM%%RANDOM%.log"
+robocopy "%STATIC_BACKUP%" ".next\static" /E /XC /XN /XO /NFL /NDL /NJH /NJS /NC /NS > "%ROBO_LOG%" 2>&1
+set "ROBO_CODE=!errorlevel!"
+
+if exist "%ROBO_LOG%" (
+  type "%ROBO_LOG%"
+  type "%ROBO_LOG%" >> "%LOG_FILE%"
+  del /q "%ROBO_LOG%" >nul 2>&1
+)
+
+if !ROBO_CODE! GEQ 8 (
+  echo [FEHLER] Alte Next.js Static-Chunks wiederherstellen ist fehlgeschlagen. Exitcode: !ROBO_CODE!
+  call :logline "[FEHLER] Alte Next.js Static-Chunks wiederherstellen ist fehlgeschlagen. Exitcode: !ROBO_CODE!"
+  exit /b !ROBO_CODE!
+)
+
+echo [OK] Alte Next.js Static-Chunks wiederhergestellt
+call :logline "[OK] Alte Next.js Static-Chunks wiederhergestellt"
 exit /b 0
 
 :logline

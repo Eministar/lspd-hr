@@ -123,19 +123,42 @@ function tryServeStaticAsset(req, res) {
   const pathname = parse(req.url || '/', false).pathname || '/'
   let filePath = null
   let immutable = false
+  let isNextStatic = false
 
   if (pathname.startsWith('/_next/static/')) {
-    filePath = safeJoin(path.join(projectDir, '.next', 'static'), decodeURIComponent(pathname.slice('/_next/static/'.length)))
-    immutable = true
+    try {
+      filePath = safeJoin(path.join(projectDir, '.next', 'static'), decodeURIComponent(pathname.slice('/_next/static/'.length)))
+      immutable = true
+      isNextStatic = true
+    } catch {
+      res.statusCode = 400
+      res.end('Bad Request')
+      return true
+    }
   } else if (pathname === '/favicon.ico' || pathname === '/shield.webp' || pathname === '/logo.webp') {
     filePath = safeJoin(path.join(projectDir, 'public'), decodeURIComponent(pathname.slice(1)))
   }
 
-  if (!filePath) return false
+  if (!filePath) {
+    if (isNextStatic) {
+      res.statusCode = 404
+      res.end('Not Found')
+      return true
+    }
+    return false
+  }
 
   try {
     const stat = fs.statSync(filePath)
-    if (!stat.isFile()) return false
+    if (!stat.isFile()) {
+      if (isNextStatic) {
+        res.statusCode = 404
+        res.setHeader('Cache-Control', 'no-store, max-age=0')
+        res.end('Not Found')
+        return true
+      }
+      return false
+    }
 
     const ext = path.extname(filePath).toLowerCase()
     res.statusCode = 200
@@ -151,6 +174,12 @@ function tryServeStaticAsset(req, res) {
     fs.createReadStream(filePath).pipe(res)
     return true
   } catch {
+    if (isNextStatic) {
+      res.statusCode = 404
+      res.setHeader('Cache-Control', 'no-store, max-age=0')
+      res.end('Not Found')
+      return true
+    }
     return false
   }
 }

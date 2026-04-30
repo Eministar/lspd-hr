@@ -4,7 +4,11 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get('auth-token')?.value
 
-  if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/me')) {
+  if (
+    pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/me') ||
+    pathname.startsWith('/api/runtime-events')
+  ) {
     return NextResponse.next()
   }
 
