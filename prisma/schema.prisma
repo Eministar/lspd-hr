@@ -252,7 +252,8 @@ model RankChangeListEntry {
 model SystemSetting {
   id    String @id @default(cuid())
   key   String @unique
-  value String
+  /// JSON payloads (Discord role maps, etc.) exceed MySQL DEFAULT VARCHAR limits.
+  value String @db.Text
 }
 
 model TaskList {
