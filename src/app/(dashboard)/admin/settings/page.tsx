@@ -121,12 +121,18 @@ export default function SettingsPage() {
     }
   }
 
-  const toggleRole = (field: 'employeeRoleIds' | 'commandRoleIds', roleId: string, checked: boolean) => {
+  const addRole = (field: 'employeeRoleIds' | 'commandRoleIds', roleId: string) => {
+    if (!roleId) return
     setDiscordForm((prev) => ({
       ...prev,
-      [field]: checked
-        ? Array.from(new Set([...prev[field], roleId]))
-        : prev[field].filter((id) => id !== roleId),
+      [field]: Array.from(new Set([...prev[field], roleId])),
+    }))
+  }
+
+  const removeRole = (field: 'employeeRoleIds' | 'commandRoleIds', roleId: string) => {
+    setDiscordForm((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((id) => id !== roleId),
     }))
   }
 
@@ -149,6 +155,45 @@ export default function SettingsPage() {
     { value: '', label: 'Kein Channel' },
     ...(discordData?.channels.map((channel) => ({ value: channel.id, label: `#${channel.name || channel.id}` })) || []),
   ]
+  const roleName = (roleId: string) => discordData?.roles.find((role) => role.id === roleId)?.name || roleId
+
+  const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds') => {
+    const selected = discordForm[field]
+    const options = [
+      { value: '', label: 'Rolle hinzufügen' },
+      ...(discordData?.roles
+        .filter((role) => !selected.includes(role.id))
+        .map((role) => ({ value: role.id, label: role.name })) || []),
+    ]
+
+    return (
+      <div className="space-y-2">
+        <Select
+          value=""
+          onValueChange={(roleId) => addRole(field, roleId)}
+          options={options}
+          size="sm"
+        />
+        <div className="flex flex-wrap gap-2 min-h-[34px]">
+          {selected.map((roleId) => (
+            <button
+              key={roleId}
+              type="button"
+              onClick={() => removeRole(field, roleId)}
+              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+              title="Rolle entfernen"
+            >
+              {roleName(roleId)}
+              <span className="text-[#6b8299]">×</span>
+            </button>
+          ))}
+          {selected.length === 0 && (
+            <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -239,33 +284,11 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
             <div>
               <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Feste Mitarbeiterrollen</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {discordData?.roles.map((role) => (
-                  <label key={role.id} className="flex items-center gap-2 rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2 text-[12.5px] text-[#edf4fb]">
-                    <input
-                      type="checkbox"
-                      checked={discordForm.employeeRoleIds.includes(role.id)}
-                      onChange={(e) => toggleRole('employeeRoleIds', role.id, e.target.checked)}
-                    />
-                    <span className="truncate">{role.name}</span>
-                  </label>
-                ))}
-              </div>
+              {renderRolePicker('employeeRoleIds')}
             </div>
             <div>
               <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rollen, die Discord-Commands ausführen dürfen</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {discordData?.roles.map((role) => (
-                  <label key={role.id} className="flex items-center gap-2 rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2 text-[12.5px] text-[#edf4fb]">
-                    <input
-                      type="checkbox"
-                      checked={discordForm.commandRoleIds.includes(role.id)}
-                      onChange={(e) => toggleRole('commandRoleIds', role.id, e.target.checked)}
-                    />
-                    <span className="truncate">{role.name}</span>
-                  </label>
-                ))}
-              </div>
+              {renderRolePicker('commandRoleIds')}
             </div>
           </div>
 

@@ -232,16 +232,13 @@ export async function getDiscordGuildRoles(guildId?: string) {
 
   const roles = await discordFetch<DiscordRole[]>(`/guilds/${id}/roles`)
   const seenIds = new Set<string>()
-  const seenNames = new Set<string>()
 
   return roles
     .filter((role) => !role.managed && role.name !== '@everyone')
     .sort((a, b) => b.position - a.position || a.name.localeCompare(b.name))
     .filter((role) => {
-      const normalizedName = role.name.trim().toLowerCase()
-      if (seenIds.has(role.id) || seenNames.has(normalizedName)) return false
+      if (seenIds.has(role.id)) return false
       seenIds.add(role.id)
-      seenNames.add(normalizedName)
       return true
     })
 }
