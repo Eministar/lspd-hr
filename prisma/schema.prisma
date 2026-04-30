@@ -303,3 +303,11 @@ model TaskAssignment {
   @@unique([taskId, officerId])
   @@index([officerId])
 }
+
+model BadgeBlacklist {
+  id          String   @id @default(cuid())
+  badgeNumber String   @unique
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

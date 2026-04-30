@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
@@ -37,10 +38,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const prefix = await getBadgePrefix()
     const allForBadges = await prisma.officer.findMany({ select: { badgeNumber: true } })
+    const blacklistedBadges = await getBlacklistedBadgeRows()
 
     let newBadge = officer.badgeNumber
     if (rankHasBadgeRange(targetRank)) {
-      const assigned = nextBadgeForRank(targetRank, allForBadges, prefix, officer.badgeNumber)
+      const assigned = nextBadgeForRank(targetRank, allForBadges, prefix, officer.badgeNumber, blacklistedBadges)
       if (!assigned) return error('Keine freie Dienstnummer im Ziel-Bereich für diesen Rang')
       newBadge = assigned.str
     }

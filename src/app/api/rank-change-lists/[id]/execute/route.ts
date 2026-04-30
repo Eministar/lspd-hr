@@ -6,6 +6,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,7 +36,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const prefix = await getBadgePrefix()
     const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+    const blacklistedBadges = await getBlacklistedBadgeRows()
     const usedBadgeInts = collectUsedBadgeInts(allRows, prefix)
+    for (const blacklistedBadge of blacklistedBadges) {
+      const n = parseBadgeNumberToInt(blacklistedBadge.badgeNumber, prefix)
+      if (n !== null) usedBadgeInts.add(n)
+    }
     const requestedBadges = new Map<string, string>()
     for (const entry of list.entries) {
       let nextBadge = entry.newBadgeNumber?.trim() ?? ''
@@ -47,6 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         usedBadgeInts.add(assigned)
       }
       if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
+      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, entry.officerId)
+      if (badgeConflict) return error(`${badgeConflict}: ${nextBadge}`)
       const duplicateEntry = requestedBadges.get(nextBadge)
       if (duplicateEntry) {
         return error(`Dienstnummer ${nextBadge} ist mehrfach in dieser Liste vorgesehen`)

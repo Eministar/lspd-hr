@@ -6,6 +6,8 @@ import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
+import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
+import { getBadgePrefix } from '@/lib/settings-helpers'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,8 +56,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!existing) return notFound('Officer')
 
     if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) {
-      const dup = await prisma.officer.findUnique({ where: { badgeNumber: parsed.data.badgeNumber } })
-      if (dup) return error('Dienstnummer bereits vergeben')
+      const prefix = await getBadgePrefix()
+      const badgeConflict = await findBadgeNumberConflict(parsed.data.badgeNumber, prefix, id)
+      if (badgeConflict) return error(badgeConflict)
     }
 
     if ('discordId' in parsed.data && parsed.data.discordId && parsed.data.discordId !== existing.discordId) {

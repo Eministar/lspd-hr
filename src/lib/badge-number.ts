@@ -61,12 +61,18 @@ export function nextBadgeForRank(
   rank: Pick<Rank, 'badgeMin' | 'badgeMax'>,
   allOfficers: { badgeNumber: string }[],
   prefix: string,
-  currentOfficerBadge?: string | null
+  currentOfficerBadge?: string | null,
+  reservedBadges: { badgeNumber: string }[] = []
 ): { num: number; str: string } | null {
   if (!rankHasBadgeRange(rank)) return null
   const used = collectUsedBadgeInts(allOfficers, prefix)
   const self = currentOfficerBadge ? parseBadgeNumberToInt(currentOfficerBadge, prefix) : null
-  const n = findNextFreeBadgeInRange(rank.badgeMin, rank.badgeMax, used, self)
+  if (self !== null) used.delete(self)
+  for (const reserved of reservedBadges) {
+    const n = parseBadgeNumberToInt(reserved.badgeNumber, prefix)
+    if (n !== null) used.add(n)
+  }
+  const n = findNextFreeBadgeInRange(rank.badgeMin, rank.badgeMax, used, null)
   if (n === null) return null
   return { num: n, str: formatBadgeNumber(n, prefix) }
 }

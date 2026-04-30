@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,9 +30,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (existing) return error('Officer ist bereits in dieser Liste')
 
     let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
+    const prefix = await getBadgePrefix()
     if (!nextBadge && rankHasBadgeRange(proposedRank)) {
-      const prefix = await getBadgePrefix()
       const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+      const blacklistedBadges = await getBlacklistedBadgeRows()
       const pendingBadges = await prisma.rankChangeListEntry.findMany({
         where: { listId: id, executed: false, newBadgeNumber: { not: null } },
         select: { newBadgeNumber: true },
@@ -47,13 +49,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ],
         prefix,
         officer.badgeNumber,
+        blacklistedBadges,
       )
       if (!assigned) return error('Keine freie Dienstnummer im Bereich des vorgeschlagenen Rangs')
       nextBadge = assigned.str
     }
     if (nextBadge && nextBadge !== officer.badgeNumber) {
-      const badgeOwner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
-      if (badgeOwner) return error('Dienstnummer bereits vergeben')
+      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, officerId)
+      if (badgeConflict) return error(badgeConflict)
       const badgeInList = await prisma.rankChangeListEntry.findFirst({
         where: {
           listId: id,

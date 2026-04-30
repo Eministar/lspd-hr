@@ -7,6 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank } from '@/lib/badge-number'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 
 export async function GET(req: NextRequest) {
@@ -62,16 +63,17 @@ export async function POST(req: NextRequest) {
     if (!rank) return error('Rang nicht gefunden')
 
     let badgeNumber = parsed.data.badgeNumber?.trim() ?? ''
+    const prefix = await getBadgePrefix()
     if (!badgeNumber) {
-      const prefix = await getBadgePrefix()
       const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
-      const assigned = nextBadgeForRank(rank, allRows, prefix, null)
+      const blacklistedBadges = await getBlacklistedBadgeRows()
+      const assigned = nextBadgeForRank(rank, allRows, prefix, null, blacklistedBadges)
       if (!assigned) return error('Keine freie Dienstnummer im Bereich des ausgewählten Rangs')
       badgeNumber = assigned.str
     }
 
-    const existingBadge = await prisma.officer.findUnique({ where: { badgeNumber } })
-    if (existingBadge) return error('Dienstnummer bereits vergeben')
+    const badgeConflict = await findBadgeNumberConflict(badgeNumber, prefix)
+    if (badgeConflict) return error(badgeConflict)
 
     const did = parsed.data.discordId ?? null
     if (did) {

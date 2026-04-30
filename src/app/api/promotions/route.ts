@@ -6,6 +6,7 @@ import { createAuditLog } from '@/lib/audit'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function GET() {
   try {
@@ -45,12 +46,13 @@ export async function POST(req: NextRequest) {
     if (!newRank) return error('Rang nicht gefunden')
 
     let newBadgeNumber: string = typeof bodyBadge === 'string' && bodyBadge.trim() ? bodyBadge.trim() : ''
+    const prefix = await getBadgePrefix()
 
     if (!newBadgeNumber) {
       if (rankHasBadgeRange(newRank)) {
-        const prefix = await getBadgePrefix()
         const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
-        const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber)
+        const blacklistedBadges = await getBlacklistedBadgeRows()
+        const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)
         if (!assigned) return error('Keine freie Dienstnummer im Bereich des Ziel-Rangs')
         newBadgeNumber = assigned.str
       } else {
@@ -59,8 +61,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (newBadgeNumber && newBadgeNumber !== officer.badgeNumber) {
-      const dup = await prisma.officer.findUnique({ where: { badgeNumber: newBadgeNumber } })
-      if (dup) return error('Neue Dienstnummer bereits vergeben')
+      const badgeConflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officerId)
+      if (badgeConflict) return error(badgeConflict)
     }
 
     const promotion = await prisma.promotionLog.create({

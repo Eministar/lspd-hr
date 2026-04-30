@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, Shield } from 'lucide-react'
+import { Plus, Edit, Trash2, Shield, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -21,12 +21,22 @@ interface Rank {
   badgeMax: number | null
 }
 
+interface BlacklistedBadge {
+  id: string
+  badgeNumber: string
+  reason: string | null
+  createdAt: string
+}
+
 export default function RanksPage() {
   const { data: ranks, loading, refetch } = useFetch<Rank[]>('/api/ranks')
+  const { data: blacklistedBadges, loading: blacklistLoading, refetch: refetchBlacklist } = useFetch<BlacklistedBadge[]>('/api/badge-blacklist')
   const { execute } = useApi()
   const { addToast } = useToast()
 
+  const [activeTab, setActiveTab] = useState<'ranks' | 'blacklist'>('ranks')
   const [modalOpen, setModalOpen] = useState(false)
+  const [blacklistModalOpen, setBlacklistModalOpen] = useState(false)
   const [editRank, setEditRank] = useState<Rank | null>(null)
   const [form, setForm] = useState({
     name: '',
@@ -35,6 +45,7 @@ export default function RanksPage() {
     badgeMin: '' as string,
     badgeMax: '' as string,
   })
+  const [blacklistForm, setBlacklistForm] = useState({ badgeNumber: '', reason: '' })
 
   const openCreate = () => {
     setForm({
@@ -93,16 +104,72 @@ export default function RanksPage() {
     }
   }
 
-  if (loading) return <PageLoader />
+  const openBlacklistCreate = () => {
+    setBlacklistForm({ badgeNumber: '', reason: '' })
+    setBlacklistModalOpen(true)
+  }
+
+  const handleBlacklistSave = async () => {
+    try {
+      await execute('/api/badge-blacklist', {
+        method: 'POST',
+        body: JSON.stringify({
+          badgeNumber: blacklistForm.badgeNumber,
+          reason: blacklistForm.reason.trim() || null,
+        }),
+      })
+      addToast({ type: 'success', title: 'Dienstnummer gesperrt' })
+      setBlacklistModalOpen(false)
+      await refetchBlacklist()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Warnung', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleBlacklistDelete = async (id: string) => {
+    try {
+      await execute(`/api/badge-blacklist/${id}`, { method: 'DELETE' })
+      addToast({ type: 'success', title: 'Sperre entfernt' })
+      await refetchBlacklist()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  if (loading || blacklistLoading) return <PageLoader />
 
   return (
     <div>
       <PageHeader
         title="Ränge verwalten"
-        description="Ränge erstellen, bearbeiten und ordnen"
-        action={<Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neuer Rang</Button>}
+        description="Ränge, Dienstnummern-Bereiche und gesperrte Dienstnummern"
+        action={
+          activeTab === 'ranks' ? (
+            <Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neuer Rang</Button>
+          ) : (
+            <Button size="sm" onClick={openBlacklistCreate}><Plus size={14} strokeWidth={2} /> DN sperren</Button>
+          )
+        }
       />
 
+      <div className="flex gap-1.5 mb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab('ranks')}
+          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'ranks' ? 'bg-[#d4af37] text-[#071b33]' : 'bg-[#0f2340] text-[#8ea4bd] hover:text-[#eee]'}`}
+        >
+          Ränge
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('blacklist')}
+          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'blacklist' ? 'bg-[#d4af37] text-[#071b33]' : 'bg-[#0f2340] text-[#8ea4bd] hover:text-[#eee]'}`}
+        >
+          DN-Blacklist
+        </button>
+      </div>
+
+      {activeTab === 'ranks' ? (
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
         <div className="divide-y divide-[#18385f]">
           {ranks?.map((rank, i) => (
@@ -139,6 +206,38 @@ export default function RanksPage() {
           )}
         </div>
       </div>
+      ) : (
+        <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
+          <div className="divide-y divide-[#18385f]">
+            {blacklistedBadges?.map((row, i) => (
+              <motion.div
+                key={row.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.02 }}
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+              >
+                <div className="h-8 w-8 rounded-[8px] bg-[#1c1111] flex items-center justify-center text-[#f87171]">
+                  <Ban size={15} strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13.5px] font-mono font-medium text-[#eee]">{row.badgeNumber}</p>
+                  <p className="text-[11.5px] text-[#4a6585] truncate">{row.reason || 'Keine Begründung'}</p>
+                </div>
+                <button onClick={() => handleBlacklistDelete(row.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
+                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
+                </button>
+              </motion.div>
+            ))}
+            {(!blacklistedBadges || blacklistedBadges.length === 0) && (
+              <div className="text-center py-16">
+                <Ban size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
+                <p className="text-[13px] text-[#999]">Keine Dienstnummern gesperrt</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editRank ? 'Rang bearbeiten' : 'Neuer Rang'}>
         <div className="space-y-4">
@@ -171,6 +270,31 @@ export default function RanksPage() {
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleSave} disabled={!form.name.trim()}>Speichern</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={blacklistModalOpen} onClose={() => setBlacklistModalOpen(false)} title="Dienstnummer sperren">
+        <div className="space-y-4">
+          <Input
+            label="Dienstnummer"
+            value={blacklistForm.badgeNumber}
+            onChange={(e) => setBlacklistForm({ ...blacklistForm, badgeNumber: e.target.value })}
+            placeholder="z. B. 500 oder LSPD-500"
+            required
+          />
+          <Input
+            label="Grund (optional)"
+            value={blacklistForm.reason}
+            onChange={(e) => setBlacklistForm({ ...blacklistForm, reason: e.target.value })}
+            placeholder="Warum soll diese DN nicht vergeben werden?"
+          />
+          <p className="text-[11.5px] text-[#6b8299]">
+            Gesperrte Dienstnummern werden bei automatischer Vergabe übersprungen und können nicht manuell eingetragen werden.
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" size="sm" onClick={() => setBlacklistModalOpen(false)}>Abbrechen</Button>
+            <Button size="sm" onClick={handleBlacklistSave} disabled={!blacklistForm.badgeNumber.trim()}>Sperren</Button>
           </div>
         </div>
       </Modal>
