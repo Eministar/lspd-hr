@@ -27,6 +27,7 @@ if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 
 for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "STAMP=%%I"
 set "LOG_FILE=%LOG_DIR%\live-update-%STAMP%.log"
+set "BUILD_LOG=%LOG_DIR%\build-%STAMP%.log"
 
 echo Logdatei:
 echo   %LOG_FILE%
@@ -37,7 +38,7 @@ call :logline "LSPD HR Live Update gestartet"
 call :logline "App: %APP_DIR%"
 call :logline "Remote: %REMOTE%/%BRANCH%"
 call :logline "=========================================="
-call :webhook "info" "Live Update gestartet" "Das Produktionsupdate wurde gestartet."
+call :webhook "info" "Live Update gestartet" "Das Produktionsupdate wurde gestartet." "%LOG_FILE%"
 
 cd /d "%APP_DIR%"
 if errorlevel 1 (
@@ -145,7 +146,7 @@ call :run "Prisma db push ausführen" "npx prisma db push" || goto failed
 call :run "Prisma Client generieren" "npx prisma generate" || goto failed
 
 call :section "10/11" "Projekt bauen"
-call :run "npm run build" "npm run build" || goto build_failed
+call :run_build || goto build_failed
 
 call :section "11/11" "Abschluss prüfen"
 call :run "Aktuellen Commit anzeigen" "git log -1 --oneline" || goto failed
@@ -155,7 +156,7 @@ echo.
 echo ==========================================
 echo UPDATE ERFOLGREICH ABGESCHLOSSEN
 echo ==========================================
-call :webhook "success" "Live Update abgeschlossen" "Das Produktionsupdate wurde erfolgreich abgeschlossen."
+call :webhook "success" "Live Update abgeschlossen" "Das Produktionsupdate wurde erfolgreich abgeschlossen." "%LOG_FILE%"
 echo Logdatei:
 echo   %LOG_FILE%
 echo.
@@ -167,7 +168,7 @@ echo.
 echo ==========================================
 echo MERGE-KONFLIKT ODER MERGE-FEHLER
 echo ==========================================
-call :webhook "error" "Live Update Merge-Fehler" "Merge-Konflikt oder Merge-Fehler. Manuelle Prüfung nötig."
+call :webhook "error" "Live Update Merge-Fehler" "Merge-Konflikt oder Merge-Fehler. Manuelle Prüfung nötig." "%LOG_FILE%"
 echo.
 echo Bitte Konflikte manuell lösen. Danach:
 echo.
@@ -188,7 +189,7 @@ echo.
 echo ==========================================
 echo BUILD FEHLGESCHLAGEN
 echo ==========================================
-call :webhook "error" "Live Update Build-Fehler" "Der Code wurde aktualisiert, aber der Produktionsbuild ist fehlgeschlagen."
+call :webhook "error" "Live Update Build-Fehler" "Der Code wurde aktualisiert, aber der Produktionsbuild ist fehlgeschlagen." "%BUILD_LOG%"
 echo.
 echo Der Code wurde aktualisiert, aber der Build hat Fehler.
 echo Prüfe die Ausgabe oben und die Logdatei:
@@ -202,7 +203,7 @@ echo.
 echo ==========================================
 echo UPDATE FEHLGESCHLAGEN
 echo ==========================================
-call :webhook "error" "Live Update fehlgeschlagen" "Das Produktionsupdate ist fehlgeschlagen. Logdatei prüfen."
+call :webhook "error" "Live Update fehlgeschlagen" "Das Produktionsupdate ist fehlgeschlagen. Logdatei prüfen." "%LOG_FILE%"
 echo.
 if defined FAIL_REASON (
   echo Grund:
@@ -258,6 +259,36 @@ echo [OK] %RUN_TITLE%
 call :logline "[OK] %RUN_TITLE%"
 exit /b 0
 
+:run_build
+call :webhook "info" "Build gestartet" "Der Produktionsbuild wurde gestartet." "%LOG_FILE%"
+echo.
+echo -- npm run build
+echo $ npm run build
+call :logline ""
+call :logline "-- npm run build"
+call :logline "$ npm run build"
+
+cmd /d /s /c "npm run build" > "%BUILD_LOG%" 2>&1
+set "RUN_CODE=!errorlevel!"
+
+if exist "%BUILD_LOG%" (
+  type "%BUILD_LOG%"
+  type "%BUILD_LOG%" >> "%LOG_FILE%"
+)
+
+if not "!RUN_CODE!"=="0" (
+  echo.
+  echo [FEHLER] npm run build ist fehlgeschlagen. Exitcode: !RUN_CODE!
+  call :logline "[FEHLER] npm run build ist fehlgeschlagen. Exitcode: !RUN_CODE!"
+  call :webhook "error" "Build fehlgeschlagen" "Der Produktionsbuild ist fehlgeschlagen." "%BUILD_LOG%"
+  exit /b !RUN_CODE!
+)
+
+echo [OK] npm run build
+call :logline "[OK] npm run build"
+call :webhook "success" "Build erfolgreich" "Der Produktionsbuild wurde erfolgreich abgeschlossen." "%BUILD_LOG%"
+exit /b 0
+
 :logline
 if "%~1"=="" (
   >> "%LOG_FILE%" echo.
@@ -268,6 +299,6 @@ exit /b 0
 
 :webhook
 if exist "scripts\send-webhook.js" (
-  node scripts\send-webhook.js "%~1" "%~2" "%~3" >> "%LOG_FILE%" 2>&1
+  node scripts\send-webhook.js "%~1" "%~2" "%~3" "%~4" >> "%LOG_FILE%" 2>&1
 )
 exit /b 0
