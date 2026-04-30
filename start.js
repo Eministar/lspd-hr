@@ -12,6 +12,7 @@ process.env.NODE_ENV = 'production'
 require('dotenv/config')
 const path = require('node:path')
 const http = require('node:http')
+const fs = require('node:fs')
 const { parse } = require('node:url')
 
 const projectDir = path.resolve(__dirname)
@@ -91,6 +92,67 @@ async function sendWebhookEvent(event) {
 
 function queueWebhookEvent(event) {
   void sendWebhookEvent(event)
+}
+
+const staticContentTypes = {
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+}
+
+function safeJoin(baseDir, requestPath) {
+  const normalized = path.normalize(requestPath).replace(/^(\.\.[/\\])+/, '')
+  const filePath = path.resolve(baseDir, normalized)
+  return filePath.startsWith(path.resolve(baseDir) + path.sep) ? filePath : null
+}
+
+function tryServeStaticAsset(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false
+
+  const pathname = parse(req.url || '/', false).pathname || '/'
+  let filePath = null
+  let immutable = false
+
+  if (pathname.startsWith('/_next/static/')) {
+    filePath = safeJoin(path.join(projectDir, '.next', 'static'), decodeURIComponent(pathname.slice('/_next/static/'.length)))
+    immutable = true
+  } else if (pathname === '/favicon.ico' || pathname === '/shield.webp' || pathname === '/logo.webp') {
+    filePath = safeJoin(path.join(projectDir, 'public'), decodeURIComponent(pathname.slice(1)))
+  }
+
+  if (!filePath) return false
+
+  try {
+    const stat = fs.statSync(filePath)
+    if (!stat.isFile()) return false
+
+    const ext = path.extname(filePath).toLowerCase()
+    res.statusCode = 200
+    res.setHeader('Content-Type', staticContentTypes[ext] || 'application/octet-stream')
+    res.setHeader('Content-Length', String(stat.size))
+    res.setHeader('Cache-Control', immutable ? 'public, max-age=31536000, immutable' : 'public, max-age=3600')
+
+    if (req.method === 'HEAD') {
+      res.end()
+      return true
+    }
+
+    fs.createReadStream(filePath).pipe(res)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function startDiscordBotGateway() {
@@ -289,6 +351,8 @@ async function startWithIisnodePipe(pipePath) {
   await new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       try {
+        if (tryServeStaticAsset(req, res)) return
+
         const parsedUrl = parse(req.url, true)
         Promise.resolve(handle(req, res, parsedUrl)).catch((e) => {
           console.error(e)
