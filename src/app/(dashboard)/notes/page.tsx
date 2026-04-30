@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -29,11 +30,12 @@ interface Note {
 }
 
 export default function NotesPage() {
-  const { data: notes, loading, refetch } = useFetch<Note[]>('/api/notes')
+  const { user } = useAuth()
+  const canViewNotes = hasPermission(user, 'notes:view')
+  const canManageNotes = hasPermission(user, 'notes:manage')
+  const { data: notes, loading, refetch } = useFetch<Note[]>(canViewNotes ? '/api/notes' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
-  const { user } = useAuth()
-  const canManageNotes = hasPermission(user, 'notes:manage')
 
   const [createModal, setCreateModal] = useState(false)
   const [editNote, setEditNote] = useState<Note | null>(null)
@@ -103,6 +105,7 @@ export default function NotesPage() {
     setEditNote(note)
   }
 
+  if (!canViewNotes) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   return (

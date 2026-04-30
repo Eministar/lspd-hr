@@ -6,6 +6,7 @@ import { Archive, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -32,12 +33,14 @@ interface Unit {
 }
 
 export default function TerminatedOfficersPage() {
-  const { data: officers, loading, refetch } = useFetch<Officer[]>('/api/officers?status=TERMINATED')
-  const { data: units } = useFetch<Unit[]>('/api/units')
+  const { user } = useAuth()
+  const canView = hasPermission(user, 'officers:view')
+  const canEdit = hasPermission(user, 'officers:write')
+  const canViewUnits = hasPermission(user, 'units:view')
+  const { data: officers, loading, refetch } = useFetch<Officer[]>(canView ? '/api/officers?status=TERMINATED' : null)
+  const { data: units } = useFetch<Unit[]>(canViewUnits ? '/api/units' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
-  const { user } = useAuth()
-  const canEdit = hasPermission(user, 'officers:write')
 
   const unitNames = (officer: Officer) => {
     const keys = officerUnitKeys(officer)
@@ -58,6 +61,7 @@ export default function TerminatedOfficersPage() {
     }
   }
 
+  if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   return (

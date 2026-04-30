@@ -6,8 +6,11 @@ import { ScrollText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useFetch } from '@/hooks/use-fetch'
 import { formatDateTime } from '@/lib/utils'
+import { useAuth } from '@/context/auth-context'
+import { hasPermission } from '@/lib/permissions'
 
 interface AuditLog {
   id: string
@@ -38,10 +41,13 @@ const actionLabels: Record<string, string> = {
 }
 
 export default function LogsPage() {
+  const { user } = useAuth()
+  const canViewLogs = hasPermission(user, 'logs:view')
   const [page, setPage] = useState(0)
   const pageSize = 30
-  const { data, loading } = useFetch<LogResponse>(`/api/audit-logs?take=${pageSize}&skip=${page * pageSize}`)
+  const { data, loading } = useFetch<LogResponse>(canViewLogs ? `/api/audit-logs?take=${pageSize}&skip=${page * pageSize}` : null)
 
+  if (!canViewLogs) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
   const logs = data?.logs || []

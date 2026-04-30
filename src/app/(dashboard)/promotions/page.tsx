@@ -269,15 +269,17 @@ export default function PromotionsPage() {
                     <p className="text-[12.5px] text-[#4a6585] mb-3 px-1">Noch keine Officers in dieser Liste</p>
                   )}
 
-                  {isDraft && canManage && (
+                  {((isDraft && canManage) || canDeleteLists) && (
                     <div className="flex gap-1.5">
-                      <Button variant="secondary" size="sm" onClick={() => {
-                        setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
-                        setOfficerSearch('')
-                        setAddEntryListId(list.id)
-                      }}>
-                        <Plus size={13} /> Officer hinzufügen
-                      </Button>
+                      {isDraft && canManage && (
+                        <Button variant="secondary" size="sm" onClick={() => {
+                          setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+                          setOfficerSearch('')
+                          setAddEntryListId(list.id)
+                        }}>
+                          <Plus size={13} /> Officer hinzufügen
+                        </Button>
+                      )}
                       {canDeleteLists && (
                         <Button variant="danger" size="sm" onClick={() => handleDeleteList(list.id)}>
                           <Trash2 size={13} />

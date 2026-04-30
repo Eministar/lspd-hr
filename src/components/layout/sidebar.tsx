@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, ExternalLink, Archive, KeyRound,
+  Menu, X, Archive, KeyRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -158,41 +158,24 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
         {accountNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
       </nav>
 
-      <div className="px-2.5 pt-1 pb-1.5 shrink-0 space-y-1.5">
-        <div className="gold-line mb-2 mx-2 opacity-70" />
-
-        <div className="flex flex-wrap items-center justify-center gap-1 px-1">
-          <span className="inline-flex items-center rounded border border-[#d4af37]/28 bg-[#07182e]/70 px-[5px] py-[1px] text-[9px] font-semibold tracking-tight text-[#c9b068] shadow-[inset_0_1px_0_rgba(212,175,55,0.06)]">
-            {APP_VERSION_LABEL}
-          </span>
-          <span
-            className="inline-flex items-center gap-0.5 rounded border border-[#234568]/70 bg-[#0a1a33]/55 px-[5px] py-[1px] font-mono text-[9px] text-[#5c7490] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
-            title="Build / Commit"
+      <div className="px-3 py-1.5 shrink-0">
+        <div className="gold-line mb-1.5 opacity-50" />
+        <div className="flex items-center justify-between gap-2 text-[9px] leading-none text-[#536b86]">
+          <span className="font-semibold text-[#9f8b42]" title="Version">{APP_VERSION_LABEL}</span>
+          <span className="font-mono text-[#4f6680]" title="Build">{releaseBuildShort()}</span>
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            title="Repository"
+            className="inline-flex items-center gap-1 text-[#5f7691] transition-colors hover:text-[#d4af37]"
           >
-            <span className="text-[7px] font-sans font-medium text-[#4a6585]">build</span>
-            {releaseBuildShort()}
-          </span>
+            <GitHubLogo className="h-2.5 w-2.5 shrink-0" />
+            GitHub
+          </a>
+          <span className="text-[#4a6585]">Eministar</span>
         </div>
-
-        <a
-          href={GITHUB_REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onNavigate}
-          title="Repository"
-          className={cn(
-            'flex items-center justify-center gap-1 rounded-md border border-[#234568]/50 bg-[#0a1a33]/35 py-[3px] text-[9px] font-medium text-[#6b8299] transition-colors',
-            'hover:border-[#d4af37]/30 hover:text-[#b8c5d4] hover:bg-[#0d2444]/60'
-          )}
-        >
-          <GitHubLogo className="h-3 w-3 shrink-0 text-[#b0b8c2]" />
-          <span>GitHub</span>
-          <ExternalLink size={8} className="opacity-45 shrink-0" />
-        </a>
-
-        <p className="px-1 text-center text-[8px] leading-tight text-[#4a6585]/95">
-          <span className="text-[#d4af37]/55">&lt;3</span> Eministar
-        </p>
       </div>
 
       <div className="px-2.5 pb-2.5 shrink-0">

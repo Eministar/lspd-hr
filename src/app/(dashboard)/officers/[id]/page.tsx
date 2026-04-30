@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
+import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
@@ -101,16 +102,17 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter()
   const { addToast } = useToast()
   const { user } = useAuth()
-  const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(`/api/officers/${id}`)
-  const { data: ranks } = useFetch<Rank[]>('/api/ranks')
-  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { execute } = useApi()
+  const canViewOfficer = hasPermission(user, 'officers:view')
   const canEditOfficer = hasPermission(user, 'officers:write')
   const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
   const canTerminate = hasPermission(user, 'terminations:manage')
   const canManageNotes = hasPermission(user, 'notes:manage')
+  const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
+  const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
+  const { data: units } = useFetch<Unit[]>(canEditOfficer ? '/api/units?active=true' : null)
 
   const [editing, setEditing] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -276,6 +278,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     }
   }, [canEditTrainings, officer, id, setOfficer, addToast])
 
+  if (!canViewOfficer) return <UnauthorizedContent />
   if (loading) return <PageLoader />
   if (!officer) return <div className="text-center py-16 text-[#999]">Officer nicht gefunden</div>
 
