@@ -14,6 +14,18 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     console.error(error)
+    fetch('/api/runtime-events', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        title: 'App-Fehler',
+        message: error?.message,
+        digest: error?.digest,
+        path: window.location.pathname,
+        stack: error?.stack,
+      }),
+      keepalive: true,
+    }).catch(() => {})
   }, [error])
 
   return (

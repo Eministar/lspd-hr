@@ -37,6 +37,7 @@ call :logline "LSPD HR Live Update gestartet"
 call :logline "App: %APP_DIR%"
 call :logline "Remote: %REMOTE%/%BRANCH%"
 call :logline "=========================================="
+call :webhook "info" "Live Update gestartet" "Das Produktionsupdate wurde gestartet."
 
 cd /d "%APP_DIR%"
 if errorlevel 1 (
@@ -154,6 +155,7 @@ echo.
 echo ==========================================
 echo UPDATE ERFOLGREICH ABGESCHLOSSEN
 echo ==========================================
+call :webhook "success" "Live Update abgeschlossen" "Das Produktionsupdate wurde erfolgreich abgeschlossen."
 echo Logdatei:
 echo   %LOG_FILE%
 echo.
@@ -165,6 +167,7 @@ echo.
 echo ==========================================
 echo MERGE-KONFLIKT ODER MERGE-FEHLER
 echo ==========================================
+call :webhook "error" "Live Update Merge-Fehler" "Merge-Konflikt oder Merge-Fehler. Manuelle Prüfung nötig."
 echo.
 echo Bitte Konflikte manuell lösen. Danach:
 echo.
@@ -185,6 +188,7 @@ echo.
 echo ==========================================
 echo BUILD FEHLGESCHLAGEN
 echo ==========================================
+call :webhook "error" "Live Update Build-Fehler" "Der Code wurde aktualisiert, aber der Produktionsbuild ist fehlgeschlagen."
 echo.
 echo Der Code wurde aktualisiert, aber der Build hat Fehler.
 echo Prüfe die Ausgabe oben und die Logdatei:
@@ -198,6 +202,7 @@ echo.
 echo ==========================================
 echo UPDATE FEHLGESCHLAGEN
 echo ==========================================
+call :webhook "error" "Live Update fehlgeschlagen" "Das Produktionsupdate ist fehlgeschlagen. Logdatei prüfen."
 echo.
 if defined FAIL_REASON (
   echo Grund:
@@ -258,5 +263,11 @@ if "%~1"=="" (
   >> "%LOG_FILE%" echo.
 ) else (
   >> "%LOG_FILE%" echo %~1
+)
+exit /b 0
+
+:webhook
+if exist "scripts\send-webhook.js" (
+  node scripts\send-webhook.js "%~1" "%~2" "%~3" >> "%LOG_FILE%" 2>&1
 )
 exit /b 0
