@@ -1,7 +1,7 @@
 import { prisma } from './prisma'
 import { parseBadgeNumberToInt } from './badge-number'
 
-function sameBadgeNumber(a: string, b: string, prefix: string) {
+export function sameBadgeNumber(a: string, b: string, prefix: string) {
   const aTrimmed = a.trim()
   const bTrimmed = b.trim()
   if (aTrimmed.toLowerCase() === bTrimmed.toLowerCase()) return true
@@ -13,6 +13,14 @@ function sameBadgeNumber(a: string, b: string, prefix: string) {
 
 export async function getBlacklistedBadgeRows() {
   return prisma.badgeBlacklist.findMany({ select: { badgeNumber: true } })
+}
+
+export async function findBlacklistedBadgeNumber(badgeNumber: string, prefix: string) {
+  const normalized = badgeNumber.trim()
+  if (!normalized) return null
+
+  const blacklisted = await prisma.badgeBlacklist.findMany({ select: { badgeNumber: true } })
+  return blacklisted.find((row) => sameBadgeNumber(row.badgeNumber, normalized, prefix)) ?? null
 }
 
 export async function findBadgeNumberConflict(

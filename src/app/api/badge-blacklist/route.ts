@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
+import { findBlacklistedBadgeNumber } from '@/lib/badge-blacklist'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function GET() {
@@ -28,9 +28,8 @@ export async function POST(req: NextRequest) {
     if (!badgeNumber) return error('Dienstnummer ist erforderlich')
 
     const prefix = await getBadgePrefix()
-    const conflict = await findBadgeNumberConflict(badgeNumber, prefix)
-    if (conflict === 'Dienstnummer bereits vergeben') return error('Dienstnummer ist bereits vergeben')
-    if (conflict === 'Dienstnummer ist gesperrt') return error('Dienstnummer ist bereits gesperrt')
+    const blocked = await findBlacklistedBadgeNumber(badgeNumber, prefix)
+    if (blocked) return error('Dienstnummer ist bereits gesperrt')
 
     const row = await prisma.badgeBlacklist.create({
       data: { badgeNumber, reason },
