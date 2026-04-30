@@ -7,6 +7,7 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -104,6 +105,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         oldValue: entry.currentRank.name,
         newValue: entry.proposedRank.name,
         details: `${action} via "${list.name}": ${entry.officer.firstName} ${entry.officer.lastName} – ${entry.currentRank.name} → ${entry.proposedRank.name}`,
+      })
+
+      queueOfficerRoleSync(entry.officerId)
+      queueDiscordHrEvent({
+        type: 'promotion',
+        title: action,
+        description: `Durchgeführt über Liste "${list.name}".`,
+        officer: {
+          ...entry.officer,
+          badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
+          rank: entry.proposedRank,
+        },
+        fields: [
+          { name: 'Von', value: entry.currentRank.name, inline: true },
+          { name: 'Nach', value: entry.proposedRank.name, inline: true },
+          { name: 'Dienstnummer', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
+          { name: 'Durchgeführt von', value: user.displayName, inline: true },
+        ],
       })
 
       executed++

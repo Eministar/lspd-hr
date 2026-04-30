@@ -9,6 +9,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function GET(req: NextRequest) {
   try {
@@ -122,6 +123,18 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId: officer.id,
       newValue: `${officer.firstName} ${officer.lastName} (${officer.badgeNumber})`,
+    })
+
+    queueOfficerRoleSync(officer.id)
+    queueDiscordHrEvent({
+      type: 'hire',
+      title: 'Einstellung',
+      description: 'Ein neuer Officer wurde in den Dienst aufgenommen.',
+      officer,
+      fields: [
+        { name: 'Eingestellt von', value: user.displayName, inline: true },
+        { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
+      ],
     })
 
     return success(officer, 201)

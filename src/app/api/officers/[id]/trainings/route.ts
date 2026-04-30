@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateTrainingsSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 function trainingStateLabel(completed: boolean) {
   return completed ? 'abgeschlossen' : 'offen'
@@ -69,6 +70,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         oldValue: `${previousOfficer.firstName} ${previousOfficer.lastName} (${previousOfficer.badgeNumber})`,
         newValue: changedTrainings.join(', '),
         details: `Ausbildungsstand geändert: ${changedTrainings.join('; ')}`,
+      })
+
+      queueOfficerRoleSync(id)
+      queueDiscordHrEvent({
+        type: 'training',
+        title: 'Ausbildung aktualisiert',
+        description: 'Der Ausbildungsstand eines Officers wurde geändert.',
+        officer,
+        fields: [
+          { name: 'Geändert von', value: user.displayName, inline: true },
+          { name: 'Änderungen', value: changedTrainings.join('\n') },
+        ],
       })
     }
 

@@ -7,6 +7,7 @@ import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 const includeOfficer = {
   rank: true,
@@ -72,6 +73,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       oldValue: officer.rank.name,
       newValue: targetRank.name,
       details: `${officer.firstName} ${officer.lastName}: ${officer.badgeNumber} → ${newBadge} · ${officer.rank.name} → ${targetRank.name}`,
+    })
+
+    queueOfficerRoleSync(id)
+    queueDiscordHrEvent({
+      type: 'promotion',
+      title: targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
+      description: 'Der Officer wurde im Roster verschoben.',
+      officer: updated,
+      fields: [
+        { name: 'Von', value: officer.rank.name, inline: true },
+        { name: 'Nach', value: targetRank.name, inline: true },
+        { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
+        { name: 'Durchgeführt von', value: user.displayName, inline: true },
+      ],
     })
 
     return success(updated)

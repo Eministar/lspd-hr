@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function GET() {
   try {
@@ -59,6 +60,18 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId,
       details: `${officer.firstName} ${officer.lastName} gekündigt. Grund: ${reason}`,
+    })
+
+    queueOfficerRoleSync(officerId, 'remove-all')
+    queueDiscordHrEvent({
+      type: 'termination',
+      title: 'Kündigung',
+      description: 'Ein Officer wurde aus dem Dienst entfernt. Konfigurierte Discord-Rollen werden entzogen.',
+      officer,
+      fields: [
+        { name: 'Gekündigt von', value: user.displayName, inline: true },
+        { name: 'Grund', value: String(reason) },
+      ],
     })
 
     return success(termination, 201)

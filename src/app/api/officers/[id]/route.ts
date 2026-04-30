@@ -8,6 +8,7 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
 import { getBadgePrefix } from '@/lib/settings-helpers'
+import { queueDiscordHrEvent, queueOfficerRoleSync, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -121,6 +122,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       })
     }
 
+    const rankChanged = !!parsed.data.rankId && parsed.data.rankId !== existing.rankId
+    const unitsChanged = !!unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))
+    const discordChanged = 'discordId' in parsed.data && parsed.data.discordId !== existing.discordId
+    const statusChanged = !!parsed.data.status && parsed.data.status !== existing.status
+
+    if (rankChanged || unitsChanged || discordChanged || statusChanged) {
+      queueOfficerRoleSync(id, parsed.data.status === 'TERMINATED' ? 'remove-all' : 'sync')
+    }
+
+    if (rankChanged || unitsChanged) {
+      queueDiscordHrEvent({
+        type: rankChanged ? 'promotion' : 'units',
+        title: rankChanged ? 'Rang geändert' : 'Unit geändert',
+        description: `${user.displayName} hat den Officer im Panel aktualisiert.`,
+        officer: updated,
+        fields: [
+          ...(rankChanged ? [{ name: 'Von', value: existing.rank.name, inline: true }, { name: 'Nach', value: updated.rank.name, inline: true }] : []),
+          ...(unitsChanged ? [{ name: 'Units', value: `${normalizeUnitKeys(existing.units).join(', ') || '-'} → ${unitKeys?.join(', ') || '-'}` }] : []),
+        ],
+      })
+    }
+
     return success(updated)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Dienstnummer oder Discord-ID bereits vergeben')
@@ -138,6 +161,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const officer = await prisma.officer.findUnique({ where: { id }, include: { rank: true } })
     if (!officer) return notFound('Officer')
+
+    await syncOfficerDiscordRoles(id, 'remove-all').catch((syncError) => {
+      console.error('[DiscordIntegration] Rollenentzug vor Officer-Löschung fehlgeschlagen:', syncError)
+    })
 
     await prisma.$transaction([
       prisma.termination.updateMany({

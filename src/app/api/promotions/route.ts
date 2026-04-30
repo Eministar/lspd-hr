@@ -7,6 +7,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function GET() {
   try {
@@ -77,12 +78,13 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await prisma.officer.update({
+    const updatedOfficer = await prisma.officer.update({
       where: { id: officerId },
       data: {
         rankId: newRankId,
         badgeNumber: newBadgeNumber || officer.badgeNumber,
       },
+      include: { rank: true },
     })
 
     await createAuditLog({
@@ -92,6 +94,20 @@ export async function POST(req: NextRequest) {
       oldValue: officer.rank.name,
       newValue: newRank.name,
       details: `${officer.firstName} ${officer.lastName}: ${officer.rank.name} → ${newRank.name}`,
+    })
+
+    queueOfficerRoleSync(officerId)
+    queueDiscordHrEvent({
+      type: 'promotion',
+      title: newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
+      description: note || 'Der Rang eines Officers wurde geändert.',
+      officer: updatedOfficer,
+      fields: [
+        { name: 'Von', value: officer.rank.name, inline: true },
+        { name: 'Nach', value: newRank.name, inline: true },
+        { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
+        { name: 'Durchgeführt von', value: user.displayName, inline: true },
+      ],
     })
 
     return success(promotion, 201)
