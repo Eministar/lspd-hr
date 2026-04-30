@@ -18,6 +18,11 @@ const projectDir = path.resolve(__dirname)
 const webhookUrl =
   String(process.env.DISCORD_WEBHOOK_URL || '').trim() ||
   String(process.env.LSPD_DISCORD_WEBHOOK_URL || '').trim()
+const discordBotToken =
+  String(process.env.DISCORD_BOT_TOKEN || '').trim() ||
+  String(process.env.LSPD_DISCORD_BOT_TOKEN || '').trim()
+const discordGatewayEnabled = String(process.env.DISCORD_BOT_GATEWAY_ENABLED || 'true').toLowerCase() !== 'false'
+const discordPresenceText = String(process.env.DISCORD_BOT_STATUS || 'LSPD HR').trim() || 'LSPD HR'
 
 const webhookColors = {
   info: 0x3b82f6,
@@ -86,6 +91,148 @@ async function sendWebhookEvent(event) {
 
 function queueWebhookEvent(event) {
   void sendWebhookEvent(event)
+}
+
+function startDiscordBotGateway() {
+  if (!discordGatewayEnabled || !discordBotToken) return
+  if (typeof WebSocket !== 'function') {
+    queueWebhookEvent({
+      title: 'Discord Bot Gateway nicht verfügbar',
+      description: 'Node stellt keinen WebSocket-Client bereit. Bot bleibt für REST-Aktionen nutzbar, wird aber nicht online angezeigt.',
+      severity: 'warning',
+    })
+    return
+  }
+
+  let socket = null
+  let heartbeatTimer = null
+  let reconnectTimer = null
+  let sequence = null
+  let closedByReconnect = false
+
+  function clearHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
+  }
+
+  function scheduleReconnect(reason) {
+    if (reconnectTimer) return
+    clearHeartbeat()
+    try {
+      socket?.close()
+    } catch {
+      // ignore close errors
+    }
+    socket = null
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null
+      connect()
+    }, 15000)
+
+    if (reason) {
+      console.warn('[DiscordGateway] Reconnect geplant:', reason)
+    }
+  }
+
+  function send(payload) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    socket.send(JSON.stringify(payload))
+  }
+
+  function identify() {
+    send({
+      op: 2,
+      d: {
+        token: discordBotToken,
+        intents: 1,
+        properties: {
+          os: process.platform,
+          browser: 'lspd-hr-dashboard',
+          device: 'lspd-hr-dashboard',
+        },
+        presence: {
+          status: 'online',
+          since: null,
+          afk: false,
+          activities: [
+            {
+              name: discordPresenceText,
+              type: 3,
+            },
+          ],
+        },
+      },
+    })
+  }
+
+  function connect() {
+    closedByReconnect = false
+    socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json')
+
+    socket.addEventListener('message', (event) => {
+      let packet
+      try {
+        packet = JSON.parse(String(event.data))
+      } catch {
+        return
+      }
+
+      if (packet.s !== null && packet.s !== undefined) sequence = packet.s
+
+      if (packet.op === 10) {
+        const interval = Number(packet.d?.heartbeat_interval || 45000)
+        clearHeartbeat()
+        heartbeatTimer = setInterval(() => send({ op: 1, d: sequence }), interval)
+        send({ op: 1, d: sequence })
+        identify()
+        return
+      }
+
+      if (packet.op === 1) {
+        send({ op: 1, d: sequence })
+        return
+      }
+
+      if (packet.op === 7) {
+        closedByReconnect = true
+        scheduleReconnect('Discord fordert Reconnect an')
+        return
+      }
+
+      if (packet.op === 9) {
+        sequence = null
+        closedByReconnect = true
+        scheduleReconnect('Discord Session ungültig')
+        return
+      }
+
+      if (packet.t === 'READY') {
+        const botUser = packet.d?.user
+        queueWebhookEvent({
+          title: 'Discord Bot online',
+          description: botUser?.username ? `${botUser.username} ist mit dem Gateway verbunden.` : 'Der Discord Bot ist mit dem Gateway verbunden.',
+          severity: 'success',
+          fields: [{ name: 'Status', value: discordPresenceText, inline: true }],
+        })
+      }
+    })
+
+    socket.addEventListener('close', (event) => {
+      clearHeartbeat()
+      if (!closedByReconnect) {
+        scheduleReconnect(`Gateway geschlossen (${event.code || 'unbekannt'})`)
+      }
+    })
+
+    socket.addEventListener('error', (event) => {
+      console.error('[DiscordGateway] Fehler:', event)
+      scheduleReconnect('Gateway-Fehler')
+    })
+  }
+
+  connect()
 }
 
 process.on('unhandledRejection', (reason) => {
@@ -185,6 +332,7 @@ async function main() {
   const lt = resolveListenTargetFromEnv()
   if (lt.mode === 'pipe') {
     await startWithIisnodePipe(lt.target)
+    startDiscordBotGateway()
     queueWebhookEvent({
       title: 'Anwendung gestartet',
       description: 'Der Node-Prozess wurde gestartet oder neu geladen.',
@@ -197,6 +345,7 @@ async function main() {
     return
   }
   await startWithTcpPort(lt.port)
+  startDiscordBotGateway()
   queueWebhookEvent({
     title: 'Anwendung gestartet',
     description: 'Der Node-Prozess wurde gestartet oder neu geladen.',
