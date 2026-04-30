@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
   serverExternalPackages: ['better-sqlite3'],
+  images: {
+    unoptimized: true,
+    maximumDiskCacheSize: 0,
+  },
   async headers() {
     return [
       {
