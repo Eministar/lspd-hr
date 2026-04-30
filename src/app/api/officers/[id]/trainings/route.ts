@@ -5,6 +5,10 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateTrainingsSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 
+function trainingStateLabel(completed: boolean) {
+  return completed ? 'abgeschlossen' : 'offen'
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(['ADMIN', 'HR'], ['officer-trainings:manage'])
@@ -12,6 +16,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json()
     const parsed = updateTrainingsSchema.safeParse(body)
     if (!parsed.success) return error('Ungültige Daten')
+
+    const previousOfficer = await prisma.officer.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        badgeNumber: true,
+        trainings: { include: { training: true } },
+      },
+    })
+    if (!previousOfficer) return notFound('Officer')
+
+    const previousByTrainingId = new Map(
+      previousOfficer.trainings.map((training) => [training.trainingId, training]),
+    )
 
     for (const t of parsed.data.trainings) {
       await prisma.officerTraining.upsert({
@@ -30,12 +50,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
     if (!officer) return notFound('Officer')
 
-    await createAuditLog({
-      action: 'TRAININGS_UPDATED',
-      userId: user.id,
-      officerId: id,
-      details: 'Ausbildungsstände aktualisiert',
+    const changedTrainings = parsed.data.trainings.flatMap((trainingUpdate) => {
+      const previous = previousByTrainingId.get(trainingUpdate.trainingId)
+      if (previous?.completed === trainingUpdate.completed) return []
+
+      const current = officer.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
+      const label = current?.training.label ?? previous?.training.label ?? trainingUpdate.trainingId
+      return [
+        `${label}: ${trainingStateLabel(previous?.completed ?? false)} → ${trainingStateLabel(trainingUpdate.completed)}`,
+      ]
     })
+
+    if (changedTrainings.length > 0) {
+      await createAuditLog({
+        action: 'TRAININGS_UPDATED',
+        userId: user.id,
+        officerId: id,
+        oldValue: `${previousOfficer.firstName} ${previousOfficer.lastName} (${previousOfficer.badgeNumber})`,
+        newValue: changedTrainings.join(', '),
+        details: `Ausbildungsstand geändert: ${changedTrainings.join('; ')}`,
+      })
+    }
 
     return success({ message: 'Ausbildungen aktualisiert', officer })
   } catch (e: unknown) {
