@@ -131,8 +131,8 @@ export async function POST(req: NextRequest) {
       title: 'Einstellung',
       description: 'Ein neuer Officer wurde in den Dienst aufgenommen.',
       officer,
+      actor: user,
       fields: [
-        { name: 'Eingestellt von', value: user.displayName, inline: true },
         { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
       ],
     })

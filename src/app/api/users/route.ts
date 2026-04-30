@@ -14,6 +14,7 @@ export async function GET() {
         id: true,
         username: true,
         displayName: true,
+        discordId: true,
         groupId: true,
         permissions: true,
         group: { select: { id: true, name: true } },
@@ -42,6 +43,11 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { username: parsed.data.username } })
     if (existing) return error('Benutzername bereits vergeben')
 
+    if (parsed.data.discordId) {
+      const existingDiscord = await prisma.user.findFirst({ where: { discordId: parsed.data.discordId } })
+      if (existingDiscord) return error('Discord-ID bereits einem Benutzer zugeordnet')
+    }
+
     if (parsed.data.groupId) {
       const group = await userGroupDelegate(prisma).findUnique({ where: { id: parsed.data.groupId } })
       if (!group) return error('Benutzergruppe nicht gefunden')
@@ -53,6 +59,7 @@ export async function POST(req: NextRequest) {
         username: parsed.data.username,
         passwordHash,
         displayName: parsed.data.displayName,
+        discordId: parsed.data.discordId ?? null,
         groupId: parsed.data.groupId || null,
         permissions: normalizePermissions(parsed.data.permissions),
       },
@@ -60,6 +67,7 @@ export async function POST(req: NextRequest) {
         id: true,
         username: true,
         displayName: true,
+        discordId: true,
         groupId: true,
         permissions: true,
         group: { select: { id: true, name: true } },

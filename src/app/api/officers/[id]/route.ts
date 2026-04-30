@@ -137,6 +137,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         title: rankChanged ? 'Rang geändert' : 'Unit geändert',
         description: `${user.displayName} hat den Officer im Panel aktualisiert.`,
         officer: updated,
+        actor: user,
         fields: [
           ...(rankChanged ? [{ name: 'Von', value: existing.rank.name, inline: true }, { name: 'Nach', value: updated.rank.name, inline: true }] : []),
           ...(unitsChanged ? [{ name: 'Units', value: `${normalizeUnitKeys(existing.units).join(', ') || '-'} → ${unitKeys?.join(', ') || '-'}` }] : []),

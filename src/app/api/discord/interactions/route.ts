@@ -26,6 +26,11 @@ type DiscordInteraction = {
   member?: {
     roles?: string[]
     permissions?: string
+    user?: {
+      id: string
+      username?: string
+      global_name?: string | null
+    }
   }
 }
 
@@ -62,6 +67,14 @@ function boolOption(options: DiscordOption[] | undefined, name: string) {
 
 function userOption(options: DiscordOption[] | undefined, name: string) {
   return textOption(options, name)
+}
+
+function actorFromInteraction(interaction: DiscordInteraction) {
+  const user = interaction.member?.user
+  return {
+    displayName: user?.global_name || user?.username || 'Discord Command',
+    discordId: user?.id ?? null,
+  }
 }
 
 function hasAdminPermission(permissions: string | undefined) {
@@ -173,7 +186,7 @@ async function autocompleteFor(kind: 'rang' | 'ausbildung' | 'unit', query: stri
   return autocomplete(rows.map((unit) => ({ name: unit.name, value: unit.key })))
 }
 
-async function handleHire(options: DiscordOption[] | undefined) {
+async function handleHire(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const firstName = textOption(options, 'vorname')
   const lastName = textOption(options, 'nachname')
@@ -227,13 +240,14 @@ async function handleHire(options: DiscordOption[] | undefined) {
     title: 'Einstellung',
     description: 'Einstellung per Discord-Command.',
     officer,
+    actor,
     fields: [{ name: 'Units', value: unitKeys.join(', ') || '-', inline: true }],
   })
 
   return reply(`Einstellung erstellt: ${firstName} ${lastName} (${badgeNumber})`)
 }
 
-async function handlePromotion(options: DiscordOption[] | undefined) {
+async function handlePromotion(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
   const newRank = await findRank(textOption(options, 'rang'))
@@ -284,6 +298,7 @@ async function handlePromotion(options: DiscordOption[] | undefined) {
     title: newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
     description: textOption(options, 'notiz') || 'Rangänderung per Discord-Command.',
     officer: updated,
+    actor,
     fields: [
       { name: 'Von', value: officer.rank.name, inline: true },
       { name: 'Nach', value: newRank.name, inline: true },
@@ -294,7 +309,7 @@ async function handlePromotion(options: DiscordOption[] | undefined) {
   return reply(`Rang geändert: ${officer.firstName} ${officer.lastName} von ${officer.rank.name} auf ${newRank.name}.`)
 }
 
-async function handleTraining(options: DiscordOption[] | undefined) {
+async function handleTraining(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
   const training = await findTraining(textOption(options, 'ausbildung'))
@@ -313,13 +328,14 @@ async function handleTraining(options: DiscordOption[] | undefined) {
     title: 'Ausbildung aktualisiert',
     description: 'Ausbildungsstand per Discord-Command geändert.',
     officer,
+    actor,
     fields: [{ name: training.label, value: completed ? 'abgeschlossen' : 'offen', inline: true }],
   })
 
   return reply(`${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`)
 }
 
-async function handleUnit(options: DiscordOption[] | undefined) {
+async function handleUnit(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const action = textOption(options, 'aktion')
   const unit = await findUnit(textOption(options, 'unit'))
@@ -345,13 +361,14 @@ async function handleUnit(options: DiscordOption[] | undefined) {
     title: 'Unit geändert',
     description: 'Unit-Zuordnung per Discord-Command geändert.',
     officer: updated,
+    actor,
     fields: [{ name: 'Units', value: `${current.join(', ') || '-'} → ${next.join(', ') || '-'}` }],
   })
 
   return reply(`Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`)
 }
 
-async function handleTermination(options: DiscordOption[] | undefined) {
+async function handleTermination(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const reason = textOption(options, 'grund')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
@@ -378,6 +395,7 @@ async function handleTermination(options: DiscordOption[] | undefined) {
     title: 'Kündigung',
     description: 'Kündigung per Discord-Command.',
     officer,
+    actor,
     fields: [{ name: 'Grund', value: reason }],
   })
 
@@ -403,19 +421,20 @@ export async function POST(req: NextRequest) {
 
   if (interaction.type !== APPLICATION_COMMAND) return reply('Diese Discord-Interaktion wird nicht unterstützt.')
   if (!(await ensureAllowed(interaction))) return reply('Du darfst diese HR-Commands nicht ausführen.')
+  const actor = actorFromInteraction(interaction)
 
   try {
     switch (interaction.data?.name) {
       case 'lspd-einstellung':
-        return await handleHire(interaction.data.options)
+        return await handleHire(interaction.data.options, actor)
       case 'lspd-beförderung':
-        return await handlePromotion(interaction.data.options)
+        return await handlePromotion(interaction.data.options, actor)
       case 'lspd-ausbildung':
-        return await handleTraining(interaction.data.options)
+        return await handleTraining(interaction.data.options, actor)
       case 'lspd-unit':
-        return await handleUnit(interaction.data.options)
+        return await handleUnit(interaction.data.options, actor)
       case 'lspd-kündigung':
-        return await handleTermination(interaction.data.options)
+        return await handleTermination(interaction.data.options, actor)
       default:
         return reply('Unbekannter Command.')
     }

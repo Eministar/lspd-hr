@@ -46,6 +46,11 @@ type OfficerForDiscord = {
   trainings?: { trainingId: string; completed: boolean; training?: { label: string } | null }[]
 }
 
+type UserForDiscord = {
+  displayName: string
+  discordId?: string | null
+}
+
 const API_BASE = 'https://discord.com/api/v10'
 
 export const DISCORD_SETTING_KEYS = {
@@ -112,6 +117,12 @@ function officerName(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName'>)
 function mention(discordId: string | null | undefined) {
   const id = snowflake(discordId)
   return id ? `<@${id}>` : 'Nicht verknüpft'
+}
+
+export function discordUserLabel(user: UserForDiscord | null | undefined) {
+  if (!user) return 'System'
+  const id = snowflake(user.discordId)
+  return id ? `<@${id}>` : user.displayName
 }
 
 function truncate(value: string, max = 1024) {
@@ -270,6 +281,7 @@ export async function sendDiscordHrEvent(event: {
   title: string
   description?: string
   officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & { rank?: { name: string; color?: string | null } | null }
+  actor?: UserForDiscord
   fields?: DiscordField[]
 }) {
   const config = await getDiscordConfig()
@@ -282,6 +294,7 @@ export async function sendDiscordHrEvent(event: {
       { name: 'Discord', value: mention(officer.discordId), inline: true },
       { name: 'Rang', value: officer.rank?.name || '-', inline: true },
     ] : []),
+    ...(event.actor ? [{ name: 'Ausgeführt von', value: discordUserLabel(event.actor), inline: true }] : []),
     ...(event.fields ?? []),
   ]
 

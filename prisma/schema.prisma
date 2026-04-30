@@ -62,6 +62,7 @@ model User {
   username     String   @unique
   passwordHash String
   displayName  String
+  discordId    String?  @unique
   role         UserRole @default(READONLY)
   groupId      String?
   group        UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)

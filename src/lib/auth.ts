@@ -15,6 +15,7 @@ export interface CurrentUser {
   id: string
   username: string
   displayName: string
+  discordId: string | null
   group: { id: string; name: string } | null
   permissions: Permission[]
 }
@@ -53,6 +54,7 @@ export async function getCurrentUser() {
       id: true,
       username: true,
       displayName: true,
+      discordId: true,
       permissions: true,
       group: { select: { id: true, name: true, permissions: true } },
     },
@@ -64,6 +66,7 @@ export async function getCurrentUser() {
     id: user.id,
     username: user.username,
     displayName: user.displayName,
+    discordId: user.discordId,
     group: user.group ? { id: user.group.id, name: user.group.name } : null,
     permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
   } satisfies CurrentUser

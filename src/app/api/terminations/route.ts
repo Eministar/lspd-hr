@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
       title: 'Kündigung',
       description: 'Ein Officer wurde aus dem Dienst entfernt. Konfigurierte Discord-Rollen werden entzogen.',
       officer,
+      actor: user,
       fields: [
-        { name: 'Gekündigt von', value: user.displayName, inline: true },
         { name: 'Grund', value: String(reason) },
       ],
     })

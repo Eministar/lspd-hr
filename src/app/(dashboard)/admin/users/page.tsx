@@ -21,6 +21,7 @@ interface User {
   id: string
   username: string
   displayName: string
+  discordId: string | null
   groupId: string | null
   permissions: Permission[]
   group: { id: string; name: string } | null
@@ -48,12 +49,13 @@ export default function UsersPage() {
     username: '',
     password: '',
     displayName: '',
+    discordId: '',
     groupId: '',
     permissions: [] as Permission[],
   })
 
   const openCreate = () => {
-    setForm({ username: '', password: '', displayName: '', groupId: '', permissions: [] })
+    setForm({ username: '', password: '', displayName: '', discordId: '', groupId: '', permissions: [] })
     setCreateModal(true)
   }
 
@@ -62,6 +64,7 @@ export default function UsersPage() {
       username: u.username,
       password: '',
       displayName: u.displayName,
+      discordId: u.discordId ?? '',
       groupId: u.groupId ?? '',
       permissions: u.permissions ?? [],
     })
@@ -126,11 +129,13 @@ export default function UsersPage() {
     try {
       const data: {
         displayName: string
+        discordId: string | null
         groupId: string | null
         permissions: Permission[]
         password?: string
       } = {
         displayName: form.displayName,
+        discordId: form.discordId.trim() || null,
         groupId: form.groupId || null,
         permissions: form.permissions,
       }
@@ -180,7 +185,7 @@ export default function UsersPage() {
               <div className="flex-1 min-w-0">
               <p className="text-[13.5px] font-medium text-[#eee]">{u.displayName}</p>
                 <p className="text-[11.5px] text-[#4a6585]">
-                  @{u.username} · {u.group?.name || 'Keine Gruppe'} · {u.permissions.length} direkte Rechte · Erstellt: {formatDate(u.createdAt)}
+                  @{u.username} · Discord: {u.discordId || 'nicht verbunden'} · {u.group?.name || 'Keine Gruppe'} · {u.permissions.length} direkte Rechte · Erstellt: {formatDate(u.createdAt)}
                 </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
@@ -211,6 +216,7 @@ export default function UsersPage() {
         <div className="space-y-4">
           <Input label="Benutzername" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
+          <Input label="Discord-ID (optional)" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} placeholder="17–22 Ziffern" />
           <Input label="Passwort" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <Select
             label="Benutzergruppe"
@@ -235,6 +241,7 @@ export default function UsersPage() {
       <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Benutzer bearbeiten" size="lg">
         <div className="space-y-4">
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
+          <Input label="Discord-ID (optional)" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} placeholder="17–22 Ziffern" />
           <Input label="Neues Passwort (optional)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leer lassen um nicht zu ändern" />
           <Select
             label="Benutzergruppe"

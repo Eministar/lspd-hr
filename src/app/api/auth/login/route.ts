@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
+        discordId: user.discordId,
         group: user.group ? { id: user.group.id, name: user.group.name } : null,
         permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
       },

@@ -81,11 +81,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       title: targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
       description: 'Der Officer wurde im Roster verschoben.',
       officer: updated,
+      actor: user,
       fields: [
         { name: 'Von', value: officer.rank.name, inline: true },
         { name: 'Nach', value: targetRank.name, inline: true },
         { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
-        { name: 'Durchgeführt von', value: user.displayName, inline: true },
       ],
     })
 

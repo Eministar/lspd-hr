@@ -102,11 +102,11 @@ export async function POST(req: NextRequest) {
       title: newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
       description: note || 'Der Rang eines Officers wurde geändert.',
       officer: updatedOfficer,
+      actor: user,
       fields: [
         { name: 'Von', value: officer.rank.name, inline: true },
         { name: 'Nach', value: newRank.name, inline: true },
         { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
-        { name: 'Durchgeführt von', value: user.displayName, inline: true },
       ],
     })
 

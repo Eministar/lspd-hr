@@ -78,8 +78,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         title: 'Ausbildung aktualisiert',
         description: 'Der Ausbildungsstand eines Officers wurde geändert.',
         officer,
+        actor: user,
         fields: [
-          { name: 'Geändert von', value: user.displayName, inline: true },
           { name: 'Änderungen', value: changedTrainings.join('\n') },
         ],
       })

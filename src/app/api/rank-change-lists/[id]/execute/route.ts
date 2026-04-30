@@ -117,11 +117,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
           rank: entry.proposedRank,
         },
+        actor: user,
         fields: [
           { name: 'Von', value: entry.currentRank.name, inline: true },
           { name: 'Nach', value: entry.proposedRank.name, inline: true },
           { name: 'Dienstnummer', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
-          { name: 'Durchgeführt von', value: user.displayName, inline: true },
         ],
       })
 
