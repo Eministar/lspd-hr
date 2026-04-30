@@ -77,6 +77,30 @@ function botToken() {
   return process.env.DISCORD_BOT_TOKEN?.trim() || process.env.LSPD_DISCORD_BOT_TOKEN?.trim() || ''
 }
 
+function envGuildId() {
+  return process.env.DISCORD_GUILD_ID?.trim() || process.env.LSPD_DISCORD_GUILD_ID?.trim() || ''
+}
+
+function envApplicationId() {
+  return (
+    process.env.DISCORD_APPLICATION_ID?.trim() ||
+    process.env.DISCORD_CLIENT_ID?.trim() ||
+    process.env.LSPD_DISCORD_APPLICATION_ID?.trim() ||
+    process.env.LSPD_DISCORD_CLIENT_ID?.trim() ||
+    ''
+  )
+}
+
+function envAnnouncementsChannelId() {
+  return (
+    process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.trim() ||
+    process.env.DISCORD_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
 function parseJson<T>(value: string | undefined, fallback: T): T {
   if (!value) return fallback
   try {
@@ -164,9 +188,9 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   const map = Object.fromEntries(rows.map((row) => [row.key, row.value]))
 
   return {
-    guildId: map[DISCORD_SETTING_KEYS.guildId] || '',
-    applicationId: map[DISCORD_SETTING_KEYS.applicationId] || process.env.DISCORD_APPLICATION_ID?.trim() || '',
-    announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || '',
+    guildId: map[DISCORD_SETTING_KEYS.guildId] || envGuildId(),
+    applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
+    announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),

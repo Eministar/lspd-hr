@@ -53,6 +53,13 @@ interface DiscordConfigResponse {
   ranks: DiscordRank[]
   trainings: DiscordTraining[]
   units: DiscordUnit[]
+  diagnostics: {
+    guildConfigured: boolean
+    applicationConfigured: boolean
+    announcementsChannelConfigured: boolean
+    rolesError: string | null
+    channelsError: string | null
+  }
 }
 
 export default function SettingsPage() {
@@ -188,6 +195,21 @@ export default function SettingsPage() {
           {!discordData?.botConfigured && (
             <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
               DISCORD_BOT_TOKEN ist nicht gesetzt. Die Oberfläche kann gespeichert werden, Discord-Rollen und Channel werden aber erst mit Bot-Token geladen.
+            </div>
+          )}
+          {discordData && !discordData.diagnostics.guildConfigured && (
+            <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+              Guild-ID fehlt. Setze sie hier oder über DISCORD_GUILD_ID, sonst können Rollen und Commands nicht geladen werden.
+            </div>
+          )}
+          {discordData?.diagnostics.rolesError && (
+            <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+              Rollen konnten nicht geladen werden: {discordData.diagnostics.rolesError}
+            </div>
+          )}
+          {discordData?.diagnostics.channelsError && (
+            <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+              Channel konnten nicht geladen werden: {discordData.diagnostics.channelsError}
             </div>
           )}
 

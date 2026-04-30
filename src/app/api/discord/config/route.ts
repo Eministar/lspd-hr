@@ -14,10 +14,16 @@ export async function GET() {
   try {
     await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
 
-    const [config, roles, channels, ranks, trainings, units] = await Promise.all([
-      getDiscordConfig(),
-      getDiscordGuildRoles().catch(() => []),
-      getDiscordGuildChannels().catch(() => []),
+    const config = await getDiscordConfig()
+    const [rolesResult, channelsResult, ranks, trainings, units] = await Promise.all([
+      getDiscordGuildRoles(config.guildId).then((roles) => ({ data: roles, error: null as string | null })).catch((e: unknown) => ({
+        data: [],
+        error: e instanceof Error ? e.message : 'Discord-Rollen konnten nicht geladen werden',
+      })),
+      getDiscordGuildChannels(config.guildId).then((channels) => ({ data: channels, error: null as string | null })).catch((e: unknown) => ({
+        data: [],
+        error: e instanceof Error ? e.message : 'Discord-Channel konnten nicht geladen werden',
+      })),
       prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } }),
       prisma.training.findMany({ orderBy: { sortOrder: 'asc' } }),
       prisma.unit.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
@@ -26,11 +32,18 @@ export async function GET() {
     return success({
       config,
       botConfigured: !!(process.env.DISCORD_BOT_TOKEN || process.env.LSPD_DISCORD_BOT_TOKEN),
-      roles,
-      channels,
+      roles: rolesResult.data,
+      channels: channelsResult.data,
       ranks,
       trainings,
       units,
+      diagnostics: {
+        guildConfigured: !!config.guildId,
+        applicationConfigured: !!config.applicationId,
+        announcementsChannelConfigured: !!config.announcementsChannelId,
+        rolesError: rolesResult.error,
+        channelsError: channelsResult.error,
+      },
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
