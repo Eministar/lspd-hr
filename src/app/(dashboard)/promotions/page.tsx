@@ -61,8 +61,19 @@ export default function PromotionsPage() {
 
   const [listForm, setListForm] = useState({ name: '', description: '' })
   const [entryForm, setEntryForm] = useState({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+  const [officerSearch, setOfficerSearch] = useState('')
 
   const activeOfficers = officers?.filter(o => o.status !== 'TERMINATED') || []
+  const filteredOfficers = activeOfficers.filter((officer) => {
+    const query = officerSearch.trim().toLowerCase()
+    if (!query) return true
+    return (
+      officer.badgeNumber.toLowerCase().includes(query) ||
+      officer.firstName.toLowerCase().includes(query) ||
+      officer.lastName.toLowerCase().includes(query) ||
+      officer.rank.name.toLowerCase().includes(query)
+    )
+  })
   const selectedOfficer = activeOfficers.find(o => o.id === entryForm.officerId)
 
   const getHigherRanks = () => {
@@ -262,6 +273,7 @@ export default function PromotionsPage() {
                     <div className="flex gap-1.5">
                       <Button variant="secondary" size="sm" onClick={() => {
                         setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+                        setOfficerSearch('')
                         setAddEntryListId(list.id)
                       }}>
                         <Plus size={13} /> Officer hinzufügen
@@ -295,12 +307,19 @@ export default function PromotionsPage() {
       {/* Add entry modal */}
       <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title="Officer hinzufügen" size="md">
         <div className="space-y-4">
+          <Input
+            label="Officer suchen"
+            value={officerSearch}
+            onChange={(e) => setOfficerSearch(e.target.value)}
+            placeholder="Name, DN oder Rang..."
+          />
           <Select
             label="Officer auswählen"
             value={entryForm.officerId}
             onChange={(e) => { setEntryForm({ ...entryForm, officerId: e.target.value, proposedRankId: '' }) }}
-            options={activeOfficers.map(o => ({ value: o.id, label: `${o.badgeNumber} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
-            placeholder="Officer wählen..."
+            options={filteredOfficers.map(o => ({ value: o.id, label: `${o.badgeNumber} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
+            placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
+            disabled={filteredOfficers.length === 0}
           />
           {selectedOfficer && (
             <>
