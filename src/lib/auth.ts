@@ -53,6 +53,7 @@ export async function getCurrentUser() {
       id: true,
       username: true,
       displayName: true,
+      permissions: true,
       group: { select: { id: true, name: true, permissions: true } },
     },
   })
@@ -64,7 +65,10 @@ export async function getCurrentUser() {
     username: user.username,
     displayName: user.displayName,
     group: user.group ? { id: user.group.id, name: user.group.name } : null,
-    permissions: resolvePermissions(user.group?.permissions),
+    permissions: Array.from(new Set([
+      ...resolvePermissions(user.group?.permissions),
+      ...resolvePermissions(user.permissions),
+    ])),
   } satisfies CurrentUser
 }
 

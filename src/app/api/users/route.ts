@@ -4,6 +4,7 @@ import { requireAuth, hashPassword } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createUserSchema } from '@/lib/validations/auth'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
+import { normalizePermissions } from '@/lib/permissions'
 
 export async function GET() {
   try {
@@ -14,12 +15,16 @@ export async function GET() {
         username: true,
         displayName: true,
         groupId: true,
+        permissions: true,
         group: { select: { id: true, name: true } },
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
     })
-    return success(users)
+    return success(users.map((user) => ({
+      ...user,
+      permissions: normalizePermissions(user.permissions),
+    })))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -49,18 +54,20 @@ export async function POST(req: NextRequest) {
         passwordHash,
         displayName: parsed.data.displayName,
         groupId: parsed.data.groupId || null,
+        permissions: normalizePermissions(parsed.data.permissions),
       },
       select: {
         id: true,
         username: true,
         displayName: true,
         groupId: true,
+        permissions: true,
         group: { select: { id: true, name: true } },
         createdAt: true,
       },
     })
 
-    return success(user, 201)
+    return success({ ...user, permissions: normalizePermissions(user.permissions) }, 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

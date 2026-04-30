@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, hashPassword } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
+import { normalizePermissions } from '@/lib/permissions'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -12,6 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const data: Record<string, unknown> = {}
     if (body.displayName) data.displayName = body.displayName
+    if ('permissions' in body) data.permissions = normalizePermissions(body.permissions)
     if ('groupId' in body) {
       if (body.groupId) {
         const group = await userGroupDelegate(prisma).findUnique({ where: { id: String(body.groupId) } })
@@ -31,12 +33,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         username: true,
         displayName: true,
         groupId: true,
+        permissions: true,
         group: { select: { id: true, name: true } },
         createdAt: true,
       },
     })
 
-    return success(user)
+    return success({ ...user, permissions: normalizePermissions(user.permissions) })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

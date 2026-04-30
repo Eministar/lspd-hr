@@ -65,6 +65,7 @@ model User {
   role         UserRole @default(READONLY)
   groupId      String?
   group        UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  permissions  Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

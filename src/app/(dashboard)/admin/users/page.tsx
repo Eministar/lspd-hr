@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -14,12 +15,14 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { formatDate } from '@/lib/utils'
+import { PERMISSIONS, PERMISSION_LABELS, type Permission } from '@/lib/permissions'
 
 interface User {
   id: string
   username: string
   displayName: string
   groupId: string | null
+  permissions: Permission[]
   group: { id: string; name: string } | null
   createdAt: string
 }
@@ -28,6 +31,9 @@ interface UserGroup {
   id: string
   name: string
 }
+
+const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
+const MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
 
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
@@ -38,17 +44,71 @@ export default function UsersPage() {
 
   const [createModal, setCreateModal] = useState(false)
   const [editUser, setEditUser] = useState<User | null>(null)
-  const [form, setForm] = useState({ username: '', password: '', displayName: '', groupId: '' })
+  const [form, setForm] = useState({
+    username: '',
+    password: '',
+    displayName: '',
+    groupId: '',
+    permissions: [] as Permission[],
+  })
 
   const openCreate = () => {
-    setForm({ username: '', password: '', displayName: '', groupId: '' })
+    setForm({ username: '', password: '', displayName: '', groupId: '', permissions: [] })
     setCreateModal(true)
   }
 
   const openEdit = (u: User) => {
-    setForm({ username: u.username, password: '', displayName: u.displayName, groupId: u.groupId ?? '' })
+    setForm({
+      username: u.username,
+      password: '',
+      displayName: u.displayName,
+      groupId: u.groupId ?? '',
+      permissions: u.permissions ?? [],
+    })
     setEditUser(u)
   }
+
+  const togglePermission = (permission: Permission, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      permissions: checked
+        ? Array.from(new Set([...prev.permissions, permission]))
+        : prev.permissions.filter((p) => p !== permission),
+    }))
+  }
+
+  const permissionSections = (
+    <>
+      <div>
+        <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Direkte Leserechte</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {READ_PERMISSIONS.map((permission) => (
+            <Checkbox
+              key={permission}
+              checked={form.permissions.includes(permission)}
+              onCheckedChange={(checked) => togglePermission(permission, checked)}
+              label={PERMISSION_LABELS[permission]}
+              className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+            />
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Direkte Verwaltungsrechte</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {MANAGE_PERMISSIONS.map((permission) => (
+            <Checkbox
+              key={permission}
+              checked={form.permissions.includes(permission)}
+              onCheckedChange={(checked) => togglePermission(permission, checked)}
+              label={PERMISSION_LABELS[permission]}
+              className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  )
 
   const handleCreate = async () => {
     try {
@@ -64,7 +124,16 @@ export default function UsersPage() {
   const handleUpdate = async () => {
     if (!editUser) return
     try {
-      const data: Record<string, string | null> = { displayName: form.displayName, groupId: form.groupId || null }
+      const data: {
+        displayName: string
+        groupId: string | null
+        permissions: Permission[]
+        password?: string
+      } = {
+        displayName: form.displayName,
+        groupId: form.groupId || null,
+        permissions: form.permissions,
+      }
       if (form.password) data.password = form.password
       await execute(`/api/users/${editUser.id}`, { method: 'PATCH', body: JSON.stringify(data) })
       addToast({ type: 'success', title: 'Benutzer aktualisiert' })
@@ -111,7 +180,7 @@ export default function UsersPage() {
               <div className="flex-1 min-w-0">
               <p className="text-[13.5px] font-medium text-[#eee]">{u.displayName}</p>
                 <p className="text-[11.5px] text-[#4a6585]">
-                  @{u.username} · {u.group?.name || 'Keine Gruppe'} · Erstellt: {formatDate(u.createdAt)}
+                  @{u.username} · {u.group?.name || 'Keine Gruppe'} · {u.permissions.length} direkte Rechte · Erstellt: {formatDate(u.createdAt)}
                 </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
@@ -138,7 +207,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Neuer Benutzer">
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Neuer Benutzer" size="lg">
         <div className="space-y-4">
           <Input label="Benutzername" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
@@ -152,6 +221,10 @@ export default function UsersPage() {
               ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
             ]}
           />
+          <p className="text-[11.5px] text-[#6b8299]">
+            Benutzergruppe ist optional. Direkte Rechte gelten zusätzlich zur Gruppe oder alleine, wenn keine Gruppe ausgewählt ist.
+          </p>
+          {permissionSections}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setCreateModal(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleCreate} disabled={!form.username || !form.password || !form.displayName}>Erstellen</Button>
@@ -159,7 +232,7 @@ export default function UsersPage() {
         </div>
       </Modal>
 
-      <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Benutzer bearbeiten">
+      <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Benutzer bearbeiten" size="lg">
         <div className="space-y-4">
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label="Neues Passwort (optional)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leer lassen um nicht zu ändern" />
@@ -172,6 +245,10 @@ export default function UsersPage() {
               ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
             ]}
           />
+          <p className="text-[11.5px] text-[#6b8299]">
+            Du kannst die Benutzergruppe jederzeit ändern oder entfernen. Direkte Rechte bleiben separat bestehen.
+          </p>
+          {permissionSections}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setEditUser(null)}>Abbrechen</Button>
             <Button size="sm" onClick={handleUpdate}>Speichern</Button>

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PERMISSIONS } from '@/lib/permissions'
 
 export const loginSchema = z.object({
   username: z.string().min(1, 'Benutzername ist erforderlich'),
@@ -10,4 +11,5 @@ export const createUserSchema = z.object({
   password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
   displayName: z.string().min(1, 'Anzeigename ist erforderlich'),
   groupId: z.string().nullable().optional(),
+  permissions: z.array(z.enum(PERMISSIONS)).optional(),
 })
