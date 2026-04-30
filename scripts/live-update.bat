@@ -132,13 +132,9 @@ if "!errorlevel!"=="0" (
 call :section "7/10" "Pakete installieren"
 call :run "npm install" "npm install" || goto failed
 
-call :section "8/10" "Next.js Build-Cache löschen"
-if exist ".next" (
-  call :run ".next löschen" "rmdir /s /q .next" || goto failed
-) else (
-  echo .next existiert nicht. Cache-Löschung übersprungen.
-  call :logline ".next existiert nicht. Cache-Löschung übersprungen."
-)
+call :section "8/10" "Next.js Build-Cache behalten"
+echo .next wird vor dem Build nicht gelöscht, damit aktive Clients keine alten Chunk-Dateien verlieren.
+call :logline ".next wird vor dem Build nicht gelöscht, damit aktive Clients keine alten Chunk-Dateien verlieren."
 
 call :section "9/11" "Datenbank aktualisieren"
 call :run "Datenbank-Backup erstellen" "npm run db:backup" || goto failed

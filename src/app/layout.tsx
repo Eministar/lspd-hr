@@ -3,6 +3,7 @@ import './globals.css'
 import { ThemeProvider } from '@/context/theme-context'
 import { AuthProvider } from '@/context/auth-context'
 import { ToastProvider } from '@/components/ui/toast'
+import { ChunkLoadGuard } from '@/components/runtime/chunk-load-guard'
 
 export const metadata: Metadata = {
   title: 'LSPD HR Dashboard',
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
+              <ChunkLoadGuard />
               {children}
             </ToastProvider>
           </AuthProvider>
