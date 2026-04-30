@@ -47,6 +47,7 @@ export default function PromotionsPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'rank-changes:view')
   const canManage = hasPermission(user, 'rank-changes:manage')
+  const canDeleteLists = hasPermission(user, 'rank-change-lists:delete')
   const { data: lists, loading, refetch } = useFetch<RankChangeList[]>(canView ? '/api/rank-change-lists?type=PROMOTION' : null)
   const { data: officers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
   const { data: ranks } = useFetch<Rank[]>(canManage ? '/api/ranks' : null)
@@ -265,9 +266,11 @@ export default function PromotionsPage() {
                       }}>
                         <Plus size={13} /> Officer hinzufügen
                       </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDeleteList(list.id)}>
-                        <Trash2 size={13} />
-                      </Button>
+                      {canDeleteLists && (
+                        <Button variant="danger" size="sm" onClick={() => handleDeleteList(list.id)}>
+                          <Trash2 size={13} />
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

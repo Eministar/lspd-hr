@@ -31,6 +31,7 @@ async function main() {
       description: 'Personalverwaltung, Aufgaben, Kündigungen und Rangänderungen.',
       permissions: [
         'officers:write',
+        'officer-trainings:manage',
         'officers:view',
         'terminations:manage',
         'terminations:view',

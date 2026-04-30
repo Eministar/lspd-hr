@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
+    await requireAuth(['ADMIN'], ['rank-change-lists:delete'])
     const { id } = await params
 
     await prisma.rankChangeList.delete({ where: { id } })

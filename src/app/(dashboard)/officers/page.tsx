@@ -220,6 +220,7 @@ function DraggableOfficerRow({
   officer,
   canDrag,
   canEdit,
+  canEditTrainings,
   allTrainings,
   unitsByKey,
   rowIndex,
@@ -229,6 +230,7 @@ function DraggableOfficerRow({
   officer: Officer
   canDrag: boolean
   canEdit: boolean
+  canEditTrainings: boolean
   allTrainings: Training[]
   unitsByKey: Map<string, Unit>
   rowIndex: number
@@ -299,11 +301,11 @@ function DraggableOfficerRow({
             <button
               type="button"
               onClick={() => onTrainToggle(officer.id, t.id, !completed)}
-              disabled={!canEdit}
+              disabled={!canEditTrainings}
               className={cn(
                 'mx-auto h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
                 completed ? 'bg-[#d4af37]' : 'bg-[#18385f]',
-                canEdit ? 'hover:bg-[#1e3a5f]' : 'cursor-not-allowed opacity-70'
+                canEditTrainings ? 'hover:bg-[#1e3a5f]' : 'cursor-not-allowed opacity-70'
               )}
             >
               {completed && <Check size={11} className="text-[#0b1f3a]" strokeWidth={3} />}
@@ -340,6 +342,7 @@ function MobileOfficerCard({
   allTrainings,
   unitsByKey,
   canEdit,
+  canEditTrainings,
   onTrainToggle,
   onFlagChange,
 }: {
@@ -347,6 +350,7 @@ function MobileOfficerCard({
   allTrainings: Training[]
   unitsByKey: Map<string, Unit>
   canEdit: boolean
+  canEditTrainings: boolean
   onTrainToggle: (id: string, trainingId: string, done: boolean) => void
   onFlagChange: (id: string, flag: string | null) => void
 }) {
@@ -414,13 +418,13 @@ function MobileOfficerCard({
                 key={t.id}
                 type="button"
                 onClick={() => onTrainToggle(officer.id, t.id, !completed)}
-                disabled={!canEdit}
+                disabled={!canEditTrainings}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[10.5px] font-medium border transition-colors',
                   completed
                     ? 'bg-[#d4af37]/15 border-[#d4af37]/40 text-[#e6d27a]'
                     : 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299]',
-                  canEdit ? 'hover:border-[#234568]' : 'cursor-not-allowed opacity-70'
+                  canEditTrainings ? 'hover:border-[#234568]' : 'cursor-not-allowed opacity-70'
                 )}
               >
                 <span
@@ -446,6 +450,7 @@ export default function OfficersPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'officers:view')
   const canEdit = hasPermission(user, 'officers:write')
+  const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canMove = hasPermission(user, 'rank-changes:manage')
   const { data: officers, loading, refetch, setData } = useFetch<Officer[]>(canView ? '/api/officers' : null)
   const { data: ranks } = useFetch<Rank[]>(canView ? '/api/ranks' : null)
@@ -526,6 +531,7 @@ export default function OfficersPage() {
 
   const handleTrainingToggle = useCallback(
     async (officerId: string, trainingId: string, completed: boolean) => {
+      if (!canEditTrainings) return
       const list = officers
       const o = list?.find((x) => x.id === officerId)
       if (!o) return
@@ -570,7 +576,7 @@ export default function OfficersPage() {
         addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
       }
     },
-    [officers, setData, addToast]
+    [canEditTrainings, officers, setData, addToast]
   )
 
   const handleFlagChange = useCallback(
@@ -814,6 +820,7 @@ export default function OfficersPage() {
                                   officer={officer}
                                   canDrag={canMove}
                                   canEdit={canEdit}
+                                  canEditTrainings={canEditTrainings}
                                   allTrainings={allTrainings}
                                   unitsByKey={unitsByKey}
                                   rowIndex={i}
@@ -834,6 +841,7 @@ export default function OfficersPage() {
                               allTrainings={allTrainings}
                               unitsByKey={unitsByKey}
                               canEdit={canEdit}
+                              canEditTrainings={canEditTrainings}
                               onTrainToggle={handleTrainingToggle}
                               onFlagChange={handleFlagChange}
                             />

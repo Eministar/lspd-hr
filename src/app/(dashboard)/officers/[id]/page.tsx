@@ -106,6 +106,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { data: units } = useFetch<Unit[]>('/api/units?active=true')
   const { execute } = useApi()
   const canEditOfficer = hasPermission(user, 'officers:write')
+  const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
   const canTerminate = hasPermission(user, 'terminations:manage')
@@ -247,6 +248,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
+    if (!canEditTrainings) return
     if (!officer) return
     const previous = officer
     const trainings = officer.trainings.map((t) => ({
@@ -272,7 +274,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       setOfficer(previous)
       addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
     }
-  }, [officer, id, setOfficer, addToast])
+  }, [canEditTrainings, officer, id, setOfficer, addToast])
 
   if (loading) return <PageLoader />
   if (!officer) return <div className="text-center py-16 text-[#999]">Officer nicht gefunden</div>
@@ -421,14 +423,14 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               {officer.trainings?.map((t) => (
                 <button
                   key={t.id}
-                  disabled={!canEditOfficer}
-                  onClick={() => canEditOfficer && handleTrainingToggle(t.trainingId, !t.completed)}
+                  disabled={!canEditTrainings}
+                  onClick={() => canEditTrainings && handleTrainingToggle(t.trainingId, !t.completed)}
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all duration-150 text-left',
                     t.completed
                       ? 'bg-[#0f2340] hover:bg-[#142d52]'
                       : 'hover:bg-[#0f2340]',
-                    !canEditOfficer && 'cursor-not-allowed opacity-75'
+                    !canEditTrainings && 'cursor-not-allowed opacity-75'
                   )}
                 >
                   <div className={cn(

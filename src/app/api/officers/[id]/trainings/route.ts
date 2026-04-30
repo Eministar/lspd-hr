@@ -7,7 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['officers:write'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['officer-trainings:manage'])
     const { id } = await params
     const body = await req.json()
     const parsed = updateTrainingsSchema.safeParse(body)
