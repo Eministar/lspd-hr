@@ -26,6 +26,7 @@ type SnapshotData = {
   taskLists: unknown[]
   tasks: unknown[]
   taskAssignments: unknown[]
+  badgeBlacklists: unknown[]
 }
 
 type Snapshot = {
@@ -61,6 +62,7 @@ const TABLES: { key: SnapshotKey; delegateNames: readonly string[] }[] = [
   { key: 'taskLists', delegateNames: ['taskList', 'tasklist'] },
   { key: 'tasks', delegateNames: ['task'] },
   { key: 'taskAssignments', delegateNames: ['taskAssignment', 'taskassignment'] },
+  { key: 'badgeBlacklists', delegateNames: ['badgeBlacklist', 'badgeblacklist'] },
 ]
 
 function createEmptyData(): SnapshotData {
@@ -78,12 +80,12 @@ function emptySnapshot(reason: string): Snapshot {
   }
 }
 
-function isMissingTableError(e: unknown): boolean {
+function isSchemaDriftBackupError(e: unknown): boolean {
   return (
     typeof e === 'object' &&
     e !== null &&
     'code' in e &&
-    (e as { code: string }).code === 'P2021'
+    ['P2021', 'P2022'].includes((e as { code: string }).code)
   )
 }
 
@@ -98,10 +100,20 @@ function getFindManyDelegate(prisma: PrismaClient, names: readonly string[]): Fi
 
 async function loadSnapshot(prisma: PrismaClient): Promise<Snapshot> {
   const entries = await Promise.all(
-    TABLES.map(async ({ key, delegateNames }) => [
-      key,
-      await getFindManyDelegate(prisma, delegateNames).findMany(),
-    ] as const),
+    TABLES.map(async ({ key, delegateNames }) => {
+      try {
+        return [key, await getFindManyDelegate(prisma, delegateNames).findMany()] as const
+      } catch (e) {
+        if (!isSchemaDriftBackupError(e)) {
+          throw e
+        }
+
+        console.warn(
+          `Tabelle ${key} konnte wegen Schema-Unterschied nicht gelesen werden; Snapshot enthält dafür [].`,
+        )
+        return [key, []] as const
+      }
+    }),
   )
 
   return {
@@ -109,7 +121,7 @@ async function loadSnapshot(prisma: PrismaClient): Promise<Snapshot> {
       exportedAt: new Date().toISOString(),
       formatVersion: 1 as const,
       note:
-        'Vollständiger JSON-Snapshot sämtlicher Tabellen. Bei Restore die FK-Reihenfolge beachten (UserGroup vor User, Rank vor Officer, …).',
+        'JSON-Snapshot sämtlicher lesbarer Tabellen. Bei Schema-Updates können noch nicht vorhandene Tabellen/Spalten leer sein. Bei Restore die FK-Reihenfolge beachten (UserGroup vor User, Rank vor Officer, …).',
     },
     data: Object.fromEntries(entries) as unknown as SnapshotData,
   }
@@ -148,7 +160,7 @@ async function main() {
     try {
       snapshot = await loadSnapshot(prisma)
     } catch (e) {
-      if (isMissingTableError(e)) {
+      if (isSchemaDriftBackupError(e)) {
         console.warn(
           'Noch keine (vollständige) Datenbank — leeres Snapshot (z.B. vor erstem prisma db push).',
         )
