@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Shield, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -28,9 +29,22 @@ interface BlacklistedBadge {
   createdAt: string
 }
 
+interface DiscordRole {
+  id: string
+  name: string
+}
+
+interface DiscordConfigResponse {
+  config: {
+    rankRoleMap: Record<string, string>
+  }
+  roles: DiscordRole[]
+}
+
 export default function RanksPage() {
   const { data: ranks, loading, refetch } = useFetch<Rank[]>('/api/ranks')
   const { data: blacklistedBadges, loading: blacklistLoading, refetch: refetchBlacklist } = useFetch<BlacklistedBadge[]>('/api/badge-blacklist')
+  const { data: discordData, loading: discordLoading, refetch: refetchDiscord } = useFetch<DiscordConfigResponse>('/api/discord/config')
   const { execute } = useApi()
   const { addToast } = useToast()
 
@@ -44,6 +58,7 @@ export default function RanksPage() {
     color: '#3B82F6',
     badgeMin: '' as string,
     badgeMax: '' as string,
+    discordRoleId: '',
   })
   const [blacklistForm, setBlacklistForm] = useState({ badgeNumber: '', reason: '' })
 
@@ -54,6 +69,7 @@ export default function RanksPage() {
       color: '#3B82F6',
       badgeMin: '',
       badgeMax: '',
+      discordRoleId: '',
     })
     setEditRank(null)
     setModalOpen(true)
@@ -66,9 +82,22 @@ export default function RanksPage() {
       color: rank.color,
       badgeMin: rank.badgeMin != null ? String(rank.badgeMin) : '',
       badgeMax: rank.badgeMax != null ? String(rank.badgeMax) : '',
+      discordRoleId: discordData?.config.rankRoleMap[rank.id] || '',
     })
     setEditRank(rank)
     setModalOpen(true)
+  }
+
+  const saveRankRole = async (rankId: string, roleId: string) => {
+    const rankRoleMap = { ...(discordData?.config.rankRoleMap || {}) }
+    if (roleId) rankRoleMap[rankId] = roleId
+    else delete rankRoleMap[rankId]
+
+    await execute('/api/discord/config', {
+      method: 'POST',
+      body: JSON.stringify({ rankRoleMap }),
+    })
+    await refetchDiscord()
   }
 
   const handleSave = async () => {
@@ -82,9 +111,11 @@ export default function RanksPage() {
     try {
       if (editRank) {
         await execute(`/api/ranks/${editRank.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+        await saveRankRole(editRank.id, form.discordRoleId)
         addToast({ type: 'success', title: 'Rang aktualisiert' })
       } else {
-        await execute('/api/ranks', { method: 'POST', body: JSON.stringify(payload) })
+        const rank = await execute('/api/ranks', { method: 'POST', body: JSON.stringify(payload) }) as Rank | null
+        if (rank) await saveRankRole(rank.id, form.discordRoleId)
         addToast({ type: 'success', title: 'Rang erstellt' })
       }
       setModalOpen(false)
@@ -97,6 +128,7 @@ export default function RanksPage() {
   const handleDelete = async (id: string) => {
     try {
       await execute(`/api/ranks/${id}`, { method: 'DELETE' })
+      await saveRankRole(id, '')
       addToast({ type: 'success', title: 'Rang gelöscht' })
       await refetch()
     } catch (err) {
@@ -136,7 +168,14 @@ export default function RanksPage() {
     }
   }
 
-  if (loading || blacklistLoading) return <PageLoader />
+  if (loading || blacklistLoading || discordLoading) return <PageLoader />
+
+  const roleOptions = [
+    { value: '', label: 'Keine Discord-Rolle' },
+    ...(discordData?.roles.map((role) => ({ value: role.id, label: role.name })) || []),
+  ]
+
+  const roleName = (roleId: string | undefined) => discordData?.roles.find((role) => role.id === roleId)?.name
 
   return (
     <div>
@@ -186,6 +225,9 @@ export default function RanksPage() {
                 <span className="text-[13.5px] font-medium text-[#eee]">{rank.name}</span>
                 {rank.badgeMin != null && rank.badgeMax != null && (
                   <span className="ml-2 text-[10px] text-[#4a6585] font-mono">DN {rank.badgeMin}–{rank.badgeMax}</span>
+                )}
+                {roleName(discordData?.config.rankRoleMap[rank.id]) && (
+                  <span className="ml-2 text-[11px] text-[#6b8299]">Discord: {roleName(discordData?.config.rankRoleMap[rank.id])}</span>
                 )}
               </div>
               <div className="flex gap-0.5">
@@ -267,6 +309,12 @@ export default function RanksPage() {
               placeholder="z. B. 10"
             />
           </div>
+          <Select
+            label="Discord-Rolle"
+            value={form.discordRoleId}
+            onValueChange={(discordRoleId) => setForm({ ...form, discordRoleId })}
+            options={roleOptions}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleSave} disabled={!form.name.trim()}>Speichern</Button>

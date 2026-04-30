@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
+import { hasPermission } from '@/lib/permissions'
 import {
   getDiscordConfig,
   getDiscordGuildChannels,
@@ -11,7 +12,7 @@ import {
 
 export async function GET() {
   try {
-    await requireAuth(['ADMIN'], ['settings:manage'])
+    await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
 
     const [config, roles, channels, ranks, trainings, units] = await Promise.all([
       getDiscordConfig(),
@@ -41,18 +42,19 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth(['ADMIN'], ['settings:manage'])
+    const user = await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
     const body = await req.json()
+    const canManageSettings = hasPermission(user, 'settings:manage')
 
     await saveDiscordConfig({
-      guildId: typeof body.guildId === 'string' ? body.guildId : undefined,
-      applicationId: typeof body.applicationId === 'string' ? body.applicationId : undefined,
-      announcementsChannelId: typeof body.announcementsChannelId === 'string' ? body.announcementsChannelId : undefined,
-      employeeRoleIds: Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
-      commandRoleIds: Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
-      rankRoleMap: body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
-      trainingRoleMap: body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
-      unitRoleMap: body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
+      guildId: canManageSettings && typeof body.guildId === 'string' ? body.guildId : undefined,
+      applicationId: canManageSettings && typeof body.applicationId === 'string' ? body.applicationId : undefined,
+      announcementsChannelId: canManageSettings && typeof body.announcementsChannelId === 'string' ? body.announcementsChannelId : undefined,
+      employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
+      commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
+      rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
+      trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
+      unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
     })
 
     return success({ message: 'Discord-Konfiguration gespeichert' })
@@ -63,4 +65,3 @@ export async function POST(req: NextRequest) {
     return error(msg, 500)
   }
 }
-

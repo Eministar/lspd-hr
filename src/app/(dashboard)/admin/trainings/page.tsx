@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -19,25 +20,55 @@ interface Training {
   sortOrder: number
 }
 
+interface DiscordRole {
+  id: string
+  name: string
+}
+
+interface DiscordConfigResponse {
+  config: {
+    trainingRoleMap: Record<string, string>
+  }
+  roles: DiscordRole[]
+}
+
 export default function TrainingsPage() {
   const { data: trainings, loading, refetch } = useFetch<Training[]>('/api/trainings')
+  const { data: discordData, loading: discordLoading, refetch: refetchDiscord } = useFetch<DiscordConfigResponse>('/api/discord/config')
   const { execute } = useApi()
   const { addToast } = useToast()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editTraining, setEditTraining] = useState<Training | null>(null)
-  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0 })
+  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0, discordRoleId: '' })
 
   const openCreate = () => {
-    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1 })
+    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1, discordRoleId: '' })
     setEditTraining(null)
     setModalOpen(true)
   }
 
   const openEdit = (t: Training) => {
-    setForm({ key: t.key, label: t.label, sortOrder: t.sortOrder })
+    setForm({
+      key: t.key,
+      label: t.label,
+      sortOrder: t.sortOrder,
+      discordRoleId: discordData?.config.trainingRoleMap[t.id] || '',
+    })
     setEditTraining(t)
     setModalOpen(true)
+  }
+
+  const saveTrainingRole = async (trainingId: string, roleId: string) => {
+    const trainingRoleMap = { ...(discordData?.config.trainingRoleMap || {}) }
+    if (roleId) trainingRoleMap[trainingId] = roleId
+    else delete trainingRoleMap[trainingId]
+
+    await execute('/api/discord/config', {
+      method: 'POST',
+      body: JSON.stringify({ trainingRoleMap }),
+    })
+    await refetchDiscord()
   }
 
   const handleSave = async () => {
@@ -49,9 +80,11 @@ export default function TrainingsPage() {
     try {
       if (editTraining) {
         await execute(`/api/trainings/${editTraining.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+        await saveTrainingRole(editTraining.id, form.discordRoleId)
         addToast({ type: 'success', title: 'Ausbildung aktualisiert' })
       } else {
-        await execute('/api/trainings', { method: 'POST', body: JSON.stringify(payload) })
+        const training = await execute('/api/trainings', { method: 'POST', body: JSON.stringify(payload) }) as Training | null
+        if (training) await saveTrainingRole(training.id, form.discordRoleId)
         addToast({ type: 'success', title: 'Ausbildung erstellt' })
       }
       setModalOpen(false)
@@ -64,6 +97,7 @@ export default function TrainingsPage() {
   const handleDelete = async (id: string) => {
     try {
       await execute(`/api/trainings/${id}`, { method: 'DELETE' })
+      await saveTrainingRole(id, '')
       addToast({ type: 'success', title: 'Ausbildung gelöscht' })
       await refetch()
     } catch (err) {
@@ -71,7 +105,14 @@ export default function TrainingsPage() {
     }
   }
 
-  if (loading) return <PageLoader />
+  if (loading || discordLoading) return <PageLoader />
+
+  const roleOptions = [
+    { value: '', label: 'Keine Discord-Rolle' },
+    ...(discordData?.roles.map((role) => ({ value: role.id, label: role.name })) || []),
+  ]
+
+  const roleName = (roleId: string | undefined) => discordData?.roles.find((role) => role.id === roleId)?.name
 
   return (
     <div>
@@ -95,6 +136,9 @@ export default function TrainingsPage() {
               <div className="flex-1">
                 <span className="text-[13.5px] font-medium text-[#eee]">{t.label}</span>
                 <span className="text-[11px] text-[#4a6585] ml-2 font-mono">({t.key})</span>
+                {roleName(discordData?.config.trainingRoleMap[t.id]) && (
+                  <span className="text-[11px] text-[#6b8299] ml-2">Discord: {roleName(discordData?.config.trainingRoleMap[t.id])}</span>
+                )}
               </div>
               <div className="flex gap-0.5">
                 <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
@@ -120,6 +164,12 @@ export default function TrainingsPage() {
           <Input label="Label (Anzeigename)" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required placeholder="z.B. Erste Hilfe" />
           <Input label="Key (intern)" value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} required placeholder="z.B. erste_hilfe" />
           <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
+          <Select
+            label="Discord-Rolle"
+            value={form.discordRoleId}
+            onValueChange={(discordRoleId) => setForm({ ...form, discordRoleId })}
+            options={roleOptions}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleSave} disabled={!form.key.trim() || !form.label.trim()}>Speichern</Button>
