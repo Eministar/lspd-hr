@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       newBadge = assigned.str
     }
 
-    await prisma.promotionLog.create({
+    const promotion = await prisma.promotionLog.create({
       data: {
         officerId: id,
         oldRankId: officer.rankId,
@@ -78,14 +78,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     queueOfficerRoleSync(id)
     queueDiscordHrEvent({
       type: 'promotion',
-      title: targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
-      description: 'Der Officer wurde im Roster verschoben.',
+      title: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
+      description: 'Der Officer wurde im Roster verschoben; Discord-Rollen, Dienstnummer und Name werden aus der HR-Liste synchronisiert.',
       officer: updated,
       actor: user,
       fields: [
         { name: 'Von', value: officer.rank.name, inline: true },
         { name: 'Nach', value: targetRank.name, inline: true },
         { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
+        { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
       ],
     })
 

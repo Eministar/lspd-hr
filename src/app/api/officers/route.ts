@@ -128,11 +128,13 @@ export async function POST(req: NextRequest) {
     queueOfficerRoleSync(officer.id)
     queueDiscordHrEvent({
       type: 'hire',
-      title: 'Einstellung',
-      description: 'Ein neuer Officer wurde in den Dienst aufgenommen.',
+      title: `Einstellung: ${officer.firstName} ${officer.lastName}`,
+      description: `Willkommen im LSPD. ${officer.firstName} ${officer.lastName} wurde in die HR-Liste aufgenommen; Rollen und Discord-Name werden daraus synchronisiert.`,
       officer,
       actor: user,
       fields: [
+        { name: 'Dienstnummer', value: officer.badgeNumber, inline: true },
+        { name: 'Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
         { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
       ],
     })

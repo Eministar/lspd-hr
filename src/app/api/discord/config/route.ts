@@ -7,6 +7,7 @@ import {
   getDiscordConfig,
   getDiscordGuildChannels,
   getDiscordGuildRoles,
+  queueAllOfficerRoleSync,
   saveDiscordConfig,
 } from '@/lib/discord-integration'
 
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
       trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
       unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
     })
+    queueAllOfficerRoleSync()
 
     return success({ message: 'Discord-Konfiguration gespeichert' })
   } catch (e: unknown) {

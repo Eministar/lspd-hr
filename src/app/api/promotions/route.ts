@@ -99,14 +99,15 @@ export async function POST(req: NextRequest) {
     queueOfficerRoleSync(officerId)
     queueDiscordHrEvent({
       type: 'promotion',
-      title: newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
-      description: note || 'Der Rang eines Officers wurde geändert.',
+      title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
+      description: note || 'Der Rang wurde in der HR-Liste geändert; Discord-Rollen, Dienstnummer und Name werden daraus synchronisiert.',
       officer: updatedOfficer,
       actor: user,
       fields: [
         { name: 'Von', value: officer.rank.name, inline: true },
         { name: 'Nach', value: newRank.name, inline: true },
         { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
+        { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
       ],
     })
 

@@ -8,7 +8,7 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { queueDiscordHrEvent, queueOfficerRoleSync, syncOfficerDiscordRoles } from '@/lib/discord-integration'
+import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -123,11 +123,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const rankChanged = !!parsed.data.rankId && parsed.data.rankId !== existing.rankId
+    const nameChanged = (
+      (!!parsed.data.firstName && parsed.data.firstName !== existing.firstName) ||
+      (!!parsed.data.lastName && parsed.data.lastName !== existing.lastName)
+    )
+    const badgeChanged = !!parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber
     const unitsChanged = !!unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))
     const discordChanged = 'discordId' in parsed.data && parsed.data.discordId !== existing.discordId
     const statusChanged = !!parsed.data.status && parsed.data.status !== existing.status
 
-    if (rankChanged || unitsChanged || discordChanged || statusChanged) {
+    if (discordChanged && existing.discordId) {
+      void syncFormerOfficerDiscordMember(existing).catch((syncError) => {
+        console.error('[DiscordIntegration] Rollenentzug für alte Discord-ID fehlgeschlagen:', syncError)
+      })
+    }
+
+    if (rankChanged || nameChanged || badgeChanged || unitsChanged || discordChanged || statusChanged) {
       queueOfficerRoleSync(id, parsed.data.status === 'TERMINATED' ? 'remove-all' : 'sync')
     }
 

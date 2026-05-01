@@ -72,7 +72,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     for (const entry of list.entries) {
       if (entry.officer.status === 'TERMINATED') continue
 
-      await prisma.promotionLog.create({
+      const promotion = await prisma.promotionLog.create({
         data: {
           officerId: entry.officerId,
           oldRankId: entry.currentRankId,
@@ -110,8 +110,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       queueOfficerRoleSync(entry.officerId)
       queueDiscordHrEvent({
         type: 'promotion',
-        title: action,
-        description: `Durchgeführt über Liste "${list.name}".`,
+        title: `${action}: ${entry.officer.firstName} ${entry.officer.lastName}`,
+        description: `Durchgeführt über Liste "${list.name}". Die HR-Liste ist führend; Discord-Rollen, Dienstnummer und Name werden daraus synchronisiert.`,
         officer: {
           ...entry.officer,
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
@@ -122,6 +122,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           { name: 'Von', value: entry.currentRank.name, inline: true },
           { name: 'Nach', value: entry.proposedRank.name, inline: true },
           { name: 'Dienstnummer', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
+          { name: 'Liste', value: list.name, inline: true },
+          { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+          ...(entry.note ? [{ name: 'Notiz', value: entry.note }] : []),
         ],
       })
 

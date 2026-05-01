@@ -237,11 +237,15 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'hire',
-    title: 'Einstellung',
-    description: 'Einstellung per Discord-Command.',
+    title: `Einstellung: ${officer.firstName} ${officer.lastName}`,
+    description: 'Einstellung per Discord-Command. Rollen, Dienstnummer und Discord-Name werden aus der HR-Liste synchronisiert.',
     officer,
     actor,
-    fields: [{ name: 'Units', value: unitKeys.join(', ') || '-', inline: true }],
+    fields: [
+      { name: 'Dienstnummer', value: officer.badgeNumber, inline: true },
+      { name: 'Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+      { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
+    ],
   })
 
   return reply(`Einstellung erstellt: ${firstName} ${lastName} (${badgeNumber})`)
@@ -274,7 +278,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
     if (conflict) return reply(conflict)
   }
 
-  await prisma.promotionLog.create({
+  const promotion = await prisma.promotionLog.create({
     data: {
       officerId: officer.id,
       oldRankId: officer.rankId,
@@ -295,14 +299,15 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'promotion',
-    title: newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung',
-    description: textOption(options, 'notiz') || 'Rangänderung per Discord-Command.',
+    title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
+    description: textOption(options, 'notiz') || 'Rangänderung per Discord-Command. Discord-Rollen, Dienstnummer und Name werden aus der HR-Liste synchronisiert.',
     officer: updated,
     actor,
     fields: [
       { name: 'Von', value: officer.rank.name, inline: true },
       { name: 'Nach', value: newRank.name, inline: true },
       { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber}`, inline: true },
+      { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
     ],
   })
 
@@ -325,8 +330,8 @@ async function handleTraining(options: DiscordOption[] | undefined, actor: Retur
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'training',
-    title: 'Ausbildung aktualisiert',
-    description: 'Ausbildungsstand per Discord-Command geändert.',
+    title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
+    description: 'Ausbildungsstand per Discord-Command geändert. Ausbildungsrollen werden aus der HR-Liste synchronisiert.',
     officer,
     actor,
     fields: [{ name: training.label, value: completed ? 'abgeschlossen' : 'offen', inline: true }],

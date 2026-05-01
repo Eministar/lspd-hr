@@ -21,6 +21,11 @@ type DiscordField = {
   inline?: boolean
 }
 
+type DiscordGuildMember = {
+  roles?: string[]
+  nick?: string | null
+}
+
 type DiscordConfig = {
   guildId: string
   applicationId: string
@@ -72,6 +77,8 @@ const EVENT_COLORS = {
   termination: 0xef4444,
   update: 0x8b5cf6,
 } as const
+
+let syncSchedulerStarted = false
 
 function botToken() {
   return process.env.DISCORD_BOT_TOKEN?.trim() || process.env.LSPD_DISCORD_BOT_TOKEN?.trim() || ''
@@ -138,6 +145,15 @@ function officerName(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName'>)
   return `${officer.firstName} ${officer.lastName}`.trim()
 }
 
+function officerBadge(officer: Pick<OfficerForDiscord, 'badgeNumber'>) {
+  return officer.badgeNumber.trim()
+}
+
+function desiredNickname(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber'>) {
+  const nick = `[LSPD-${officerBadge(officer)}] ${officerName(officer)}`.replace(/\s+/g, ' ').trim()
+  return truncate(nick, 32)
+}
+
 function mention(discordId: string | null | undefined) {
   const id = snowflake(discordId)
   return id ? `<@${id}>` : 'Nicht verknüpft'
@@ -151,6 +167,14 @@ export function discordUserLabel(user: UserForDiscord | null | undefined) {
 
 function truncate(value: string, max = 1024) {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`
+}
+
+function formatDiscordDate(date = new Date()) {
+  return new Intl.DateTimeFormat('de-DE', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Europe/Berlin',
+  }).format(date)
 }
 
 function hexColorToDiscord(color: string | null | undefined, fallback: number) {
@@ -286,11 +310,11 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
   ].filter((roleId): roleId is string => !!roleId)))
 }
 
-export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
-  const config = await getDiscordConfig()
-  if (!config.guildId || !botToken()) return
-
-  const officer = await getOfficerForDiscord(officerId)
+async function syncOfficerDiscordMember(
+  officer: OfficerForDiscord,
+  config: DiscordConfig,
+  mode: 'sync' | 'remove-all' = 'sync',
+) {
   if (!officer?.discordId) return
 
   const memberId = snowflake(officer.discordId)
@@ -298,13 +322,86 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
 
   const allManaged = configuredRoleIds(config)
   const desired = mode === 'remove-all' ? [] : desiredRoleIds(officer, config)
-  const toAdd = desired
-  const toRemove = allManaged.filter((roleId) => !desired.includes(roleId))
+  const member = await discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+  const currentRoles = new Set(member?.roles ?? [])
+  const desiredSet = new Set(desired)
+  const toAdd = desired.filter((roleId) => !currentRoles.has(roleId))
+  const toRemove = allManaged.filter((roleId) => currentRoles.has(roleId) && !desiredSet.has(roleId))
 
-  await Promise.allSettled([
+  const roleResults = await Promise.allSettled([
     ...toRemove.map((roleId) => discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' })),
     ...toAdd.map((roleId) => discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'PUT' })),
   ])
+
+  for (const result of roleResults) {
+    if (result.status === 'rejected') console.error('[DiscordIntegration] Rollenaktion fehlgeschlagen:', result.reason)
+  }
+
+  if (mode === 'sync' && officer.status !== 'TERMINATED') {
+    const nick = desiredNickname(officer)
+    if (member?.nick !== nick) {
+      await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nick }),
+      }).catch((error) => {
+        console.error('[DiscordIntegration] Nickname-Sync fehlgeschlagen:', error)
+      })
+    }
+  }
+}
+
+export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return
+
+  const officer = await getOfficerForDiscord(officerId)
+  if (!officer) return
+
+  await syncOfficerDiscordMember(officer, config, mode)
+}
+
+export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord) {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return
+
+  await syncOfficerDiscordMember(officer, config, 'remove-all')
+}
+
+export async function syncAllOfficerDiscordRoles() {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return { synced: 0 }
+
+  const officers = await prisma.officer.findMany({
+    include: {
+      rank: true,
+      trainings: { include: { training: true } },
+    },
+    orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
+  })
+
+  let synced = 0
+  for (let i = 0; i < officers.length; i += 5) {
+    const batch = officers.slice(i, i + 5)
+    await Promise.allSettled(batch.map(async (officer) => {
+      await syncOfficerDiscordMember(officer, config, officer.status === 'TERMINATED' ? 'remove-all' : 'sync')
+      synced++
+    }))
+  }
+
+  return { synced }
+}
+
+export function ensureDiscordSyncScheduler() {
+  if (syncSchedulerStarted || typeof setInterval !== 'function') return
+  syncSchedulerStarted = true
+
+  const intervalMs = Number.parseInt(process.env.DISCORD_ROLE_SYNC_INTERVAL_MS || '300000', 10)
+  const safeIntervalMs = Number.isFinite(intervalMs) && intervalMs >= 60000 ? intervalMs : 300000
+  setInterval(() => {
+    void syncAllOfficerDiscordRoles().catch((error) => {
+      console.error('[DiscordIntegration] Vollständiger Rollensync fehlgeschlagen:', error)
+    })
+  }, safeIntervalMs).unref?.()
 }
 
 export async function sendDiscordHrEvent(event: {
@@ -319,15 +416,23 @@ export async function sendDiscordHrEvent(event: {
   if (!config.announcementsChannelId || !botToken()) return
 
   const officer = event.officer
+  const now = new Date()
   const fields: DiscordField[] = [
     ...(officer ? [
-      { name: 'Officer', value: `${officerName(officer)} (${officer.badgeNumber})`, inline: true },
+      { name: 'Officer', value: `${officerName(officer)} (${officerBadge(officer)})`, inline: true },
       { name: 'Discord', value: mention(officer.discordId), inline: true },
       { name: 'Rang', value: officer.rank?.name || '-', inline: true },
+      { name: 'Discord-Name', value: desiredNickname(officer), inline: true },
     ] : []),
     ...(event.actor ? [{ name: 'Ausgeführt von', value: discordUserLabel(event.actor), inline: true }] : []),
+    { name: 'Zeitpunkt', value: formatDiscordDate(now), inline: true },
     ...(event.fields ?? []),
   ]
+  const description = event.description ?? (
+    event.type === 'hire' && officer
+      ? `Willkommen im LSPD, ${officerName(officer)}. Dienstnummer, Rang, Rollen und Discord-Name wurden aus der HR-Liste synchronisiert.`
+      : undefined
+  )
 
   await discordFetch<void>(`/channels/${config.announcementsChannelId}/messages`, {
     method: 'POST',
@@ -335,7 +440,7 @@ export async function sendDiscordHrEvent(event: {
       embeds: [
         {
           title: event.title,
-          description: event.description ? truncate(event.description, 4096) : undefined,
+          description: description ? truncate(description, 4096) : undefined,
           color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[event.type]) : EVENT_COLORS[event.type],
           fields: fields.slice(0, 25).map((field) => ({
             name: truncate(field.name, 256),
@@ -351,8 +456,16 @@ export async function sendDiscordHrEvent(event: {
 }
 
 export function queueOfficerRoleSync(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
+  ensureDiscordSyncScheduler()
   void syncOfficerDiscordRoles(officerId, mode).catch((error) => {
     console.error('[DiscordIntegration] Rollensync fehlgeschlagen:', error)
+  })
+}
+
+export function queueAllOfficerRoleSync() {
+  ensureDiscordSyncScheduler()
+  void syncAllOfficerDiscordRoles().catch((error) => {
+    console.error('[DiscordIntegration] Vollständiger Rollensync fehlgeschlagen:', error)
   })
 }
 

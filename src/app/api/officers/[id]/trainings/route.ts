@@ -75,8 +75,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       queueOfficerRoleSync(id)
       queueDiscordHrEvent({
         type: 'training',
-        title: 'Ausbildung aktualisiert',
-        description: 'Der Ausbildungsstand eines Officers wurde geändert.',
+        title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
+        description: 'Der Ausbildungsstand wurde in der HR-Liste geändert; Ausbildungsrollen werden daraus synchronisiert.',
         officer,
         actor: user,
         fields: [
