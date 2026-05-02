@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { notifyLiveUpdate } from '@/lib/live-updates'
 
 interface UseApiResult<T> {
   data: T | null
@@ -18,13 +19,18 @@ export function useApi<T = unknown>(): UseApiResult<T> {
     setLoading(true)
     setError(null)
     try {
+      const method = options?.method?.toUpperCase() ?? 'GET'
       const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...options?.headers },
         ...options,
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', ...options?.headers },
       })
       const json = await res.json()
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Fehler bei der Anfrage')
+      }
+      if (method !== 'GET' && method !== 'HEAD') {
+        notifyLiveUpdate()
       }
       setData(json.data)
       return json.data

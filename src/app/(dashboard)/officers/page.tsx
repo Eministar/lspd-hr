@@ -41,6 +41,7 @@ import {
 import { OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
 import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
+import { notifyLiveUpdate } from '@/lib/live-updates'
 
 interface Training {
   id: string
@@ -566,6 +567,7 @@ export default function OfficersPage() {
             return prev.map((row) => (row.id === officerId ? json.data.officer : row))
           })
         }
+        notifyLiveUpdate()
       } catch {
         setData((prev) => {
           if (!prev) return prev
@@ -594,6 +596,7 @@ export default function OfficersPage() {
         })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Fehler')
+        notifyLiveUpdate()
       } catch (e) {
         setData((prev) => {
           if (!prev) return prev
@@ -633,6 +636,7 @@ export default function OfficersPage() {
           if (!prev) return prev
           return prev.map((row) => (row.id === officerId ? json.data : row))
         })
+        notifyLiveUpdate()
         addToast({ type: 'success', title: 'Rang & Dienstnummer aktualisiert' })
       } catch (e) {
         addToast({

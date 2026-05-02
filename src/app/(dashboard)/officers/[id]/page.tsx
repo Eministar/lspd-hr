@@ -32,6 +32,7 @@ import {
 } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
+import { notifyLiveUpdate } from '@/lib/live-updates'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
@@ -272,6 +273,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       const json = await res.json() as { data?: { officer?: OfficerDetail }; error?: string }
       if (!res.ok) throw new Error(json.error || 'Fehler')
       if (json.data?.officer) setOfficer(json.data.officer)
+      notifyLiveUpdate()
     } catch {
       setOfficer(previous)
       addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
