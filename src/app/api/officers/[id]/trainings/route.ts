@@ -76,11 +76,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       queueDiscordHrEvent({
         type: 'training',
         title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
-        description: 'Der Ausbildungsstand wurde in der HR-Liste geändert; Ausbildungsrollen werden daraus synchronisiert.',
+        description: 'Ausbildungsstand aktualisiert.',
         officer,
         actor: user,
         fields: [
-          { name: 'Änderungen', value: changedTrainings.join('\n') },
+          { name: '🎓 Änderungen', value: changedTrainings.join('\n') },
         ],
       })
     }

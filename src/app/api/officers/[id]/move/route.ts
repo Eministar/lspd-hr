@@ -79,14 +79,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     queueDiscordHrEvent({
       type: 'promotion',
       title: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-      description: 'Der Officer wurde im Roster verschoben; Discord-Rollen, Dienstnummer und Name werden aus der HR-Liste synchronisiert.',
+      description: 'Roster-Verschiebung erfolgreich durchgeführt.',
       officer: updated,
       actor: user,
       fields: [
-        { name: 'Von', value: officer.rank.name, inline: true },
-        { name: 'Nach', value: targetRank.name, inline: true },
-        { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
-        { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+        { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
+        { name: '➡️ Neuer Rang', value: targetRank.name, inline: true },
+        { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
+        { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
       ],
     })
 

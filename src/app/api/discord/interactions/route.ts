@@ -238,13 +238,12 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
   queueDiscordHrEvent({
     type: 'hire',
     title: `Einstellung: ${officer.firstName} ${officer.lastName}`,
-    description: 'Einstellung per Discord-Command. Rollen, Dienstnummer und Discord-Name werden aus der HR-Liste synchronisiert.',
+    description: `Willkommen im LSPD, **${officer.firstName} ${officer.lastName}**.`,
     officer,
     actor,
     fields: [
-      { name: 'Dienstnummer', value: officer.badgeNumber, inline: true },
-      { name: 'Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
-      { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
+      { name: '📅 Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+      { name: '🚓 Units', value: unitKeys.join(', ') || '-', inline: true },
     ],
   })
 
@@ -300,14 +299,14 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
   queueDiscordHrEvent({
     type: 'promotion',
     title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-    description: textOption(options, 'notiz') || 'Rangänderung per Discord-Command. Discord-Rollen, Dienstnummer und Name werden aus der HR-Liste synchronisiert.',
+    description: textOption(options, 'notiz') ? `📝 ${textOption(options, 'notiz')}` : 'Rangänderung erfolgreich durchgeführt.',
     officer: updated,
     actor,
     fields: [
-      { name: 'Von', value: officer.rank.name, inline: true },
-      { name: 'Nach', value: newRank.name, inline: true },
-      { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber}`, inline: true },
-      { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+      { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
+      { name: '➡️ Neuer Rang', value: newRank.name, inline: true },
+      { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadgeNumber}`, inline: true },
+      { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
     ],
   })
 
@@ -331,10 +330,10 @@ async function handleTraining(options: DiscordOption[] | undefined, actor: Retur
   queueDiscordHrEvent({
     type: 'training',
     title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
-    description: 'Ausbildungsstand per Discord-Command geändert. Ausbildungsrollen werden aus der HR-Liste synchronisiert.',
+    description: 'Ausbildungsstand aktualisiert.',
     officer,
     actor,
-    fields: [{ name: training.label, value: completed ? 'abgeschlossen' : 'offen', inline: true }],
+    fields: [{ name: `🎓 ${training.label}`, value: completed ? '✅ abgeschlossen' : '⏳ offen', inline: true }],
   })
 
   return reply(`${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`)
@@ -363,11 +362,11 @@ async function handleUnit(options: DiscordOption[] | undefined, actor: ReturnTyp
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'units',
-    title: 'Unit geändert',
-    description: 'Unit-Zuordnung per Discord-Command geändert.',
+    title: `Unit geändert: ${officer.firstName} ${officer.lastName}`,
+    description: 'Unit-Zuordnung aktualisiert.',
     officer: updated,
     actor,
-    fields: [{ name: 'Units', value: `${current.join(', ') || '-'} → ${next.join(', ') || '-'}` }],
+    fields: [{ name: '🚓 Units', value: `${current.join(', ') || '-'} → ${next.join(', ') || '-'}` }],
   })
 
   return reply(`Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`)
@@ -397,11 +396,11 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
   queueOfficerRoleSync(officer.id, 'remove-all')
   queueDiscordHrEvent({
     type: 'termination',
-    title: 'Kündigung',
-    description: 'Kündigung per Discord-Command.',
+    title: `Kündigung: ${officer.firstName} ${officer.lastName}`,
+    description: 'Dienstverhältnis beendet. Zugeordnete LSPD-Rollen wurden entfernt.',
     officer,
     actor,
-    fields: [{ name: 'Grund', value: reason }],
+    fields: [{ name: '📌 Grund', value: reason }],
   })
 
   return reply(`Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`)

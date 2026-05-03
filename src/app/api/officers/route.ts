@@ -129,13 +129,12 @@ export async function POST(req: NextRequest) {
     queueDiscordHrEvent({
       type: 'hire',
       title: `Einstellung: ${officer.firstName} ${officer.lastName}`,
-      description: `Willkommen im LSPD. ${officer.firstName} ${officer.lastName} wurde in die HR-Liste aufgenommen; Rollen und Discord-Name werden daraus synchronisiert.`,
+      description: `Willkommen im LSPD, **${officer.firstName} ${officer.lastName}**.`,
       officer,
       actor: user,
       fields: [
-        { name: 'Dienstnummer', value: officer.badgeNumber, inline: true },
-        { name: 'Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
-        { name: 'Units', value: unitKeys.join(', ') || '-', inline: true },
+        { name: '📅 Eingestellt am', value: officer.hireDate.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+        { name: '🚓 Units', value: unitKeys.join(', ') || '-', inline: true },
       ],
     })
 

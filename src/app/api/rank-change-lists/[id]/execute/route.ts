@@ -111,7 +111,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       queueDiscordHrEvent({
         type: 'promotion',
         title: `${action}: ${entry.officer.firstName} ${entry.officer.lastName}`,
-        description: `Durchgeführt über Liste "${list.name}". Die HR-Liste ist führend; Discord-Rollen, Dienstnummer und Name werden daraus synchronisiert.`,
+        description: `${action} erfolgreich durchgeführt.`,
         officer: {
           ...entry.officer,
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
@@ -119,12 +119,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         },
         actor: user,
         fields: [
-          { name: 'Von', value: entry.currentRank.name, inline: true },
-          { name: 'Nach', value: entry.proposedRank.name, inline: true },
-          { name: 'Dienstnummer', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
-          { name: 'Liste', value: list.name, inline: true },
-          { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
-          ...(entry.note ? [{ name: 'Notiz', value: entry.note }] : []),
+          { name: '⬅️ Alter Rang', value: entry.currentRank.name, inline: true },
+          { name: '➡️ Neuer Rang', value: entry.proposedRank.name, inline: true },
+          { name: '🔁 Dienstnummer-Wechsel', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
+          { name: '📋 Liste', value: list.name, inline: true },
+          { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+          ...(entry.note ? [{ name: '📝 Notiz', value: entry.note }] : []),
         ],
       })
 

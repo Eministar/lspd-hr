@@ -65,12 +65,12 @@ export async function POST(req: NextRequest) {
     queueOfficerRoleSync(officerId, 'remove-all')
     queueDiscordHrEvent({
       type: 'termination',
-      title: 'Kündigung',
-      description: 'Ein Officer wurde aus dem Dienst entfernt. Konfigurierte Discord-Rollen werden entzogen.',
+      title: `Kündigung: ${officer.firstName} ${officer.lastName}`,
+      description: 'Dienstverhältnis beendet. Zugeordnete LSPD-Rollen wurden entfernt.',
       officer,
       actor: user,
       fields: [
-        { name: 'Grund', value: String(reason) },
+        { name: '📌 Grund', value: String(reason) },
       ],
     })
 

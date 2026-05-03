@@ -100,14 +100,14 @@ export async function POST(req: NextRequest) {
     queueDiscordHrEvent({
       type: 'promotion',
       title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-      description: note || 'Der Rang wurde in der HR-Liste geändert; Discord-Rollen, Dienstnummer und Name werden daraus synchronisiert.',
+      description: note ? `📝 ${note}` : 'Rangänderung erfolgreich durchgeführt.',
       officer: updatedOfficer,
       actor: user,
       fields: [
-        { name: 'Von', value: officer.rank.name, inline: true },
-        { name: 'Nach', value: newRank.name, inline: true },
-        { name: 'Dienstnummer', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
-        { name: 'Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+        { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
+        { name: '➡️ Neuer Rang', value: newRank.name, inline: true },
+        { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
+        { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
       ],
     })
 

@@ -7,7 +7,7 @@ const USER = 6
 export const DISCORD_COMMANDS = [
   {
     name: 'lspd-einstellung',
-    description: 'Stellt einen Officer ein, sendet die Meldung und synchronisiert Rollen.',
+    description: 'Stellt einen Officer ein und sendet die HR-Meldung.',
     options: [
       { type: USER, name: 'discord', description: 'Discord-User', required: true },
       { type: STRING, name: 'vorname', description: 'Vorname', required: true },
@@ -29,7 +29,7 @@ export const DISCORD_COMMANDS = [
   },
   {
     name: 'lspd-ausbildung',
-    description: 'Setzt eine Ausbildung auf abgeschlossen oder offen und synchronisiert Rollen.',
+    description: 'Setzt eine Ausbildung auf abgeschlossen oder offen.',
     options: [
       { type: USER, name: 'discord', description: 'Discord-User des Officers', required: true },
       { type: STRING, name: 'ausbildung', description: 'Ausbildung', required: true, autocomplete: true },
@@ -38,7 +38,7 @@ export const DISCORD_COMMANDS = [
   },
   {
     name: 'lspd-unit',
-    description: 'Setzt oder ändert die Unit-Zuordnung eines Officers und synchronisiert Rollen.',
+    description: 'Setzt oder ändert die Unit-Zuordnung eines Officers.',
     options: [
       { type: USER, name: 'discord', description: 'Discord-User des Officers', required: true },
       {
@@ -96,4 +96,3 @@ export async function registerDiscordCommands() {
 
   return res.json() as Promise<unknown>
 }
-

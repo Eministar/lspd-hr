@@ -78,6 +78,15 @@ const EVENT_COLORS = {
   update: 0x8b5cf6,
 } as const
 
+const EVENT_EMOJIS: Record<keyof typeof EVENT_COLORS, string> = {
+  hire: '✅',
+  promotion: '📈',
+  training: '🎓',
+  units: '🚓',
+  termination: '🚨',
+  update: '✨',
+}
+
 let syncSchedulerStarted = false
 
 function botToken() {
@@ -417,20 +426,23 @@ export async function sendDiscordHrEvent(event: {
 
   const officer = event.officer
   const now = new Date()
+  const emoji = EVENT_EMOJIS[event.type]
+  const title = event.title.startsWith(emoji) ? event.title : `${emoji} ${event.title}`
   const fields: DiscordField[] = [
     ...(officer ? [
-      { name: 'Officer', value: `${officerName(officer)} (${officerBadge(officer)})`, inline: true },
-      { name: 'Discord', value: mention(officer.discordId), inline: true },
-      { name: 'Rang', value: officer.rank?.name || '-', inline: true },
-      { name: 'Discord-Name', value: desiredNickname(officer), inline: true },
+      { name: '👮 Officer', value: `**${officerName(officer)}**`, inline: true },
+      { name: '🪪 Dienstnummer', value: officerBadge(officer), inline: true },
+      { name: '🎖️ Rang', value: officer.rank?.name || '-', inline: true },
+      { name: '💬 Discord', value: mention(officer.discordId), inline: true },
+      { name: '🏷️ Name auf Discord', value: desiredNickname(officer), inline: true },
     ] : []),
-    ...(event.actor ? [{ name: 'Ausgeführt von', value: discordUserLabel(event.actor), inline: true }] : []),
-    { name: 'Zeitpunkt', value: formatDiscordDate(now), inline: true },
+    ...(event.actor ? [{ name: '🧑‍💼 Bearbeitet von', value: discordUserLabel(event.actor), inline: true }] : []),
+    { name: '🕒 Zeitpunkt', value: formatDiscordDate(now), inline: true },
     ...(event.fields ?? []),
   ]
   const description = event.description ?? (
     event.type === 'hire' && officer
-      ? `Willkommen im LSPD, ${officerName(officer)}. Dienstnummer, Rang, Rollen und Discord-Name wurden aus der HR-Liste synchronisiert.`
+      ? `Willkommen im LSPD, **${officerName(officer)}**.`
       : undefined
   )
 
@@ -439,7 +451,7 @@ export async function sendDiscordHrEvent(event: {
     body: JSON.stringify({
       embeds: [
         {
-          title: event.title,
+          title,
           description: description ? truncate(description, 4096) : undefined,
           color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[event.type]) : EVENT_COLORS[event.type],
           fields: fields.slice(0, 25).map((field) => ({
@@ -448,7 +460,7 @@ export async function sendDiscordHrEvent(event: {
             inline: field.inline,
           })),
           timestamp: new Date().toISOString(),
-          footer: { text: 'LSPD HR System' },
+          footer: { text: 'LSPD HR • automatisch verarbeitet' },
         },
       ],
     }),
