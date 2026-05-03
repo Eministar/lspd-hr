@@ -145,6 +145,7 @@ model Officer {
   rankChangeEntries RankChangeListEntry[]
   taskAssignments TaskAssignment[] @relation("TaskAssigned")
   dutySessions    DutyTimeSession[]
+  playtimeSessions PlaytimeSession[]
 }
 
 model DutyTimeSession {
@@ -161,6 +162,26 @@ model DutyTimeSession {
 
   @@index([officerId, clockInAt])
   @@index([clockOutAt])
+}
+
+model PlaytimeSession {
+  id             String    @id @default(cuid())
+  officerId      String?
+  officer        Officer?  @relation(fields: [officerId], references: [id], onDelete: SetNull)
+  discordId      String?
+  license        String?
+  playerName     String
+  sourceServerId Int?
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  lastSeenAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([officerId, startedAt])
+  @@index([discordId])
+  @@index([license])
+  @@index([endedAt])
 }
 
 model OfficerTraining {

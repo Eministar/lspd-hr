@@ -10,6 +10,7 @@ import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime } from '@/lib/duty-times'
+import { getOfficerPlaytimeReport } from '@/lib/fivem-playtime'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -43,8 +44,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!officer) return notFound('Officer')
-  const dutyTime = await getOfficerDutyTime(id)
-  return success({ ...officer, dutyTime })
+  const [dutyTime, playtime] = await Promise.all([
+    getOfficerDutyTime(id),
+    getOfficerPlaytimeReport(id),
+  ])
+  return success({ ...officer, dutyTime, playtime })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

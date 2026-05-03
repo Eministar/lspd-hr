@@ -73,7 +73,25 @@ interface OfficerDetail {
   officerNotes: OfficerNote[]
   dutyTime?: {
     activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
+    activePlaySession: { id: string; startedAt: string; currentDurationMs: number; playerName: string } | null
     weekDurationMs: number
+    playtimeWeekDurationMs: number
+    verifiedDutyWeekMs: number
+    unclockedOnlineWeekMs: number
+    dutyWithoutGameWeekMs: number
+    honestyScore: number | null
+  }
+  playtime?: {
+    daily: Array<{ date: string; label: string; durationMs: number; durationLabel: string }>
+    recentSessions: Array<{
+      id: string
+      startedAt: string
+      endedAt: string | null
+      lastSeenAt: string
+      playerName: string
+      license: string | null
+      durationMs: number
+    }>
   }
 }
 interface OfficerForm {
@@ -454,11 +472,58 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 value={formatDuration(officer.dutyTime?.weekDurationMs ?? 0)}
               />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
+              <DutyMetric
+                label="Wach diese Woche"
+                value={formatDuration(officer.dutyTime?.playtimeWeekDurationMs ?? 0)}
+                active={!!officer.dutyTime?.activePlaySession}
+              />
+              <DutyMetric
+                label="Geprüfter Dienst"
+                value={formatDuration(officer.dutyTime?.verifiedDutyWeekMs ?? 0)}
+              />
+              <DutyMetric
+                label="Wach ohne Dienst"
+                value={formatDuration(officer.dutyTime?.unclockedOnlineWeekMs ?? 0)}
+              />
+              <DutyMetric
+                label="Ehrlichkeit"
+                value={officer.dutyTime?.honestyScore === null || officer.dutyTime?.honestyScore === undefined ? '—' : `${officer.dutyTime.honestyScore}%`}
+                active={(officer.dutyTime?.honestyScore ?? 100) >= 80}
+              />
+            </div>
             {officer.dutyTime?.activeSession && (
               <p className="mt-3 text-[11.5px] text-[#7089a5]">
                 Eingestempelt seit {formatDateTime(officer.dutyTime.activeSession.clockInAt)}
               </p>
             )}
+            {officer.dutyTime?.activePlaySession && (
+              <p className="mt-1 text-[11.5px] text-[#7089a5]">
+                FiveM wach seit {formatDateTime(officer.dutyTime.activePlaySession.startedAt)} als {officer.dutyTime.activePlaySession.playerName}
+              </p>
+            )}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.04 }}
+            className="glass-panel-elevated rounded-[14px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">FiveM-Spielzeit</h3>
+            <PlaytimeChart daily={officer.playtime?.daily ?? []} />
+            <div className="gold-line my-4" />
+            <div className="space-y-2">
+              {(officer.playtime?.recentSessions ?? []).length > 0 ? (
+                officer.playtime!.recentSessions.map((session) => (
+                  <div key={session.id} className="flex flex-col gap-1 rounded-[8px] bg-[#0f2340]/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[12.5px] font-medium text-[#edf4fb] truncate">{session.playerName}</p>
+                      <p className="text-[11px] text-[#7089a5] truncate">{formatDateTime(session.startedAt)} → {session.endedAt ? formatDateTime(session.endedAt) : 'online'}</p>
+                    </div>
+                    <span className="text-[12.5px] font-semibold tabular-nums text-[#d4af37]">{formatDuration(session.durationMs)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[12.5px] text-[#4a6585]">Noch keine FiveM-Spielzeit empfangen</p>
+              )}
+            </div>
           </motion.div>
 
           {/* Trainings -- toggleable directly */}
@@ -703,6 +768,36 @@ function DutyMetric({ label, value, active }: { label: string; value: string; ac
         <p className="text-[11px] font-medium uppercase text-[#4a6585]">{label}</p>
       </div>
       <p className={cn('mt-2 text-[13px] font-semibold tabular-nums', active ? 'text-[#86efac]' : 'text-[#edf4fb]')}>{value}</p>
+    </div>
+  )
+}
+
+function PlaytimeChart({
+  daily,
+}: {
+  daily: Array<{ label: string; durationMs: number; durationLabel: string }>
+}) {
+  const max = Math.max(...daily.map((day) => day.durationMs), 1)
+  return (
+    <div className="grid grid-cols-7 gap-2 h-[160px] items-end">
+      {daily.map((day) => {
+        const height = Math.max(8, Math.round((day.durationMs / max) * 118))
+        return (
+          <div key={day.label} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
+            <div className="flex h-[122px] w-full items-end justify-center rounded-[7px] bg-[#061426]/55 px-1">
+              <div
+                className="w-full max-w-[28px] rounded-t-[6px] bg-gradient-to-t from-[#1d4ed8] to-[#38bdf8] shadow-[0_0_12px_rgba(56,189,248,0.18)]"
+                style={{ height }}
+                title={day.durationLabel}
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-[10.5px] font-medium text-[#8ea4bd]">{day.label}</p>
+              <p className="text-[10px] tabular-nums text-[#d4af37]">{day.durationLabel}</p>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -11,6 +11,11 @@ type DutySessionRow = {
   clockOutAt: Date | null
 }
 
+type RangeSession = {
+  startedAt: Date
+  endedAt: Date | null
+}
+
 export function formatDuration(ms: number) {
   const totalMinutes = Math.max(0, Math.floor(ms / MS_PER_MINUTE))
   const hours = Math.floor(totalMinutes / 60)
@@ -44,6 +49,42 @@ export function clippedSessionDurationMs(session: DutySessionRow, start: Date, e
   return Math.max(0, clippedEnd - clippedStart)
 }
 
+function rangeOverlapMs(
+  aStart: Date,
+  aEnd: Date | null,
+  bStart: Date,
+  bEnd: Date | null,
+  now = new Date(),
+  rangeStart?: Date,
+  rangeEnd?: Date,
+) {
+  const start = Math.max(aStart.getTime(), bStart.getTime(), rangeStart?.getTime() ?? Number.NEGATIVE_INFINITY)
+  const end = Math.min((aEnd ?? now).getTime(), (bEnd ?? now).getTime(), rangeEnd?.getTime() ?? Number.POSITIVE_INFINITY)
+  return Math.max(0, end - start)
+}
+
+function overlapDurationMs(
+  dutySessions: DutySessionRow[],
+  playSessions: RangeSession[],
+  now = new Date(),
+  rangeStart?: Date,
+  rangeEnd?: Date,
+) {
+  return dutySessions.reduce((total, dutySession) => (
+    total + playSessions.reduce((sessionTotal, playSession) => (
+      sessionTotal + rangeOverlapMs(
+        dutySession.clockInAt,
+        dutySession.clockOutAt,
+        playSession.startedAt,
+        playSession.endedAt,
+        now,
+        rangeStart,
+        rangeEnd,
+      )
+    ), 0)
+  ), 0)
+}
+
 export async function getDutyTimesSnapshot(now = new Date()) {
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
@@ -68,16 +109,39 @@ export async function getDutyTimesSnapshot(now = new Date()) {
         },
         orderBy: { clockInAt: 'desc' },
       },
+      playtimeSessions: {
+        where: {
+          startedAt: { lt: weekEnd },
+          OR: [
+            { endedAt: null },
+            { endedAt: { gte: weekStart } },
+          ],
+        },
+        orderBy: { startedAt: 'desc' },
+      },
     },
     orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
   })
 
   const rows = officers.map((officer) => {
     const activeSession = officer.dutySessions.find((session) => !session.clockOutAt) ?? null
+    const activePlaySession = officer.playtimeSessions.find((session) => !session.endedAt) ?? null
     const weekDurationMs = officer.dutySessions.reduce(
       (total, session) => total + clippedSessionDurationMs(session, weekStart, weekEnd, now),
       0,
     )
+    const playtimeWeekDurationMs = officer.playtimeSessions.reduce(
+      (total, session) => total + clippedSessionDurationMs(
+        { clockInAt: session.startedAt, clockOutAt: session.endedAt },
+        weekStart,
+        weekEnd,
+        now,
+      ),
+      0,
+    )
+    const verifiedDutyWeekMs = overlapDurationMs(officer.dutySessions, officer.playtimeSessions, now, weekStart, weekEnd)
+    const unclockedOnlineWeekMs = Math.max(0, playtimeWeekDurationMs - verifiedDutyWeekMs)
+    const dutyWithoutGameWeekMs = Math.max(0, weekDurationMs - verifiedDutyWeekMs)
 
     return {
       id: officer.id,
@@ -94,13 +158,29 @@ export async function getDutyTimesSnapshot(now = new Date()) {
           currentDurationMs: sessionDurationMs(activeSession, now),
         }
         : null,
+      activePlaySession: activePlaySession
+        ? {
+          id: activePlaySession.id,
+          startedAt: activePlaySession.startedAt,
+          currentDurationMs: sessionDurationMs({ clockInAt: activePlaySession.startedAt, clockOutAt: activePlaySession.endedAt }, now),
+          playerName: activePlaySession.playerName,
+        }
+        : null,
       weekDurationMs,
+      playtimeWeekDurationMs,
+      verifiedDutyWeekMs,
+      unclockedOnlineWeekMs,
+      dutyWithoutGameWeekMs,
+      honestyScore: weekDurationMs > 0 ? Math.round((verifiedDutyWeekMs / weekDurationMs) * 100) : null,
     }
   })
 
   const activeRows = rows.filter((row) => row.activeSession)
   const totalActiveDurationMs = activeRows.reduce((total, row) => total + (row.activeSession?.currentDurationMs ?? 0), 0)
   const totalWeekDurationMs = rows.reduce((total, row) => total + row.weekDurationMs, 0)
+  const totalPlaytimeWeekDurationMs = rows.reduce((total, row) => total + row.playtimeWeekDurationMs, 0)
+  const totalUnclockedOnlineWeekMs = rows.reduce((total, row) => total + row.unclockedOnlineWeekMs, 0)
+  const totalDutyWithoutGameWeekMs = rows.reduce((total, row) => total + row.dutyWithoutGameWeekMs, 0)
 
   return {
     now,
@@ -109,6 +189,9 @@ export async function getDutyTimesSnapshot(now = new Date()) {
     activeCount: activeRows.length,
     totalActiveDurationMs,
     totalWeekDurationMs,
+    totalPlaytimeWeekDurationMs,
+    totalUnclockedOnlineWeekMs,
+    totalDutyWithoutGameWeekMs,
     rows,
     activeRows,
   }
@@ -128,7 +211,28 @@ export async function getOfficerDutyTime(officerId: string, now = new Date()) {
     },
     orderBy: { clockInAt: 'desc' },
   })
+  const playtimeSessions = await prisma.playtimeSession.findMany({
+    where: {
+      officerId,
+      startedAt: { lt: weekEnd },
+      OR: [
+        { endedAt: null },
+        { endedAt: { gte: weekStart } },
+      ],
+    },
+    orderBy: { startedAt: 'desc' },
+  })
   const activeSession = sessions.find((session) => !session.clockOutAt) ?? null
+  const activePlaySession = playtimeSessions.find((session) => !session.endedAt) ?? null
+  const weekDurationMs = sessions.reduce(
+    (total, session) => total + clippedSessionDurationMs(session, weekStart, weekEnd, now),
+    0,
+  )
+  const playtimeWeekDurationMs = playtimeSessions.reduce(
+    (total, session) => total + clippedSessionDurationMs({ clockInAt: session.startedAt, clockOutAt: session.endedAt }, weekStart, weekEnd, now),
+    0,
+  )
+  const verifiedDutyWeekMs = overlapDurationMs(sessions, playtimeSessions, now, weekStart, weekEnd)
   return {
     activeSession: activeSession
       ? {
@@ -137,10 +241,20 @@ export async function getOfficerDutyTime(officerId: string, now = new Date()) {
         currentDurationMs: sessionDurationMs(activeSession, now),
       }
       : null,
-    weekDurationMs: sessions.reduce(
-      (total, session) => total + clippedSessionDurationMs(session, weekStart, weekEnd, now),
-      0,
-    ),
+    activePlaySession: activePlaySession
+      ? {
+        id: activePlaySession.id,
+        startedAt: activePlaySession.startedAt,
+        currentDurationMs: sessionDurationMs({ clockInAt: activePlaySession.startedAt, clockOutAt: activePlaySession.endedAt }, now),
+        playerName: activePlaySession.playerName,
+      }
+      : null,
+    weekDurationMs,
+    playtimeWeekDurationMs,
+    verifiedDutyWeekMs,
+    unclockedOnlineWeekMs: Math.max(0, playtimeWeekDurationMs - verifiedDutyWeekMs),
+    dutyWithoutGameWeekMs: Math.max(0, weekDurationMs - verifiedDutyWeekMs),
+    honestyScore: weekDurationMs > 0 ? Math.round((verifiedDutyWeekMs / weekDurationMs) * 100) : null,
   }
 }
 

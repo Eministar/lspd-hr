@@ -23,7 +23,13 @@ interface DutyOfficer {
   status: string
   rank: { name: string; color: string; sortOrder: number }
   activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
+  activePlaySession: { id: string; startedAt: string; currentDurationMs: number; playerName: string } | null
   weekDurationMs: number
+  playtimeWeekDurationMs: number
+  verifiedDutyWeekMs: number
+  unclockedOnlineWeekMs: number
+  dutyWithoutGameWeekMs: number
+  honestyScore: number | null
 }
 
 interface DutySnapshot {
@@ -32,6 +38,9 @@ interface DutySnapshot {
   activeCount: number
   totalActiveDurationMs: number
   totalWeekDurationMs: number
+  totalPlaytimeWeekDurationMs: number
+  totalUnclockedOnlineWeekMs: number
+  totalDutyWithoutGameWeekMs: number
   rows: DutyOfficer[]
   activeRows: DutyOfficer[]
 }
@@ -93,8 +102,13 @@ export default function DutyTimesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <SummaryCard icon={Users} label="Im Dienst" value={String(data.activeCount)} />
-        <SummaryCard icon={Timer} label="Aktive Dienstzeit" value={formatDuration(data.totalActiveDurationMs)} />
-        <SummaryCard icon={Clock3} label="Diese Woche" value={formatDuration(data.totalWeekDurationMs)} />
+        <SummaryCard icon={Timer} label="Dienst diese Woche" value={formatDuration(data.totalWeekDurationMs)} />
+        <SummaryCard icon={Clock3} label="Wach diese Woche" value={formatDuration(data.totalPlaytimeWeekDurationMs)} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <SummaryCard icon={AlertTriangle} label="Wach ohne Dienst" value={formatDuration(data.totalUnclockedOnlineWeekMs)} />
+        <SummaryCard icon={Clock3} label="Dienst ohne FiveM-Nachweis" value={formatDuration(data.totalDutyWithoutGameWeekMs)} />
       </div>
 
       <section className="glass-panel-elevated rounded-[14px] p-5">
@@ -128,10 +142,11 @@ export default function DutyTimesPage() {
                     im Dienst
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2.5 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
                   <Metric label="Seit" value={formatDateTime(officer.activeSession?.clockInAt)} />
-                  <Metric label="Aktuell" value={formatDuration(officer.activeSession?.currentDurationMs ?? 0)} strong />
-                  <Metric label="Woche" value={formatDuration(officer.weekDurationMs)} />
+                  <Metric label="Dienst jetzt" value={formatDuration(officer.activeSession?.currentDurationMs ?? 0)} strong />
+                  <Metric label="Wach jetzt" value={officer.activePlaySession ? formatDuration(officer.activePlaySession.currentDurationMs) : 'nicht wach'} />
+                  <Metric label="Ehrlich" value={officer.honestyScore === null ? '—' : `${officer.honestyScore}%`} />
                 </div>
                 {canManage && (
                   <Button className="mt-4 w-full" variant="danger" size="sm" onClick={() => runAction(officer.id, 'clock-out')}>
@@ -167,8 +182,20 @@ export default function DutyTimesPage() {
                 )}>
                   {officer.activeSession ? formatDuration(officer.activeSession.currentDurationMs) : 'offline'}
                 </span>
+                <span className={cn(
+                  'inline-flex min-w-[88px] justify-center rounded-[7px] border px-2.5 py-1.5 text-[12px]',
+                  officer.activePlaySession ? 'border-[#38bdf8]/25 bg-[#06233a]/50 text-[#93c5fd]' : 'border-[#234568]/60 bg-[#0a1a33]/60 text-[#8ea4bd]',
+                )}>
+                  {officer.activePlaySession ? 'wach' : 'nicht wach'}
+                </span>
+                <span className={cn(
+                  'min-w-[70px] text-right text-[12.5px] font-semibold tabular-nums',
+                  officer.honestyScore !== null && officer.honestyScore < 80 ? 'text-[#fca5a5]' : 'text-[#86efac]',
+                )}>
+                  {officer.honestyScore === null ? '—' : `${officer.honestyScore}%`}
+                </span>
                 <span className="min-w-[90px] text-right text-[13px] font-semibold tabular-nums text-[#edf4fb]">
-                  {formatDuration(officer.weekDurationMs)}
+                  {formatDuration(officer.weekDurationMs)} / {formatDuration(officer.playtimeWeekDurationMs)}
                 </span>
                 {canManage && (
                   officer.activeSession ? (

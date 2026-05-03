@@ -17,6 +17,7 @@ type SnapshotData = {
   officers: unknown[]
   officerTrainings: unknown[]
   dutyTimeSessions: unknown[]
+  playtimeSessions: unknown[]
   promotionLogs: unknown[]
   terminations: unknown[]
   notes: unknown[]
@@ -51,6 +52,7 @@ const TABLES: { key: SnapshotKey; delegateNames: readonly string[] }[] = [
   { key: 'officers', delegateNames: ['officer'] },
   { key: 'officerTrainings', delegateNames: ['officerTraining', 'officertraining'] },
   { key: 'dutyTimeSessions', delegateNames: ['dutyTimeSession', 'dutytimesession'] },
+  { key: 'playtimeSessions', delegateNames: ['playtimeSession', 'playtimesession'] },
   { key: 'promotionLogs', delegateNames: ['promotionLog', 'promotionlog'] },
   { key: 'terminations', delegateNames: ['termination'] },
   { key: 'notes', delegateNames: ['note'] },
