@@ -11,6 +11,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime } from '@/lib/duty-times'
 import { getOfficerPlaytimeReport } from '@/lib/fivem-playtime'
+import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return error(msg, 500)
   }
   const { id } = await params
+  await runOfficerStatusAutomation()
 
   const officer = await prisma.officer.findUnique({
     where: { id },
@@ -44,11 +46,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!officer) return notFound('Officer')
-  const [dutyTime, playtime] = await Promise.all([
+  const [dutyTime, playtime, absences] = await Promise.all([
     getOfficerDutyTime(id),
     getOfficerPlaytimeReport(id),
+    getOfficerAbsenceReport(id),
   ])
-  return success({ ...officer, dutyTime, playtime })
+  return success({ ...officer, dutyTime, playtime, absences })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

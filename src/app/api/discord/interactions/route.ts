@@ -13,6 +13,7 @@ import {
   queueOfficerRoleSync,
 } from '@/lib/discord-integration'
 import { clockInOfficer, clockOutOfficer, formatDuration } from '@/lib/duty-times'
+import { createAbsenceNotice, formatAbsenceDate, parseAbsenceDate } from '@/lib/absence-status'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export const runtime = 'nodejs'
@@ -117,6 +118,15 @@ async function ensureAllowed(interaction: DiscordInteraction) {
 
   const memberRoles = interaction.member?.roles ?? []
   return config.commandRoleIds.length > 0 && config.commandRoleIds.some((roleId) => memberRoles.includes(roleId))
+}
+
+async function isLinkedOfficer(discordId: string | null | undefined) {
+  if (!discordId) return false
+  const officer = await prisma.officer.findFirst({
+    where: { discordId, status: { not: 'TERMINATED' } },
+    select: { id: true },
+  })
+  return !!officer
 }
 
 async function findRank(value: string) {
@@ -415,6 +425,57 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
   return reply(`Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`)
 }
 
+async function handleAbsence(
+  options: DiscordOption[] | undefined,
+  actor: ReturnType<typeof actorFromInteraction>,
+  interaction: DiscordInteraction,
+) {
+  const actorDiscordId = actor.discordId
+  const targetDiscordId = userOption(options, 'discord') || actorDiscordId || ''
+  if (!targetDiscordId) return reply('Discord-User konnte nicht erkannt werden.')
+
+  if (targetDiscordId !== actorDiscordId && !(await ensureAllowed(interaction))) {
+    return reply('Du darfst keine Abmeldungen für andere Officers erstellen.')
+  }
+
+  const officer = await prisma.officer.findFirst({
+    where: { discordId: targetDiscordId },
+    include: { rank: true },
+  })
+  if (!officer) return reply('Officer wurde nicht gefunden. Prüfe die Discord-Verknüpfung im HR-Tool.')
+
+  const startsAt = parseAbsenceDate(textOption(options, 'von')) ?? new Date()
+  const endsAt = parseAbsenceDate(textOption(options, 'bis'), { hours: 23, minutes: 59 })
+  const reason = textOption(options, 'grund')
+  if (!endsAt) return reply('Enddatum ist ungültig. Nutze z.B. 12.05.2026 20:00.')
+  if (!reason) return reply('Ein Grund ist erforderlich.')
+
+  const result = await createAbsenceNotice({
+    officerId: officer.id,
+    startsAt,
+    endsAt,
+    reason,
+    source: 'discord',
+    actorDiscordId,
+  })
+
+  queueOfficerRoleSync(officer.id)
+  queueDiscordHrEvent({
+    type: 'update',
+    title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
+    description: 'Officer wurde über Discord abgemeldet und blau markiert.',
+    officer: result.officer,
+    actor,
+    fields: [
+      { name: 'Von', value: formatAbsenceDate(startsAt), inline: true },
+      { name: 'Bis', value: formatAbsenceDate(endsAt), inline: true },
+      { name: 'Grund', value: reason },
+    ],
+  })
+
+  return reply(`Abmeldung eingetragen: ${officer.firstName} ${officer.lastName} · ${formatAbsenceDate(startsAt)} bis ${formatAbsenceDate(endsAt)}.`)
+}
+
 async function handleDutyButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
   const discordId = interaction.member?.user?.id
@@ -475,21 +536,28 @@ export async function POST(req: NextRequest) {
   }
 
   if (interaction.type !== APPLICATION_COMMAND) return reply('Diese Discord-Interaktion wird nicht unterstützt.')
-  if (!(await ensureAllowed(interaction))) return reply('Du darfst diese HR-Commands nicht ausführen.')
+  const commandName = interaction.data?.name
   const actor = actorFromInteraction(interaction)
+  const allowed = await ensureAllowed(interaction)
+  if (!allowed && !(commandName === 'lspd-abmeldung' && await isLinkedOfficer(actor.discordId))) {
+    return reply('Du darfst diese HR-Commands nicht ausführen.')
+  }
 
   try {
-    switch (interaction.data?.name) {
+    const options = interaction.data?.options
+    switch (commandName) {
       case 'lspd-einstellung':
-        return await handleHire(interaction.data.options, actor)
+        return await handleHire(options, actor)
       case 'lspd-beförderung':
-        return await handlePromotion(interaction.data.options, actor)
+        return await handlePromotion(options, actor)
       case 'lspd-ausbildung':
-        return await handleTraining(interaction.data.options, actor)
+        return await handleTraining(options, actor)
       case 'lspd-unit':
-        return await handleUnit(interaction.data.options, actor)
+        return await handleUnit(options, actor)
       case 'lspd-kündigung':
-        return await handleTermination(interaction.data.options, actor)
+        return await handleTermination(options, actor)
+      case 'lspd-abmeldung':
+        return await handleAbsence(options, actor, interaction)
       default:
         return reply('Unbekannter Command.')
     }

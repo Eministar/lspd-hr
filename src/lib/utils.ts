@@ -33,7 +33,7 @@ export function getStatusLabel(status: string): string {
 export function getStatusDot(status: string): string {
   const colors: Record<string, string> = {
     ACTIVE: 'bg-[#34d399]',
-    AWAY: 'bg-[#fbbf24]',
+    AWAY: 'bg-[#38bdf8]',
     INACTIVE: 'bg-[#aaa]',
     TERMINATED: 'bg-[#f87171]',
   }
@@ -85,6 +85,7 @@ export function getFlagLabel(flag: string | null | undefined): string {
     RED: 'Rot',
     ORANGE: 'Orange',
     YELLOW: 'Gelb',
+    BLUE: 'Blau',
   }
   return labels[flag] || flag
 }
@@ -95,6 +96,7 @@ export function getFlagColor(flag: string | null | undefined): string {
     RED: '#ef4444',
     ORANGE: '#f97316',
     YELLOW: '#facc15',
+    BLUE: '#38bdf8',
   }
   return colors[flag] || 'transparent'
 }
@@ -104,6 +106,7 @@ export function getFlagDotClass(flag: string | null | undefined): string {
     RED: 'bg-[#ef4444]',
     ORANGE: 'bg-[#f97316]',
     YELLOW: 'bg-[#facc15]',
+    BLUE: 'bg-[#38bdf8]',
   }
   if (!flag) return 'bg-transparent'
   return map[flag] || 'bg-transparent'
@@ -114,6 +117,7 @@ export function getFlagRowClass(flag: string | null | undefined): string {
     RED: 'bg-[rgba(239,68,68,0.07)] hover:bg-[rgba(239,68,68,0.12)]',
     ORANGE: 'bg-[rgba(249,115,22,0.07)] hover:bg-[rgba(249,115,22,0.12)]',
     YELLOW: 'bg-[rgba(250,204,21,0.07)] hover:bg-[rgba(250,204,21,0.12)]',
+    BLUE: 'bg-[rgba(56,189,248,0.07)] hover:bg-[rgba(56,189,248,0.12)]',
   }
   if (!flag) return ''
   return map[flag] || ''

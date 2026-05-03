@@ -145,6 +145,7 @@ const FLAG_OPTIONS: Array<{ id: string | null; label: string; color: string }> =
   { id: 'RED', label: 'Rot', color: '#ef4444' },
   { id: 'ORANGE', label: 'Orange', color: '#f97316' },
   { id: 'YELLOW', label: 'Gelb', color: '#facc15' },
+  { id: 'BLUE', label: 'Blau', color: '#38bdf8' },
 ]
 
 function FlagButton({

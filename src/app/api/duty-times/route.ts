@@ -3,10 +3,12 @@ import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { clockInOfficer, clockOutOfficer, getDutyTimesSnapshot } from '@/lib/duty-times'
 import { queueDiscordDutyEvent, queueDiscordDutyStatusUpdate } from '@/lib/discord-integration'
+import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 export async function GET() {
   try {
     await requirePermission('duty-times:view')
+    await runOfficerStatusAutomation()
     const snapshot = await getDutyTimesSnapshot()
     return success(snapshot)
   } catch (e: unknown) {

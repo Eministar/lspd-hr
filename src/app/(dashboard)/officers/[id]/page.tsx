@@ -93,6 +93,19 @@ interface OfficerDetail {
       durationMs: number
     }>
   }
+  absences?: {
+    active: AbsenceNotice | null
+    upcoming: AbsenceNotice[]
+    recent: AbsenceNotice[]
+  }
+}
+interface AbsenceNotice {
+  id: string
+  startsAt: string
+  endsAt: string
+  reason: string
+  source: string
+  actorDiscordId: string | null
 }
 interface OfficerForm {
   badgeNumber: string
@@ -526,6 +539,39 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </motion.div>
 
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
+            className="glass-panel-elevated rounded-[14px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Abmeldungen</h3>
+            {officer.absences?.active && (
+              <div className="mb-3 rounded-[10px] border border-[#38bdf8]/25 bg-[#06233a]/70 px-3.5 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[13px] font-semibold text-[#93c5fd]">Aktiv abgemeldet</p>
+                  <span className="text-[11.5px] tabular-nums text-[#d4af37]">
+                    bis {formatDateTime(officer.absences.active.endsAt)}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[12.5px] text-[#c7d4e4]">{officer.absences.active.reason}</p>
+              </div>
+            )}
+            {(officer.absences?.recent ?? []).length > 0 ? (
+              <div className="space-y-2">
+                {officer.absences!.recent.map((notice) => (
+                  <div key={notice.id} className="rounded-[8px] bg-[#0f2340]/70 px-3 py-2.5">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-[12.5px] font-medium text-[#edf4fb]">
+                        {formatDateTime(notice.startsAt)} → {formatDateTime(notice.endsAt)}
+                      </p>
+                      <span className="text-[11px] text-[#38bdf8]">{notice.source}</span>
+                    </div>
+                    <p className="mt-1 text-[12px] text-[#8ea4bd]">{notice.reason}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12.5px] text-[#4a6585]">Keine Abmeldungen vorhanden</p>
+            )}
+          </motion.div>
+
           {/* Trainings -- toggleable directly */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
             className="glass-panel-elevated rounded-[14px] p-5">
@@ -814,6 +860,7 @@ function FlagPicker({
     { id: 'RED', label: 'Rot', ring: 'ring-[#ef4444]/70', bg: 'bg-[#ef4444]' },
     { id: 'ORANGE', label: 'Orange', ring: 'ring-[#f97316]/70', bg: 'bg-[#f97316]' },
     { id: 'YELLOW', label: 'Gelb', ring: 'ring-[#facc15]/70', bg: 'bg-[#facc15]' },
+    { id: 'BLUE', label: 'Blau', ring: 'ring-[#38bdf8]/70', bg: 'bg-[#38bdf8]' },
   ]
   return (
     <div className="flex gap-1.5 flex-wrap">

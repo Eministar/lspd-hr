@@ -44,6 +44,7 @@ enum OfficerFlag {
   RED
   ORANGE
   YELLOW
+  BLUE
 }
 
 model UserGroup {
@@ -146,6 +147,23 @@ model Officer {
   taskAssignments TaskAssignment[] @relation("TaskAssigned")
   dutySessions    DutyTimeSession[]
   playtimeSessions PlaytimeSession[]
+  absenceNotices  AbsenceNotice[]
+}
+
+model AbsenceNotice {
+  id              String   @id @default(cuid())
+  officerId       String
+  officer         Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  startsAt        DateTime @default(now())
+  endsAt          DateTime
+  reason          String   @db.Text
+  source          String   @default("discord")
+  actorDiscordId  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([officerId, startsAt])
+  @@index([endsAt])
 }
 
 model DutyTimeSession {

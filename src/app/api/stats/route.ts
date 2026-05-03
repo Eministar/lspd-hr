@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { hasPermission } from '@/lib/permissions'
 import { getDutyTimesSnapshot } from '@/lib/duty-times'
+import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -24,6 +25,7 @@ export async function GET() {
   }
 
   const recentSince = new Date(Date.now() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  await runOfficerStatusAutomation()
 
   const canViewLogs = hasPermission(user, 'logs:view')
   const canViewNotes = hasPermission(user, 'notes:view')

@@ -10,6 +10,7 @@ import { nextBadgeForRank } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url)
+  await runOfficerStatusAutomation()
   const search = searchParams.get('search')
   const status = searchParams.get('status')
   const rankId = searchParams.get('rankId')

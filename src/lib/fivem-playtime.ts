@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { clippedSessionDurationMs, endOfWeek, formatDuration, sessionDurationMs, startOfCurrentWeek } from '@/lib/duty-times'
+import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 const TOKEN_SETTING_KEY = 'fivem.ingestToken'
 const STALE_SESSION_MS = 10 * 60_000
@@ -49,6 +50,14 @@ async function findOfficerId(discordId: string | null) {
   return officer?.id ?? null
 }
 
+async function touchOfficerOnline(officerId: string | null, now = new Date()) {
+  if (!officerId) return
+  await prisma.officer.update({
+    where: { id: officerId },
+    data: { lastOnline: now },
+  })
+}
+
 export async function ingestFiveMPlaytime(input: {
   event: unknown
   discordId: unknown
@@ -62,6 +71,7 @@ export async function ingestFiveMPlaytime(input: {
   const playerName = cleanString(input.playerName, 80) || 'Unbekannt'
   const sourceServerId = cleanServerId(input.sourceServerId)
   const officerId = await findOfficerId(discordId)
+  const now = new Date()
 
   if (!discordId && !license) {
     throw new Error('Discord-ID oder License ist erforderlich')
@@ -84,8 +94,8 @@ export async function ingestFiveMPlaytime(input: {
     const session = await prisma.playtimeSession.update({
       where: { id: active.id },
       data: {
-        endedAt: new Date(),
-        lastSeenAt: new Date(),
+        endedAt: now,
+        lastSeenAt: now,
         officerId,
         discordId: discordId ?? active.discordId,
         license: license ?? active.license,
@@ -93,6 +103,8 @@ export async function ingestFiveMPlaytime(input: {
         sourceServerId,
       },
     })
+    await touchOfficerOnline(officerId, now)
+    await runOfficerStatusAutomation({ force: true })
     return { status: 'ended' as const, session }
   }
 
@@ -102,7 +114,7 @@ export async function ingestFiveMPlaytime(input: {
       const session = await prisma.playtimeSession.update({
         where: { id: active.id },
         data: {
-          lastSeenAt: new Date(),
+          lastSeenAt: now,
           officerId: officerId ?? active.officerId,
           discordId: discordId ?? active.discordId,
           license: license ?? active.license,
@@ -110,6 +122,8 @@ export async function ingestFiveMPlaytime(input: {
           sourceServerId,
         },
       })
+      await touchOfficerOnline(officerId ?? active.officerId, now)
+      await runOfficerStatusAutomation({ force: true })
       return { status: 'updated' as const, session }
     }
 
@@ -128,6 +142,8 @@ export async function ingestFiveMPlaytime(input: {
       sourceServerId,
     },
   })
+  await touchOfficerOnline(officerId, now)
+  await runOfficerStatusAutomation({ force: true })
   return { status: 'started' as const, session }
 }
 

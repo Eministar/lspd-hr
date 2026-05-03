@@ -63,6 +63,16 @@ export const DISCORD_COMMANDS = [
       { type: STRING, name: 'grund', description: 'Grund', required: true },
     ],
   },
+  {
+    name: 'lspd-abmeldung',
+    description: 'Meldet dich oder einen Officer für einen Zeitraum ab.',
+    options: [
+      { type: STRING, name: 'bis', description: 'Ende, z.B. 12.05.2026 20:00', required: true },
+      { type: STRING, name: 'grund', description: 'Grund der Abmeldung', required: true },
+      { type: STRING, name: 'von', description: 'Start, leer = jetzt, z.B. 10.05.2026 18:00', required: false },
+      { type: USER, name: 'discord', description: 'Optional: anderer Officer', required: false },
+    ],
+  },
 ]
 
 function botToken() {
