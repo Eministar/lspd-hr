@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -100,6 +101,7 @@ interface TaskBoardProps {
   title: string
   description: string
   accentLabel: string
+  headerAction?: ReactNode
 }
 
 const PRIORITY_META: Record<TaskPriority, { label: string; tone: string; dot: string }> = {
@@ -313,7 +315,7 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
   )
 }
 
-export function TaskBoard({ module, title, description, accentLabel }: TaskBoardProps) {
+export function TaskBoard({ module, title, description, accentLabel, headerAction }: TaskBoardProps) {
   const { user } = useAuth()
   const canView = hasPermission(user, 'tasks:view')
   const canEdit = hasPermission(user, 'tasks:manage')
@@ -567,11 +569,16 @@ export function TaskBoard({ module, title, description, accentLabel }: TaskBoard
         title={title}
         description={description}
         action={
-          canEdit ? (
-            <Button size="sm" onClick={openCreateList}>
-              <Plus size={14} strokeWidth={2} />
-              Neue Liste
-            </Button>
+          headerAction || canEdit ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {headerAction}
+              {canEdit && (
+                <Button size="sm" onClick={openCreateList}>
+                  <Plus size={14} strokeWidth={2} />
+                  Neue Liste
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />

@@ -207,3 +207,138 @@ select option:hover {
     0 1px 3px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
+
+/* ─── Markdown document ─── */
+.markdown-document {
+  color: #dbe6f3;
+  font-size: 13.5px;
+  line-height: 1.75;
+}
+
+.markdown-document > * + * {
+  margin-top: 1rem;
+}
+
+.markdown-document h1,
+.markdown-document h2,
+.markdown-document h3,
+.markdown-document h4,
+.markdown-document h5,
+.markdown-document h6 {
+  color: #ffffff;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.markdown-document h1 {
+  font-size: 1.55rem;
+}
+
+.markdown-document h2 {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.16);
+  font-size: 1.15rem;
+}
+
+.markdown-document h3 {
+  font-size: 1rem;
+}
+
+.markdown-document p,
+.markdown-document li {
+  color: #bfd0e2;
+}
+
+.markdown-document ul,
+.markdown-document ol {
+  padding-left: 1.35rem;
+}
+
+.markdown-document ul {
+  list-style: disc;
+}
+
+.markdown-document ol {
+  list-style: decimal;
+}
+
+.markdown-document li + li {
+  margin-top: 0.35rem;
+}
+
+.markdown-document strong {
+  color: #edf4fb;
+  font-weight: 650;
+}
+
+.markdown-document em {
+  color: #d8e2ee;
+}
+
+.markdown-document code {
+  border: 1px solid rgba(35, 69, 104, 0.8);
+  border-radius: 6px;
+  background: rgba(10, 26, 51, 0.75);
+  padding: 0.1rem 0.35rem;
+  color: #f0d060;
+  font-size: 0.92em;
+}
+
+.markdown-document a {
+  color: #d4af37;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.markdown-document blockquote {
+  border-left: 3px solid rgba(212, 175, 55, 0.55);
+  padding: 0.75rem 1rem;
+  border-radius: 0 10px 10px 0;
+  background: rgba(10, 26, 51, 0.45);
+  color: #dbe6f3;
+}
+
+.markdown-document hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.28), transparent);
+}
+
+.markdown-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(30, 58, 92, 0.65);
+  border-radius: 12px;
+}
+
+.markdown-document table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.markdown-document th,
+.markdown-document td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(24, 56, 95, 0.55);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-document th {
+  background: rgba(13, 36, 68, 0.75);
+  color: #edf4fb;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.markdown-document tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-document tbody tr:hover {
+  background: rgba(16, 37, 66, 0.45);
+}
