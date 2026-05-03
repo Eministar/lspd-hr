@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       guildId: canManageSettings && typeof body.guildId === 'string' ? body.guildId : undefined,
       applicationId: canManageSettings && typeof body.applicationId === 'string' ? body.applicationId : undefined,
       announcementsChannelId: canManageSettings && typeof body.announcementsChannelId === 'string' ? body.announcementsChannelId : undefined,
+      dutyStatusChannelId: canManageSettings && typeof body.dutyStatusChannelId === 'string' ? body.dutyStatusChannelId : undefined,
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
       rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,

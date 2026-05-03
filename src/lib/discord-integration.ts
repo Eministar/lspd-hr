@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { officerUnitKeys } from './officer-units'
+import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 
 type DiscordRole = {
   id: string
@@ -30,6 +31,8 @@ type DiscordConfig = {
   guildId: string
   applicationId: string
   announcementsChannelId: string
+  dutyStatusChannelId: string
+  dutyStatusMessageId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
   rankRoleMap: Record<string, string>
@@ -62,6 +65,8 @@ export const DISCORD_SETTING_KEYS = {
   guildId: 'discord.guildId',
   applicationId: 'discord.applicationId',
   announcementsChannelId: 'discord.announcementsChannelId',
+  dutyStatusChannelId: 'discord.dutyStatusChannelId',
+  dutyStatusMessageId: 'discord.dutyStatusMessageId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   rankRoleMap: 'discord.rankRoleMap',
@@ -76,6 +81,8 @@ const EVENT_COLORS = {
   units: 0x06b6d4,
   termination: 0xef4444,
   update: 0x8b5cf6,
+  dutyIn: 0x22c55e,
+  dutyOut: 0xef4444,
 } as const
 
 const EVENT_EMOJIS: Record<keyof typeof EVENT_COLORS, string> = {
@@ -85,6 +92,8 @@ const EVENT_EMOJIS: Record<keyof typeof EVENT_COLORS, string> = {
   units: '🚓',
   termination: '🚨',
   update: '✨',
+  dutyIn: '🟢',
+  dutyOut: '🔴',
 }
 
 let syncSchedulerStarted = false
@@ -113,6 +122,14 @@ function envAnnouncementsChannelId() {
     process.env.DISCORD_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
+function envDutyStatusChannelId() {
+  return (
+    process.env.DISCORD_DUTY_STATUS_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_DUTY_STATUS_CHANNEL_ID?.trim() ||
     ''
   )
 }
@@ -224,6 +241,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     guildId: map[DISCORD_SETTING_KEYS.guildId] || envGuildId(),
     applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
     announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
+    dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
+    dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
@@ -238,6 +257,8 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.guildId !== undefined) data[DISCORD_SETTING_KEYS.guildId] = input.guildId.trim()
   if (input.applicationId !== undefined) data[DISCORD_SETTING_KEYS.applicationId] = input.applicationId.trim()
   if (input.announcementsChannelId !== undefined) data[DISCORD_SETTING_KEYS.announcementsChannelId] = input.announcementsChannelId.trim()
+  if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
+  if (input.dutyStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusMessageId] = input.dutyStatusMessageId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
@@ -467,6 +488,104 @@ export async function sendDiscordHrEvent(event: {
   })
 }
 
+function dutyStatusPayload() {
+  return getDutyTimesSnapshot().then((snapshot) => {
+    const activeRows = snapshot.activeRows.slice(0, 15)
+    const activeList = activeRows.length > 0
+      ? activeRows.map((row, index) => {
+        const since = row.activeSession?.clockInAt ? formatDiscordDate(row.activeSession.clockInAt) : '-'
+        const current = formatDuration(row.activeSession?.currentDurationMs ?? 0)
+        const week = formatDuration(row.weekDurationMs)
+        return `**${index + 1}. ${officerName(row)}**  ·  ${row.rank.name}\nDN ${officerBadge(row)}  ·  seit ${since}  ·  ${current} jetzt  ·  ${week} diese Woche`
+      }).join('\n\n')
+      : 'Aktuell ist kein Officer eingestempelt.'
+
+    return {
+      embeds: [
+        {
+          title: '🕒 LSPD Dienstzeiten',
+          description: 'Live-Übersicht für Ein- und Ausstempeln. Die Buttons aktualisieren diese Anzeige automatisch.',
+          color: 0xd4af37,
+          fields: [
+            { name: 'Eingestempelt', value: String(snapshot.activeCount), inline: true },
+            { name: 'Aktive Dienstzeit', value: formatDuration(snapshot.totalActiveDurationMs), inline: true },
+            { name: 'Wochenstunden gesamt', value: formatDuration(snapshot.totalWeekDurationMs), inline: true },
+            { name: 'Aktuelle Officers', value: truncate(activeList, 1024), inline: false },
+          ],
+          timestamp: snapshot.now.toISOString(),
+          footer: { text: 'LSPD HR • Dienstzeiten werden automatisch aktualisiert' },
+        },
+      ],
+      components: [
+        {
+          type: 1,
+          components: [
+            { type: 2, style: 3, custom_id: 'lspd_duty_clock_in', label: 'Einstempeln' },
+            { type: 2, style: 4, custom_id: 'lspd_duty_clock_out', label: 'Ausstempeln' },
+            { type: 2, style: 2, custom_id: 'lspd_duty_refresh', label: 'Aktualisieren' },
+          ],
+        },
+      ],
+    }
+  })
+}
+
+async function saveDutyStatusMessageId(messageId: string) {
+  await prisma.systemSetting.upsert({
+    where: { key: DISCORD_SETTING_KEYS.dutyStatusMessageId },
+    update: { value: messageId },
+    create: { key: DISCORD_SETTING_KEYS.dutyStatusMessageId, value: messageId },
+  })
+}
+
+export async function syncDiscordDutyStatusMessage(options?: { forceCreate?: boolean }) {
+  const config = await getDiscordConfig()
+  const channelId = config.dutyStatusChannelId || config.announcementsChannelId
+  if (!channelId || !botToken()) return
+
+  const payload = await dutyStatusPayload()
+  if (config.dutyStatusMessageId && !options?.forceCreate) {
+    await discordFetch<void>(`/channels/${channelId}/messages/${config.dutyStatusMessageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }).catch(async () => {
+      const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      await saveDutyStatusMessageId(message.id)
+    })
+    return
+  }
+
+  const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  await saveDutyStatusMessageId(message.id)
+}
+
+export async function sendDiscordDutyEvent(
+  action: 'clock-in' | 'clock-out',
+  officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & { rank?: { name: string; color?: string | null } | null },
+  session: { clockInAt: Date; clockOutAt: Date | null },
+  durationMs?: number,
+) {
+  await sendDiscordHrEvent({
+    type: action === 'clock-in' ? 'dutyIn' : 'dutyOut',
+    title: action === 'clock-in' ? `Eingestempelt: ${officerName(officer)}` : `Ausgestempelt: ${officerName(officer)}`,
+    description: action === 'clock-in'
+      ? `**${officerName(officer)}** ist jetzt im Dienst.`
+      : `**${officerName(officer)}** hat den Dienst beendet.`,
+    officer,
+    fields: [
+      { name: 'Start', value: formatDiscordDate(session.clockInAt), inline: true },
+      ...(session.clockOutAt ? [{ name: 'Ende', value: formatDiscordDate(session.clockOutAt), inline: true }] : []),
+      ...(durationMs !== undefined ? [{ name: 'Dauer', value: formatDuration(durationMs), inline: true }] : []),
+    ],
+  })
+}
+
 export function queueOfficerRoleSync(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
   ensureDiscordSyncScheduler()
   void syncOfficerDiscordRoles(officerId, mode).catch((error) => {
@@ -484,5 +603,22 @@ export function queueAllOfficerRoleSync() {
 export function queueDiscordHrEvent(event: Parameters<typeof sendDiscordHrEvent>[0]) {
   void sendDiscordHrEvent(event).catch((error) => {
     console.error('[DiscordIntegration] Event-Versand fehlgeschlagen:', error)
+  })
+}
+
+export function queueDiscordDutyEvent(
+  action: 'clock-in' | 'clock-out',
+  officer: Parameters<typeof sendDiscordDutyEvent>[1],
+  session: Parameters<typeof sendDiscordDutyEvent>[2],
+  durationMs?: number,
+) {
+  void sendDiscordDutyEvent(action, officer, session, durationMs).catch((error) => {
+    console.error('[DiscordIntegration] Dienstzeit-Event fehlgeschlagen:', error)
+  })
+}
+
+export function queueDiscordDutyStatusUpdate() {
+  void syncDiscordDutyStatusMessage().catch((error) => {
+    console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
   })
 }

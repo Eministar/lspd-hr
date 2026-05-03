@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, Archive, KeyRound,
+  Menu, X, Archive, KeyRound, Timer,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,6 +33,7 @@ interface NavContentProps {
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard:view' },
+  { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
   { name: 'Officers', href: '/officers', icon: Users, permission: 'officers:view' },
   { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive, permission: 'officers:view' },
   { name: 'Beförderungen', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },

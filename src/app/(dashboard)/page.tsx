@@ -15,6 +15,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   Clock,
+  Clock3,
   FileText,
   GraduationCap,
   ListChecks,
@@ -86,6 +87,20 @@ interface Stats {
   completedTrainingAssignments: number
   trainingCompletionRate: number
   draftRankChangeLists: number
+  dutyTimes: {
+    activeCount: number
+    totalActiveDurationMs: number
+    totalWeekDurationMs: number
+    activeRows: Array<{
+      id: string
+      badgeNumber: string
+      firstName: string
+      lastName: string
+      rank: { name: string; color: string; sortOrder: number }
+      activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
+      weekDurationMs: number
+    }>
+  } | null
   recentWindowDays: number
   rankDistribution: { rank: string; color: string; count: number }[]
   statusDistribution: { status: string; label: string; count: number }[]
@@ -181,6 +196,14 @@ function officerName(officer: { firstName: string; lastName: string }) {
 function truncateText(text: string, length: number) {
   if (text.length <= length) return text
   return `${text.slice(0, length).trim()}...`
+}
+
+function formatDuration(ms: number) {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours <= 0) return `${minutes}m`
+  return `${hours}h ${minutes.toString().padStart(2, '0')}m`
 }
 
 export default function DashboardPage() {
@@ -308,6 +331,26 @@ export default function DashboardPage() {
               <p className="text-[12px] text-[#9fb0c4] mt-2">Beförderungs- oder Degradierungslisten</p>
             </div>
           </div>
+
+          {stats.dutyTimes && (
+            <Link
+              href="/duty-times"
+              className={cn(surfaceClass, 'mb-5 flex flex-col gap-3 p-4 transition-all duration-200 hover:border-[#d4af37]/20 sm:flex-row sm:items-center sm:justify-between')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="icon-tile h-9 w-9 rounded-[9px] flex items-center justify-center">
+                  <Clock3 size={16} strokeWidth={1.75} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-white">Dienstzeiten</p>
+                  <p className="text-[11.5px] text-[#9fb0c4]">{stats.dutyTimes.activeCount} eingestempelt · {formatDuration(stats.dutyTimes.totalWeekDurationMs)} diese Woche</p>
+                </div>
+              </div>
+              <span className="text-[12.5px] font-semibold tabular-nums text-[#d4af37]">
+                {formatDuration(stats.dutyTimes.totalActiveDurationMs)} aktiv
+              </span>
+            </Link>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
             {stats.statusDistribution.map((status) => {

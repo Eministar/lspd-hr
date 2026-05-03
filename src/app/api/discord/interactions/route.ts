@@ -5,7 +5,14 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
-import { getDiscordConfig, queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import {
+  getDiscordConfig,
+  queueDiscordDutyEvent,
+  queueDiscordDutyStatusUpdate,
+  queueDiscordHrEvent,
+  queueOfficerRoleSync,
+} from '@/lib/discord-integration'
+import { clockInOfficer, clockOutOfficer, formatDuration } from '@/lib/duty-times'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export const runtime = 'nodejs'
@@ -21,6 +28,7 @@ type DiscordInteraction = {
   type: number
   data?: {
     name?: string
+    custom_id?: string
     options?: DiscordOption[]
   }
   member?: {
@@ -37,6 +45,7 @@ type DiscordInteraction = {
 const PUBLIC_KEY_PREFIX = '302a300506032b6570032100'
 const EPHEMERAL = 64
 const APPLICATION_COMMAND = 2
+const MESSAGE_COMPONENT = 3
 const AUTOCOMPLETE = 4
 const ADMINISTRATOR = BigInt(8)
 
@@ -406,6 +415,39 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
   return reply(`Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`)
 }
 
+async function handleDutyButton(interaction: DiscordInteraction) {
+  const customId = interaction.data?.custom_id
+  const discordId = interaction.member?.user?.id
+  if (!discordId) return reply('Discord-User konnte nicht erkannt werden.')
+
+  if (customId === 'lspd_duty_refresh') {
+    queueDiscordDutyStatusUpdate()
+    return reply('Dienstzeiten-Embed wird aktualisiert.')
+  }
+
+  const officer = await prisma.officer.findFirst({
+    where: { discordId },
+    select: { id: true, firstName: true, lastName: true },
+  })
+  if (!officer) return reply('Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.')
+
+  if (customId === 'lspd_duty_clock_in') {
+    const result = await clockInOfficer(officer.id, 'discord', discordId)
+    queueDiscordDutyEvent('clock-in', result.officer, result.session)
+    queueDiscordDutyStatusUpdate()
+    return reply(`Eingestempelt: ${result.officer.firstName} ${result.officer.lastName}.`)
+  }
+
+  if (customId === 'lspd_duty_clock_out') {
+    const result = await clockOutOfficer(officer.id, 'discord', discordId)
+    queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
+    queueDiscordDutyStatusUpdate()
+    return reply(`Ausgestempelt: ${result.officer.firstName} ${result.officer.lastName} · Dauer ${formatDuration(result.durationMs)}.`)
+  }
+
+  return reply('Unbekannter Dienstzeiten-Button.')
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   if (!(await verifySignature(req, rawBody))) {
@@ -421,6 +463,15 @@ export async function POST(req: NextRequest) {
     if (focused?.name === 'ausbildung') return autocompleteFor('ausbildung', typeof focused.value === 'string' ? focused.value : '')
     if (focused?.name === 'unit') return autocompleteFor('unit', typeof focused.value === 'string' ? focused.value : '')
     return autocomplete([])
+  }
+
+  if (interaction.type === MESSAGE_COMPONENT) {
+    try {
+      return await handleDutyButton(interaction)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Serverfehler'
+      return reply(message)
+    }
   }
 
   if (interaction.type !== APPLICATION_COMMAND) return reply('Diese Discord-Interaktion wird nicht unterstützt.')

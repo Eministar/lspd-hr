@@ -144,6 +144,23 @@ model Officer {
   auditLogs       AuditLog[]     @relation("AuditOfficer")
   rankChangeEntries RankChangeListEntry[]
   taskAssignments TaskAssignment[] @relation("TaskAssigned")
+  dutySessions    DutyTimeSession[]
+}
+
+model DutyTimeSession {
+  id             String    @id @default(cuid())
+  officerId      String
+  officer        Officer   @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  clockInAt      DateTime  @default(now())
+  clockOutAt     DateTime?
+  clockInSource  String    @default("dashboard")
+  clockOutSource String?
+  actorDiscordId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([officerId, clockInAt])
+  @@index([clockOutAt])
 }
 
 model OfficerTraining {

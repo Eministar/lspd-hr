@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { hasPermission } from '@/lib/permissions'
+import { getDutyTimesSnapshot } from '@/lib/duty-times'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -26,6 +27,7 @@ export async function GET() {
 
   const canViewLogs = hasPermission(user, 'logs:view')
   const canViewNotes = hasPermission(user, 'notes:view')
+  const canViewDutyTimes = hasPermission(user, 'duty-times:view')
 
   const [
     officers,
@@ -35,6 +37,7 @@ export async function GET() {
     recentPromotions,
     recentTerminations,
     draftRankChangeLists,
+    dutyTimes,
   ] = await Promise.all([
     prisma.officer.findMany({
       select: {
@@ -61,6 +64,7 @@ export async function GET() {
       where: { terminatedAt: { gte: recentSince } },
     }),
     prisma.rankChangeList.count({ where: { status: 'DRAFT' } }),
+    canViewDutyTimes ? getDutyTimesSnapshot() : Promise.resolve(null),
   ])
 
   const [recentActivity, pinnedNotes] = await Promise.all([
@@ -176,6 +180,12 @@ export async function GET() {
     completedTrainingAssignments,
     trainingCompletionRate,
     draftRankChangeLists,
+    dutyTimes: dutyTimes ? {
+      activeCount: dutyTimes.activeCount,
+      totalActiveDurationMs: dutyTimes.totalActiveDurationMs,
+      totalWeekDurationMs: dutyTimes.totalWeekDurationMs,
+      activeRows: dutyTimes.activeRows.slice(0, 5),
+    } : null,
     recentWindowDays: RECENT_WINDOW_DAYS,
     rankDistribution: distribution,
     statusDistribution,

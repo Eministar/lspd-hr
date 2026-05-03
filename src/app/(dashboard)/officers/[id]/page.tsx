@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -71,6 +71,10 @@ interface OfficerDetail {
   trainings: OfficerTraining[]
   promotionLogs: PromotionLog[]
   officerNotes: OfficerNote[]
+  dutyTime?: {
+    activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
+    weekDurationMs: number
+  }
 }
 interface OfficerForm {
   badgeNumber: string
@@ -96,6 +100,14 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
   flag: '',
   hireDate: '',
   discordId: '',
+}
+
+function formatDuration(ms: number) {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours <= 0) return `${minutes}m`
+  return `${hours}h ${minutes.toString().padStart(2, '0')}m`
 }
 
 export default function OfficerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -420,6 +432,35 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             )}
           </motion.div>
 
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.03 }}
+            className="glass-panel-elevated rounded-[14px] p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-[13.5px] font-semibold text-[#eee]">Dienstzeiten</h3>
+              <Link href="/duty-times" className="text-[12px] text-[#d4af37] hover:text-white transition-colors">Übersicht</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <DutyMetric
+                label="Status"
+                value={officer.dutyTime?.activeSession ? 'Eingestempelt' : 'Nicht im Dienst'}
+                active={!!officer.dutyTime?.activeSession}
+              />
+              <DutyMetric
+                label="Aktuelle Dienstzeit"
+                value={formatDuration(officer.dutyTime?.activeSession?.currentDurationMs ?? 0)}
+                active={!!officer.dutyTime?.activeSession}
+              />
+              <DutyMetric
+                label="Diese Woche"
+                value={formatDuration(officer.dutyTime?.weekDurationMs ?? 0)}
+              />
+            </div>
+            {officer.dutyTime?.activeSession && (
+              <p className="mt-3 text-[11.5px] text-[#7089a5]">
+                Eingestempelt seit {formatDateTime(officer.dutyTime.activeSession.clockInAt)}
+              </p>
+            )}
+          </motion.div>
+
           {/* Trainings -- toggleable directly */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
             className="glass-panel-elevated rounded-[14px] p-5">
@@ -650,6 +691,18 @@ function InfoRow({ label, value, mono, children }: { label: string; value?: stri
     <div>
       <p className="text-[11.5px] text-[#999] mb-1">{label}</p>
       {children || <p className={cn('text-[13.5px] text-[#eee]', mono && 'font-mono')}>{value || '—'}</p>}
+    </div>
+  )
+}
+
+function DutyMetric({ label, value, active }: { label: string; value: string; active?: boolean }) {
+  return (
+    <div className="rounded-[9px] border border-[#1e3a5c]/50 bg-[#0a1e38]/65 px-3.5 py-3">
+      <div className="flex items-center gap-2">
+        <Timer size={13} className={active ? 'text-[#22c55e]' : 'text-[#d4af37]'} strokeWidth={1.75} />
+        <p className="text-[11px] font-medium uppercase text-[#4a6585]">{label}</p>
+      </div>
+      <p className={cn('mt-2 text-[13px] font-semibold tabular-nums', active ? 'text-[#86efac]' : 'text-[#edf4fb]')}>{value}</p>
     </div>
   )
 }

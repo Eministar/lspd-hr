@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RefreshCw, Save, ShieldCheck } from 'lucide-react'
+import { Clock, RefreshCw, Save, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -42,6 +42,8 @@ interface DiscordConfigResponse {
     guildId: string
     applicationId: string
     announcementsChannelId: string
+    dutyStatusChannelId: string
+    dutyStatusMessageId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
     rankRoleMap: Record<string, string>
@@ -74,6 +76,8 @@ export default function SettingsPage() {
     guildId: '',
     applicationId: '',
     announcementsChannelId: '',
+    dutyStatusChannelId: '',
+    dutyStatusMessageId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
     rankRoleMap: {},
@@ -116,6 +120,16 @@ export default function SettingsPage() {
     try {
       await execute('/api/discord/register-commands', { method: 'POST' })
       addToast({ type: 'success', title: 'Discord-Commands registriert' })
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const publishDutyEmbed = async () => {
+    try {
+      await execute('/api/duty-times/discord-message', { method: 'POST' })
+      addToast({ type: 'success', title: 'Dienstzeiten-Embed aktualisiert' })
+      await refetchDiscord()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
     }
@@ -233,6 +247,7 @@ export default function SettingsPage() {
             <div className="flex gap-2">
               <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu laden</Button>
               <Button variant="secondary" size="sm" onClick={registerCommands}><ShieldCheck size={13} /> Commands</Button>
+              <Button variant="secondary" size="sm" onClick={publishDutyEmbed}><Clock size={13} /> Dienstzeiten</Button>
               <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Speichern</Button>
             </div>
           </div>
@@ -276,6 +291,14 @@ export default function SettingsPage() {
                 label="Ankündigungs-Channel"
                 value={discordForm.announcementsChannelId}
                 onValueChange={(announcementsChannelId) => setDiscordForm({ ...discordForm, announcementsChannelId })}
+                options={channelOptions}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Select
+                label="Dienstzeiten-Channel"
+                value={discordForm.dutyStatusChannelId}
+                onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
                 options={channelOptions}
               />
             </div>

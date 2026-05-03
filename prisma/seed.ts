@@ -33,6 +33,8 @@ async function main() {
         'officers:write',
         'officer-trainings:manage',
         'officers:view',
+        'duty-times:manage',
+        'duty-times:view',
         'terminations:manage',
         'terminations:view',
         'rank-changes:manage',
@@ -51,7 +53,7 @@ async function main() {
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['dashboard:view', 'officers:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view', 'password:change'],
+      permissions: ['dashboard:view', 'officers:view', 'duty-times:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view', 'password:change'],
     },
   ]
 

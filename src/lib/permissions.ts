@@ -1,5 +1,7 @@
 export const PERMISSIONS = [
   'dashboard:view',
+  'duty-times:view',
+  'duty-times:manage',
   'officers:view',
   'officers:write',
   'officer-trainings:manage',
@@ -30,6 +32,8 @@ export type Permission = (typeof PERMISSIONS)[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'dashboard:view': 'Dashboard ansehen',
+  'duty-times:view': 'Dienstzeiten ansehen',
+  'duty-times:manage': 'Dienstzeiten verwalten',
   'officers:view': 'Officers ansehen',
   'officers:write': 'Officers bearbeiten',
   'officer-trainings:manage': 'Officer-Ausbildungen setzen',
@@ -59,7 +63,9 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 const PERMISSION_SET = new Set<string>(PERMISSIONS)
 
 const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
-  'officers:write': ['officers:view', 'ranks:view', 'units:view'],
+  'dashboard:view': ['duty-times:view'],
+  'duty-times:manage': ['duty-times:view', 'officers:view'],
+  'officers:write': ['officers:view', 'ranks:view', 'units:view', 'duty-times:manage'],
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
   'terminations:manage': ['terminations:view', 'officers:view'],
@@ -71,7 +77,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'units:manage': ['units:view'],
   'users:manage': ['groups:manage'],
   'groups:manage': ['users:manage'],
-  'settings:manage': ['dashboard:view'],
+  'settings:manage': ['dashboard:view', 'duty-times:manage'],
 }
 
 export function normalizePermissions(value: unknown): Permission[] {
