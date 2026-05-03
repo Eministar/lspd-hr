@@ -54,8 +54,16 @@ export async function POST(req: NextRequest) {
         const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
         const blacklistedBadges = await getBlacklistedBadgeRows()
         const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)
-        if (!assigned) return error('Keine freie Dienstnummer im Bereich des Ziel-Rangs')
-        newBadgeNumber = assigned.str
+        if (!assigned) {
+          // Fallback: wenn kein freier Wert im Ziel-Rang gefunden wurde, behalten wir
+          // die aktuelle Dienstnummer bei statt die Operation mit 400 abzubrechen.
+          // Dadurch funktioniert Beförderung auch dann, wenn Bereiche falsch
+          // konfiguriert sind oder temporär keine freie Nummer vorhanden ist.
+          // Ein möglicher Konflikt wird später durch findBadgeNumberConflict erkannt.
+          newBadgeNumber = officer.badgeNumber
+        } else {
+          newBadgeNumber = assigned.str
+        }
       } else {
         newBadgeNumber = officer.badgeNumber
       }
