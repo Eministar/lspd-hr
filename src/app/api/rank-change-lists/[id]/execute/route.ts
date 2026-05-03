@@ -36,7 +36,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const prefix = await getBadgePrefix()
-    const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+    // Exclude terminated officers so their badge numbers are considered free
+    const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
     const blacklistedBadges = await getBlacklistedBadgeRows()
     const usedBadgeInts = collectUsedBadgeInts(allRows, prefix)
     for (const blacklistedBadge of blacklistedBadges) {
@@ -62,8 +63,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
       requestedBadges.set(nextBadge, entry.officerId)
 
-      const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge } })
-      if (owner && owner.id !== entry.officerId) return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
+      const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge }, select: { id: true, status: true } })
+      // If owner exists and is not terminated and not the same officer, it's a conflict.
+      if (owner && owner.id !== entry.officerId && owner.status !== 'TERMINATED') return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
       entry.newBadgeNumber = nextBadge
     }
 

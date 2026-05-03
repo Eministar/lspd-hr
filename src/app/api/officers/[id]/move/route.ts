@@ -38,7 +38,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!targetRank) return error('Ziel-Rang nicht gefunden')
 
     const prefix = await getBadgePrefix()
-    const allForBadges = await prisma.officer.findMany({ select: { badgeNumber: true } })
+    // Exclude terminated officers so their badge numbers are free for reassignment
+    const allForBadges = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
     const blacklistedBadges = await getBlacklistedBadgeRows()
 
     let newBadge = officer.badgeNumber

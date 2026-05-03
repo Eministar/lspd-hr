@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
 
     if (!newBadgeNumber) {
       if (rankHasBadgeRange(newRank)) {
-        const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+        // Exclude terminated officers so ihre Dienstnummern gelten als frei
+        const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
         const blacklistedBadges = await getBlacklistedBadgeRows()
         const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)
         if (!assigned) {

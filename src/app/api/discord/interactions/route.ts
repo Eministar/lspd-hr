@@ -219,7 +219,7 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
   let badgeNumber = textOption(options, 'dienstnummer')
   if (!badgeNumber) {
     const [allRows, blacklistedBadges] = await Promise.all([
-      prisma.officer.findMany({ select: { badgeNumber: true } }),
+      prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } }),
       getBlacklistedBadgeRows(),
     ])
     const assigned = nextBadgeForRank(rank, allRows, prefix, null, blacklistedBadges)
@@ -275,7 +275,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
   if (!newBadgeNumber) {
     if (rankHasBadgeRange(newRank)) {
       const [allRows, blacklistedBadges] = await Promise.all([
-        prisma.officer.findMany({ select: { badgeNumber: true } }),
+        prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } }),
         getBlacklistedBadgeRows(),
       ])
       const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)

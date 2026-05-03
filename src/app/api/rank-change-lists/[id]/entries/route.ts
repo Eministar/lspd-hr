@@ -32,7 +32,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
     const prefix = await getBadgePrefix()
     if (!nextBadge && rankHasBadgeRange(proposedRank)) {
-      const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+      // Exclude terminated officers so ihre Dienstnummern gelten als frei
+      const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
       const blacklistedBadges = await getBlacklistedBadgeRows()
       const pendingBadges = await prisma.rankChangeListEntry.findMany({
         where: { listId: id, executed: false, newBadgeNumber: { not: null } },

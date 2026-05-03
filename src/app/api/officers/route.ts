@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
     let badgeNumber = parsed.data.badgeNumber?.trim() ?? ''
     const prefix = await getBadgePrefix()
     if (!badgeNumber) {
-      const allRows = await prisma.officer.findMany({ select: { badgeNumber: true } })
+      // Exclude terminated officers so their badge numbers are treated as free
+      const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
       const blacklistedBadges = await getBlacklistedBadgeRows()
       const assigned = nextBadgeForRank(rank, allRows, prefix, null, blacklistedBadges)
       if (!assigned) return error('Keine freie Dienstnummer im Bereich des ausgewählten Rangs')

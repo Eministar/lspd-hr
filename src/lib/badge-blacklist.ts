@@ -32,7 +32,8 @@ export async function findBadgeNumberConflict(
   if (!normalized) return null
 
   const [officers, blacklisted] = await Promise.all([
-    prisma.officer.findMany({ select: { id: true, badgeNumber: true } }),
+    // Exclude terminated officers: ihre Dienstnummern gelten als frei
+    prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { id: true, badgeNumber: true } }),
     prisma.badgeBlacklist.findMany({ select: { badgeNumber: true } }),
   ])
 
