@@ -6,7 +6,7 @@ import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
-import { findBadgeNumberConflict } from '@/lib/badge-blacklist'
+import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime } from '@/lib/duty-times'
@@ -69,6 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const prefix = await getBadgePrefix()
       const badgeConflict = await findBadgeNumberConflict(parsed.data.badgeNumber, prefix, id)
       if (badgeConflict) return error(badgeConflict)
+      await releaseTerminatedBadgeNumberConflicts(parsed.data.badgeNumber, prefix)
     }
 
     if ('discordId' in parsed.data && parsed.data.discordId && parsed.data.discordId !== existing.discordId) {
@@ -103,6 +104,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data,
       include: { rank: true },
     })
+
+    if (parsed.data.status === 'TERMINATED' && existing.status !== 'TERMINATED') {
+      await releaseTerminatedBadgeNumber(updated)
+    }
 
     const changes: string[] = []
     if (parsed.data.firstName && parsed.data.firstName !== existing.firstName) changes.push(`Vorname: ${existing.firstName} → ${parsed.data.firstName}`)

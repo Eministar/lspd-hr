@@ -1,6 +1,6 @@
 {
   "name": "lspd-hr-dashboard",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "private": true,
   "engines": {
     "node": "22.x"

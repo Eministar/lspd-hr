@@ -6,7 +6,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
-import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge }, select: { id: true, status: true } })
       // If owner exists and is not terminated and not the same officer, it's a conflict.
       if (owner && owner.id !== entry.officerId && owner.status !== 'TERMINATED') return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
+      await releaseTerminatedBadgeNumberConflicts(nextBadge, prefix)
       entry.newBadgeNumber = nextBadge
     }
 

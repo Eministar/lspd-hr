@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
-import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
@@ -47,6 +47,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const assigned = nextBadgeForRank(targetRank, allForBadges, prefix, officer.badgeNumber, blacklistedBadges)
       if (!assigned) return error('Keine freie Dienstnummer im Ziel-Bereich für diesen Rang')
       newBadge = assigned.str
+    }
+    if (newBadge !== officer.badgeNumber) {
+      await releaseTerminatedBadgeNumberConflicts(newBadge, prefix)
     }
 
     const promotion = await prisma.promotionLog.create({

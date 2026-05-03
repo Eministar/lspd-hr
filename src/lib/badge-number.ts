@@ -4,9 +4,16 @@ import type { Rank } from '@/generated/prisma/client'
  * Liest die numerische Dienstnummer (ohne optionales Präfix aus den Einstellungen).
  */
 export function parseBadgeNumberToInt(badgeNumber: string, prefix: string): number | null {
-  const raw = prefix && badgeNumber.startsWith(prefix) ? badgeNumber.slice(prefix.length) : badgeNumber
-  const n = parseInt(raw.trim(), 10)
+  const raw = badgeNumberRawDigits(badgeNumber, prefix)
+  if (raw === null) return null
+  const n = parseInt(raw, 10)
   return Number.isFinite(n) && n >= 0 ? n : null
+}
+
+function badgeNumberRawDigits(badgeNumber: string, prefix: string): string | null {
+  const raw = (prefix && badgeNumber.startsWith(prefix) ? badgeNumber.slice(prefix.length) : badgeNumber).trim()
+  if (!/^\d+$/.test(raw)) return null
+  return raw
 }
 
 /**
@@ -14,6 +21,11 @@ export function parseBadgeNumberToInt(badgeNumber: string, prefix: string): numb
  */
 export function formatBadgeNumber(n: number, prefix: string): string {
   return prefix ? `${prefix}${n}` : String(n)
+}
+
+function formatBadgeNumberWithWidth(n: number, prefix: string, width: number): string {
+  const value = width > 1 ? String(n).padStart(width, '0') : String(n)
+  return prefix ? `${prefix}${value}` : value
 }
 
 /**
@@ -74,5 +86,14 @@ export function nextBadgeForRank(
   }
   const n = findNextFreeBadgeInRange(rank.badgeMin, rank.badgeMax, used, null)
   if (n === null) return null
-  return { num: n, str: formatBadgeNumber(n, prefix) }
+  let width = 0
+  for (const row of [...allOfficers, ...reservedBadges]) {
+    const raw = badgeNumberRawDigits(row.badgeNumber, prefix)
+    if (raw === null) continue
+    const value = parseInt(raw, 10)
+    if (value >= rank.badgeMin && value <= rank.badgeMax && raw.length > width) {
+      width = raw.length
+    }
+  }
+  return { num: n, str: formatBadgeNumberWithWidth(n, prefix, width) }
 }

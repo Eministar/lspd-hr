@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import {
+  findBadgeNumberConflict,
+  getBlacklistedBadgeRows,
+  releaseTerminatedBadgeNumber,
+  releaseTerminatedBadgeNumberConflicts,
+} from '@/lib/badge-blacklist'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
@@ -229,6 +234,7 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
 
   const conflict = await findBadgeNumberConflict(badgeNumber, prefix)
   if (conflict) return reply(conflict)
+  await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
   const unitKeys = await unitKeysFromText(textOption(options, 'units'))
   const officer = await prisma.officer.create({
@@ -289,6 +295,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
   if (newBadgeNumber !== officer.badgeNumber) {
     const conflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officer.id)
     if (conflict) return reply(conflict)
+    await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
   }
 
   const promotion = await prisma.promotionLog.create({
@@ -394,18 +401,21 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
   if (officer.status === 'TERMINATED') return reply('Officer ist bereits gekündigt.')
   if (!reason) return reply('Ein Grund ist erforderlich.')
 
-  await prisma.termination.create({
-    data: {
-      officerId: officer.id,
-      reason,
-      terminatedByUserId: await systemUserId(),
-      previousRank: officer.rank.name,
-      previousBadgeNumber: officer.badgeNumber,
-      previousFirstName: officer.firstName,
-      previousLastName: officer.lastName,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.termination.create({
+      data: {
+        officerId: officer.id,
+        reason,
+        terminatedByUserId: await systemUserId(),
+        previousRank: officer.rank.name,
+        previousBadgeNumber: officer.badgeNumber,
+        previousFirstName: officer.firstName,
+        previousLastName: officer.lastName,
+      },
+    })
+    await tx.officer.update({ where: { id: officer.id }, data: { status: 'TERMINATED' } })
+    await releaseTerminatedBadgeNumber(officer, tx)
   })
-  await prisma.officer.update({ where: { id: officer.id }, data: { status: 'TERMINATED' } })
 
   queueOfficerRoleSync(officer.id, 'remove-all')
   queueDiscordHrEvent({

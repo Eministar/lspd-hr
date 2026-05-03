@@ -4,6 +4,7 @@ import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { releaseTerminatedBadgeNumber } from '@/lib/badge-blacklist'
 
 export async function GET() {
   try {
@@ -50,9 +51,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await prisma.officer.update({
-      where: { id: officerId },
-      data: { status: 'TERMINATED' },
+    await prisma.$transaction(async (tx) => {
+      await tx.officer.update({
+        where: { id: officerId },
+        data: { status: 'TERMINATED' },
+      })
+      await releaseTerminatedBadgeNumber(officer, tx)
     })
 
     await createAuditLog({

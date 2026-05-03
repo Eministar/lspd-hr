@@ -6,7 +6,7 @@ import { createAuditLog } from '@/lib/audit'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 
 export async function GET() {
@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     if (newBadgeNumber && newBadgeNumber !== officer.badgeNumber) {
       const badgeConflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officerId)
       if (badgeConflict) return error(badgeConflict)
+      await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
     }
 
     const promotion = await prisma.promotionLog.create({

@@ -7,7 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank } from '@/lib/badge-number'
-import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
 
     const badgeConflict = await findBadgeNumberConflict(badgeNumber, prefix)
     if (badgeConflict) return error(badgeConflict)
+    await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
     const did = parsed.data.discordId ?? null
     if (did) {

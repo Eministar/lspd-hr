@@ -1,6 +1,17 @@
 import { prisma } from './prisma'
 import { parseBadgeNumberToInt } from './badge-number'
 
+type BadgeReleaseClient = {
+  officer: {
+    findMany: typeof prisma.officer.findMany
+    update: typeof prisma.officer.update
+  }
+}
+
+function releasedBadgeNumber(badgeNumber: string, officerId: string) {
+  return `${badgeNumber.trim()}__terminated__${officerId}`
+}
+
 export function sameBadgeNumber(a: string, b: string, prefix: string) {
   const aTrimmed = a.trim()
   const bTrimmed = b.trim()
@@ -46,4 +57,34 @@ export async function findBadgeNumberConflict(
   if (blocked) return 'Dienstnummer ist gesperrt'
 
   return null
+}
+
+export async function releaseTerminatedBadgeNumber(
+  officer: { id: string; badgeNumber: string },
+  client: BadgeReleaseClient = prisma,
+) {
+  await client.officer.update({
+    where: { id: officer.id },
+    data: { badgeNumber: releasedBadgeNumber(officer.badgeNumber, officer.id) },
+  })
+}
+
+export async function releaseTerminatedBadgeNumberConflicts(
+  badgeNumber: string,
+  prefix: string,
+  client: BadgeReleaseClient = prisma,
+) {
+  const normalized = badgeNumber.trim()
+  if (!normalized) return
+
+  const terminatedOfficers = await client.officer.findMany({
+    where: { status: 'TERMINATED' },
+    select: { id: true, badgeNumber: true },
+  })
+
+  await Promise.all(
+    terminatedOfficers
+      .filter((officer) => sameBadgeNumber(officer.badgeNumber, normalized, prefix))
+      .map((officer) => releaseTerminatedBadgeNumber(officer, client)),
+  )
 }
