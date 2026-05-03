@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { ThemeProvider } from '@/context/theme-context'
-import { AuthProvider } from '@/context/auth-context'
-import { ToastProvider } from '@/components/ui/toast'
-import { ChunkLoadGuard } from '@/components/runtime/chunk-load-guard'
+import Providers from './providers'
 
 export const metadata: Metadata = {
   title: 'LSPD HR Dashboard',
@@ -24,14 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen bg-[#061426] bg-pattern text-[#edf4fb] font-sans">
-        <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <ChunkLoadGuard />
-              {children}
-            </ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )
