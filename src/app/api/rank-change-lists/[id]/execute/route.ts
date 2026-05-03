@@ -11,7 +11,7 @@ import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integra
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-change-lists:execute'])
     const { id } = await params
     const body = await req.json().catch(() => ({}))
     const entryId = typeof body.entryId === 'string' ? body.entryId : null

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       createdBy: { select: { displayName: true } },
       entries: {
         include: {
-          officer: { select: { firstName: true, lastName: true, badgeNumber: true } },
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
           currentRank: { select: { name: true, color: true } },
           proposedRank: { select: { name: true, color: true } },
         },

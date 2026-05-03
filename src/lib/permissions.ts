@@ -10,6 +10,7 @@ export const PERMISSIONS = [
   'terminations:manage',
   'rank-changes:view',
   'rank-changes:manage',
+  'rank-change-lists:execute',
   'rank-change-lists:delete',
   'tasks:view',
   'tasks:manage',
@@ -26,6 +27,7 @@ export const PERMISSIONS = [
   'groups:manage',
   'settings:manage',
   'password:change',
+  //'rank-change-lists:execute', (removed duplicate)
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -43,6 +45,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
   'rank-changes:manage': 'Beförderungen/Degradierungen',
   'rank-change-lists:delete': 'Beförderungs-/Degradierungslisten löschen',
+  'rank-change-lists:execute': 'Beförderungen/Degradierungen durchführen',
   'tasks:view': 'Aufgaben ansehen',
   'tasks:manage': 'Aufgaben verwalten',
   'notes:view': 'Notizen ansehen',
@@ -69,7 +72,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
   'terminations:manage': ['terminations:view', 'officers:view'],
-  'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view'],
+  'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],
   'tasks:manage': ['tasks:view', 'officers:view'],
   'notes:manage': ['notes:view', 'officers:view'],
   'ranks:manage': ['ranks:view'],

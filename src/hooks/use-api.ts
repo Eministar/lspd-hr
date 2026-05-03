@@ -25,15 +25,33 @@ export function useApi<T = unknown>(): UseApiResult<T> {
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', ...options?.headers },
       })
-      const json = await res.json()
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Fehler bei der Anfrage')
+
+      // Robuste Fehlerbehandlung: manche Endpunkte oder Fehlerseiten liefern
+      // kein JSON (z.B. Next.js Fehlerseiten). Versuche JSON zu parsen, und
+      // falls das fehlschlägt, lese die Roh-Text-Antwort und verwende sie als
+      // Fehlermeldung, damit der Client nicht mit "Unexpected token" abstürzt.
+      const text = await res.text().catch(() => '')
+      let json: unknown = null
+      if (text) {
+        try {
+          json = JSON.parse(text)
+        } catch {
+          // Server hat kein JSON geliefert (z.B. Next.js Fehlerseite).
+          // Nutze den Rohtext für die Fehlermeldung.
+          throw new Error(text)
+        }
+      }
+
+      // Nun haben wir entweder ein geparstes JSON-Objekt oder null.
+      const parsed = json as { success?: boolean; error?: string; data?: T } | null
+      if (!res.ok || !parsed || !parsed.success) {
+        throw new Error(parsed?.error || 'Fehler bei der Anfrage')
       }
       if (method !== 'GET' && method !== 'HEAD') {
         notifyLiveUpdate()
       }
-      setData(json.data)
-      return json.data
+      setData(parsed!.data as T)
+      return parsed!.data as T
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unbekannter Fehler'
       setError(msg)

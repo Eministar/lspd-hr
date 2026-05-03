@@ -21,9 +21,9 @@ import { hasPermission } from '@/lib/permissions'
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer { id: string; badgeNumber: string; firstName: string; lastName: string; rank: Rank; rankId: string; status: string }
 
-interface ListEntry {
-  id: string
-  officer: { firstName: string; lastName: string; badgeNumber: string }
+  interface ListEntry {
+    id: string
+    officer: { id?: string; firstName: string; lastName: string; badgeNumber: string }
   currentRank: { name: string; color: string }
   proposedRank: { name: string; color: string }
   newBadgeNumber: string | null
@@ -47,6 +47,7 @@ export default function PromotionsPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'rank-changes:view')
   const canManage = hasPermission(user, 'rank-changes:manage')
+  const canExecute = hasPermission(user, 'rank-change-lists:execute')
   const canDeleteLists = hasPermission(user, 'rank-change-lists:delete')
   const { data: lists, loading, refetch } = useFetch<RankChangeList[]>(canView ? '/api/rank-change-lists?type=PROMOTION' : null)
   const { data: officers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
@@ -234,10 +235,15 @@ export default function PromotionsPage() {
                       {list.entries.map((entry) => (
                         <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-[#0f2340] rounded-[8px]">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium text-[#eee]">
-                              {entry.officer.firstName} {entry.officer.lastName}
-                              <span className="text-[#bbb] font-normal ml-1">({entry.officer.badgeNumber})</span>
-                            </p>
+                              <p className="text-[13px] font-medium text-[#eee]">
+                                {/* Name clickable: navigiert zur Officer-Detailseite wenn ID verfügbar */}
+                                {entry.officer.id ? (
+                                  <a href={`/officers/${entry.officer.id}`} className="text-inherit hover:underline">{entry.officer.firstName} {entry.officer.lastName}</a>
+                                ) : (
+                                  <>{entry.officer.firstName} {entry.officer.lastName}</>
+                                )}
+                                <span className="text-[#bbb] font-normal ml-1">({entry.officer.badgeNumber})</span>
+                              </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[11.5px] text-[#888]">{entry.currentRank.name}</span>
                               <ArrowRight size={10} className="text-[#ccc]" />
@@ -247,7 +253,7 @@ export default function PromotionsPage() {
                           </div>
                           {entry.executed ? (
                             <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>
-                          ) : isDraft && canManage ? (
+                           ) : isDraft && canExecute ? (
                             <div className="flex items-center gap-1 shrink-0">
                               <Button size="sm" onClick={() => setExecuteEntry({
                                 listId: list.id,
