@@ -1,60 +1,32 @@
 import { cn } from '@/lib/utils'
 
 export function Spinner({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = { sm: 'h-4 w-4', md: 'h-5 w-5', lg: 'h-6 w-6' }
-  const px = { sm: 16, md: 20, lg: 24 }[size]
+  const sizes = { sm: 'h-3.5 w-3.5', md: 'h-5 w-5', lg: 'h-7 w-7' }
+  const px = { sm: 14, md: 20, lg: 28 }[size]
+
   return (
-    <svg
-      className={cn('animate-spin text-[#d4af37]', sizes[size], className)}
-      viewBox="0 0 24 24"
-      width={px}
-      height={px}
-      style={{
-        width: px,
-        height: px,
-        maxWidth: px,
-        maxHeight: px,
-        display: 'block',
-        color: '#d4af37',
-        animation: 'spin 1s linear infinite',
-      }}
+    <span
+      className={cn('loading-spinner relative block shrink-0 rounded-full text-[#d4af37]', sizes[size], className)}
+      style={{ width: px, height: px }}
       aria-hidden
-    >
-      <animateTransform
-        attributeName="transform"
-        type="rotate"
-        from="0 12 12"
-        to="360 12 12"
-        dur="1s"
-        repeatCount="indefinite"
-      />
-      <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-      <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
+    />
   )
 }
 
 export function PageLoader() {
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-[400px] gap-3"
+      className="flex min-h-[400px] flex-col items-center justify-center gap-4 bg-[#061426] text-[#6b8299]"
       style={{
         minHeight: 400,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        backgroundColor: '#061426',
-        color: '#6b8299',
       }}
     >
       <Spinner size="lg" />
       <p
-        className="text-[12px] text-[#6b8299] animate-pulse"
+        className="text-[12px] font-medium tracking-[0.14em] text-[#6b8299]"
         style={{ margin: 0, fontSize: 12, lineHeight: '16px', color: '#6b8299' }}
       >
-        Laden...
+        LÄDT
       </p>
     </div>
   )
