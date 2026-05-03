@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
+import { getBadgePrefix, getOrgName } from './settings-helpers'
 
 type DiscordRole = {
   id: string
@@ -32,6 +33,7 @@ type DiscordConfig = {
   applicationId: string
   announcementsChannelId: string
   dutyStatusChannelId: string
+  dutyAdminLogChannelId: string
   dutyStatusMessageId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
@@ -66,6 +68,7 @@ export const DISCORD_SETTING_KEYS = {
   applicationId: 'discord.applicationId',
   announcementsChannelId: 'discord.announcementsChannelId',
   dutyStatusChannelId: 'discord.dutyStatusChannelId',
+  dutyAdminLogChannelId: 'discord.dutyAdminLogChannelId',
   dutyStatusMessageId: 'discord.dutyStatusMessageId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
@@ -130,6 +133,14 @@ function envDutyStatusChannelId() {
   return (
     process.env.DISCORD_DUTY_STATUS_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_DUTY_STATUS_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
+function envDutyAdminLogChannelId() {
+  return (
+    process.env.DISCORD_DUTY_ADMIN_LOG_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_DUTY_ADMIN_LOG_CHANNEL_ID?.trim() ||
     ''
   )
 }
@@ -242,6 +253,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
     announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
     dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
+    dutyAdminLogChannelId: map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] || envDutyAdminLogChannelId(),
     dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
@@ -258,6 +270,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.applicationId !== undefined) data[DISCORD_SETTING_KEYS.applicationId] = input.applicationId.trim()
   if (input.announcementsChannelId !== undefined) data[DISCORD_SETTING_KEYS.announcementsChannelId] = input.announcementsChannelId.trim()
   if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
+  if (input.dutyAdminLogChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] = input.dutyAdminLogChannelId.trim()
   if (input.dutyStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusMessageId] = input.dutyStatusMessageId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
@@ -421,6 +434,39 @@ export async function syncAllOfficerDiscordRoles() {
   return { synced }
 }
 
+function formatDiscordDateLong(date = new Date()) {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Berlin',
+  }).format(date)
+}
+
+function bracketedServiceNumber(badgeNumber: string, prefix: string) {
+  const b = badgeNumber.trim()
+  const p = prefix.trim()
+  if (!p) return `[${b}]`
+  if (b.startsWith(p)) return `[${b}]`
+  const join = p.endsWith('-') ? `${p}${b}` : `${p}-${b}`
+  return `[${join}]`
+}
+
+function departmentDisplayName(orgName: string) {
+  const o = orgName.trim()
+  if (/^lspd$/i.test(o)) return 'Los Santos Police Department'
+  return o
+}
+
+async function postChannelEmbed(channelId: string, embed: Record<string, unknown>) {
+  await discordFetch<void>(`/channels/${channelId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ embeds: [embed] }),
+  })
+}
+
 export function ensureDiscordSyncScheduler() {
   if (syncSchedulerStarted || typeof setInterval !== 'function') return
   syncSchedulerStarted = true
@@ -438,7 +484,11 @@ export async function sendDiscordHrEvent(event: {
   type: keyof typeof EVENT_COLORS
   title: string
   description?: string
-  officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & { rank?: { name: string; color?: string | null } | null }
+  officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & {
+    rankId?: string
+    hireDate?: Date
+    rank?: { name: string; color?: string | null } | null
+  }
   actor?: UserForDiscord
   fields?: DiscordField[]
 }) {
@@ -447,6 +497,39 @@ export async function sendDiscordHrEvent(event: {
 
   const officer = event.officer
   const now = new Date()
+
+  if (event.type === 'hire' && officer) {
+    const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
+    const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
+    const rankLine = rankRoleSnow
+      ? `**Rang:** <@&${rankRoleSnow}> (${officer.rank?.name ?? '—'})`
+      : `**Rang:** ${officer.rank?.name ?? '—'}`
+    const hireAt = officer.hireDate ?? now
+    const dept = departmentDisplayName(orgName)
+    const description = truncate([
+      `${mention(officer.discordId)} ist dem **${dept}** beigetreten!`,
+      '',
+      `**Dienstnummer:** ${bracketedServiceNumber(officer.badgeNumber, prefix)}`,
+      rankLine,
+      '',
+      `**Beigetreten am:** ${formatDiscordDateLong(hireAt)}`,
+      '',
+      `Willkommen im Dienst. Wir wünschen dir eine gute Zusammenarbeit und viel Erfolg beim ${orgName}.`,
+      '',
+      '*Mit freundlichen Grüßen*',
+      event.actor ? discordUserLabel(event.actor) : '',
+    ].filter(Boolean).join('\n'), 4096)
+
+    await postChannelEmbed(config.announcementsChannelId, {
+      title: `| Neuer Beitritt beim ${orgName}`,
+      description,
+      color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS.hire) : 0x3b82f6,
+      timestamp: new Date().toISOString(),
+      footer: { text: `${orgName} · Personalabteilung` },
+    })
+    return
+  }
+
   const emoji = EVENT_EMOJIS[event.type]
   const title = event.title.startsWith(emoji) ? event.title : `${emoji} ${event.title}`
   const fields: DiscordField[] = [
@@ -461,30 +544,19 @@ export async function sendDiscordHrEvent(event: {
     { name: '🕒 Zeitpunkt', value: formatDiscordDate(now), inline: true },
     ...(event.fields ?? []),
   ]
-  const description = event.description ?? (
-    event.type === 'hire' && officer
-      ? `Willkommen im LSPD, **${officerName(officer)}**.`
-      : undefined
-  )
+  const description = event.description ?? undefined
 
-  await discordFetch<void>(`/channels/${config.announcementsChannelId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({
-      embeds: [
-        {
-          title,
-          description: description ? truncate(description, 4096) : undefined,
-          color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[event.type]) : EVENT_COLORS[event.type],
-          fields: fields.slice(0, 25).map((field) => ({
-            name: truncate(field.name, 256),
-            value: truncate(field.value || '-'),
-            inline: field.inline,
-          })),
-          timestamp: new Date().toISOString(),
-          footer: { text: 'LSPD HR • automatisch verarbeitet' },
-        },
-      ],
-    }),
+  await postChannelEmbed(config.announcementsChannelId, {
+    title,
+    description: description ? truncate(description, 4096) : undefined,
+    color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[event.type]) : EVENT_COLORS[event.type],
+    fields: fields.slice(0, 25).map((field) => ({
+      name: truncate(field.name, 256),
+      value: truncate(field.value || '-'),
+      inline: field.inline,
+    })),
+    timestamp: new Date().toISOString(),
+    footer: { text: 'LSPD HR • automatisch verarbeitet' },
   })
 }
 
@@ -503,9 +575,9 @@ function dutyStatusPayload() {
     return {
       embeds: [
         {
-          title: '🕒 LSPD Dienstzeiten',
-          description: 'Live-Übersicht für Ein- und Ausstempeln. Die Buttons aktualisieren diese Anzeige automatisch.',
-          color: 0xd4af37,
+          title: '| Dienstzeiten',
+          description: 'Übersicht, wer eingestempelt ist. Über die Buttons kannst du dich ein- oder ausstempeln; die Liste aktualisiert sich automatisch.',
+          color: 0x3b82f6,
           fields: [
             { name: 'Eingestempelt', value: String(snapshot.activeCount), inline: true },
             { name: 'Aktive Dienstzeit', value: formatDuration(snapshot.totalActiveDurationMs), inline: true },
@@ -513,7 +585,7 @@ function dutyStatusPayload() {
             { name: 'Aktuelle Officers', value: truncate(activeList, 1024), inline: false },
           ],
           timestamp: snapshot.now.toISOString(),
-          footer: { text: 'LSPD HR • Dienstzeiten werden automatisch aktualisiert' },
+          footer: { text: 'HR • Dienstzeiten (live)' },
         },
       ],
       components: [
@@ -571,18 +643,41 @@ export async function sendDiscordDutyEvent(
   session: { clockInAt: Date; clockOutAt: Date | null },
   durationMs?: number,
 ) {
-  await sendDiscordHrEvent({
-    type: action === 'clock-in' ? 'dutyIn' : 'dutyOut',
-    title: action === 'clock-in' ? `Eingestempelt: ${officerName(officer)}` : `Ausgestempelt: ${officerName(officer)}`,
-    description: action === 'clock-in'
-      ? `**${officerName(officer)}** ist jetzt im Dienst.`
-      : `**${officerName(officer)}** hat den Dienst beendet.`,
-    officer,
-    fields: [
-      { name: 'Start', value: formatDiscordDate(session.clockInAt), inline: true },
-      ...(session.clockOutAt ? [{ name: 'Ende', value: formatDiscordDate(session.clockOutAt), inline: true }] : []),
-      ...(durationMs !== undefined ? [{ name: 'Dauer', value: formatDuration(durationMs), inline: true }] : []),
-    ],
+  const config = await getDiscordConfig()
+  const channelId = snowflake(config.dutyAdminLogChannelId) || snowflake(config.announcementsChannelId)
+  if (!channelId || !botToken()) return
+
+  const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
+  const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
+  const rankName = officer.rank?.name ?? '—'
+  const title = action === 'clock-in' ? '| Dienst: Einstempeln' : '| Dienst: Ausstempeln'
+  const description = truncate(
+    action === 'clock-in'
+      ? [
+          `${mention(officer.discordId)} **${officerName(officer)}**`,
+          '',
+          `**Dienstnummer:** ${dn}`,
+          `**Rang:** ${rankName}`,
+          `**Eingestempelt:** ${formatDiscordDateLong(session.clockInAt)}`,
+        ].join('\n')
+      : [
+          `${mention(officer.discordId)} **${officerName(officer)}**`,
+          '',
+          `**Dienstnummer:** ${dn}`,
+          `**Rang:** ${rankName}`,
+          `**Beginn:** ${formatDiscordDateLong(session.clockInAt)}`,
+          ...(session.clockOutAt ? [`**Ende:** ${formatDiscordDateLong(session.clockOutAt)}`] : []),
+          ...(durationMs !== undefined ? [`**Dauer:** ${formatDuration(durationMs)}`] : []),
+        ].join('\n'),
+    4096,
+  )
+
+  await postChannelEmbed(channelId, {
+    title,
+    description,
+    color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[action === 'clock-in' ? 'dutyIn' : 'dutyOut']) : 0x3b82f6,
+    timestamp: new Date().toISOString(),
+    footer: { text: `${orgName} HR · Dienstzeit-Protokoll` },
   })
 }
 

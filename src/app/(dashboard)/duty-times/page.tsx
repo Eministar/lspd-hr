@@ -165,7 +165,10 @@ export default function DutyTimesPage() {
       </section>
 
       <section className="glass-panel-elevated rounded-[14px] p-5">
-        <h3 className="text-[13.5px] font-semibold text-[#f7fbff] mb-4">Wochenübersicht</h3>
+        <h3 className="text-[13.5px] font-semibold text-[#f7fbff] mb-1">Wochenübersicht</h3>
+        <p className="text-[12px] text-[#7089a5] mb-4">
+          Alle aktiven Officers: links der Stempelstatus (nicht eingestempelt vs. eingestempelte Zeit), rechts ob die „Wach“-Anzeige aus FiveM.
+        </p>
         <div className="divide-y divide-[#d4af37]/10">
           {data.rows.map((officer) => (
             <div key={officer.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
@@ -180,7 +183,7 @@ export default function DutyTimesPage() {
                   'inline-flex min-w-[88px] justify-center rounded-[7px] border px-2.5 py-1.5 text-[12px]',
                   officer.activeSession ? 'border-[#22c55e]/25 bg-[#052e1b]/50 text-[#86efac]' : 'border-[#234568]/60 bg-[#0a1a33]/60 text-[#8ea4bd]',
                 )}>
-                  {officer.activeSession ? formatDuration(officer.activeSession.currentDurationMs) : 'offline'}
+                  {officer.activeSession ? formatDuration(officer.activeSession.currentDurationMs) : 'nicht im Dienst'}
                 </span>
                 <span className={cn(
                   'inline-flex min-w-[88px] justify-center rounded-[7px] border px-2.5 py-1.5 text-[12px]',

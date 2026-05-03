@@ -43,6 +43,7 @@ interface DiscordConfigResponse {
     applicationId: string
     announcementsChannelId: string
     dutyStatusChannelId: string
+    dutyAdminLogChannelId: string
     dutyStatusMessageId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
@@ -59,6 +60,7 @@ interface DiscordConfigResponse {
     guildConfigured: boolean
     applicationConfigured: boolean
     announcementsChannelConfigured: boolean
+    dutyAdminLogConfigured: boolean
     rolesError: string | null
     channelsError: string | null
   }
@@ -77,6 +79,7 @@ export default function SettingsPage() {
     applicationId: '',
     announcementsChannelId: '',
     dutyStatusChannelId: '',
+    dutyAdminLogChannelId: '',
     dutyStatusMessageId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
@@ -301,6 +304,20 @@ export default function SettingsPage() {
                 onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
                 options={channelOptions}
               />
+              <p className="text-[11px] text-[#5c728a] mt-1.5">
+                Öffentliches Panel mit Buttons; zeigt, wer eingestempelt ist (wird fortlaufend aktualisiert).
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <Select
+                label="Dienstzeit-Protokoll (Admin)"
+                value={discordForm.dutyAdminLogChannelId}
+                onValueChange={(dutyAdminLogChannelId) => setDiscordForm({ ...discordForm, dutyAdminLogChannelId })}
+                options={channelOptions}
+              />
+              <p className="text-[11px] text-[#5c728a] mt-1.5">
+                Hier erscheinen die Protokoll-Einträge zu Ein- und Ausstempeln. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+              </p>
             </div>
           </div>
 
