@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Clock, RefreshCw, Save, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,21 +88,29 @@ export default function SettingsPage() {
     unitRoleMap: {},
   })
 
+  const settingsInitialized = useRef(false)
+  const discordInitialized = useRef(false)
+
   useEffect(() => {
-    if (settings) {
+    if (settings && !settingsInitialized.current) {
+      settingsInitialized.current = true
       setOrgName(settings['orgName'] || 'LSPD')
       setBadgePrefix(settings['badgePrefix'] || '')
     }
   }, [settings])
 
   useEffect(() => {
-    if (discordData) setDiscordForm(discordData.config)
+    if (discordData && !discordInitialized.current) {
+      discordInitialized.current = true
+      setDiscordForm(discordData.config)
+    }
   }, [discordData])
 
   const saveSetting = async (key: string, value: string) => {
     try {
       await execute('/api/settings', { method: 'POST', body: JSON.stringify({ key, value }) })
       addToast({ type: 'success', title: 'Einstellung gespeichert' })
+      settingsInitialized.current = false
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -113,6 +121,7 @@ export default function SettingsPage() {
     try {
       await execute('/api/discord/config', { method: 'POST', body: JSON.stringify(discordForm) })
       addToast({ type: 'success', title: 'Discord-Konfiguration gespeichert' })
+      discordInitialized.current = false
       await refetchDiscord()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -132,6 +141,7 @@ export default function SettingsPage() {
     try {
       await execute('/api/duty-times/discord-message', { method: 'POST' })
       addToast({ type: 'success', title: 'Dienstzeiten-Embed aktualisiert' })
+      discordInitialized.current = false
       await refetchDiscord()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
