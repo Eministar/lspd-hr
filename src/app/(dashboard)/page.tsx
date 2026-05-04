@@ -32,6 +32,7 @@ import type { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission, type Permission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface RankSummary {
   name: string
@@ -439,7 +440,7 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-white truncate">
                       {officerName(officer)}
-                      <span className="text-[#d4af37] font-mono ml-1">#{officer.badgeNumber}</span>
+                      <span className="text-[#d4af37] font-mono ml-1">#{displayBadgeNumber(officer.badgeNumber)}</span>
                     </p>
                     <p className="text-[11.5px] text-[#9fb0c4] truncate">
                       {officer.rank.name} · {officer.lastOnline ? `zuletzt online ${formatDate(officer.lastOnline)}` : `aktualisiert ${formatDate(officer.updatedAt)}`}
@@ -482,7 +483,7 @@ export default function DashboardPage() {
                         <span className="text-[12px] font-medium text-white">{label}</span>
                         {entry.officer && (
                           <Link href={`/officers/${entry.officer.id}`} className="text-[12px] text-[#d4af37] hover:text-white transition-colors">
-                            {officerName(entry.officer)} #{entry.officer.badgeNumber}
+                            {officerName(entry.officer)} #{displayBadgeNumber(entry.officer.badgeNumber)}
                           </Link>
                         )}
                       </div>

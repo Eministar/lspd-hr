@@ -14,6 +14,7 @@ import { useAuth } from '@/context/auth-context'
 import { formatDate, getUnitLabel } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Officer {
   id: string
@@ -90,7 +91,7 @@ export default function TerminatedOfficersPage() {
                     {officer.firstName} {officer.lastName}
                   </Link>
                   <p className="text-[11.5px] text-[#4a6585]">
-                    DN {officer.badgeNumber} · {officer.rank.name} · {unitNames(officer)} · Eingestellt {formatDate(officer.hireDate)}
+                    DN {displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name} · {unitNames(officer)} · Eingestellt {formatDate(officer.hireDate)}
                   </p>
                 </div>
                 {canEdit && (

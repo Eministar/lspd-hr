@@ -465,6 +465,15 @@ async function syncOfficerDiscordMember(
     }
   }
 
+  if (mode === 'remove-all' && member?.nick !== null) {
+    await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nick: null }),
+    }).catch((error) => {
+      console.error('[DiscordIntegration] Nickname-Entfernung fehlgeschlagen:', error)
+    })
+  }
+
   if (mode === 'sync' && officer.status !== 'TERMINATED') {
     const nick = desiredNickname(officer)
     if (member?.nick !== nick) {

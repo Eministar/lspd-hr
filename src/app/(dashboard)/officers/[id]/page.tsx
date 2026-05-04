@@ -33,6 +33,7 @@ import {
 import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
@@ -334,7 +335,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     <div>
       <PageHeader
         title={`${officer.firstName} ${officer.lastName}`}
-        description={`DN: ${officer.badgeNumber} · ${officer.rank?.name}`}
+        description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}`}
         action={
           <div className="flex gap-1.5 flex-wrap">
             <Link href="/officers">
@@ -402,7 +403,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-6">
-                <InfoRow label="Dienstnummer" value={officer.badgeNumber} mono />
+                <InfoRow label="Dienstnummer" value={displayBadgeNumber(officer.badgeNumber)} mono />
                 <InfoRow label="Discord-ID" value={officer.discordId ?? undefined} mono />
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
@@ -756,7 +757,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <Select label="Neuer Rang (höher)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={higherRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
-          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${officer.badgeNumber}`} />
+          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
           <Textarea label="Notiz" value={rankChangeNote} onChange={(e) => setRankChangeNote(e.target.value)} rows={2} placeholder="Optional" />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setPromoteModal(false)}>Abbrechen</Button>
@@ -773,7 +774,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <Select label="Neuer Rang (niedriger)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={lowerRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
-          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${officer.badgeNumber}`} />
+          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
           <Textarea label="Grund" value={rankChangeNote} onChange={(e) => setRankChangeNote(e.target.value)} rows={2} placeholder="Grund für Degradierung..." />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setDemoteModal(false)}>Abbrechen</Button>

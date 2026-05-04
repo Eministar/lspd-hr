@@ -18,6 +18,7 @@ import { useApi } from '@/hooks/use-api'
 import { formatDate, cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer {
@@ -331,7 +332,7 @@ export default function DemotionsPage() {
             label="Officer auswählen"
             value={entryForm.officerId}
             onChange={(e) => { setEntryForm({ ...entryForm, officerId: e.target.value, proposedRankId: '' }) }}
-            options={filteredOfficers.map(o => ({ value: o.id, label: `${o.badgeNumber} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
+            options={filteredOfficers.map(o => ({ value: o.id, label: `${displayBadgeNumber(o.badgeNumber)} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
             placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
             disabled={filteredOfficers.length === 0}
           />
@@ -347,7 +348,7 @@ export default function DemotionsPage() {
                 options={getLowerRanks().map(r => ({ value: r.id, label: r.name }))}
                 placeholder="Rang wählen..."
               />
-              <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${selectedOfficer.badgeNumber}`} />
+              <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`} />
               <Input label="Grund (optional)" value={entryForm.note} onChange={(e) => setEntryForm({ ...entryForm, note: e.target.value })} placeholder="Grund für Degradierung..." />
             </>
           )}

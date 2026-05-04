@@ -16,6 +16,7 @@ import { useApi } from '@/hooks/use-api'
 import { formatDate } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Officer {
   id: string
@@ -123,7 +124,7 @@ export default function TerminationsPage() {
             {terminations.map((t, i) => {
               const { first: fn, last: ln } = terminationOfficerNames(t)
               const displayName = [fn, ln].filter(Boolean).join(' ') || '—'
-              const badgeDn = t.previousBadgeNumber || t.officer?.badgeNumber || '—'
+              const badgeDn = displayBadgeNumber(t.previousBadgeNumber || t.officer?.badgeNumber || null)
               return (
               <motion.div
                 key={t.id}
@@ -186,13 +187,13 @@ export default function TerminationsPage() {
             label="Officer auswählen"
             value={selectedOfficerId}
             onChange={(e) => setSelectedOfficerId(e.target.value)}
-            options={activeOfficers.map(o => ({ value: o.id, label: `${o.badgeNumber} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
+            options={activeOfficers.map(o => ({ value: o.id, label: `${displayBadgeNumber(o.badgeNumber)} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
             placeholder="Officer wählen..."
           />
           {selectedOfficer && (
             <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
               <p className="text-[13px] text-[#888]">
-                <span className="font-medium text-[#eee]">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {selectedOfficer.badgeNumber}
+                <span className="font-medium text-[#eee]">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {displayBadgeNumber(selectedOfficer.badgeNumber)}
               </p>
             </div>
           )}

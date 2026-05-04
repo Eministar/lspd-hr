@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast'
 import { cn, formatDateTime } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { notifyLiveUpdate } from '@/lib/live-updates'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface DutyOfficer {
   id: string
@@ -133,7 +134,7 @@ export default function DutyTimesPage() {
                   <div className="min-w-0">
                     <Link href={`/officers/${officer.id}`} className="text-[14px] font-semibold text-white hover:text-[#d4af37] transition-colors">
                       {officerName(officer)}
-                      <span className="ml-1 font-mono text-[#d4af37]">#{officer.badgeNumber}</span>
+                      <span className="ml-1 font-mono text-[#d4af37]">#{displayBadgeNumber(officer.badgeNumber)}</span>
                     </Link>
                     <p className="text-[12px] text-[#9fb0c4] mt-1">{officer.rank.name}</p>
                   </div>
@@ -174,7 +175,7 @@ export default function DutyTimesPage() {
             <div key={officer.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <Link href={`/officers/${officer.id}`} className="text-[13px] font-medium text-white hover:text-[#d4af37] transition-colors">
-                  {officerName(officer)} <span className="font-mono text-[#d4af37]">#{officer.badgeNumber}</span>
+                  {officerName(officer)} <span className="font-mono text-[#d4af37]">#{displayBadgeNumber(officer.badgeNumber)}</span>
                 </Link>
                 <p className="text-[11.5px] text-[#7089a5] mt-0.5">{officer.rank.name}</p>
               </div>

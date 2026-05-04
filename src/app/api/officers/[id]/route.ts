@@ -7,6 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
+import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime } from '@/lib/duty-times'
@@ -62,14 +63,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const parsed = updateOfficerSchema.safeParse(body)
     if (!parsed.success) return error(parsed.error.issues.map(e => e.message).join(', '))
 
-    const existing = await prisma.officer.findUnique({ where: { id }, include: { rank: true } })
+    const existing = await prisma.officer.findUnique({
+      where: { id },
+      include: {
+        rank: true,
+        terminations: {
+          orderBy: { terminatedAt: 'desc' },
+          take: 1,
+        },
+      },
+    })
     if (!existing) return notFound('Officer')
 
-    if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) {
+    const requestedBadgeNumber = typeof parsed.data.badgeNumber === 'string' && parsed.data.badgeNumber.trim()
+      ? stripTerminatedBadgeNumber(parsed.data.badgeNumber)
+      : undefined
+    const reactivating = existing.status === 'TERMINATED' && parsed.data.status === 'ACTIVE'
+    const restoredBadgeNumber = reactivating
+      ? (existing.terminations[0]?.previousBadgeNumber?.trim() || stripTerminatedBadgeNumber(existing.badgeNumber))
+      : undefined
+    const nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
+
+    if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) {
       const prefix = await getBadgePrefix()
-      const badgeConflict = await findBadgeNumberConflict(parsed.data.badgeNumber, prefix, id)
+      const badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id)
       if (badgeConflict) return error(badgeConflict)
-      await releaseTerminatedBadgeNumberConflicts(parsed.data.badgeNumber, prefix)
+      await releaseTerminatedBadgeNumberConflicts(nextBadgeNumber, prefix)
     }
 
     if ('discordId' in parsed.data && parsed.data.discordId && parsed.data.discordId !== existing.discordId) {
@@ -98,6 +117,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.units = unitKeys
     }
     if (parsed.data.hireDate) data.hireDate = new Date(parsed.data.hireDate)
+    if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) data.badgeNumber = nextBadgeNumber
 
     const updated = await prisma.officer.update({
       where: { id },
@@ -112,7 +132,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const changes: string[] = []
     if (parsed.data.firstName && parsed.data.firstName !== existing.firstName) changes.push(`Vorname: ${existing.firstName} → ${parsed.data.firstName}`)
     if (parsed.data.lastName && parsed.data.lastName !== existing.lastName) changes.push(`Nachname: ${existing.lastName} → ${parsed.data.lastName}`)
-    if (parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber) changes.push(`Dienstnummer: ${existing.badgeNumber} → ${parsed.data.badgeNumber}`)
+    if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) changes.push(`Dienstnummer: ${existing.badgeNumber} → ${nextBadgeNumber}`)
     if (parsed.data.status && parsed.data.status !== existing.status) changes.push(`Status: ${existing.status} → ${parsed.data.status}`)
     if (parsed.data.rankId && parsed.data.rankId !== existing.rankId) changes.push(`Rang geändert`)
     if (unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))) {
@@ -141,7 +161,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       (!!parsed.data.firstName && parsed.data.firstName !== existing.firstName) ||
       (!!parsed.data.lastName && parsed.data.lastName !== existing.lastName)
     )
-    const badgeChanged = !!parsed.data.badgeNumber && parsed.data.badgeNumber !== existing.badgeNumber
+    const badgeChanged = !!nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber
     const unitsChanged = !!unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))
     const discordChanged = 'discordId' in parsed.data && parsed.data.discordId !== existing.discordId
     const statusChanged = !!parsed.data.status && parsed.data.status !== existing.status

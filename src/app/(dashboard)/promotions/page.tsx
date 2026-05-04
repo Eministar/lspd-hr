@@ -18,6 +18,7 @@ import { useApi } from '@/hooks/use-api'
 import { formatDate, cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer {
@@ -248,7 +249,7 @@ export default function PromotionsPage() {
                               <Link href={`/officers/${entry.officer.id}`} className="text-inherit hover:underline">
                                 {entry.officer.firstName} {entry.officer.lastName}
                               </Link>
-                              <span className="text-[#bbb] font-normal ml-1">({entry.officer.badgeNumber})</span>
+                                <span className="text-[#bbb] font-normal ml-1">({displayBadgeNumber(entry.officer.badgeNumber)})</span>
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[11.5px] text-[#888]">{entry.currentRank.name}</span>
@@ -331,7 +332,7 @@ export default function PromotionsPage() {
             label="Officer auswählen"
             value={entryForm.officerId}
             onChange={(e) => { setEntryForm({ ...entryForm, officerId: e.target.value, proposedRankId: '' }) }}
-            options={filteredOfficers.map(o => ({ value: o.id, label: `${o.badgeNumber} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
+            options={filteredOfficers.map(o => ({ value: o.id, label: `${displayBadgeNumber(o.badgeNumber)} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
             placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
             disabled={filteredOfficers.length === 0}
           />
@@ -347,7 +348,7 @@ export default function PromotionsPage() {
                 options={getHigherRanks().map(r => ({ value: r.id, label: r.name }))}
                 placeholder="Rang wählen..."
               />
-              <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${selectedOfficer.badgeNumber}`} />
+              <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`} />
               <Input label="Notiz (optional)" value={entryForm.note} onChange={(e) => setEntryForm({ ...entryForm, note: e.target.value })} placeholder="Optional" />
             </>
           )}

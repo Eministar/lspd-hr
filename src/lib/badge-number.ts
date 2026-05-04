@@ -10,6 +10,19 @@ export function parseBadgeNumberToInt(badgeNumber: string, prefix: string): numb
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
+export function stripTerminatedBadgeNumber(badgeNumber: string) {
+  const trimmed = badgeNumber.trim()
+  const marker = '__terminated__'
+  const markerIndex = trimmed.indexOf(marker)
+  return markerIndex >= 0 ? trimmed.slice(0, markerIndex).trim() : trimmed
+}
+
+export function displayBadgeNumber(badgeNumber?: string | null) {
+  const trimmed = badgeNumber?.trim() ?? ''
+  if (!trimmed) return '—'
+  return stripTerminatedBadgeNumber(trimmed)
+}
+
 function badgeNumberRawDigits(badgeNumber: string, prefix: string): string | null {
   const raw = (prefix && badgeNumber.startsWith(prefix) ? badgeNumber.slice(prefix.length) : badgeNumber).trim()
   if (!/^\d+$/.test(raw)) return null
