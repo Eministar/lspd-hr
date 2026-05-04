@@ -1,0 +1,23 @@
+{
+  "ordnungen": [
+    {
+      "id": "sanktionskatalog",
+      "title": "Sanktionskatalog",
+      "description": "Interner Sanktionskatalog der HR Abteilung mit Penal Grades und Richtlinien",
+      "category": "HR",
+      "buttonLabel": "Sanktionskatalog",
+      "file": "sanktionskatalog.md",
+      "icon": "ScrollText"
+    },
+    {
+      "id": "hr-dienstordnung",
+      "title": "HR-Dienstordnung",
+      "description": "Richtlinien und Verfahren für die HR-Abteilung",
+      "category": "HR",
+      "buttonLabel": "HR-Ordnung",
+      "file": "hr-dienstordnung.md",
+      "icon": "FileText"
+    }
+  ]
+}
+
