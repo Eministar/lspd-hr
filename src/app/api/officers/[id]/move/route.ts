@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await releaseTerminatedBadgeNumberConflicts(newBadge, prefix)
     }
 
-    const promotion = await prisma.promotionLog.create({
+    await prisma.promotionLog.create({
       data: {
         officerId: id,
         oldRankId: officer.rankId,
@@ -82,15 +82,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     queueOfficerRoleSync(id)
     queueDiscordHrEvent({
       type: 'promotion',
-      title: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-      description: 'Roster-Verschiebung erfolgreich durchgeführt.',
+      title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
+      description: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Roster-Verschiebung.`,
       officer: updated,
       actor: user,
       fields: [
-        { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
-        { name: '➡️ Neuer Rang', value: targetRank.name, inline: true },
-        { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadge}`, inline: true },
-        { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+        { name: 'Alter Rang', value: officer.rank.name, inline: true },
+        { name: 'Neuer Rang', value: `**${targetRank.name}**`, inline: true },
+        { name: 'DN-Wechsel', value: `${officer.badgeNumber} → **${newBadge}**`, inline: true },
       ],
     })
 

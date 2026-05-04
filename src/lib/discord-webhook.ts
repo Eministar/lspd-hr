@@ -22,8 +22,14 @@ const COLORS: Record<WebhookSeverity, number> = {
   error: 0xef4444,
 }
 
-const MAX_FIELD_VALUE = 900
-const MAX_DESCRIPTION = 1800
+const MAX_FIELD_VALUE = 1024
+const MAX_DESCRIPTION = 4096
+const SEVERITY_LABEL: Record<WebhookSeverity, string> = {
+  info: 'ℹ️  Information',
+  success: '✅  Erfolg',
+  warning: '⚠️  Warnung',
+  error: '🛑  Fehler',
+}
 
 function webhookUrl() {
   return process.env.DISCORD_WEBHOOK_URL?.trim() || process.env.LSPD_DISCORD_WEBHOOK_URL?.trim() || ''
@@ -60,14 +66,20 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
   if (!url) return
 
   const severity = event.severity ?? 'info'
-  const fields = [
-    ...(event.fields ?? []),
+  const userFields = (event.fields ?? []).map(cleanField)
+  const metaFields: WebhookField[] = [
     { name: 'Quelle', value: event.source ?? 'server', inline: true },
     { name: 'Umgebung', value: process.env.NODE_ENV || 'unknown', inline: true },
   ]
+  const fields: WebhookField[] = [...userFields]
+  if (userFields.length > 0) fields.push({ name: '​', value: '​', inline: false })
+  fields.push(...metaFields)
 
   const errorText = stringifyError(event.error)
-  if (errorText) fields.push({ name: 'Fehler', value: errorText })
+  if (errorText) {
+    fields.push({ name: '​', value: '​', inline: false })
+    fields.push({ name: 'Fehlerdetails', value: `\`\`\`\n${truncate(errorText, MAX_FIELD_VALUE - 8)}\n\`\`\``, inline: false })
+  }
 
   try {
     await fetch(url, {
@@ -77,12 +89,13 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
         username: 'LSPD HR Monitor',
         embeds: [
           {
+            author: { name: SEVERITY_LABEL[severity] },
             title: truncate(event.title, 250),
             description: event.description ? truncate(event.description, MAX_DESCRIPTION) : undefined,
             color: COLORS[severity],
             fields: fields.slice(0, 25).map(cleanField),
             timestamp: new Date().toISOString(),
-            footer: { text: 'LSPD HR Dashboard' },
+            footer: { text: 'LSPD HR Dashboard · System-Monitor' },
           },
         ],
       }),

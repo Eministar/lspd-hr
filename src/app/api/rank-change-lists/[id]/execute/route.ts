@@ -75,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     for (const entry of list.entries) {
       if (entry.officer.status === 'TERMINATED') continue
 
-      const promotion = await prisma.promotionLog.create({
+      await prisma.promotionLog.create({
         data: {
           officerId: entry.officerId,
           oldRankId: entry.currentRankId,
@@ -114,7 +114,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       queueDiscordHrEvent({
         type: 'promotion',
         title: `${action}: ${entry.officer.firstName} ${entry.officer.lastName}`,
-        description: `${action} erfolgreich durchgeführt.`,
+        description: entry.note
+          ? `${action} via Liste **${list.name}**.\n*Notiz:* ${entry.note}`
+          : `${action} via Liste **${list.name}**.`,
         officer: {
           ...entry.officer,
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
@@ -122,12 +124,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         },
         actor: user,
         fields: [
-          { name: '⬅️ Alter Rang', value: entry.currentRank.name, inline: true },
-          { name: '➡️ Neuer Rang', value: entry.proposedRank.name, inline: true },
-          { name: '🔁 Dienstnummer-Wechsel', value: `${entry.officer.badgeNumber} → ${entry.newBadgeNumber || entry.officer.badgeNumber}`, inline: true },
-          { name: '📋 Liste', value: list.name, inline: true },
-          { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
-          ...(entry.note ? [{ name: '📝 Notiz', value: entry.note }] : []),
+          { name: 'Alter Rang', value: entry.currentRank.name, inline: true },
+          { name: 'Neuer Rang', value: `**${entry.proposedRank.name}**`, inline: true },
+          { name: 'DN-Wechsel', value: `${entry.officer.badgeNumber} → **${entry.newBadgeNumber || entry.officer.badgeNumber}**`, inline: true },
         ],
       })
 

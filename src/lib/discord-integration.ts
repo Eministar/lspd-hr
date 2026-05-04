@@ -77,27 +77,18 @@ export const DISCORD_SETTING_KEYS = {
   unitRoleMap: 'discord.unitRoleMap',
 } as const
 
-const EVENT_COLORS = {
-  hire: 0x22c55e,
-  promotion: 0xd4af37,
-  training: 0x3b82f6,
-  units: 0x06b6d4,
-  termination: 0xef4444,
-  update: 0x8b5cf6,
-  dutyIn: 0x22c55e,
-  dutyOut: 0xef4444,
+const EVENT_META = {
+  hire:        { color: 0x22c55e, accent: '🟢', label: 'Neueinstellung',           section: 'Personalmeldung' },
+  promotion:   { color: 0xd4af37, accent: '🟡', label: 'Rangänderung',              section: 'Personalmeldung' },
+  training:    { color: 0x3b82f6, accent: '🔵', label: 'Ausbildung aktualisiert',   section: 'Personalmeldung' },
+  units:       { color: 0x06b6d4, accent: '🔷', label: 'Unit-Zuordnung geändert',   section: 'Personalmeldung' },
+  termination: { color: 0xef4444, accent: '🔴', label: 'Dienstverhältnis beendet',  section: 'Personalmeldung' },
+  update:      { color: 0x8b5cf6, accent: '🟣', label: 'Personalakte aktualisiert', section: 'Personalmeldung' },
+  dutyIn:      { color: 0x22c55e, accent: '🟢', label: 'Dienstantritt',             section: 'Dienstzeit' },
+  dutyOut:     { color: 0xef4444, accent: '🔴', label: 'Dienstende',                section: 'Dienstzeit' },
 } as const
 
-const EVENT_EMOJIS: Record<keyof typeof EVENT_COLORS, string> = {
-  hire: '✅',
-  promotion: '📈',
-  training: '🎓',
-  units: '🚓',
-  termination: '🚨',
-  update: '✨',
-  dutyIn: '🟢',
-  dutyOut: '🔴',
-}
+const ZWSP = '​'
 
 let syncSchedulerStarted = false
 
@@ -206,12 +197,31 @@ function truncate(value: string, max = 1024) {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`
 }
 
-function formatDiscordDate(date = new Date()) {
-  return new Intl.DateTimeFormat('de-DE', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'Europe/Berlin',
-  }).format(date)
+function unixSeconds(date: Date) {
+  return Math.floor(date.getTime() / 1000)
+}
+
+function discordTimestamp(date: Date, style: 'F' | 'f' | 'R' | 't' | 'D' = 'f') {
+  return `<t:${unixSeconds(date)}:${style}>`
+}
+
+function spacerField(): DiscordField {
+  return { name: ZWSP, value: ZWSP, inline: false }
+}
+
+function quoteBlock(text: string) {
+  return text
+    .split('\n')
+    .map((line) => `> ${line.length > 0 ? line : ZWSP}`)
+    .join('\n')
+}
+
+function cleanEmbedField(field: DiscordField): DiscordField {
+  return {
+    name: truncate(field.name || ZWSP, 256),
+    value: truncate(field.value || '—', 1024),
+    inline: field.inline,
+  }
 }
 
 function hexColorToDiscord(color: string | null | undefined, fallback: number) {
@@ -434,17 +444,6 @@ export async function syncAllOfficerDiscordRoles() {
   return { synced }
 }
 
-function formatDiscordDateLong(date = new Date()) {
-  return new Intl.DateTimeFormat('de-DE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Berlin',
-  }).format(date)
-}
-
 function bracketedServiceNumber(badgeNumber: string, prefix: string) {
   const b = badgeNumber.trim()
   const p = prefix.trim()
@@ -481,7 +480,7 @@ export function ensureDiscordSyncScheduler() {
 }
 
 export async function sendDiscordHrEvent(event: {
-  type: keyof typeof EVENT_COLORS
+  type: keyof typeof EVENT_META
   title: string
   description?: string
   officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & {
@@ -496,110 +495,182 @@ export async function sendDiscordHrEvent(event: {
   if (!config.announcementsChannelId || !botToken()) return
 
   const officer = event.officer
+  const meta = EVENT_META[event.type]
   const now = new Date()
+  const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
 
   if (event.type === 'hire' && officer) {
-    const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankLine = rankRoleSnow
-      ? `**Rang:** <@&${rankRoleSnow}> (${officer.rank?.name ?? '—'})`
-      : `**Rang:** ${officer.rank?.name ?? '—'}`
+      ? `<@&${rankRoleSnow}>  ·  ${officer.rank?.name ?? '—'}`
+      : officer.rank?.name ?? '—'
     const hireAt = officer.hireDate ?? now
     const dept = departmentDisplayName(orgName)
+    const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
+
     const description = truncate([
-      `${mention(officer.discordId)} ist dem **${dept}** beigetreten!`,
+      `### Willkommen beim ${dept}`,
+      `${mention(officer.discordId)} wurde in den aktiven Dienst aufgenommen.`,
       '',
-      `**Dienstnummer:** ${bracketedServiceNumber(officer.badgeNumber, prefix)}`,
-      rankLine,
+      `**Officer**  ·  ${officerName(officer)}`,
+      `**Dienstnummer**  ·  \`${dn}\``,
+      `**Rang**  ·  ${rankLine}`,
+      `**Eintrittsdatum**  ·  ${discordTimestamp(hireAt, 'F')}`,
       '',
-      `**Beigetreten am:** ${formatDiscordDateLong(hireAt)}`,
+      `Wir wünschen dir einen guten Start und viel Erfolg im Dienst.`,
       '',
-      `Willkommen im Dienst. Wir wünschen dir eine gute Zusammenarbeit und viel Erfolg beim ${orgName}.`,
-      '',
-      '*Mit freundlichen Grüßen*',
-      event.actor ? discordUserLabel(event.actor) : '',
+      event.actor ? `*— ${discordUserLabel(event.actor)}, Personalabteilung*` : '',
     ].filter(Boolean).join('\n'), 4096)
 
     await postChannelEmbed(config.announcementsChannelId, {
-      title: `| Neuer Beitritt beim ${orgName}`,
+      author: { name: `${orgName} · ${meta.section}` },
+      title: `${meta.accent}  Neueinstellung`,
       description,
-      color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS.hire) : 0x3b82f6,
-      timestamp: new Date().toISOString(),
-      footer: { text: `${orgName} · Personalabteilung` },
+      color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color,
+      timestamp: now.toISOString(),
+      footer: { text: `${orgName} HR · Personalabteilung` },
     })
     return
   }
 
-  const emoji = EVENT_EMOJIS[event.type]
-  const title = event.title.startsWith(emoji) ? event.title : `${emoji} ${event.title}`
-  const fields: DiscordField[] = [
-    ...(officer ? [
-      { name: '👮 Officer', value: `**${officerName(officer)}**`, inline: true },
-      { name: '🪪 Dienstnummer', value: officerBadge(officer), inline: true },
-      { name: '🎖️ Rang', value: officer.rank?.name || '-', inline: true },
-      { name: '💬 Discord', value: mention(officer.discordId), inline: true },
-      { name: '🏷️ Name auf Discord', value: desiredNickname(officer), inline: true },
-    ] : []),
-    ...(event.actor ? [{ name: '🧑‍💼 Bearbeitet von', value: discordUserLabel(event.actor), inline: true }] : []),
-    { name: '🕒 Zeitpunkt', value: formatDiscordDate(now), inline: true },
-    ...(event.fields ?? []),
-  ]
-  const description = event.description ?? undefined
+  const titleName = officer ? `  ·  ${officerName(officer)}` : ''
+  const title = `${meta.accent}  ${meta.label}${titleName}`
+
+  const description = event.description
+    ? truncate(quoteBlock(event.description), 2048)
+    : undefined
+
+  const fields: DiscordField[] = []
+
+  if (officer) {
+    const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
+    const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
+    const rankValue = rankRoleSnow
+      ? `<@&${rankRoleSnow}>\n${officer.rank?.name ?? '—'}`
+      : officer.rank?.name ?? '—'
+
+    fields.push(
+      { name: 'Officer', value: `**${officerName(officer)}**\n${mention(officer.discordId)}`, inline: true },
+      { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
+      { name: 'Rang', value: rankValue, inline: true },
+    )
+  }
+
+  if (event.fields && event.fields.length > 0) {
+    fields.push(spacerField())
+    for (const f of event.fields) fields.push(f)
+  }
+
+  fields.push(spacerField())
+  fields.push(
+    { name: 'Bearbeitet von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true },
+    { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
+  )
 
   await postChannelEmbed(config.announcementsChannelId, {
-    title,
-    description: description ? truncate(description, 4096) : undefined,
-    color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[event.type]) : EVENT_COLORS[event.type],
-    fields: fields.slice(0, 25).map((field) => ({
-      name: truncate(field.name, 256),
-      value: truncate(field.value || '-'),
-      inline: field.inline,
-    })),
-    timestamp: new Date().toISOString(),
-    footer: { text: 'LSPD HR • automatisch verarbeitet' },
+    author: { name: `${orgName} · ${meta.section}` },
+    title: truncate(title, 250),
+    description,
+    color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color,
+    fields: fields.slice(0, 25).map(cleanEmbedField),
+    timestamp: now.toISOString(),
+    footer: { text: `${orgName} HR · automatisch verarbeitet` },
   })
 }
 
-function dutyStatusPayload() {
-  return getDutyTimesSnapshot().then((snapshot) => {
-    const activeRows = snapshot.activeRows.slice(0, 15)
-    const activeList = activeRows.length > 0
-      ? activeRows.map((row, index) => {
-        const since = row.activeSession?.clockInAt ? formatDiscordDate(row.activeSession.clockInAt) : '-'
-        const current = formatDuration(row.activeSession?.currentDurationMs ?? 0)
-        const week = formatDuration(row.weekDurationMs)
-        return `**${index + 1}. ${officerName(row)}**  ·  ${row.rank.name}\nDN ${officerBadge(row)}  ·  seit ${since}  ·  ${current} jetzt  ·  ${week} diese Woche`
-      }).join('\n\n')
-      : 'Aktuell ist kein Officer eingestempelt.'
-
-    return {
-      embeds: [
-        {
-          title: '| Dienstzeiten',
-          description: 'Übersicht, wer eingestempelt ist. Über die Buttons kannst du dich ein- oder ausstempeln; die Liste aktualisiert sich automatisch.',
-          color: 0x3b82f6,
-          fields: [
-            { name: 'Eingestempelt', value: String(snapshot.activeCount), inline: true },
-            { name: 'Aktive Dienstzeit', value: formatDuration(snapshot.totalActiveDurationMs), inline: true },
-            { name: 'Wochenstunden gesamt', value: formatDuration(snapshot.totalWeekDurationMs), inline: true },
-            { name: 'Aktuelle Officers', value: truncate(activeList, 1024), inline: false },
-          ],
-          timestamp: snapshot.now.toISOString(),
-          footer: { text: 'HR • Dienstzeiten (live)' },
-        },
-      ],
-      components: [
-        {
-          type: 1,
-          components: [
-            { type: 2, style: 3, custom_id: 'lspd_duty_clock_in', label: 'Einstempeln' },
-            { type: 2, style: 4, custom_id: 'lspd_duty_clock_out', label: 'Ausstempeln' },
-            { type: 2, style: 2, custom_id: 'lspd_duty_refresh', label: 'Aktualisieren' },
-          ],
-        },
-      ],
+function chunkLines(lines: string[], maxChars = 1024) {
+  const chunks: string[] = []
+  let current = ''
+  for (const line of lines) {
+    const candidate = current ? `${current}\n\n${line}` : line
+    if (candidate.length > maxChars && current) {
+      chunks.push(current)
+      current = line.length > maxChars ? `${line.slice(0, maxChars - 1)}…` : line
+    } else {
+      current = candidate.length > maxChars ? `${candidate.slice(0, maxChars - 1)}…` : candidate
     }
-  })
+  }
+  if (current) chunks.push(current)
+  return chunks
+}
+
+const DUTY_LIST_LIMIT = 25
+
+async function dutyStatusPayload() {
+  const [snapshot, prefix, orgName] = await Promise.all([
+    getDutyTimesSnapshot(),
+    getBadgePrefix(),
+    getOrgName(),
+  ])
+
+  const visible = snapshot.activeRows.slice(0, DUTY_LIST_LIMIT)
+  const overflow = Math.max(0, snapshot.activeRows.length - visible.length)
+
+  const fields: DiscordField[] = [
+    { name: 'Im Dienst', value: `**${snapshot.activeCount}**`, inline: true },
+    { name: 'Aktive Dienstzeit', value: formatDuration(snapshot.totalActiveDurationMs), inline: true },
+    { name: 'Wochenstunden', value: formatDuration(snapshot.totalWeekDurationMs), inline: true },
+    spacerField(),
+  ]
+
+  if (visible.length === 0) {
+    fields.push({
+      name: 'Aktuell eingestempelt',
+      value: '*Niemand ist im Dienst.*\nNutze die Buttons, um deinen Dienst zu starten.',
+      inline: false,
+    })
+  } else {
+    const lines = visible.map((row, index) => {
+      const num = String(index + 1).padStart(2, '0')
+      const since = row.activeSession?.clockInAt ? discordTimestamp(row.activeSession.clockInAt, 'R') : '—'
+      const current = formatDuration(row.activeSession?.currentDurationMs ?? 0)
+      const week = formatDuration(row.weekDurationMs)
+      const dn = bracketedServiceNumber(officerBadge(row), prefix)
+      const mentionStr = mention(row.discordId)
+      return [
+        `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}`,
+        ` \`${dn}\`  ·  ${mentionStr}`,
+        ` seit ${since}  ·  **${current}** jetzt  ·  ${week} diese Woche`,
+      ].join('\n')
+    })
+
+    const chunks = chunkLines(lines, 1024)
+    chunks.forEach((value, i) => {
+      fields.push({
+        name: i === 0 ? `Aktuell eingestempelt (${snapshot.activeCount})` : ZWSP,
+        value,
+        inline: false,
+      })
+    })
+
+    if (overflow > 0) {
+      fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
+    }
+  }
+
+  return {
+    embeds: [
+      {
+        author: { name: `${orgName} · Dienstzeiten` },
+        title: '🟢  Live-Status · Dienstzeiten',
+        description: quoteBlock('Übersicht aller eingestempelten Officers. Nutze die Buttons unten, um dich ein- oder auszustempeln — die Liste aktualisiert sich automatisch.'),
+        color: 0x3b82f6,
+        fields: fields.slice(0, 25).map(cleanEmbedField),
+        timestamp: snapshot.now.toISOString(),
+        footer: { text: `${orgName} HR · Dienstzeiten · live` },
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          { type: 2, style: 3, custom_id: 'lspd_duty_clock_in', label: 'Einstempeln', emoji: { name: '🟢' } },
+          { type: 2, style: 4, custom_id: 'lspd_duty_clock_out', label: 'Ausstempeln', emoji: { name: '🔴' } },
+          { type: 2, style: 2, custom_id: 'lspd_duty_refresh', label: 'Aktualisieren', emoji: { name: '🔄' } },
+        ],
+      },
+    ],
+  }
 }
 
 async function saveDutyStatusMessageId(messageId: string) {
@@ -649,33 +720,33 @@ export async function sendDiscordDutyEvent(
 
   const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
   const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
-  const rankName = officer.rank?.name ?? '—'
-  const title = action === 'clock-in' ? '| Dienst: Einstempeln' : '| Dienst: Ausstempeln'
-  const description = truncate(
-    action === 'clock-in'
-      ? [
-          `${mention(officer.discordId)} **${officerName(officer)}**`,
-          '',
-          `**Dienstnummer:** ${dn}`,
-          `**Rang:** ${rankName}`,
-          `**Eingestempelt:** ${formatDiscordDateLong(session.clockInAt)}`,
-        ].join('\n')
-      : [
-          `${mention(officer.discordId)} **${officerName(officer)}**`,
-          '',
-          `**Dienstnummer:** ${dn}`,
-          `**Rang:** ${rankName}`,
-          `**Beginn:** ${formatDiscordDateLong(session.clockInAt)}`,
-          ...(session.clockOutAt ? [`**Ende:** ${formatDiscordDateLong(session.clockOutAt)}`] : []),
-          ...(durationMs !== undefined ? [`**Dauer:** ${formatDuration(durationMs)}`] : []),
-        ].join('\n'),
-    4096,
-  )
+  const meta = EVENT_META[action === 'clock-in' ? 'dutyIn' : 'dutyOut']
+
+  const fields: DiscordField[] = [
+    { name: 'Officer', value: `**${officerName(officer)}**\n${mention(officer.discordId)}`, inline: true },
+    { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
+    { name: 'Rang', value: officer.rank?.name ?? '—', inline: true },
+  ]
+
+  if (action === 'clock-in') {
+    fields.push(
+      spacerField(),
+      { name: 'Dienstantritt', value: discordTimestamp(session.clockInAt, 'F'), inline: false },
+    )
+  } else {
+    fields.push(
+      spacerField(),
+      { name: 'Beginn', value: discordTimestamp(session.clockInAt, 'f'), inline: true },
+      ...(session.clockOutAt ? [{ name: 'Ende', value: discordTimestamp(session.clockOutAt, 'f'), inline: true }] : []),
+      ...(durationMs !== undefined ? [{ name: 'Dauer', value: `**${formatDuration(durationMs)}**`, inline: true }] : []),
+    )
+  }
 
   await postChannelEmbed(channelId, {
-    title,
-    description,
-    color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, EVENT_COLORS[action === 'clock-in' ? 'dutyIn' : 'dutyOut']) : 0x3b82f6,
+    author: { name: `${orgName} · ${meta.section}` },
+    title: `${meta.accent}  ${meta.label}  ·  ${officerName(officer)}`,
+    color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color,
+    fields: fields.slice(0, 25).map(cleanEmbedField),
     timestamp: new Date().toISOString(),
     footer: { text: `${orgName} HR · Dienstzeit-Protokoll` },
   })

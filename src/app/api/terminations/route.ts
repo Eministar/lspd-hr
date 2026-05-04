@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       officer,
       actor: user,
       fields: [
-        { name: '📌 Grund', value: String(reason) },
+        { name: 'Grund', value: String(reason), inline: false },
       ],
     })
 

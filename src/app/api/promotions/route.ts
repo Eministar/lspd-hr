@@ -109,15 +109,16 @@ export async function POST(req: NextRequest) {
     queueOfficerRoleSync(officerId)
     queueDiscordHrEvent({
       type: 'promotion',
-      title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-      description: note ? `📝 ${note}` : 'Rangänderung erfolgreich durchgeführt.',
+      title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
+      description: note
+        ? `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} durchgeführt.\n*Notiz:* ${note}`
+        : `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} erfolgreich durchgeführt.`,
       officer: updatedOfficer,
       actor: user,
       fields: [
-        { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
-        { name: '➡️ Neuer Rang', value: newRank.name, inline: true },
-        { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadgeNumber || officer.badgeNumber}`, inline: true },
-        { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+        { name: 'Alter Rang', value: officer.rank.name, inline: true },
+        { name: 'Neuer Rang', value: `**${newRank.name}**`, inline: true },
+        { name: 'DN-Wechsel', value: `${officer.badgeNumber} → **${newBadgeNumber || officer.badgeNumber}**`, inline: true },
       ],
     })
 

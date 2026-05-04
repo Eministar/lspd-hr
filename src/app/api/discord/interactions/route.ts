@@ -298,7 +298,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
     await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
   }
 
-  const promotion = await prisma.promotionLog.create({
+  await prisma.promotionLog.create({
     data: {
       officerId: officer.id,
       oldRankId: officer.rankId,
@@ -316,18 +316,20 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
     include: { rank: true },
   })
 
+  const note = textOption(options, 'notiz')
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'promotion',
-    title: `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'}: ${officer.firstName} ${officer.lastName}`,
-    description: textOption(options, 'notiz') ? `📝 ${textOption(options, 'notiz')}` : 'Rangänderung erfolgreich durchgeführt.',
+    title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
+    description: note
+      ? `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Discord-Command.\n*Notiz:* ${note}`
+      : `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Discord-Command.`,
     officer: updated,
     actor,
     fields: [
-      { name: '⬅️ Alter Rang', value: officer.rank.name, inline: true },
-      { name: '➡️ Neuer Rang', value: newRank.name, inline: true },
-      { name: '🔁 Dienstnummer-Wechsel', value: `${officer.badgeNumber} → ${newBadgeNumber}`, inline: true },
-      { name: '📅 Gültig ab', value: promotion.createdAt.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }), inline: true },
+      { name: 'Alter Rang', value: officer.rank.name, inline: true },
+      { name: 'Neuer Rang', value: `**${newRank.name}**`, inline: true },
+      { name: 'DN-Wechsel', value: `${officer.badgeNumber} → **${newBadgeNumber}**`, inline: true },
     ],
   })
 
@@ -351,10 +353,12 @@ async function handleTraining(options: DiscordOption[] | undefined, actor: Retur
   queueDiscordHrEvent({
     type: 'training',
     title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
-    description: 'Ausbildungsstand aktualisiert.',
+    description: 'Ausbildungsstand wurde via Discord aktualisiert.',
     officer,
     actor,
-    fields: [{ name: `🎓 ${training.label}`, value: completed ? '✅ abgeschlossen' : '⏳ offen', inline: true }],
+    fields: [
+      { name: training.label, value: completed ? '✅ **abgeschlossen**' : '⏳ offen', inline: true },
+    ],
   })
 
   return reply(`${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`)
@@ -383,11 +387,15 @@ async function handleUnit(options: DiscordOption[] | undefined, actor: ReturnTyp
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'units',
-    title: `Unit geändert: ${officer.firstName} ${officer.lastName}`,
-    description: 'Unit-Zuordnung aktualisiert.',
+    title: `Unit-Zuordnung: ${officer.firstName} ${officer.lastName}`,
+    description: `Unit-Zuordnung via Discord-Command (${action}).`,
     officer: updated,
     actor,
-    fields: [{ name: '🚓 Units', value: `${current.join(', ') || '-'} → ${next.join(', ') || '-'}` }],
+    fields: [{
+      name: 'Units',
+      value: `${current.join(', ') || '—'}\n→ **${next.join(', ') || '—'}**`,
+      inline: false,
+    }],
   })
 
   return reply(`Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`)
@@ -424,7 +432,7 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
     description: 'Dienstverhältnis beendet. Zugeordnete LSPD-Rollen wurden entfernt.',
     officer,
     actor,
-    fields: [{ name: '📌 Grund', value: reason }],
+    fields: [{ name: 'Grund', value: reason, inline: false }],
   })
 
   return reply(`Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`)
@@ -468,13 +476,13 @@ async function handleAbsence(
   queueDiscordHrEvent({
     type: 'update',
     title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
-    description: 'Officer wurde über Discord abgemeldet und blau markiert.',
+    description: 'Officer wurde über Discord abgemeldet.',
     officer: result.officer,
     actor,
     fields: [
       { name: 'Von', value: formatAbsenceDate(startsAt), inline: true },
       { name: 'Bis', value: formatAbsenceDate(endsAt), inline: true },
-      { name: 'Grund', value: reason },
+      { name: 'Grund', value: reason, inline: false },
     ],
   })
 

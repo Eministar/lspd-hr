@@ -1,7 +1,7 @@
 /**
  * Anzeige-Label (semver + Status). Bei Release `package.json` `"version"` anpassen.
  */
-export const APP_VERSION_LABEL = '0.1.0'
+export const APP_VERSION_LABEL = '0.1.1'
 
 /** Kurzes Build-Kürzel (Git-SHA, CI-Id, …). */
 export function releaseBuildShort(): string {
