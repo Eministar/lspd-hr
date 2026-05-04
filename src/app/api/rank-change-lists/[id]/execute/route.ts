@@ -50,9 +50,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!nextBadge && rankHasBadgeRange(entry.proposedRank)) {
         const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
         const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, usedBadgeInts, current)
-        if (assigned === null) return error(`Keine freie Dienstnummer im Bereich für ${entry.officer.firstName} ${entry.officer.lastName}`)
-        nextBadge = formatBadgeNumber(assigned, prefix)
-        usedBadgeInts.add(assigned)
+        // If no free badge is found, fall back to keeping the officer's current badge number
+        // (this mirrors the behaviour in the promotions endpoint and avoids a hard 400 when ranges are exhausted)
+        if (assigned === null) {
+          nextBadge = entry.officer.badgeNumber
+        } else {
+          nextBadge = formatBadgeNumber(assigned, prefix)
+          usedBadgeInts.add(assigned)
+        }
       }
       if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
       const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, entry.officerId)

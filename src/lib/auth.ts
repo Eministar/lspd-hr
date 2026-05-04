@@ -72,14 +72,27 @@ export async function getCurrentUser() {
   } satisfies CurrentUser
 }
 
-export async function requireAuth(_allowedRoles?: string[], allowedPermissions?: Permission[]) {
+export async function requireAuth(allowedRoles?: string[], allowedPermissions?: Permission[]) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
-  const hasRestriction = !!allowedPermissions
-  const permissionAllowed = allowedPermissions ? hasAnyPermission(user, allowedPermissions) : false
-  if (hasRestriction && !permissionAllowed) {
-    throw new Error('Forbidden')
+
+  // If allowedRoles is provided, allow when the user's group name matches any of them.
+  // This keeps backward compatibility where routes could pass role names like 'ADMIN' or 'HR'.
+  if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+    const groupName = user.group?.name
+    if (groupName) {
+      const groupLower = groupName.toLowerCase()
+      const allowedLower = allowedRoles.map((r) => String(r).toLowerCase())
+      if (allowedLower.includes(groupLower)) return user
+    }
   }
+
+  // If allowedPermissions is provided, require at least one of the permissions.
+  if (Array.isArray(allowedPermissions) && allowedPermissions.length > 0) {
+    const permissionAllowed = hasAnyPermission(user, allowedPermissions)
+    if (!permissionAllowed) throw new Error('Forbidden')
+  }
+
   return user
 }
 

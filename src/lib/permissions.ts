@@ -72,7 +72,8 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
   'terminations:manage': ['terminations:view', 'officers:view'],
-  'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view'],
+  // Backward-compatibility: managing rank changes should include ability to execute rank-change-lists
+  'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],
   'rank-change-lists:execute': ['rank-changes:view', 'officers:view', 'ranks:view'],
   'tasks:manage': ['tasks:view', 'officers:view'],
   'notes:manage': ['notes:view', 'officers:view'],
