@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { StatusPageFrame, StatusLink } from '@/components/layout/status-page-frame'
 import { Button } from '@/components/ui/button'
+import { isChunkLoadProblem, reloadOnce } from '@/components/runtime/chunk-load-guard'
 
 export default function ErrorPage({
   error,
@@ -13,6 +14,12 @@ export default function ErrorPage({
   reset: () => void
 }) {
   useEffect(() => {
+    if (isChunkLoadProblem(error)) {
+      if (reloadOnce('ChunkLoadError im React-Error-Boundary erkannt — automatischer Reload nach Deploy.')) {
+        return
+      }
+    }
+
     console.error(error)
     fetch('/api/runtime-events', {
       method: 'POST',

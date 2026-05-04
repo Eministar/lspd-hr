@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 const RELOAD_KEY = 'lspd:last-chunk-reload'
 const RELOAD_WINDOW_MS = 30_000
 
-function isChunkLoadProblem(value: unknown) {
+export function isChunkLoadProblem(value: unknown) {
   if (!value) return false
   const text =
     value instanceof Error
@@ -17,9 +17,10 @@ function isChunkLoadProblem(value: unknown) {
   return /ChunkLoadError|Loading chunk|Failed to load chunk|\/_next\/static\/chunks\//i.test(text)
 }
 
-function reloadOnce(reason: string) {
+export function reloadOnce(reason: string) {
+  if (typeof window === 'undefined') return false
   const lastReload = Number(sessionStorage.getItem(RELOAD_KEY) || '0')
-  if (Date.now() - lastReload < RELOAD_WINDOW_MS) return
+  if (Date.now() - lastReload < RELOAD_WINDOW_MS) return false
 
   sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
   fetch('/api/runtime-events', {
@@ -34,6 +35,7 @@ function reloadOnce(reason: string) {
   }).catch(() => {})
 
   window.location.reload()
+  return true
 }
 
 export function ChunkLoadGuard() {
@@ -51,12 +53,26 @@ export function ChunkLoadGuard() {
       }
     }
 
+    const onResourceError = (event: Event) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      const src =
+        (target as HTMLScriptElement).src ||
+        (target as HTMLLinkElement).href ||
+        ''
+      if (typeof src === 'string' && /\/_next\/static\/(chunks|css)\//.test(src)) {
+        reloadOnce(`Statischer Build-Asset konnte nicht geladen werden: ${src}`)
+      }
+    }
+
     window.addEventListener('unhandledrejection', onUnhandledRejection)
     window.addEventListener('error', onError)
+    window.addEventListener('error', onResourceError, true)
 
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection)
       window.removeEventListener('error', onError)
+      window.removeEventListener('error', onResourceError, true)
     }
   }, [])
 
