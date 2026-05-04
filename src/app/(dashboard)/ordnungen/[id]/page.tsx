@@ -4,24 +4,16 @@ import Link from 'next/link'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { renderMarkdown } from '@/lib/markdown'
-
-interface OrdnungConfig {
-  id: string
-  title: string
-  description: string
-  category: string
-  buttonLabel: string
-  file: string
-  icon: string
-}
+import { normalizeOrdnungConfigs, type OrdnungConfig } from '@/lib/ordnungen'
 
 async function loadOrdnung(id: string) {
   try {
     const configPath = path.join(process.cwd(), 'ordnungen', 'config.json')
     const configData = await fs.readFile(configPath, 'utf8')
-    const configs: OrdnungConfig[] = JSON.parse(configData)
+    const parsed: unknown = JSON.parse(configData)
+    const configs: OrdnungConfig[] = normalizeOrdnungConfigs(parsed)
 
-    const config = configs.find(c => c.id === id)
+    const config = configs.find((c) => c.id === id)
     if (!config) {
       return { config: null, html: null, error: 'Ordnung nicht gefunden' }
     }

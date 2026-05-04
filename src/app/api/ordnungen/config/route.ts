@@ -1,16 +1,19 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { NextResponse } from 'next/server'
+import { success, error as apiError } from '@/lib/api-response'
+import { normalizeOrdnungConfigs } from '@/lib/ordnungen'
 
 export async function GET() {
   try {
     const configPath = path.join(process.cwd(), 'ordnungen', 'config.json')
     const data = await fs.readFile(configPath, 'utf8')
-    const config = JSON.parse(data)
-    return NextResponse.json(config.ordnungen)
+    const parsed: unknown = JSON.parse(data)
+    const configs = normalizeOrdnungConfigs(parsed)
+
+    return success(configs)
   } catch (error) {
     console.error('Error loading ordnungen config:', error)
-    return NextResponse.json({ error: 'Failed to load ordnungen config' }, { status: 500 })
+    return apiError('Failed to load ordnungen config', 500)
   }
 }
 
