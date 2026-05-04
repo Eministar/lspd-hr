@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, RefreshCw, Save, ShieldCheck } from 'lucide-react'
+import { Clock, RefreshCw, Save, ShieldCheck, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -148,6 +148,24 @@ export default function SettingsPage() {
     }
   }
 
+  const [fullSyncLoading, setFullSyncLoading] = useState(false)
+
+  const fullSync = async () => {
+    setFullSyncLoading(true)
+    try {
+      const res = await execute('/api/discord/full-sync', { method: 'POST' }) as { synced: number; skipped: number; failed: number; total: number; message: string }
+      addToast({
+        type: res.failed > 0 ? 'warning' : 'success',
+        title: 'Discord Full-Sync abgeschlossen',
+        message: res.message,
+      })
+    } catch (err) {
+      addToast({ type: 'error', title: 'Full-Sync fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setFullSyncLoading(false)
+    }
+  }
+
   const addRole = (field: 'employeeRoleIds' | 'commandRoleIds', roleId: string) => {
     if (!roleId) return
     setDiscordForm((prev) => ({
@@ -257,7 +275,10 @@ export default function SettingsPage() {
                 Bot-Token wird über die Umgebung gesetzt. Rollen, Channel und Command-Rechte werden hier gepflegt.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="secondary" size="sm" onClick={fullSync} disabled={fullSyncLoading}>
+                {fullSyncLoading ? <><RefreshCw size={13} className="animate-spin" /> Synchronisiere…</> : <><Users size={13} /> Alles synchronisieren</>}
+              </Button>
               <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu laden</Button>
               <Button variant="secondary" size="sm" onClick={registerCommands}><ShieldCheck size={13} /> Commands</Button>
               <Button variant="secondary" size="sm" onClick={publishDutyEmbed}><Clock size={13} /> Dienstzeiten</Button>

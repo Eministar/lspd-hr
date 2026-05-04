@@ -497,7 +497,7 @@ export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord)
 
 export async function syncAllOfficerDiscordRoles() {
   const config = await getDiscordConfig()
-  if (!config.guildId || !botToken()) return { synced: 0 }
+  if (!config.guildId || !botToken()) return { synced: 0, skipped: 0, failed: 0, total: 0 }
 
   const officers = await prisma.officer.findMany({
     include: {
@@ -508,17 +508,24 @@ export async function syncAllOfficerDiscordRoles() {
   })
 
   let synced = 0
+  let skipped = 0
+  let failed = 0
   // Officers sequentiell verarbeiten (1 pro Batch) um Rate-Limits zu vermeiden
   for (const officer of officers) {
+    if (!officer.discordId) {
+      skipped++
+      continue
+    }
     try {
       await syncOfficerDiscordMember(officer, config, officer.status === 'TERMINATED' ? 'remove-all' : 'sync')
       synced++
     } catch (err) {
+      failed++
       console.error(`[DiscordIntegration] Sync fehlgeschlagen für Officer ${officer.badgeNumber}:`, err)
     }
   }
 
-  return { synced }
+  return { synced, skipped, failed, total: officers.length }
 }
 
 function bracketedServiceNumber(badgeNumber: string, prefix: string) {
