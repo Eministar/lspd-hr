@@ -586,13 +586,13 @@ export async function sendDiscordHrEvent(event: {
   if (event.type === 'hire' && officer) {
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankValue = rankRoleSnow
-      ? `<@&${rankRoleSnow}> ${officer.rank?.name ?? '—'}`
+      ? `<@&${rankRoleSnow}>`
       : officer.rank?.name ?? '—'
     const hireAt = officer.hireDate ?? now
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
 
     const hireFields: DiscordField[] = [
-      { name: 'Officer', value: `**${officerName(officer)}** ${mention(officer.discordId)}`, inline: true },
+      { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
       { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
       { name: 'Rang', value: rankValue, inline: true },
       { name: 'Eintrittsdatum', value: discordTimestamp(hireAt, 'D'), inline: true },
@@ -624,11 +624,11 @@ export async function sendDiscordHrEvent(event: {
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankValue = rankRoleSnow
-      ? `<@&${rankRoleSnow}> ${officer.rank?.name ?? '—'}`
+      ? `<@&${rankRoleSnow}>`
       : officer.rank?.name ?? '—'
 
     fields.push(
-      { name: 'Officer', value: `**${officerName(officer)}** ${mention(officer.discordId)}`, inline: true },
+      { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
       { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
       { name: 'Rang', value: rankValue, inline: true },
     )
@@ -798,7 +798,7 @@ export async function sendDiscordDutyEvent(
   const meta = EVENT_META[action === 'clock-in' ? 'dutyIn' : 'dutyOut']
 
   const fields: DiscordField[] = [
-    { name: 'Officer', value: `**${officerName(officer)}** ${mention(officer.discordId)}`, inline: true },
+    { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
     { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
     { name: 'Rang', value: officer.rank?.name ?? '—', inline: true },
   ]
