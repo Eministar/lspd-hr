@@ -71,13 +71,10 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
     { name: 'Quelle', value: event.source ?? 'server', inline: true },
     { name: 'Umgebung', value: process.env.NODE_ENV || 'unknown', inline: true },
   ]
-  const fields: WebhookField[] = [...userFields]
-  if (userFields.length > 0) fields.push({ name: '​', value: '​', inline: false })
-  fields.push(...metaFields)
+  const fields: WebhookField[] = [...userFields, ...metaFields]
 
   const errorText = stringifyError(event.error)
   if (errorText) {
-    fields.push({ name: '​', value: '​', inline: false })
     fields.push({ name: 'Fehlerdetails', value: `\`\`\`\n${truncate(errorText, MAX_FIELD_VALUE - 8)}\n\`\`\``, inline: false })
   }
 
@@ -95,7 +92,7 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
             color: COLORS[severity],
             fields: fields.slice(0, 25).map(cleanField),
             timestamp: new Date().toISOString(),
-            footer: { text: 'LSPD HR Dashboard · System-Monitor' },
+            footer: { text: `LSPD HR Dashboard · System-Monitor · ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
           },
         ],
       }),
