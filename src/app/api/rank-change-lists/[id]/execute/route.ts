@@ -151,10 +151,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return success({ executed, total: list.entries.length })
   } catch (e: unknown) {
+    // Log error for debugging (will appear in server console)
+    console.error('Error executing rank-change-list:', e)
     if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
-    return error(msg, 500)
+    // If the error is a plain Bad Request string from Next or middleware, return it as 400
+    return error(msg, 400)
   }
 }

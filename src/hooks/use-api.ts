@@ -23,6 +23,8 @@ export function useApi<T = unknown>(): UseApiResult<T> {
       const res = await fetch(url, {
         ...options,
         cache: 'no-store',
+        // include credentials to ensure cookies are sent in cross-origin/same-site setups
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...options?.headers },
       })
 
