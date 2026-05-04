@@ -92,6 +92,49 @@ const ZWSP = '​'
 
 let syncSchedulerStarted = false
 
+/* ── Rate-Limit Queue ────────────────────────────────────────────── */
+const MAX_RETRIES = 3
+let rateLimitQueue: Promise<void> = Promise.resolve()
+
+function enqueueRateLimited<T>(fn: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    rateLimitQueue = rateLimitQueue.then(async () => {
+      try {
+        resolve(await fn())
+      } catch (err) {
+        reject(err)
+      }
+    })
+  })
+}
+
+/* ── In-Memory Cache für Guild-Daten ─────────────────────────────── */
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 Minuten
+
+interface CacheEntry<T> {
+  data: T
+  expiresAt: number
+}
+
+const guildRolesCache = new Map<string, CacheEntry<DiscordRole[]>>()
+const guildChannelsCache = new Map<string, CacheEntry<DiscordChannel[]>>()
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key)
+  if (entry && Date.now() < entry.expiresAt) return entry.data
+  if (entry) cache.delete(key)
+  return null
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void {
+  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS })
+}
+
+export function invalidateDiscordCache() {
+  guildRolesCache.clear()
+  guildChannelsCache.clear()
+}
+
 function botToken() {
   return process.env.DISCORD_BOT_TOKEN?.trim() || process.env.LSPD_DISCORD_BOT_TOKEN?.trim() || ''
 }
@@ -229,7 +272,7 @@ function hexColorToDiscord(color: string | null | undefined, fallback: number) {
   return Number.parseInt(color.slice(1), 16)
 }
 
-async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
   const token = botToken()
   if (!token) throw new Error('Discord Bot-Token fehlt')
 
@@ -240,8 +283,17 @@ async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
       'content-type': 'application/json',
       ...init?.headers,
     },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(15000),
   })
+
+  // Rate-Limit: warten und erneut versuchen
+  if (res.status === 429 && attempt < MAX_RETRIES) {
+    const body = await res.json().catch(() => ({ retry_after: 2 })) as { retry_after?: number }
+    const waitMs = Math.min((body.retry_after ?? 2) * 1000, 30000)
+    console.warn(`[DiscordIntegration] Rate-Limited auf ${path}, warte ${Math.round(waitMs)}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
+    await new Promise((r) => setTimeout(r, waitMs + 250))
+    return discordFetchRaw<T>(path, init, attempt + 1)
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -250,6 +302,10 @@ async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
+}
+
+async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return enqueueRateLimited(() => discordFetchRaw<T>(path, init))
 }
 
 export async function getDiscordConfig(): Promise<DiscordConfig> {
@@ -307,10 +363,13 @@ export async function getDiscordGuildRoles(guildId?: string) {
   const id = guildId || config.guildId
   if (!id || !botToken()) return []
 
+  const cached = getCached(guildRolesCache, id)
+  if (cached) return cached
+
   const roles = await discordFetch<DiscordRole[]>(`/guilds/${id}/roles`)
   const seenIds = new Set<string>()
 
-  return roles
+  const result = roles
     .filter((role) => !role.managed && role.name !== '@everyone')
     .sort((a, b) => b.position - a.position || a.name.localeCompare(b.name))
     .filter((role) => {
@@ -318,6 +377,9 @@ export async function getDiscordGuildRoles(guildId?: string) {
       seenIds.add(role.id)
       return true
     })
+
+  setCache(guildRolesCache, id, result)
+  return result
 }
 
 export async function getDiscordGuildChannels(guildId?: string) {
@@ -325,10 +387,16 @@ export async function getDiscordGuildChannels(guildId?: string) {
   const id = guildId || config.guildId
   if (!id || !botToken()) return []
 
+  const cached = getCached(guildChannelsCache, id)
+  if (cached) return cached
+
   const channels = await discordFetch<DiscordChannel[]>(`/guilds/${id}/channels`)
-  return channels
+  const result = channels
     .filter((channel) => channel.type === 0 || channel.type === 5 || channel.type === 15)
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+
+  setCache(guildChannelsCache, id, result)
+  return result
 }
 
 async function getOfficerForDiscord(officerId: string) {
@@ -381,13 +449,20 @@ async function syncOfficerDiscordMember(
   const toAdd = desired.filter((roleId) => !currentRoles.has(roleId))
   const toRemove = allManaged.filter((roleId) => currentRoles.has(roleId) && !desiredSet.has(roleId))
 
-  const roleResults = await Promise.allSettled([
-    ...toRemove.map((roleId) => discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' })),
-    ...toAdd.map((roleId) => discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'PUT' })),
-  ])
-
-  for (const result of roleResults) {
-    if (result.status === 'rejected') console.error('[DiscordIntegration] Rollenaktion fehlgeschlagen:', result.reason)
+  // Rollen sequentiell verarbeiten um Rate-Limits zu vermeiden
+  for (const roleId of toRemove) {
+    try {
+      await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('[DiscordIntegration] Rolle entfernen fehlgeschlagen:', err)
+    }
+  }
+  for (const roleId of toAdd) {
+    try {
+      await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'PUT' })
+    } catch (err) {
+      console.error('[DiscordIntegration] Rolle hinzufügen fehlgeschlagen:', err)
+    }
   }
 
   if (mode === 'sync' && officer.status !== 'TERMINATED') {
@@ -433,12 +508,14 @@ export async function syncAllOfficerDiscordRoles() {
   })
 
   let synced = 0
-  for (let i = 0; i < officers.length; i += 5) {
-    const batch = officers.slice(i, i + 5)
-    await Promise.allSettled(batch.map(async (officer) => {
+  // Officers sequentiell verarbeiten (1 pro Batch) um Rate-Limits zu vermeiden
+  for (const officer of officers) {
+    try {
       await syncOfficerDiscordMember(officer, config, officer.status === 'TERMINATED' ? 'remove-all' : 'sync')
       synced++
-    }))
+    } catch (err) {
+      console.error(`[DiscordIntegration] Sync fehlgeschlagen für Officer ${officer.badgeNumber}:`, err)
+    }
   }
 
   return { synced }

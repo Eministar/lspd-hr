@@ -7,6 +7,7 @@ import {
   getDiscordConfig,
   getDiscordGuildChannels,
   getDiscordGuildRoles,
+  invalidateDiscordCache,
   queueAllOfficerRoleSync,
   saveDiscordConfig,
 } from '@/lib/discord-integration'
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const canManageSettings = hasPermission(user, 'settings:manage')
 
+    invalidateDiscordCache()
     await saveDiscordConfig({
       guildId: canManageSettings && typeof body.guildId === 'string' ? body.guildId : undefined,
       applicationId: canManageSettings && typeof body.applicationId === 'string' ? body.applicationId : undefined,
