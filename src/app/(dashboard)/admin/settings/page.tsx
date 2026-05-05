@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, RefreshCw, Save, ShieldCheck, Users } from 'lucide-react'
+import { CalendarDays, Clock, RefreshCw, Save, ShieldCheck, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -45,6 +45,8 @@ interface DiscordConfigResponse {
     dutyStatusChannelId: string
     dutyAdminLogChannelId: string
     dutyStatusMessageId: string
+    absenceStatusChannelId: string
+    absenceStatusMessageId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
     rankRoleMap: Record<string, string>
@@ -61,6 +63,7 @@ interface DiscordConfigResponse {
     applicationConfigured: boolean
     announcementsChannelConfigured: boolean
     dutyAdminLogConfigured: boolean
+    absenceStatusChannelConfigured: boolean
     rolesError: string | null
     channelsError: string | null
   }
@@ -81,6 +84,8 @@ export default function SettingsPage() {
     dutyStatusChannelId: '',
     dutyAdminLogChannelId: '',
     dutyStatusMessageId: '',
+    absenceStatusChannelId: '',
+    absenceStatusMessageId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
     rankRoleMap: {},
@@ -141,6 +146,17 @@ export default function SettingsPage() {
     try {
       await execute('/api/duty-times/discord-message', { method: 'POST' })
       addToast({ type: 'success', title: 'Dienstzeiten-Embed aktualisiert' })
+      discordInitialized.current = false
+      await refetchDiscord()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const publishAbsenceEmbed = async () => {
+    try {
+      await execute('/api/absences/discord-message', { method: 'POST' })
+      addToast({ type: 'success', title: 'Abmeldungs-Embed aktualisiert' })
       discordInitialized.current = false
       await refetchDiscord()
     } catch (err) {
@@ -282,6 +298,7 @@ export default function SettingsPage() {
               <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu laden</Button>
               <Button variant="secondary" size="sm" onClick={registerCommands}><ShieldCheck size={13} /> Commands</Button>
               <Button variant="secondary" size="sm" onClick={publishDutyEmbed}><Clock size={13} /> Dienstzeiten</Button>
+              <Button variant="secondary" size="sm" onClick={publishAbsenceEmbed}><CalendarDays size={13} /> Abmeldungen</Button>
               <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Speichern</Button>
             </div>
           </div>
@@ -348,6 +365,17 @@ export default function SettingsPage() {
               />
               <p className="text-[11px] text-[#5c728a] mt-1.5">
                 Hier erscheinen die Protokoll-Einträge zu Ein- und Ausstempeln. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <Select
+                label="Abmeldungs-Channel"
+                value={discordForm.absenceStatusChannelId}
+                onValueChange={(absenceStatusChannelId) => setDiscordForm({ ...discordForm, absenceStatusChannelId })}
+                options={channelOptions}
+              />
+              <p className="text-[11px] text-[#5c728a] mt-1.5">
+                Öffentliches Panel mit allen aktuell abgemeldeten Officers. Leer lassen, um den Dienstzeiten- oder Ankündigungs-Channel zu nutzen.
               </p>
             </div>
           </div>

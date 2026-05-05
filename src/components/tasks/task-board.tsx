@@ -25,6 +25,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ColorField } from '@/components/ui/color-field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -898,24 +899,12 @@ export function TaskBoard({ module, title, description, accentLabel, headerActio
             rows={3}
             placeholder="Worum geht es bei dieser Liste?"
           />
-          <div>
-            <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Akzentfarbe</label>
-            <div className="flex flex-wrap gap-2">
-              {COLOR_PRESETS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setListForm({ ...listForm, color: c })}
-                  className={cn(
-                    'h-7 w-7 rounded-full border-2 transition-transform',
-                    listForm.color === c ? 'border-white scale-110' : 'border-transparent hover:scale-105',
-                  )}
-                  style={{ backgroundColor: c }}
-                  aria-label={`Farbe ${c}`}
-                />
-              ))}
-            </div>
-          </div>
+          <ColorField
+            label="Akzentfarbe"
+            value={listForm.color}
+            onChange={(color) => setListForm({ ...listForm, color })}
+            presets={COLOR_PRESETS}
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="secondary"

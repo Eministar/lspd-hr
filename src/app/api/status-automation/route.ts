@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { error, success, unauthorized } from '@/lib/api-response'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
+import { syncDiscordAbsenceStatusMessage, syncDiscordDutyStatusMessage } from '@/lib/discord-integration'
 
 export const runtime = 'nodejs'
 
@@ -18,7 +19,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await runOfficerStatusAutomation({ force: true })
-    return success(result)
+    const panelResults = await Promise.allSettled([
+      syncDiscordAbsenceStatusMessage(),
+      syncDiscordDutyStatusMessage(),
+    ])
+    return success({
+      ...result,
+      panelsUpdated: panelResults.filter((item) => item.status === 'fulfilled').length,
+    })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     return error(msg, 500)

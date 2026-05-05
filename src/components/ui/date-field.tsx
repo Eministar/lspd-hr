@@ -47,6 +47,7 @@ export function DateField({
   const [open, setOpen] = React.useState(false)
   const genId = React.useId()
   const fieldId = id ?? genId
+  const errorId = error ? `${fieldId}-error` : undefined
   const selected = parseIsoDate(value)
   const display =
     selected != null
@@ -71,7 +72,9 @@ export function DateField({
             type="button"
             id={fieldId}
             disabled={disabled}
-            aria-required={required}
+            aria-describedby={errorId}
+            data-invalid={error ? '' : undefined}
+            data-required={required ? '' : undefined}
             className={cn(
               'flex w-full h-[36px] items-center justify-between gap-2 rounded-[9px] border px-3 text-left text-[13.5px] transition-all duration-150',
               'bg-[#0a1a33]/60 text-[#edf4fb] border border-[#18385f]/70',
@@ -165,7 +168,7 @@ export function DateField({
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
-      {error && <p className="text-[11.5px] text-red-500">{error}</p>}
+      {error && <p id={errorId} className="text-[11.5px] text-red-500">{error}</p>}
     </div>
   )
 }

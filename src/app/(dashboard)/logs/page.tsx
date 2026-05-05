@@ -35,6 +35,7 @@ const actionLabels: Record<string, string> = {
   OFFICER_UPDATED: 'Bearbeitet',
   OFFICER_DELETED: 'Gelöscht',
   OFFICER_PROMOTED: 'Befördert',
+  OFFICER_PROMOTION_REVERTED: 'Beförderung rückgängig',
   OFFICER_TERMINATED: 'Gekündigt',
   TRAININGS_UPDATED: 'Ausbildung',
   NOTE_ADDED: 'Notiz',

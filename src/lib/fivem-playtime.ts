@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { clippedSessionDurationMs, endOfWeek, formatDuration, sessionDurationMs, startOfCurrentWeek } from '@/lib/duty-times'
-import { runOfficerStatusAutomation } from '@/lib/absence-status'
+import { endActiveAbsencesForOfficer, runOfficerStatusAutomation } from '@/lib/absence-status'
 
 const TOKEN_SETTING_KEY = 'fivem.ingestToken'
 const STALE_SESSION_MS = 10 * 60_000
@@ -16,9 +16,12 @@ export async function getFiveMIngestToken() {
   return setting?.value.trim() || ''
 }
 
-export async function verifyFiveMIngestToken(authHeader: string | null) {
+export async function verifyFiveMIngestToken(authHeader: string | null, tokenHeader?: string | null) {
   const expected = await getFiveMIngestToken()
   if (!expected) return false
+  const directToken = tokenHeader?.trim()
+  if (directToken && directToken === expected) return true
+
   const value = authHeader?.trim() || ''
   const token = value.toLowerCase().startsWith('bearer ') ? value.slice(7).trim() : value
   return token.length > 0 && token === expected
@@ -72,6 +75,7 @@ export async function ingestFiveMPlaytime(input: {
   const sourceServerId = cleanServerId(input.sourceServerId)
   const officerId = await findOfficerId(discordId)
   const now = new Date()
+  let endedAbsences = 0
 
   if (!discordId && !license) {
     throw new Error('Discord-ID oder License ist erforderlich')
@@ -123,8 +127,9 @@ export async function ingestFiveMPlaytime(input: {
         },
       })
       await touchOfficerOnline(officerId ?? active.officerId, now)
+      endedAbsences = await endActiveAbsencesForOfficer(officerId ?? active.officerId, now)
       await runOfficerStatusAutomation({ force: true })
-      return { status: 'updated' as const, session }
+      return { status: 'updated' as const, session, endedAbsences }
     }
 
     await prisma.playtimeSession.update({
@@ -143,8 +148,9 @@ export async function ingestFiveMPlaytime(input: {
     },
   })
   await touchOfficerOnline(officerId, now)
+  endedAbsences = await endActiveAbsencesForOfficer(officerId, now)
   await runOfficerStatusAutomation({ force: true })
-  return { status: 'started' as const, session }
+  return { status: 'started' as const, session, endedAbsences }
 }
 
 export async function getOfficerPlaytimeReport(officerId: string, now = new Date()) {

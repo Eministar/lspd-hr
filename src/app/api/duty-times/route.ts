@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { clockInOfficer, clockOutOfficer, getDutyTimesSnapshot } from '@/lib/duty-times'
-import { queueDiscordDutyEvent, queueDiscordDutyStatusUpdate } from '@/lib/discord-integration'
+import { queueDiscordAbsenceStatusUpdate, queueDiscordDutyEvent, queueDiscordDutyStatusUpdate } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 export async function GET() {
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       const result = await clockInOfficer(officerId, 'dashboard')
       queueDiscordDutyEvent('clock-in', result.officer, result.session)
       queueDiscordDutyStatusUpdate()
+      if (result.endedAbsences > 0) queueDiscordAbsenceStatusUpdate()
       return success({ message: 'Officer eingestempelt' })
     }
 

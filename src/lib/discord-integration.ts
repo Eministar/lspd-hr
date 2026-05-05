@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
+import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix, getOrgName } from './settings-helpers'
 
 type DiscordRole = {
@@ -35,6 +36,8 @@ type DiscordConfig = {
   dutyStatusChannelId: string
   dutyAdminLogChannelId: string
   dutyStatusMessageId: string
+  absenceStatusChannelId: string
+  absenceStatusMessageId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
   rankRoleMap: Record<string, string>
@@ -70,6 +73,8 @@ export const DISCORD_SETTING_KEYS = {
   dutyStatusChannelId: 'discord.dutyStatusChannelId',
   dutyAdminLogChannelId: 'discord.dutyAdminLogChannelId',
   dutyStatusMessageId: 'discord.dutyStatusMessageId',
+  absenceStatusChannelId: 'discord.absenceStatusChannelId',
+  absenceStatusMessageId: 'discord.absenceStatusMessageId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   rankRoleMap: 'discord.rankRoleMap',
@@ -179,6 +184,14 @@ function envDutyAdminLogChannelId() {
   )
 }
 
+function envAbsenceStatusChannelId() {
+  return (
+    process.env.DISCORD_ABSENCE_STATUS_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_ABSENCE_STATUS_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
 function parseJson<T>(value: string | undefined, fallback: T): T {
   if (!value) return fallback
   try {
@@ -248,17 +261,6 @@ function discordTimestamp(date: Date, style: 'F' | 'f' | 'R' | 't' | 'D' = 'f') 
   return `<t:${unixSeconds(date)}:${style}>`
 }
 
-function spacerField(): DiscordField {
-  return { name: ZWSP, value: ZWSP, inline: false }
-}
-
-function quoteBlock(text: string) {
-  return text
-    .split('\n')
-    .map((line) => `> ${line.length > 0 ? line : ZWSP}`)
-    .join('\n')
-}
-
 function cleanEmbedField(field: DiscordField): DiscordField {
   return {
     name: truncate(field.name || ZWSP, 256),
@@ -321,6 +323,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
     dutyAdminLogChannelId: map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] || envDutyAdminLogChannelId(),
     dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
+    absenceStatusChannelId: map[DISCORD_SETTING_KEYS.absenceStatusChannelId] || envAbsenceStatusChannelId(),
+    absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
@@ -338,6 +342,8 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
   if (input.dutyAdminLogChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] = input.dutyAdminLogChannelId.trim()
   if (input.dutyStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusMessageId] = input.dutyStatusMessageId.trim()
+  if (input.absenceStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusChannelId] = input.absenceStatusChannelId.trim()
+  if (input.absenceStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusMessageId] = input.absenceStatusMessageId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
@@ -544,12 +550,6 @@ function bracketedServiceNumber(badgeNumber: string, prefix: string) {
   if (b.startsWith(p)) return `[${b}]`
   const join = p.endsWith('-') ? `${p}${b}` : `${p}-${b}`
   return `[${join}]`
-}
-
-function departmentDisplayName(orgName: string) {
-  const o = orgName.trim()
-  if (/^lspd$/i.test(o)) return 'Los Santos Police Department'
-  return o
 }
 
 async function postChannelEmbed(channelId: string, embed: Record<string, unknown>) {
@@ -792,6 +792,116 @@ export async function syncDiscordDutyStatusMessage(options?: { forceCreate?: boo
   await saveDutyStatusMessageId(message.id)
 }
 
+const ABSENCE_LIST_LIMIT = 25
+
+async function absenceStatusPayload() {
+  await runOfficerStatusAutomation({ force: true })
+  const [absences, prefix, orgName] = await Promise.all([
+    getActiveAbsenceNotices(),
+    getBadgePrefix(),
+    getOrgName(),
+  ])
+  const now = new Date()
+  const visible = absences.slice(0, ABSENCE_LIST_LIMIT)
+  const overflow = Math.max(0, absences.length - visible.length)
+  const nextReturn = visible[0]?.endsAt ?? null
+
+  const fields: DiscordField[] = [
+    { name: 'Aktiv abgemeldet', value: `**${absences.length}**`, inline: true },
+    { name: 'Nächste Rückkehr', value: nextReturn ? discordTimestamp(nextReturn, 'R') : '—', inline: true },
+    { name: 'Stand', value: discordTimestamp(now, 't'), inline: true },
+  ]
+
+  if (visible.length === 0) {
+    fields.push({
+      name: 'Aktuelle Abmeldungen',
+      value: '*Aktuell ist niemand abgemeldet.*',
+      inline: false,
+    })
+  } else {
+    const lines = visible.map((notice, index) => {
+      const num = String(index + 1).padStart(2, '0')
+      const officer = notice.officer
+      const reason = truncate(notice.reason.replace(/\s+/g, ' '), 180)
+      const dn = bracketedServiceNumber(officerBadge(officer), prefix)
+      return [
+        `\`${num}\`  **${officerName(officer)}**  ·  ${officer.rank.name}`,
+        ` \`${dn}\`  ·  ${mention(officer.discordId)}  ·  bis ${discordTimestamp(notice.endsAt, 'R')}`,
+        ` ${reason}`,
+      ].join('\n')
+    })
+
+    chunkLines(lines, 1024).forEach((value, index) => {
+      fields.push({
+        name: index === 0 ? `Aktuelle Abmeldungen (${absences.length})` : ZWSP,
+        value,
+        inline: false,
+      })
+    })
+
+    if (overflow > 0) {
+      fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
+    }
+  }
+
+  return {
+    embeds: [
+      {
+        author: { name: `${orgName} · Abmeldungen` },
+        title: '🔵  Live-Status · Abmeldungen',
+        description: '> Aktuell entschuldigte Officers. Abgelaufene Abmeldungen verschwinden automatisch aus diesem Panel und dem Dashboard.',
+        color: 0x38bdf8,
+        fields: fields.slice(0, 25).map(cleanEmbedField),
+        timestamp: now.toISOString(),
+        footer: { text: `${orgName} HR · Abmeldungen · live` },
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          { type: 2, style: 2, custom_id: 'lspd_absence_refresh', label: 'Aktualisieren', emoji: { name: '🔄' } },
+        ],
+      },
+    ],
+  }
+}
+
+async function saveAbsenceStatusMessageId(messageId: string) {
+  await prisma.systemSetting.upsert({
+    where: { key: DISCORD_SETTING_KEYS.absenceStatusMessageId },
+    update: { value: messageId },
+    create: { key: DISCORD_SETTING_KEYS.absenceStatusMessageId, value: messageId },
+  })
+}
+
+export async function syncDiscordAbsenceStatusMessage(options?: { forceCreate?: boolean }) {
+  const config = await getDiscordConfig()
+  const channelId = config.absenceStatusChannelId || config.dutyStatusChannelId || config.announcementsChannelId
+  if (!channelId || !botToken()) return
+
+  const payload = await absenceStatusPayload()
+  if (config.absenceStatusMessageId && !options?.forceCreate) {
+    await discordFetch<void>(`/channels/${channelId}/messages/${config.absenceStatusMessageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }).catch(async () => {
+      const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      await saveAbsenceStatusMessageId(message.id)
+    })
+    return
+  }
+
+  const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  await saveAbsenceStatusMessageId(message.id)
+}
+
 export async function sendDiscordDutyEvent(
   action: 'clock-in' | 'clock-out',
   officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & { rank?: { name: string; color?: string | null } | null },
@@ -868,5 +978,11 @@ export function queueDiscordDutyEvent(
 export function queueDiscordDutyStatusUpdate() {
   void syncDiscordDutyStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
+  })
+}
+
+export function queueDiscordAbsenceStatusUpdate() {
+  void syncDiscordAbsenceStatusMessage().catch((error) => {
+    console.error('[DiscordIntegration] Abmeldungs-Embed fehlgeschlagen:', error)
   })
 }

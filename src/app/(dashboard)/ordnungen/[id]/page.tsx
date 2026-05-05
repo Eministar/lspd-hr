@@ -32,8 +32,9 @@ async function loadOrdnung(id: string) {
   }
 }
 
-export default async function OrdnungPage({ params }: { params: { id: string } }) {
-  const { config, html, error } = await loadOrdnung(params.id)
+export default async function OrdnungPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { config, html, error } = await loadOrdnung(id)
 
   if (error || !config || !html) {
     return (

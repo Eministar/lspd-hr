@@ -13,6 +13,21 @@ Dieses FiveM-Resource sendet echte Spielzeit an das LSPD HR Dashboard. Die Zuord
 4. In der `server.cfg` eintragen:
    - `ensure lspd-hr-playtime`
 
+## HTTP 401 beheben
+
+`HTTP 401` bedeutet: Die Web-App lehnt den Request ab, weil der Token fehlt oder nicht exakt übereinstimmt.
+
+Prüfen:
+
+- In der Web-App `.env` muss `FIVEM_INGEST_TOKEN` gesetzt sein.
+- In `config.lua` muss `Config.Token` exakt denselben Wert haben.
+- Nach einer `.env`-Änderung muss die Web-App neu gestartet werden.
+- Nach einer `config.lua`-Änderung muss die FiveM-Resource neu gestartet werden:
+  - `restart lspd-hr-playtime`
+- Wenn der Token stimmt und trotzdem 401 kommt, deployed die aktuelle Resource-Version erneut. Sie sendet neben `Authorization` auch `X-LSPD-Ingest-Token`, weil manche Proxys den Authorization-Header nicht weiterreichen.
+
+Der Token darf nicht der Platzhalter `HIER_DEN_FIVEM_INGEST_TOKEN_EINTRAGEN` sein.
+
 ## Was gesendet wird
 
 - Join

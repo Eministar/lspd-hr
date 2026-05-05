@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, Shield, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ColorField } from '@/components/ui/color-field'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
@@ -285,13 +286,7 @@ export default function RanksPage() {
         <div className="space-y-4">
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
-          <div className="space-y-1.5">
-            <label className="block text-[12.5px] font-medium text-[#777]">Farbe</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="h-9 w-12 rounded-[8px] border border-[#18385f] cursor-pointer bg-transparent" />
-              <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="flex-1" />
-            </div>
-          </div>
+          <ColorField value={form.color} onChange={(color) => setForm({ ...form, color })} />
           <p className="text-[11.5px] text-[#6b8299]">
             Dienstnummer-Bereich (nur Zahl, optional): Bei Rangwechsel wird automatisch die kleinste freie Nummer in diesem Bereich vergeben (Einstellungen: Präfix z. B. LSPD-).
           </p>

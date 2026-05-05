@@ -48,13 +48,18 @@ local function sendEvent(source, eventName)
 
   PerformHttpRequest(Config.Endpoint, function(statusCode, body)
     if statusCode < 200 or statusCode >= 300 then
+      if statusCode == 401 then
+        print('[lspd-hr-playtime] HTTP 401: Token fehlt oder ist falsch. Config.Token muss exakt dem FIVEM_INGEST_TOKEN der Web-App entsprechen.')
+        return
+      end
       print(('[lspd-hr-playtime] HTTP %s für %s: %s'):format(statusCode, eventName, body or ''))
       return
     end
     log(('%s gesendet für %s'):format(eventName, payload.playerName))
   end, 'POST', json.encode(payload), {
     ['Content-Type'] = 'application/json',
-    ['Authorization'] = 'Bearer ' .. Config.Token
+    ['Authorization'] = 'Bearer ' .. Config.Token,
+    ['X-LSPD-Ingest-Token'] = Config.Token
   })
 end
 

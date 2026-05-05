@@ -3,7 +3,7 @@ import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { hasPermission } from '@/lib/permissions'
 import { getDutyTimesSnapshot } from '@/lib/duty-times'
-import { runOfficerStatusAutomation } from '@/lib/absence-status'
+import { getActiveAbsenceNotices, runOfficerStatusAutomation } from '@/lib/absence-status'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -40,6 +40,7 @@ export async function GET() {
     recentTerminations,
     draftRankChangeLists,
     dutyTimes,
+    activeAbsences,
   ] = await Promise.all([
     prisma.officer.findMany({
       select: {
@@ -67,6 +68,7 @@ export async function GET() {
     }),
     prisma.rankChangeList.count({ where: { status: 'DRAFT' } }),
     canViewDutyTimes ? getDutyTimesSnapshot() : Promise.resolve(null),
+    getActiveAbsenceNotices(),
   ])
 
   const [recentActivity, pinnedNotes] = await Promise.all([
@@ -188,6 +190,14 @@ export async function GET() {
       totalWeekDurationMs: dutyTimes.totalWeekDurationMs,
       activeRows: dutyTimes.activeRows.slice(0, 5),
     } : null,
+    activeAbsences: activeAbsences.slice(0, 8).map((absence) => ({
+      id: absence.id,
+      startsAt: absence.startsAt,
+      endsAt: absence.endsAt,
+      reason: absence.reason,
+      source: absence.source,
+      officer: absence.officer,
+    })),
     recentWindowDays: RECENT_WINDOW_DAYS,
     rankDistribution: distribution,
     statusDistribution,

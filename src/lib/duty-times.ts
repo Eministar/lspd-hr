@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { endActiveAbsencesForOfficer, runOfficerStatusAutomation } from '@/lib/absence-status'
 
 const MS_PER_MINUTE = 60_000
 const MS_PER_HOUR = 60 * MS_PER_MINUTE
@@ -271,15 +272,19 @@ export async function clockInOfficer(officerId: string, source: DutySource, acto
   })
   if (active) throw new Error('Officer ist bereits eingestempelt')
 
+  const now = new Date()
+  const endedAbsences = await endActiveAbsencesForOfficer(officerId, now)
   const session = await prisma.dutyTimeSession.create({
     data: {
       officerId,
+      clockInAt: now,
       clockInSource: source,
       actorDiscordId: actorDiscordId ?? null,
     },
   })
 
-  return { officer, session }
+  await runOfficerStatusAutomation({ force: true })
+  return { officer, session, endedAbsences }
 }
 
 export async function clockOutOfficer(officerId: string, source: DutySource, actorDiscordId?: string | null) {
@@ -304,5 +309,6 @@ export async function clockOutOfficer(officerId: string, source: DutySource, act
     },
   })
 
-  return { officer, session, durationMs: sessionDurationMs(session) }
+  await runOfficerStatusAutomation({ force: true })
+  return { officer, session, durationMs: sessionDurationMs(session), endedAbsences: 0 }
 }

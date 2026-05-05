@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowRight, Plus, Trash2, Play, FileText, ChevronDown, X } from 'lucide-react'
+import { ArrowRight, Plus, Trash2, Play, FileText, ChevronDown, X, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -69,6 +69,7 @@ export default function PromotionsPage() {
   const [createModal, setCreateModal] = useState(false)
   const [addEntryListId, setAddEntryListId] = useState<string | null>(null)
   const [executeEntry, setExecuteEntry] = useState<{ listId: string; entryId: string; name: string } | null>(null)
+  const [undoEntry, setUndoEntry] = useState<{ listId: string; entryId: string; name: string } | null>(null)
   const [expandedLists, setExpandedLists] = useState<Set<string>>(new Set())
 
   const [listForm, setListForm] = useState({ name: '', description: '' })
@@ -173,6 +174,20 @@ export default function PromotionsPage() {
     }
   }
 
+  const handleUndoEntry = async () => {
+    if (!undoEntry) return
+    try {
+      await execute(`/api/rank-change-lists/${undoEntry.listId}/entries/${undoEntry.entryId}/undo`, {
+        method: 'POST',
+      })
+      addToast({ type: 'success', title: 'Beförderung rückgängig gemacht' })
+      setUndoEntry(null)
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
   if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
@@ -266,7 +281,22 @@ export default function PromotionsPage() {
                             </p>
                           </div>
                           {entry.executed ? (
-                            <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[11px] text-[#34d399] font-medium">Durchgeführt</span>
+                              {canExecute && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setUndoEntry({
+                                    listId: list.id,
+                                    entryId: entry.id,
+                                    name: `${entry.officer.firstName} ${entry.officer.lastName}`,
+                                  })}
+                                >
+                                  <Undo2 size={13} /> Rückgängig
+                                </Button>
+                              )}
+                            </div>
                            ) : isDraft && canExecute ? (
                             <div className="flex items-center gap-1 shrink-0">
                               <Button size="sm" onClick={() => setExecuteEntry({
@@ -374,6 +404,17 @@ export default function PromotionsPage() {
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
           <Button size="sm" onClick={handleExecuteEntry}>Durchführen</Button>
+        </div>
+      </Modal>
+
+      {/* Undo confirmation */}
+      <Modal open={!!undoEntry} onClose={() => setUndoEntry(null)} title="Beförderung rückgängig machen">
+        <p className="text-[13px] text-[#888] mb-5">
+          Die Beförderung für {undoEntry?.name} wird zurückgesetzt. Rang und Dienstnummer werden auf den Stand vor der Durchführung gesetzt. Fortfahren?
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setUndoEntry(null)}>Abbrechen</Button>
+          <Button variant="danger" size="sm" onClick={handleUndoEntry}>Rückgängig machen</Button>
         </div>
       </Modal>
     </div>

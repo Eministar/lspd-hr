@@ -38,14 +38,8 @@ export default function GlobalError({
 
   return (
     <html lang="de" className="dark" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-        <title>Schwerer Fehler | LSPD HR</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
       <body className="min-h-screen bg-[#061426] text-[#edf4fb] font-sans" suppressHydrationWarning>
+        <title>Schwerer Fehler | LSPD HR</title>
         <StatusPageFrame
           icon={ServerCrash}
           kicker="Anwendung"

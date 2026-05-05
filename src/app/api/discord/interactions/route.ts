@@ -12,6 +12,7 @@ import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
   getDiscordConfig,
+  queueDiscordAbsenceStatusUpdate,
   queueDiscordDutyEvent,
   queueDiscordDutyStatusUpdate,
   queueDiscordHrEvent,
@@ -486,6 +487,7 @@ async function handleAbsence(
     actorDiscordId,
   })
 
+  queueDiscordAbsenceStatusUpdate()
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'update',
@@ -513,6 +515,11 @@ async function handleDutyButton(interaction: DiscordInteraction) {
     return reply('Dienstzeiten-Embed wird aktualisiert.')
   }
 
+  if (customId === 'lspd_absence_refresh') {
+    queueDiscordAbsenceStatusUpdate()
+    return reply('Abmeldungs-Embed wird aktualisiert.')
+  }
+
   const officer = await prisma.officer.findFirst({
     where: { discordId },
     select: { id: true, firstName: true, lastName: true },
@@ -523,6 +530,7 @@ async function handleDutyButton(interaction: DiscordInteraction) {
     const result = await clockInOfficer(officer.id, 'discord', discordId)
     queueDiscordDutyEvent('clock-in', result.officer, result.session)
     queueDiscordDutyStatusUpdate()
+    if (result.endedAbsences > 0) queueDiscordAbsenceStatusUpdate()
     return reply(`Eingestempelt: ${result.officer.firstName} ${result.officer.lastName}.`)
   }
 

@@ -1,18 +1,26 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useFetch } from '@/hooks/use-fetch'
+import { useApi } from '@/hooks/use-api'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Button } from '@/components/ui/button'
+import { DateField } from '@/components/ui/date-field'
+import { Modal } from '@/components/ui/modal'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/toast'
 import { cn, formatDate, formatDateTime, getStatusDot, getStatusLabel } from '@/lib/utils'
 import {
   Activity,
   AlertTriangle,
   ArrowUpRight,
   CalendarDays,
+  CalendarPlus,
+  CalendarX,
   ClipboardCheck,
   Clock,
   Clock3,
@@ -22,8 +30,10 @@ import {
   Pin,
   RefreshCw,
   ScrollText,
+  Send,
   TrendingDown,
   TrendingUp,
+  Trash2,
   UserCheck,
   UserMinus,
   Users,
@@ -33,6 +43,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission, type Permission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { notifyLiveUpdate } from '@/lib/live-updates'
 
 interface RankSummary {
   name: string
@@ -73,6 +84,22 @@ interface NotePreview {
   officer: { id: string; firstName: string; lastName: string; badgeNumber: string } | null
 }
 
+interface ActiveAbsence {
+  id: string
+  startsAt: string
+  endsAt: string
+  reason: string
+  source: string
+  officer: {
+    id: string
+    badgeNumber: string
+    firstName: string
+    lastName: string
+    discordId: string | null
+    rank: RankSummary
+  }
+}
+
 interface Stats {
   totalOfficers: number
   activeOfficers: number
@@ -102,6 +129,7 @@ interface Stats {
       weekDurationMs: number
     }>
   } | null
+  activeAbsences: ActiveAbsence[]
   recentWindowDays: number
   rankDistribution: { rank: string; color: string; count: number }[]
   statusDistribution: { status: string; label: string; count: number }[]
@@ -139,6 +167,7 @@ const actionLabels: Record<string, string> = {
   OFFICER_UPDATED: 'Officer bearbeitet',
   OFFICER_DELETED: 'Officer gelöscht',
   OFFICER_PROMOTED: 'Beförderung',
+  OFFICER_PROMOTION_REVERTED: 'Beförderung rückgängig',
   OFFICER_TERMINATED: 'Kündigung',
   TRAININGS_UPDATED: 'Ausbildung aktualisiert',
   NOTE_ADDED: 'Notiz hinzugefügt',
@@ -207,10 +236,31 @@ function formatDuration(ms: number) {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`
 }
 
+function dateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function dateAfterDays(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return dateInputValue(date)
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { execute } = useApi()
+  const { addToast } = useToast()
   const canViewDashboard = hasPermission(user, 'dashboard:view')
+  const canManageAbsences = hasPermission(user, 'officers:write')
   const { data: stats, loading, error, refetch } = useFetch<Stats>(canViewDashboard ? '/api/stats' : null)
+  const [absenceModalOpen, setAbsenceModalOpen] = useState(false)
+  const [absenceDuration, setAbsenceDuration] = useState('3')
+  const [absenceEndsAt, setAbsenceEndsAt] = useState(dateAfterDays(3))
+  const [absenceReason, setAbsenceReason] = useState('')
+  const [absenceSubmitting, setAbsenceSubmitting] = useState(false)
   const dateLine = useMemo(
     () =>
       new Intl.DateTimeFormat('de-DE', {
@@ -221,6 +271,56 @@ export default function DashboardPage() {
       }).format(new Date()),
     []
   )
+
+  const openAbsenceModal = () => {
+    setAbsenceDuration('3')
+    setAbsenceEndsAt(dateAfterDays(3))
+    setAbsenceReason('')
+    setAbsenceModalOpen(true)
+  }
+
+  const updateAbsenceDuration = (value: string) => {
+    setAbsenceDuration(value)
+    const days = Number.parseInt(value, 10)
+    if (Number.isFinite(days) && days > 0) setAbsenceEndsAt(dateAfterDays(days))
+  }
+
+  const submitAbsence = async () => {
+    if (!absenceReason.trim()) {
+      addToast({ type: 'error', title: 'Grund fehlt' })
+      return
+    }
+
+    setAbsenceSubmitting(true)
+    try {
+      await execute('/api/absences', {
+        method: 'POST',
+        body: JSON.stringify({
+          reason: absenceReason.trim(),
+          endsAt: absenceEndsAt,
+        }),
+      })
+      addToast({ type: 'success', title: 'Abmeldung eingetragen' })
+      setAbsenceModalOpen(false)
+      notifyLiveUpdate()
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Abmeldung fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setAbsenceSubmitting(false)
+    }
+  }
+
+  const cancelAbsence = async (absenceId: string) => {
+    try {
+      await execute(`/api/absences/${absenceId}`, { method: 'DELETE' })
+      addToast({ type: 'success', title: 'Abmeldung beendet' })
+      notifyLiveUpdate()
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Abmeldung konnte nicht beendet werden', message: err instanceof Error ? err.message : '' })
+    }
+  }
 
   if (!canViewDashboard) return <UnauthorizedContent />
   if (loading) return <PageLoader />
@@ -259,10 +359,21 @@ export default function DashboardPage() {
             <p className="text-[13px] text-[#8ea4bd]">Personalstand, Ausbildungen und letzte Vorgänge im Blick</p>
             <p className="text-[10.5px] font-medium text-[#4a6585] uppercase tracking-[0.16em] pt-0.5">{dateLine}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={refetch} className="shrink-0 w-fit">
-            <RefreshCw size={13} strokeWidth={2} />
-            Aktualisieren
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" onClick={refetch} className="shrink-0 w-fit">
+              <RefreshCw size={13} strokeWidth={2} />
+              Aktualisieren
+            </Button>
+            <Button
+              size="sm"
+              onClick={openAbsenceModal}
+              disabled={!user?.discordId}
+              title={!user?.discordId ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}
+            >
+              <CalendarPlus size={13} strokeWidth={2} />
+              Abmelden
+            </Button>
+          </div>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/18 to-transparent" />
       </header>
@@ -296,6 +407,60 @@ export default function DashboardPage() {
           )
         })}
       </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.08 }}
+        className={panelClass}
+      >
+        <SectionTitle
+          icon={CalendarX}
+          title="Aktuelle Abmeldungen"
+          description="Entschuldigte Officers verschwinden automatisch aus Dashboard und Discord-Panel, sobald die Abmeldung endet."
+        />
+        {stats.activeAbsences.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+            {stats.activeAbsences.map((absence) => {
+              const canCancel = canManageAbsences || (!!user?.discordId && absence.officer.discordId === user.discordId)
+              return (
+                <div key={absence.id} className={cn(surfaceClass, 'p-3.5')}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link href={`/officers/${absence.officer.id}`} className="text-[13px] font-semibold text-white hover:text-[#d4af37] transition-colors">
+                        {officerName(absence.officer)}
+                        <span className="ml-1 font-mono text-[#d4af37]">#{displayBadgeNumber(absence.officer.badgeNumber)}</span>
+                      </Link>
+                      <p className="text-[11.5px] text-[#8ea4bd] mt-0.5">{absence.officer.rank.name}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-[#38bdf8]/25 bg-[#06233a]/60 px-2.5 py-1 text-[11.5px] text-[#93c5fd]">
+                      bis {formatDate(absence.endsAt)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-[#c7d4e4]">{absence.reason}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-[#6b8299]">
+                      {formatDateTime(absence.startsAt)} → {formatDateTime(absence.endsAt)}
+                    </span>
+                    {canCancel && (
+                      <button
+                        type="button"
+                        onClick={() => cancelAbsence(absence.id)}
+                        className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[11.5px] text-[#fca5a5] transition-colors hover:bg-[#321218]/50"
+                      >
+                        <Trash2 size={12} strokeWidth={1.85} />
+                        Beenden
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState icon={CalendarDays} text="Aktuell ist niemand abgemeldet" />
+        )}
+      </motion.section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <motion.section
@@ -596,6 +761,53 @@ export default function DashboardPage() {
           </div>
         </motion.section>
       )}
+
+      <Modal open={absenceModalOpen} onClose={() => setAbsenceModalOpen(false)} title="Abmeldung eintragen">
+        <div className="space-y-4">
+          <Select
+            label="Dauer"
+            value={absenceDuration}
+            onValueChange={updateAbsenceDuration}
+            options={[
+              { value: '1', label: '1 Tag' },
+              { value: '2', label: '2 Tage' },
+              { value: '3', label: '3 Tage' },
+              { value: '5', label: '5 Tage' },
+              { value: '7', label: '1 Woche' },
+              { value: '14', label: '2 Wochen' },
+            ]}
+          />
+          <DateField
+            label="Abgemeldet bis"
+            value={absenceEndsAt}
+            onChange={(value) => {
+              setAbsenceDuration('')
+              setAbsenceEndsAt(value)
+            }}
+            allowClear={false}
+          />
+          <Textarea
+            label="Grund"
+            value={absenceReason}
+            onChange={(event) => setAbsenceReason(event.target.value)}
+            rows={4}
+            placeholder="Grund der Abmeldung..."
+            required
+          />
+          {!user?.discordId && (
+            <p className="rounded-[9px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+              Dein Dashboard-User braucht eine Discord-ID, damit die Abmeldung deinem Officer zugeordnet werden kann.
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" size="sm" onClick={() => setAbsenceModalOpen(false)}>Abbrechen</Button>
+            <Button size="sm" onClick={submitAbsence} loading={absenceSubmitting} disabled={!absenceReason.trim() || !absenceEndsAt || !user?.discordId}>
+              <Send size={13} strokeWidth={2} />
+              Eintragen
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
