@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { error, success, unauthorized } from '@/lib/api-response'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 import { syncDiscordAbsenceStatusMessage, syncDiscordDutyStatusMessage } from '@/lib/discord-integration'
+import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +24,17 @@ export async function POST(req: NextRequest) {
       syncDiscordAbsenceStatusMessage(),
       syncDiscordDutyStatusMessage(),
     ])
+    panelResults.forEach((item, index) => {
+      if (item.status === 'rejected') {
+        queueDiscordWebhookEvent({
+          title: 'Discord-Panel-Aktualisierung fehlgeschlagen',
+          severity: 'error',
+          source: 'status-automation',
+          fields: [{ name: 'Panel', value: index === 0 ? 'Abmeldungen' : 'Dienstzeiten', inline: true }],
+          error: item.reason,
+        })
+      }
+    })
     return success({
       ...result,
       panelsUpdated: panelResults.filter((item) => item.status === 'fulfilled').length,

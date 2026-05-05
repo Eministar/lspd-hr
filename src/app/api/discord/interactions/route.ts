@@ -19,8 +19,9 @@ import {
   queueOfficerRoleSync,
 } from '@/lib/discord-integration'
 import { clockInOfficer, clockOutOfficer, formatDuration } from '@/lib/duty-times'
-import { createAbsenceNotice, formatAbsenceDate, parseAbsenceDate } from '@/lib/absence-status'
+import { cancelAbsenceNotice, createAbsenceNotice, formatAbsenceDate, parseAbsenceDate } from '@/lib/absence-status'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 
 export const runtime = 'nodejs'
 
@@ -37,6 +38,14 @@ type DiscordInteraction = {
     name?: string
     custom_id?: string
     options?: DiscordOption[]
+    components?: Array<{
+      type: number
+      components?: Array<{
+        type: number
+        custom_id?: string
+        value?: string
+      }>
+    }>
   }
   member?: {
     roles?: string[]
@@ -54,7 +63,9 @@ const EPHEMERAL = 64
 const APPLICATION_COMMAND = 2
 const MESSAGE_COMPONENT = 3
 const AUTOCOMPLETE = 4
+const MODAL_SUBMIT = 5
 const ADMINISTRATOR = BigInt(8)
+const MODAL_CALLBACK = 9
 
 function json(data: unknown) {
   return NextResponse.json(data)
@@ -62,6 +73,10 @@ function json(data: unknown) {
 
 function reply(content: string) {
   return json({ type: 4, data: { content, flags: EPHEMERAL } })
+}
+
+function modal(data: unknown) {
+  return json({ type: MODAL_CALLBACK, data })
 }
 
 function autocomplete(choices: { name: string; value: string }[]) {
@@ -85,12 +100,48 @@ function userOption(options: DiscordOption[] | undefined, name: string) {
   return textOption(options, name)
 }
 
+function modalValue(interaction: DiscordInteraction, customId: string) {
+  const rows = interaction.data?.components ?? []
+  for (const row of rows) {
+    const component = row.components?.find((item) => item.custom_id === customId)
+    if (typeof component?.value === 'string') return component.value.trim()
+  }
+  return ''
+}
+
 function actorFromInteraction(interaction: DiscordInteraction) {
   const user = interaction.member?.user
   return {
     displayName: user?.global_name || user?.username || 'Discord Command',
     discordId: user?.id ?? null,
   }
+}
+
+function interactionLabel(interaction: DiscordInteraction) {
+  if (interaction.data?.custom_id) return interaction.data.custom_id
+  if (interaction.data?.name) return interaction.data.name
+  return `type-${interaction.type}`
+}
+
+function logInteraction(
+  interaction: DiscordInteraction | null,
+  title: string,
+  severity: 'info' | 'success' | 'warning' | 'error',
+  details?: { message?: string; error?: unknown },
+) {
+  const actor = interaction ? actorFromInteraction(interaction) : null
+  queueDiscordWebhookEvent({
+    title,
+    description: details?.message,
+    severity,
+    source: 'discord-interactions',
+    fields: [
+      { name: 'Interaktion', value: interaction ? interactionLabel(interaction) : 'unbekannt', inline: true },
+      { name: 'Typ', value: interaction ? String(interaction.type) : 'unbekannt', inline: true },
+      { name: 'Discord-ID', value: actor?.discordId ?? 'unbekannt', inline: true },
+    ],
+    error: details?.error,
+  })
 }
 
 function hasAdminPermission(permissions: string | undefined) {
@@ -105,6 +156,12 @@ async function verifySignature(req: NextRequest, rawBody: string) {
   const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim() || process.env.LSPD_DISCORD_PUBLIC_KEY?.trim() || ''
   if (!publicKey) {
     console.error('[DiscordInteractions] DISCORD_PUBLIC_KEY ist nicht gesetzt — alle Interaktionen werden abgelehnt. Setze die Env-Variable in der .env.')
+    queueDiscordWebhookEvent({
+      title: 'Discord-Interaktion abgelehnt',
+      description: 'DISCORD_PUBLIC_KEY ist nicht gesetzt.',
+      severity: 'error',
+      source: 'discord-interactions',
+    })
     return false
   }
 
@@ -112,6 +169,12 @@ async function verifySignature(req: NextRequest, rawBody: string) {
   const timestamp = req.headers.get('x-signature-timestamp')
   if (!signature || !timestamp) {
     console.error('[DiscordInteractions] Signatur-Header fehlen (x-signature-ed25519 / x-signature-timestamp).')
+    queueDiscordWebhookEvent({
+      title: 'Discord-Interaktion abgelehnt',
+      description: 'Signatur-Header fehlen.',
+      severity: 'error',
+      source: 'discord-interactions',
+    })
     return false
   }
 
@@ -124,10 +187,23 @@ async function verifySignature(req: NextRequest, rawBody: string) {
     const valid = crypto.verify(null, Buffer.from(`${timestamp}${rawBody}`), key, Buffer.from(signature, 'hex'))
     if (!valid) {
       console.error('[DiscordInteractions] Signatur-Verifizierung fehlgeschlagen — DISCORD_PUBLIC_KEY passt vermutlich nicht zum Bot.')
+      queueDiscordWebhookEvent({
+        title: 'Discord-Interaktion abgelehnt',
+        description: 'Signatur-Verifizierung fehlgeschlagen. Der Public Key passt wahrscheinlich nicht zur Discord-App.',
+        severity: 'error',
+        source: 'discord-interactions',
+      })
     }
     return valid
   } catch (e) {
     console.error('[DiscordInteractions] Signatur-Verifizierung warf Exception (vermutlich Public-Key-Format falsch):', e)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Interaktion abgelehnt',
+      description: 'Signatur-Verifizierung ist mit einem Fehler abgebrochen.',
+      severity: 'error',
+      source: 'discord-interactions',
+      error: e,
+    })
     return false
   }
 }
@@ -473,9 +549,9 @@ async function handleAbsence(
   if (!officer) return reply('Officer wurde nicht gefunden. Prüfe die Discord-Verknüpfung im HR-Tool.')
 
   const startsAt = parseAbsenceDate(textOption(options, 'von')) ?? new Date()
-  const endsAt = parseAbsenceDate(textOption(options, 'bis'), { hours: 23, minutes: 59 })
+  const endsAt = parseAbsenceUntil(textOption(options, 'bis'), startsAt)
   const reason = textOption(options, 'grund')
-  if (!endsAt) return reply('Enddatum ist ungültig. Nutze z.B. 12.05.2026 20:00.')
+  if (!endsAt) return reply('Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.')
   if (!reason) return reply('Ein Grund ist erforderlich.')
 
   const result = await createAbsenceNotice({
@@ -505,19 +581,165 @@ async function handleAbsence(
   return reply(`Abmeldung eingetragen: ${officer.firstName} ${officer.lastName} · ${formatAbsenceDate(startsAt)} bis ${formatAbsenceDate(endsAt)}.`)
 }
 
+function parseAbsenceUntil(value: string, now = new Date()) {
+  const parsedDate = parseAbsenceDate(value, { hours: 23, minutes: 59 })
+  if (parsedDate) return parsedDate
+
+  const input = value.trim().toLowerCase()
+  const match = input.match(/^(\d{1,3})(?:\s*(h|std|stunde|stunden|d|t|tag|tage|w|woche|wochen))?$/i)
+  if (!match) return null
+
+  const amount = Number.parseInt(match[1], 10)
+  if (!Number.isFinite(amount) || amount <= 0) return null
+
+  const unit = match[2] ?? 'tage'
+  const end = new Date(now)
+  if (unit === 'h' || unit === 'std' || unit === 'stunde' || unit === 'stunden') {
+    end.setHours(end.getHours() + amount)
+    return end
+  }
+
+  end.setDate(end.getDate() + amount * (unit === 'w' || unit === 'woche' || unit === 'wochen' ? 7 : 1))
+  end.setHours(23, 59, 0, 0)
+  return end
+}
+
+function absenceModal() {
+  return modal({
+    custom_id: 'lspd_absence_modal',
+    title: 'Abmeldung eintragen',
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: 'grund',
+            label: 'Grund',
+            style: 2,
+            required: true,
+            min_length: 3,
+            max_length: 1000,
+          },
+        ],
+      },
+      {
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: 'bis',
+            label: 'Wie lange?',
+            style: 1,
+            placeholder: 'z.B. 3 Tage, 1 Woche oder 12.05.2026 20:00',
+            required: true,
+            min_length: 1,
+            max_length: 80,
+          },
+        ],
+      },
+    ],
+  })
+}
+
+async function handleAbsenceModal(interaction: DiscordInteraction) {
+  const actor = actorFromInteraction(interaction)
+  const actorDiscordId = actor.discordId
+  if (!actorDiscordId) return reply('Discord-User konnte nicht erkannt werden.')
+
+  const officer = await prisma.officer.findFirst({
+    where: { discordId: actorDiscordId },
+    include: { rank: true },
+  })
+  if (!officer) return reply('Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.')
+
+  const startsAt = new Date()
+  const endsAt = parseAbsenceUntil(modalValue(interaction, 'bis'), startsAt)
+  const reason = modalValue(interaction, 'grund')
+  if (!endsAt) return reply('Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.')
+  if (!reason) return reply('Ein Grund ist erforderlich.')
+
+  const result = await createAbsenceNotice({
+    officerId: officer.id,
+    startsAt,
+    endsAt,
+    reason,
+    source: 'discord',
+    actorDiscordId,
+  })
+
+  queueDiscordAbsenceStatusUpdate()
+  queueOfficerRoleSync(officer.id)
+  queueDiscordHrEvent({
+    type: 'update',
+    title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
+    description: 'Officer wurde über Discord abgemeldet.',
+    officer: result.officer,
+    actor,
+    fields: [
+      { name: 'Bis', value: formatAbsenceDate(endsAt), inline: true },
+      { name: 'Grund', value: reason, inline: false },
+    ],
+  })
+
+  return reply(`Abmeldung eingetragen bis ${formatAbsenceDate(endsAt)}.`)
+}
+
+async function handleAbsenceCancelButton(interaction: DiscordInteraction) {
+  const actor = actorFromInteraction(interaction)
+  const discordId = actor.discordId
+  if (!discordId) return reply('Discord-User konnte nicht erkannt werden.')
+
+  const now = new Date()
+  const absence = await prisma.absenceNotice.findFirst({
+    where: {
+      startsAt: { lte: now },
+      endsAt: { gte: now },
+      officer: { discordId, status: { not: 'TERMINATED' } },
+    },
+    include: {
+      officer: { include: { rank: true } },
+    },
+    orderBy: { endsAt: 'desc' },
+  })
+
+  if (!absence) return reply('Du hast aktuell keine aktive Abmeldung.')
+
+  const updated = await cancelAbsenceNotice(absence.id)
+  queueDiscordAbsenceStatusUpdate()
+  queueOfficerRoleSync(updated.officer.id)
+  queueDiscordHrEvent({
+    type: 'update',
+    title: `Abmeldung beendet: ${updated.officer.firstName} ${updated.officer.lastName}`,
+    description: 'Officer hat die eigene Abmeldung über Discord beendet.',
+    officer: updated.officer,
+    actor,
+  })
+
+  return reply('Deine Abmeldung wurde beendet.')
+}
+
 async function handleDutyButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
   const discordId = interaction.member?.user?.id
   if (!discordId) return reply('Discord-User konnte nicht erkannt werden.')
 
+  if (customId === 'lspd_absence_create') {
+    return absenceModal()
+  }
+
   if (customId === 'lspd_duty_refresh') {
     queueDiscordDutyStatusUpdate()
-    return reply('Dienstzeiten-Embed wird aktualisiert.')
+    return reply('Dienstzeiten werden aktualisiert.')
   }
 
   if (customId === 'lspd_absence_refresh') {
     queueDiscordAbsenceStatusUpdate()
-    return reply('Abmeldungs-Embed wird aktualisiert.')
+    return reply('Abmeldungen werden aktualisiert.')
+  }
+
+  if (customId === 'lspd_absence_cancel') {
+    return handleAbsenceCancelButton(interaction)
   }
 
   const officer = await prisma.officer.findFirst({
@@ -550,7 +772,20 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Invalid request signature', { status: 401 })
   }
 
-  const interaction = JSON.parse(rawBody) as DiscordInteraction
+  let interaction: DiscordInteraction
+  try {
+    interaction = JSON.parse(rawBody) as DiscordInteraction
+  } catch (e) {
+    queueDiscordWebhookEvent({
+      title: 'Discord-Interaktion konnte nicht gelesen werden',
+      severity: 'error',
+      source: 'discord-interactions',
+      error: e,
+    })
+    return new NextResponse('Bad Request', { status: 400 })
+  }
+
+  logInteraction(interaction, 'Discord-Interaktion empfangen', 'info')
   if (interaction.type === 1) return json({ type: 1 })
 
   if (interaction.type === AUTOCOMPLETE) {
@@ -563,43 +798,83 @@ export async function POST(req: NextRequest) {
 
   if (interaction.type === MESSAGE_COMPONENT) {
     try {
-      return await handleDutyButton(interaction)
+      const response = await handleDutyButton(interaction)
+      logInteraction(interaction, 'Discord-Button verarbeitet', 'success')
+      return response
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Serverfehler'
+      logInteraction(interaction, 'Discord-Button fehlgeschlagen', 'error', { message, error: e })
       return reply(message)
     }
   }
 
-  if (interaction.type !== APPLICATION_COMMAND) return reply('Diese Discord-Interaktion wird nicht unterstützt.')
+  if (interaction.type === MODAL_SUBMIT) {
+    try {
+      if (interaction.data?.custom_id === 'lspd_absence_modal') {
+        const response = await handleAbsenceModal(interaction)
+        logInteraction(interaction, 'Discord-Modal verarbeitet', 'success')
+        return response
+      }
+      logInteraction(interaction, 'Unbekanntes Discord-Modal', 'warning')
+      return reply('Dieses Formular wird nicht unterstützt.')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Serverfehler'
+      logInteraction(interaction, 'Discord-Modal fehlgeschlagen', 'error', { message, error: e })
+      return reply(message)
+    }
+  }
+
+  if (interaction.type !== APPLICATION_COMMAND) {
+    logInteraction(interaction, 'Discord-Interaktion nicht unterstützt', 'warning')
+    return reply('Diese Discord-Interaktion wird nicht unterstützt.')
+  }
   const commandName = interaction.data?.name
   const actor = actorFromInteraction(interaction)
   const allowed = await ensureAllowed(interaction)
   if (!allowed && !(commandName === 'lspd-abmeldung' && await isLinkedOfficer(actor.discordId))) {
+    logInteraction(interaction, 'Discord-Command abgelehnt', 'warning', { message: 'Keine Berechtigung' })
     return reply('Du darfst diese HR-Commands nicht ausführen.')
   }
 
   try {
     const options = interaction.data?.options
+    let response: NextResponse
     switch (commandName) {
       case 'lspd-einstellung':
-        return await handleHire(options, actor)
+        response = await handleHire(options, actor)
+        break
       case 'lspd-beförderung':
-        return await handlePromotion(options, actor)
+        response = await handlePromotion(options, actor)
+        break
       case 'lspd-ausbildung':
-        return await handleTraining(options, actor)
+        response = await handleTraining(options, actor)
+        break
       case 'lspd-unit':
-        return await handleUnit(options, actor)
+        response = await handleUnit(options, actor)
+        break
       case 'lspd-kündigung':
-        return await handleTermination(options, actor)
+        response = await handleTermination(options, actor)
+        break
       case 'lspd-abmeldung':
-        return await handleAbsence(options, actor, interaction)
+        response = await handleAbsence(options, actor, interaction)
+        break
       default:
+        logInteraction(interaction, 'Unbekannter Discord-Command', 'warning')
         return reply('Unbekannter Command.')
     }
+    logInteraction(interaction, 'Discord-Command verarbeitet', 'success')
+    return response
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return reply('Dienstnummer oder Discord-ID ist bereits vergeben.')
+    if (isUniqueConstraintError(e)) {
+      logInteraction(interaction, 'Discord-Command fehlgeschlagen', 'error', {
+        message: 'Dienstnummer oder Discord-ID ist bereits vergeben.',
+        error: e,
+      })
+      return reply('Dienstnummer oder Discord-ID ist bereits vergeben.')
+    }
     const message = e instanceof Error ? e.message : 'Serverfehler'
     console.error('[DiscordInteractions] Command fehlgeschlagen:', e)
+    logInteraction(interaction, 'Discord-Command fehlgeschlagen', 'error', { message, error: e })
     return reply(message)
   }
 }

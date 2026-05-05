@@ -3,6 +3,7 @@ import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix, getOrgName } from './settings-helpers'
+import { queueDiscordWebhookEvent } from './discord-webhook'
 
 type DiscordRole = {
   id: string
@@ -693,14 +694,12 @@ async function dutyStatusPayload() {
 
   const fields: DiscordField[] = [
     { name: 'Im Dienst', value: `**${snapshot.activeCount}**`, inline: true },
-    { name: 'Aktive Dienstzeit', value: formatDuration(snapshot.totalActiveDurationMs), inline: true },
-    { name: 'Wochenstunden', value: formatDuration(snapshot.totalWeekDurationMs), inline: true },
   ]
 
   if (visible.length === 0) {
     fields.push({
-      name: 'Aktuell eingestempelt',
-      value: '*Niemand ist im Dienst.*\nNutze die Buttons, um deinen Dienst zu starten.',
+      name: 'Eingestempelt',
+      value: '*Niemand ist aktuell im Dienst.*',
       inline: false,
     })
   } else {
@@ -708,20 +707,19 @@ async function dutyStatusPayload() {
       const num = String(index + 1).padStart(2, '0')
       const since = row.activeSession?.clockInAt ? discordTimestamp(row.activeSession.clockInAt, 'R') : '—'
       const current = formatDuration(row.activeSession?.currentDurationMs ?? 0)
-      const week = formatDuration(row.weekDurationMs)
       const dn = bracketedServiceNumber(officerBadge(row), prefix)
       const mentionStr = mention(row.discordId)
       return [
         `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}`,
         ` \`${dn}\`  ·  ${mentionStr}`,
-        ` seit ${since}  ·  **${current}** jetzt  ·  ${week} diese Woche`,
+        ` seit ${since}  ·  **${current}**`,
       ].join('\n')
     })
 
     const chunks = chunkLines(lines, 1024)
     chunks.forEach((value, i) => {
       fields.push({
-        name: i === 0 ? `Aktuell eingestempelt (${snapshot.activeCount})` : ZWSP,
+        name: i === 0 ? 'Eingestempelt' : ZWSP,
         value,
         inline: false,
       })
@@ -736,12 +734,9 @@ async function dutyStatusPayload() {
     embeds: [
       {
         author: { name: `${orgName} · Dienstzeiten` },
-        title: '🟢  Live-Status · Dienstzeiten',
-        description: '> Übersicht aller eingestempelten Officers. Nutze die Buttons unten, um dich ein- oder auszustempeln.',
+        title: 'Dienstzeiten',
         color: 0x3b82f6,
         fields: fields.slice(0, 25).map(cleanEmbedField),
-        timestamp: snapshot.now.toISOString(),
-        footer: { text: `${orgName} HR · Dienstzeiten · live` },
       },
     ],
     components: [
@@ -801,20 +796,16 @@ async function absenceStatusPayload() {
     getBadgePrefix(),
     getOrgName(),
   ])
-  const now = new Date()
   const visible = absences.slice(0, ABSENCE_LIST_LIMIT)
   const overflow = Math.max(0, absences.length - visible.length)
-  const nextReturn = visible[0]?.endsAt ?? null
 
   const fields: DiscordField[] = [
-    { name: 'Aktiv abgemeldet', value: `**${absences.length}**`, inline: true },
-    { name: 'Nächste Rückkehr', value: nextReturn ? discordTimestamp(nextReturn, 'R') : '—', inline: true },
-    { name: 'Stand', value: discordTimestamp(now, 't'), inline: true },
+    { name: 'Aktiv', value: `**${absences.length}**`, inline: true },
   ]
 
   if (visible.length === 0) {
     fields.push({
-      name: 'Aktuelle Abmeldungen',
+      name: 'Abmeldungen',
       value: '*Aktuell ist niemand abgemeldet.*',
       inline: false,
     })
@@ -833,7 +824,7 @@ async function absenceStatusPayload() {
 
     chunkLines(lines, 1024).forEach((value, index) => {
       fields.push({
-        name: index === 0 ? `Aktuelle Abmeldungen (${absences.length})` : ZWSP,
+        name: index === 0 ? 'Abmeldungen' : ZWSP,
         value,
         inline: false,
       })
@@ -848,18 +839,17 @@ async function absenceStatusPayload() {
     embeds: [
       {
         author: { name: `${orgName} · Abmeldungen` },
-        title: '🔵  Live-Status · Abmeldungen',
-        description: '> Aktuell entschuldigte Officers. Abgelaufene Abmeldungen verschwinden automatisch aus diesem Panel und dem Dashboard.',
+        title: 'Abmeldungen',
         color: 0x38bdf8,
         fields: fields.slice(0, 25).map(cleanEmbedField),
-        timestamp: now.toISOString(),
-        footer: { text: `${orgName} HR · Abmeldungen · live` },
       },
     ],
     components: [
       {
         type: 1,
         components: [
+          { type: 2, style: 1, custom_id: 'lspd_absence_create', label: 'Abmelden' },
+          { type: 2, style: 4, custom_id: 'lspd_absence_cancel', label: 'Abmeldung beenden' },
           { type: 2, style: 2, custom_id: 'lspd_absence_refresh', label: 'Aktualisieren', emoji: { name: '🔄' } },
         ],
       },
@@ -948,6 +938,13 @@ export function queueOfficerRoleSync(officerId: string, mode: 'sync' | 'remove-a
   ensureDiscordSyncScheduler()
   void syncOfficerDiscordRoles(officerId, mode).catch((error) => {
     console.error('[DiscordIntegration] Rollensync fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Rollensync fehlgeschlagen',
+      severity: 'error',
+      source: 'discord-integration',
+      fields: [{ name: 'Officer-ID', value: officerId, inline: true }],
+      error,
+    })
   })
 }
 
@@ -955,12 +952,26 @@ export function queueAllOfficerRoleSync() {
   ensureDiscordSyncScheduler()
   void syncAllOfficerDiscordRoles().catch((error) => {
     console.error('[DiscordIntegration] Vollständiger Rollensync fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Rollensync fehlgeschlagen',
+      description: 'Vollständiger Rollensync konnte nicht abgeschlossen werden.',
+      severity: 'error',
+      source: 'discord-integration',
+      error,
+    })
   })
 }
 
 export function queueDiscordHrEvent(event: Parameters<typeof sendDiscordHrEvent>[0]) {
   void sendDiscordHrEvent(event).catch((error) => {
     console.error('[DiscordIntegration] Event-Versand fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-HR-Meldung fehlgeschlagen',
+      severity: 'error',
+      source: 'discord-integration',
+      fields: [{ name: 'Event', value: event.title, inline: true }],
+      error,
+    })
   })
 }
 
@@ -972,17 +983,39 @@ export function queueDiscordDutyEvent(
 ) {
   void sendDiscordDutyEvent(action, officer, session, durationMs).catch((error) => {
     console.error('[DiscordIntegration] Dienstzeit-Event fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Dienstzeitmeldung fehlgeschlagen',
+      severity: 'error',
+      source: 'discord-integration',
+      fields: [
+        { name: 'Aktion', value: action, inline: true },
+        { name: 'Officer', value: officerName(officer), inline: true },
+      ],
+      error,
+    })
   })
 }
 
 export function queueDiscordDutyStatusUpdate() {
   void syncDiscordDutyStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Dienstzeiten-Panel fehlgeschlagen',
+      severity: 'error',
+      source: 'discord-integration',
+      error,
+    })
   })
 }
 
 export function queueDiscordAbsenceStatusUpdate() {
   void syncDiscordAbsenceStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Abmeldungs-Embed fehlgeschlagen:', error)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Abmeldungs-Panel fehlgeschlagen',
+      severity: 'error',
+      source: 'discord-integration',
+      error,
+    })
   })
 }
