@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getBadgePrefix } from '@/lib/settings-helpers'
@@ -11,6 +11,7 @@ import {
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
+  getDiscordApplicationId,
   getDiscordConfig,
   queueDiscordAbsenceStatusUpdate,
   queueDiscordDutyEvent,
@@ -33,6 +34,9 @@ type DiscordOption = {
 }
 
 type DiscordInteraction = {
+  id?: string
+  application_id?: string
+  token?: string
   type: number
   data?: {
     name?: string
@@ -66,6 +70,7 @@ const AUTOCOMPLETE = 4
 const MODAL_SUBMIT = 5
 const ADMINISTRATOR = BigInt(8)
 const MODAL_CALLBACK = 9
+const DEFERRED_CHANNEL_MESSAGE = 5
 
 function json(data: unknown) {
   return NextResponse.json(data)
@@ -73,6 +78,10 @@ function json(data: unknown) {
 
 function reply(content: string) {
   return json({ type: 4, data: { content, flags: EPHEMERAL } })
+}
+
+function deferEphemeral() {
+  return json({ type: DEFERRED_CHANNEL_MESSAGE, data: { flags: EPHEMERAL } })
 }
 
 function modal(data: unknown) {
@@ -123,6 +132,13 @@ function interactionLabel(interaction: DiscordInteraction) {
   return `type-${interaction.type}`
 }
 
+function logConsole(level: 'log' | 'warn' | 'error', message: string, extra?: unknown) {
+  const ts = new Date().toISOString()
+  const prefix = `[DiscordInteractions ${ts}]`
+  if (extra !== undefined) console[level](prefix, message, extra)
+  else console[level](prefix, message)
+}
+
 function logInteraction(
   interaction: DiscordInteraction | null,
   title: string,
@@ -130,13 +146,16 @@ function logInteraction(
   details?: { message?: string; error?: unknown },
 ) {
   const actor = interaction ? actorFromInteraction(interaction) : null
+  const label = interaction ? interactionLabel(interaction) : 'unbekannt'
+  const consoleLevel = severity === 'error' ? 'error' : severity === 'warning' ? 'warn' : 'log'
+  logConsole(consoleLevel, `${title} · interaction=${label} · type=${interaction?.type ?? '-'} · discordId=${actor?.discordId ?? '-'}`, details?.error ?? details?.message)
   queueDiscordWebhookEvent({
     title,
     description: details?.message,
     severity,
     source: 'discord-interactions',
     fields: [
-      { name: 'Interaktion', value: interaction ? interactionLabel(interaction) : 'unbekannt', inline: true },
+      { name: 'Interaktion', value: label, inline: true },
       { name: 'Typ', value: interaction ? String(interaction.type) : 'unbekannt', inline: true },
       { name: 'Discord-ID', value: actor?.discordId ?? 'unbekannt', inline: true },
     ],
@@ -155,7 +174,7 @@ function hasAdminPermission(permissions: string | undefined) {
 async function verifySignature(req: NextRequest, rawBody: string) {
   const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim() || process.env.LSPD_DISCORD_PUBLIC_KEY?.trim() || ''
   if (!publicKey) {
-    console.error('[DiscordInteractions] DISCORD_PUBLIC_KEY ist nicht gesetzt — alle Interaktionen werden abgelehnt. Setze die Env-Variable in der .env.')
+    logConsole('error', 'DISCORD_PUBLIC_KEY ist nicht gesetzt — alle Interaktionen werden abgelehnt. Setze die Env-Variable in der .env.')
     queueDiscordWebhookEvent({
       title: 'Discord-Interaktion abgelehnt',
       description: 'DISCORD_PUBLIC_KEY ist nicht gesetzt.',
@@ -168,7 +187,7 @@ async function verifySignature(req: NextRequest, rawBody: string) {
   const signature = req.headers.get('x-signature-ed25519')
   const timestamp = req.headers.get('x-signature-timestamp')
   if (!signature || !timestamp) {
-    console.error('[DiscordInteractions] Signatur-Header fehlen (x-signature-ed25519 / x-signature-timestamp).')
+    logConsole('error', 'Signatur-Header fehlen (x-signature-ed25519 / x-signature-timestamp).')
     queueDiscordWebhookEvent({
       title: 'Discord-Interaktion abgelehnt',
       description: 'Signatur-Header fehlen.',
@@ -186,7 +205,7 @@ async function verifySignature(req: NextRequest, rawBody: string) {
     })
     const valid = crypto.verify(null, Buffer.from(`${timestamp}${rawBody}`), key, Buffer.from(signature, 'hex'))
     if (!valid) {
-      console.error('[DiscordInteractions] Signatur-Verifizierung fehlgeschlagen — DISCORD_PUBLIC_KEY passt vermutlich nicht zum Bot.')
+      logConsole('error', 'Signatur-Verifizierung fehlgeschlagen — DISCORD_PUBLIC_KEY passt vermutlich nicht zum Bot.')
       queueDiscordWebhookEvent({
         title: 'Discord-Interaktion abgelehnt',
         description: 'Signatur-Verifizierung fehlgeschlagen. Der Public Key passt wahrscheinlich nicht zur Discord-App.',
@@ -196,7 +215,7 @@ async function verifySignature(req: NextRequest, rawBody: string) {
     }
     return valid
   } catch (e) {
-    console.error('[DiscordInteractions] Signatur-Verifizierung warf Exception (vermutlich Public-Key-Format falsch):', e)
+    logConsole('error', 'Signatur-Verifizierung warf Exception (vermutlich Public-Key-Format falsch).', e)
     queueDiscordWebhookEvent({
       title: 'Discord-Interaktion abgelehnt',
       description: 'Signatur-Verifizierung ist mit einem Fehler abgebrochen.',
@@ -301,15 +320,92 @@ async function autocompleteFor(kind: 'rang' | 'ausbildung' | 'unit', query: stri
   return autocomplete(rows.map((unit) => ({ name: unit.name, value: unit.key })))
 }
 
-async function handleHire(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function sendFollowup(interaction: DiscordInteraction, content: string) {
+  const appId = interaction.application_id || getDiscordApplicationId()
+  const token = interaction.token
+  if (!appId || !token) {
+    logConsole('error', 'Followup nicht möglich — application_id oder interaction-token fehlt.', { appId, hasToken: !!token })
+    queueDiscordWebhookEvent({
+      title: 'Discord-Followup nicht möglich',
+      description: !appId
+        ? 'DISCORD_APPLICATION_ID (oder DISCORD_CLIENT_ID) ist nicht gesetzt — Followup kann nicht gesendet werden.'
+        : 'Interaction-Token fehlt im Payload.',
+      severity: 'error',
+      source: 'discord-interactions',
+    })
+    return
+  }
+  const url = `https://discord.com/api/v10/webhooks/${appId}/${token}`
+  const trimmed = content.length > 1900 ? `${content.slice(0, 1900)}…` : content
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: trimmed, flags: EPHEMERAL }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '')
+      logConsole('error', `Followup HTTP ${res.status}`, txt)
+      queueDiscordWebhookEvent({
+        title: 'Discord-Followup fehlgeschlagen',
+        severity: 'error',
+        source: 'discord-interactions',
+        description: txt.slice(0, 1000),
+        fields: [
+          { name: 'Status', value: String(res.status), inline: true },
+          { name: 'Interaktion', value: interactionLabel(interaction), inline: true },
+        ],
+      })
+    } else {
+      logConsole('log', `Followup gesendet · interaction=${interactionLabel(interaction)}`)
+    }
+  } catch (e) {
+    logConsole('error', 'Followup-Exception', e)
+    queueDiscordWebhookEvent({
+      title: 'Discord-Followup Exception',
+      severity: 'error',
+      source: 'discord-interactions',
+      fields: [{ name: 'Interaktion', value: interactionLabel(interaction), inline: true }],
+      error: e,
+    })
+  }
+}
+
+function runDeferred(interaction: DiscordInteraction, label: string, work: () => Promise<string>) {
+  const start = Date.now()
+  logConsole('log', `Defer gestartet · ${label} · discordId=${interaction.member?.user?.id ?? '-'}`)
+  after(async () => {
+    try {
+      const content = await work()
+      const dur = Date.now() - start
+      logConsole('log', `Defer fertig · ${label} · ${dur}ms`)
+      logInteraction(interaction, `Discord ${label} verarbeitet`, 'success', { message: `Dauer ${dur}ms` })
+      await sendFollowup(interaction, content)
+    } catch (e: unknown) {
+      const dur = Date.now() - start
+      const message = isUniqueConstraintError(e)
+        ? 'Dienstnummer oder Discord-ID ist bereits vergeben.'
+        : e instanceof Error
+          ? e.message
+          : 'Serverfehler'
+      logConsole('error', `Defer fehlgeschlagen · ${label} · ${dur}ms · ${message}`, e)
+      logInteraction(interaction, `Discord ${label} fehlgeschlagen`, 'error', { message, error: e })
+      await sendFollowup(interaction, `❌ ${message}`)
+    }
+  })
+  return deferEphemeral()
+}
+
+async function performHire(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const firstName = textOption(options, 'vorname')
   const lastName = textOption(options, 'nachname')
   const rank = await findRank(textOption(options, 'rang'))
-  if (!discordId || !firstName || !lastName || !rank) return reply('Discord-User, Vorname, Nachname und Rang sind erforderlich.')
+  if (!discordId || !firstName || !lastName || !rank) return 'Discord-User, Vorname, Nachname und Rang sind erforderlich.'
 
   const existingDiscord = await prisma.officer.findFirst({ where: { discordId } })
-  if (existingDiscord) return reply('Dieser Discord-User ist bereits einem Officer zugeordnet.')
+  if (existingDiscord) return 'Dieser Discord-User ist bereits einem Officer zugeordnet.'
 
   const prefix = await getBadgePrefix()
   let badgeNumber = textOption(options, 'dienstnummer')
@@ -319,12 +415,12 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
       getBlacklistedBadgeRows(),
     ])
     const assigned = nextBadgeForRank(rank, allRows, prefix, null, blacklistedBadges)
-    if (!assigned) return reply('Keine freie Dienstnummer im Bereich des ausgewählten Rangs.')
+    if (!assigned) return 'Keine freie Dienstnummer im Bereich des ausgewählten Rangs.'
     badgeNumber = assigned.str
   }
 
   const conflict = await findBadgeNumberConflict(badgeNumber, prefix)
-  if (conflict) return reply(conflict)
+  if (conflict) return conflict
   await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
   const unitKeys = await unitKeysFromText(textOption(options, 'units'))
@@ -358,14 +454,14 @@ async function handleHire(options: DiscordOption[] | undefined, actor: ReturnTyp
     actor,
   })
 
-  return reply(`Einstellung erstellt: ${firstName} ${lastName} (${badgeNumber})`)
+  return `Einstellung erstellt: ${firstName} ${lastName} (${badgeNumber})`
 }
 
-async function handlePromotion(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performPromotion(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
   const newRank = await findRank(textOption(options, 'rang'))
-  if (!officer || !newRank) return reply('Officer oder neuer Rang wurde nicht gefunden.')
+  if (!officer || !newRank) return 'Officer oder neuer Rang wurde nicht gefunden.'
 
   const prefix = await getBadgePrefix()
   let newBadgeNumber = textOption(options, 'dienstnummer')
@@ -376,7 +472,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
         getBlacklistedBadgeRows(),
       ])
       const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)
-      if (!assigned) return reply('Keine freie Dienstnummer im Bereich des Ziel-Rangs.')
+      if (!assigned) return 'Keine freie Dienstnummer im Bereich des Ziel-Rangs.'
       newBadgeNumber = assigned.str
     } else {
       newBadgeNumber = officer.badgeNumber
@@ -385,7 +481,7 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
 
   if (newBadgeNumber !== officer.badgeNumber) {
     const conflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officer.id)
-    if (conflict) return reply(conflict)
+    if (conflict) return conflict
     await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
   }
 
@@ -424,14 +520,14 @@ async function handlePromotion(options: DiscordOption[] | undefined, actor: Retu
     ],
   })
 
-  return reply(`Rang geändert: ${officer.firstName} ${officer.lastName} von ${officer.rank.name} auf ${newRank.name}.`)
+  return `Rang geändert: ${officer.firstName} ${officer.lastName} von ${officer.rank.name} auf ${newRank.name}.`
 }
 
-async function handleTraining(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performTraining(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
   const training = await findTraining(textOption(options, 'ausbildung'))
-  if (!officer || !training) return reply('Officer oder Ausbildung wurde nicht gefunden.')
+  if (!officer || !training) return 'Officer oder Ausbildung wurde nicht gefunden.'
 
   const completed = boolOption(options, 'abgeschlossen')
   await prisma.officerTraining.upsert({
@@ -452,15 +548,15 @@ async function handleTraining(options: DiscordOption[] | undefined, actor: Retur
     ],
   })
 
-  return reply(`${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`)
+  return `${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`
 }
 
-async function handleUnit(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performUnit(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const action = textOption(options, 'aktion')
   const unit = await findUnit(textOption(options, 'unit'))
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
-  if (!officer || !unit) return reply('Officer oder Unit wurde nicht gefunden.')
+  if (!officer || !unit) return 'Officer oder Unit wurde nicht gefunden.'
 
   const current = normalizeUnitKeys(officer.units ?? (officer.unit ? [officer.unit] : []))
   const next = action === 'set'
@@ -489,16 +585,16 @@ async function handleUnit(options: DiscordOption[] | undefined, actor: ReturnTyp
     }],
   })
 
-  return reply(`Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`)
+  return `Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`
 }
 
-async function handleTermination(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performTermination(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
   const discordId = userOption(options, 'discord')
   const reason = textOption(options, 'grund')
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
-  if (!officer) return reply('Officer wurde nicht gefunden.')
-  if (officer.status === 'TERMINATED') return reply('Officer ist bereits gekündigt.')
-  if (!reason) return reply('Ein Grund ist erforderlich.')
+  if (!officer) return 'Officer wurde nicht gefunden.'
+  if (officer.status === 'TERMINATED') return 'Officer ist bereits gekündigt.'
+  if (!reason) return 'Ein Grund ist erforderlich.'
 
   await prisma.$transaction(async (tx) => {
     await tx.termination.create({
@@ -526,33 +622,33 @@ async function handleTermination(options: DiscordOption[] | undefined, actor: Re
     fields: [{ name: 'Grund', value: reason, inline: false }],
   })
 
-  return reply(`Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`)
+  return `Kündigung eingetragen: ${officer.firstName} ${officer.lastName}.`
 }
 
-async function handleAbsence(
+async function performAbsence(
   options: DiscordOption[] | undefined,
   actor: ReturnType<typeof actorFromInteraction>,
   interaction: DiscordInteraction,
 ) {
   const actorDiscordId = actor.discordId
   const targetDiscordId = userOption(options, 'discord') || actorDiscordId || ''
-  if (!targetDiscordId) return reply('Discord-User konnte nicht erkannt werden.')
+  if (!targetDiscordId) return 'Discord-User konnte nicht erkannt werden.'
 
   if (targetDiscordId !== actorDiscordId && !(await ensureAllowed(interaction))) {
-    return reply('Du darfst keine Abmeldungen für andere Officers erstellen.')
+    return 'Du darfst keine Abmeldungen für andere Officers erstellen.'
   }
 
   const officer = await prisma.officer.findFirst({
     where: { discordId: targetDiscordId },
     include: { rank: true },
   })
-  if (!officer) return reply('Officer wurde nicht gefunden. Prüfe die Discord-Verknüpfung im HR-Tool.')
+  if (!officer) return 'Officer wurde nicht gefunden. Prüfe die Discord-Verknüpfung im HR-Tool.'
 
   const startsAt = parseAbsenceDate(textOption(options, 'von')) ?? new Date()
   const endsAt = parseAbsenceUntil(textOption(options, 'bis'), startsAt)
   const reason = textOption(options, 'grund')
-  if (!endsAt) return reply('Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.')
-  if (!reason) return reply('Ein Grund ist erforderlich.')
+  if (!endsAt) return 'Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.'
+  if (!reason) return 'Ein Grund ist erforderlich.'
 
   const result = await createAbsenceNotice({
     officerId: officer.id,
@@ -578,7 +674,7 @@ async function handleAbsence(
     ],
   })
 
-  return reply(`Abmeldung eingetragen: ${officer.firstName} ${officer.lastName} · ${formatAbsenceDate(startsAt)} bis ${formatAbsenceDate(endsAt)}.`)
+  return `Abmeldung eingetragen: ${officer.firstName} ${officer.lastName} · ${formatAbsenceDate(startsAt)} bis ${formatAbsenceDate(endsAt)}.`
 }
 
 function parseAbsenceUntil(value: string, now = new Date()) {
@@ -642,22 +738,22 @@ function absenceModal() {
   })
 }
 
-async function handleAbsenceModal(interaction: DiscordInteraction) {
+async function performAbsenceModal(interaction: DiscordInteraction) {
   const actor = actorFromInteraction(interaction)
   const actorDiscordId = actor.discordId
-  if (!actorDiscordId) return reply('Discord-User konnte nicht erkannt werden.')
+  if (!actorDiscordId) return 'Discord-User konnte nicht erkannt werden.'
 
   const officer = await prisma.officer.findFirst({
     where: { discordId: actorDiscordId },
     include: { rank: true },
   })
-  if (!officer) return reply('Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.')
+  if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
 
   const startsAt = new Date()
   const endsAt = parseAbsenceUntil(modalValue(interaction, 'bis'), startsAt)
   const reason = modalValue(interaction, 'grund')
-  if (!endsAt) return reply('Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.')
-  if (!reason) return reply('Ein Grund ist erforderlich.')
+  if (!endsAt) return 'Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.'
+  if (!reason) return 'Ein Grund ist erforderlich.'
 
   const result = await createAbsenceNotice({
     officerId: officer.id,
@@ -682,13 +778,13 @@ async function handleAbsenceModal(interaction: DiscordInteraction) {
     ],
   })
 
-  return reply(`Abmeldung eingetragen bis ${formatAbsenceDate(endsAt)}.`)
+  return `Abmeldung eingetragen bis ${formatAbsenceDate(endsAt)}.`
 }
 
-async function handleAbsenceCancelButton(interaction: DiscordInteraction) {
+async function performAbsenceCancel(interaction: DiscordInteraction) {
   const actor = actorFromInteraction(interaction)
   const discordId = actor.discordId
-  if (!discordId) return reply('Discord-User konnte nicht erkannt werden.')
+  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
 
   const now = new Date()
   const absence = await prisma.absenceNotice.findFirst({
@@ -703,7 +799,7 @@ async function handleAbsenceCancelButton(interaction: DiscordInteraction) {
     orderBy: { endsAt: 'desc' },
   })
 
-  if (!absence) return reply('Du hast aktuell keine aktive Abmeldung.')
+  if (!absence) return 'Du hast aktuell keine aktive Abmeldung.'
 
   const updated = await cancelAbsenceNotice(absence.id)
   queueDiscordAbsenceStatusUpdate()
@@ -716,59 +812,83 @@ async function handleAbsenceCancelButton(interaction: DiscordInteraction) {
     actor,
   })
 
-  return reply('Deine Abmeldung wurde beendet.')
+  return 'Deine Abmeldung wurde beendet.'
 }
 
-async function handleDutyButton(interaction: DiscordInteraction) {
-  const customId = interaction.data?.custom_id
+async function performClockIn(interaction: DiscordInteraction) {
   const discordId = interaction.member?.user?.id
-  if (!discordId) return reply('Discord-User konnte nicht erkannt werden.')
+  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
+  const officer = await prisma.officer.findFirst({
+    where: { discordId },
+    select: { id: true, firstName: true, lastName: true },
+  })
+  if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
+
+  const result = await clockInOfficer(officer.id, 'discord', discordId)
+  queueDiscordDutyEvent('clock-in', result.officer, result.session)
+  queueDiscordDutyStatusUpdate()
+  if (result.endedAbsences > 0) queueDiscordAbsenceStatusUpdate()
+  return `Eingestempelt: ${result.officer.firstName} ${result.officer.lastName}.`
+}
+
+async function performClockOut(interaction: DiscordInteraction) {
+  const discordId = interaction.member?.user?.id
+  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
+  const officer = await prisma.officer.findFirst({
+    where: { discordId },
+    select: { id: true, firstName: true, lastName: true },
+  })
+  if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
+
+  const result = await clockOutOfficer(officer.id, 'discord', discordId)
+  queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
+  queueDiscordDutyStatusUpdate()
+  return `Ausgestempelt: ${result.officer.firstName} ${result.officer.lastName} · Dauer ${formatDuration(result.durationMs)}.`
+}
+
+function handleButton(interaction: DiscordInteraction) {
+  const customId = interaction.data?.custom_id
 
   if (customId === 'lspd_absence_create') {
+    logConsole('log', 'Button: Abmeldungs-Modal öffnen')
     return absenceModal()
   }
 
   if (customId === 'lspd_duty_refresh') {
+    logConsole('log', 'Button: Dienstzeiten-Refresh')
     queueDiscordDutyStatusUpdate()
     return reply('Dienstzeiten werden aktualisiert.')
   }
 
   if (customId === 'lspd_absence_refresh') {
+    logConsole('log', 'Button: Abmeldungs-Refresh')
     queueDiscordAbsenceStatusUpdate()
     return reply('Abmeldungen werden aktualisiert.')
   }
 
   if (customId === 'lspd_absence_cancel') {
-    return handleAbsenceCancelButton(interaction)
+    return runDeferred(interaction, 'Button: Abmeldung beenden', () => performAbsenceCancel(interaction))
   }
 
-  const officer = await prisma.officer.findFirst({
-    where: { discordId },
-    select: { id: true, firstName: true, lastName: true },
-  })
-  if (!officer) return reply('Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.')
-
   if (customId === 'lspd_duty_clock_in') {
-    const result = await clockInOfficer(officer.id, 'discord', discordId)
-    queueDiscordDutyEvent('clock-in', result.officer, result.session)
-    queueDiscordDutyStatusUpdate()
-    if (result.endedAbsences > 0) queueDiscordAbsenceStatusUpdate()
-    return reply(`Eingestempelt: ${result.officer.firstName} ${result.officer.lastName}.`)
+    return runDeferred(interaction, 'Button: Einstempeln', () => performClockIn(interaction))
   }
 
   if (customId === 'lspd_duty_clock_out') {
-    const result = await clockOutOfficer(officer.id, 'discord', discordId)
-    queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
-    queueDiscordDutyStatusUpdate()
-    return reply(`Ausgestempelt: ${result.officer.firstName} ${result.officer.lastName} · Dauer ${formatDuration(result.durationMs)}.`)
+    return runDeferred(interaction, 'Button: Ausstempeln', () => performClockOut(interaction))
   }
 
+  logConsole('warn', `Unbekannter Button: ${customId ?? '-'}`)
   return reply('Unbekannter Dienstzeiten-Button.')
 }
 
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now()
   const rawBody = await req.text()
+  logConsole('log', `POST eingegangen · ${rawBody.length} bytes`)
+
   if (!(await verifySignature(req, rawBody))) {
+    logConsole('warn', `Signatur ungültig — 401 nach ${Date.now() - startedAt}ms`)
     return new NextResponse('Invalid request signature', { status: 401 })
   }
 
@@ -776,6 +896,7 @@ export async function POST(req: NextRequest) {
   try {
     interaction = JSON.parse(rawBody) as DiscordInteraction
   } catch (e) {
+    logConsole('error', 'JSON.parse der Interaktion fehlgeschlagen', e)
     queueDiscordWebhookEvent({
       title: 'Discord-Interaktion konnte nicht gelesen werden',
       severity: 'error',
@@ -785,8 +906,12 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Bad Request', { status: 400 })
   }
 
+  logConsole('log', `Interaktion empfangen · type=${interaction.type} · label=${interactionLabel(interaction)} · discordId=${interaction.member?.user?.id ?? '-'}`)
   logInteraction(interaction, 'Discord-Interaktion empfangen', 'info')
-  if (interaction.type === 1) return json({ type: 1 })
+  if (interaction.type === 1) {
+    logConsole('log', 'PING beantwortet')
+    return json({ type: 1 })
+  }
 
   if (interaction.type === AUTOCOMPLETE) {
     const focused = interaction.data?.options?.find((item) => item.focused)
@@ -798,8 +923,7 @@ export async function POST(req: NextRequest) {
 
   if (interaction.type === MESSAGE_COMPONENT) {
     try {
-      const response = await handleDutyButton(interaction)
-      logInteraction(interaction, 'Discord-Button verarbeitet', 'success')
+      const response = handleButton(interaction)
       return response
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Serverfehler'
@@ -809,25 +933,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (interaction.type === MODAL_SUBMIT) {
-    try {
-      if (interaction.data?.custom_id === 'lspd_absence_modal') {
-        const response = await handleAbsenceModal(interaction)
-        logInteraction(interaction, 'Discord-Modal verarbeitet', 'success')
-        return response
-      }
-      logInteraction(interaction, 'Unbekanntes Discord-Modal', 'warning')
-      return reply('Dieses Formular wird nicht unterstützt.')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Serverfehler'
-      logInteraction(interaction, 'Discord-Modal fehlgeschlagen', 'error', { message, error: e })
-      return reply(message)
+    if (interaction.data?.custom_id === 'lspd_absence_modal') {
+      return runDeferred(interaction, 'Modal: Abmeldung', () => performAbsenceModal(interaction))
     }
+    logInteraction(interaction, 'Unbekanntes Discord-Modal', 'warning')
+    return reply('Dieses Formular wird nicht unterstützt.')
   }
 
   if (interaction.type !== APPLICATION_COMMAND) {
     logInteraction(interaction, 'Discord-Interaktion nicht unterstützt', 'warning')
     return reply('Diese Discord-Interaktion wird nicht unterstützt.')
   }
+
   const commandName = interaction.data?.name
   const actor = actorFromInteraction(interaction)
   const allowed = await ensureAllowed(interaction)
@@ -836,45 +953,22 @@ export async function POST(req: NextRequest) {
     return reply('Du darfst diese HR-Commands nicht ausführen.')
   }
 
-  try {
-    const options = interaction.data?.options
-    let response: NextResponse
-    switch (commandName) {
-      case 'lspd-einstellung':
-        response = await handleHire(options, actor)
-        break
-      case 'lspd-beförderung':
-        response = await handlePromotion(options, actor)
-        break
-      case 'lspd-ausbildung':
-        response = await handleTraining(options, actor)
-        break
-      case 'lspd-unit':
-        response = await handleUnit(options, actor)
-        break
-      case 'lspd-kündigung':
-        response = await handleTermination(options, actor)
-        break
-      case 'lspd-abmeldung':
-        response = await handleAbsence(options, actor, interaction)
-        break
-      default:
-        logInteraction(interaction, 'Unbekannter Discord-Command', 'warning')
-        return reply('Unbekannter Command.')
-    }
-    logInteraction(interaction, 'Discord-Command verarbeitet', 'success')
-    return response
-  } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) {
-      logInteraction(interaction, 'Discord-Command fehlgeschlagen', 'error', {
-        message: 'Dienstnummer oder Discord-ID ist bereits vergeben.',
-        error: e,
-      })
-      return reply('Dienstnummer oder Discord-ID ist bereits vergeben.')
-    }
-    const message = e instanceof Error ? e.message : 'Serverfehler'
-    console.error('[DiscordInteractions] Command fehlgeschlagen:', e)
-    logInteraction(interaction, 'Discord-Command fehlgeschlagen', 'error', { message, error: e })
-    return reply(message)
+  const options = interaction.data?.options
+  switch (commandName) {
+    case 'lspd-einstellung':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performHire(options, actor))
+    case 'lspd-beförderung':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performPromotion(options, actor))
+    case 'lspd-ausbildung':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performTraining(options, actor))
+    case 'lspd-unit':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performUnit(options, actor))
+    case 'lspd-kündigung':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performTermination(options, actor))
+    case 'lspd-abmeldung':
+      return runDeferred(interaction, `Command: ${commandName}`, () => performAbsence(options, actor, interaction))
+    default:
+      logInteraction(interaction, 'Unbekannter Discord-Command', 'warning')
+      return reply('Unbekannter Command.')
   }
 }

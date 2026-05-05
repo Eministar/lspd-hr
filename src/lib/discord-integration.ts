@@ -159,6 +159,10 @@ function envApplicationId() {
   )
 }
 
+export function getDiscordApplicationId() {
+  return envApplicationId()
+}
+
 function envAnnouncementsChannelId() {
   return (
     process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.trim() ||

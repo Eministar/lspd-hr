@@ -8,7 +8,9 @@
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 50)",
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)",
       "Bash(echo \"EXITCODE=$?\")",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(node *)",
+      "Bash(xargs grep *)"
     ]
   },
   "enableAllProjectMcpServers": true,
