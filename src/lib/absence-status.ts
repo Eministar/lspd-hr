@@ -6,7 +6,8 @@ export const INACTIVITY_DAYS = 5
 const AUTOMATION_INTERVAL_MS = 60_000
 const SYSTEM_USERNAME = 'lspd-system'
 const SYSTEM_DISPLAY_NAME = 'LSPD System'
-const SYSTEM_NOTE_TITLE = 'Automatische Fehlzeit-Markierung'
+export const SYSTEM_NOTE_TITLE = 'Automatische Fehlzeit-Markierung'
+export const INACTIVITY_NOTE_DISMISSED_ACTION = 'INACTIVITY_NOTE_DISMISSED'
 
 let lastAutomationRun = 0
 
@@ -243,6 +244,12 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
         take: 1,
         select: { createdAt: true },
       },
+      auditLogs: {
+        where: { action: INACTIVITY_NOTE_DISMISSED_ACTION },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { createdAt: true },
+      },
       absenceNotices: {
         where: {
           startsAt: { lte: now },
@@ -282,7 +289,8 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
 
     if (!hasActiveAbsence && isInactive) {
       const alreadyNoted = officer.officerNotes.some((note) => note.createdAt >= lastActivity)
-      if (!alreadyNoted) {
+      const alreadyDismissed = officer.auditLogs.some((log) => log.createdAt >= lastActivity)
+      if (!alreadyNoted && !alreadyDismissed) {
         systemAuthorId ??= await systemUserId()
         await prisma.note.create({
           data: {

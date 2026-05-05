@@ -171,6 +171,7 @@ const actionLabels: Record<string, string> = {
   OFFICER_TERMINATED: 'Kündigung',
   TRAININGS_UPDATED: 'Ausbildung aktualisiert',
   NOTE_ADDED: 'Notiz hinzugefügt',
+  INACTIVITY_NOTE_DISMISSED: 'Fehlzeit-Notiz gelöscht',
 }
 
 function SectionTitle({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description?: string }) {
@@ -256,7 +257,9 @@ export default function DashboardPage() {
   const canViewDashboard = hasPermission(user, 'dashboard:view')
   const canManageAbsences = hasPermission(user, 'officers:write')
   const { data: stats, loading, error, refetch } = useFetch<Stats>(canViewDashboard ? '/api/stats' : null)
+  const { data: absenceOfficers } = useFetch<OfficerPreview[]>(canManageAbsences ? '/api/officers' : null)
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false)
+  const [absenceOfficerId, setAbsenceOfficerId] = useState('')
   const [absenceDuration, setAbsenceDuration] = useState('3')
   const [absenceEndsAt, setAbsenceEndsAt] = useState(dateAfterDays(3))
   const [absenceReason, setAbsenceReason] = useState('')
@@ -271,8 +274,18 @@ export default function DashboardPage() {
       }).format(new Date()),
     []
   )
+  const absenceOfficerOptions = useMemo(() => {
+    const ownOption = user?.discordId ? [{ value: '', label: 'Eigene Abmeldung' }] : []
+    const officerOptions = (absenceOfficers ?? []).map((officer) => ({
+      value: officer.id,
+      label: `${officer.firstName} ${officer.lastName} #${displayBadgeNumber(officer.badgeNumber)}`,
+    }))
+    return [...ownOption, ...officerOptions]
+  }, [absenceOfficers, user?.discordId])
+  const canSubmitAbsence = !!absenceReason.trim() && !!absenceEndsAt && (!!user?.discordId || !!absenceOfficerId)
 
   const openAbsenceModal = () => {
+    setAbsenceOfficerId('')
     setAbsenceDuration('3')
     setAbsenceEndsAt(dateAfterDays(3))
     setAbsenceReason('')
@@ -290,15 +303,22 @@ export default function DashboardPage() {
       addToast({ type: 'error', title: 'Grund fehlt' })
       return
     }
+    if (!user?.discordId && !absenceOfficerId) {
+      addToast({ type: 'error', title: 'Officer fehlt' })
+      return
+    }
 
     setAbsenceSubmitting(true)
     try {
+      const payload: { reason: string; endsAt: string; officerId?: string } = {
+        reason: absenceReason.trim(),
+        endsAt: absenceEndsAt,
+      }
+      if (canManageAbsences && absenceOfficerId) payload.officerId = absenceOfficerId
+
       await execute('/api/absences', {
         method: 'POST',
-        body: JSON.stringify({
-          reason: absenceReason.trim(),
-          endsAt: absenceEndsAt,
-        }),
+        body: JSON.stringify(payload),
       })
       addToast({ type: 'success', title: 'Abmeldung eingetragen' })
       setAbsenceModalOpen(false)
@@ -367,8 +387,8 @@ export default function DashboardPage() {
             <Button
               size="sm"
               onClick={openAbsenceModal}
-              disabled={!user?.discordId}
-              title={!user?.discordId ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}
+              disabled={!user?.discordId && !canManageAbsences}
+              title={!user?.discordId && !canManageAbsences ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}
             >
               <CalendarPlus size={13} strokeWidth={2} />
               Abmelden
@@ -764,6 +784,15 @@ export default function DashboardPage() {
 
       <Modal open={absenceModalOpen} onClose={() => setAbsenceModalOpen(false)} title="Abmeldung eintragen">
         <div className="space-y-4">
+          {canManageAbsences && (
+            <Select
+              label="Officer"
+              value={absenceOfficerId}
+              onValueChange={setAbsenceOfficerId}
+              options={absenceOfficerOptions}
+              placeholder={user?.discordId ? 'Eigene Abmeldung oder Officer wählen' : 'Officer wählen...'}
+            />
+          )}
           <Select
             label="Dauer"
             value={absenceDuration}
@@ -794,14 +823,14 @@ export default function DashboardPage() {
             placeholder="Grund der Abmeldung..."
             required
           />
-          {!user?.discordId && (
+          {!user?.discordId && !canManageAbsences && (
             <p className="rounded-[9px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
               Dein Dashboard-User braucht eine Discord-ID, damit die Abmeldung deinem Officer zugeordnet werden kann.
             </p>
           )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setAbsenceModalOpen(false)}>Abbrechen</Button>
-            <Button size="sm" onClick={submitAbsence} loading={absenceSubmitting} disabled={!absenceReason.trim() || !absenceEndsAt || !user?.discordId}>
+            <Button size="sm" onClick={submitAbsence} loading={absenceSubmitting} disabled={!canSubmitAbsence}>
               <Send size={13} strokeWidth={2} />
               Eintragen
             </Button>

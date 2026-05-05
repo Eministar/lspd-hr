@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -142,6 +142,19 @@ function formatDuration(ms: number) {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`
 }
 
+function dateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function dateAfterDays(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return dateInputValue(date)
+}
+
 export default function OfficerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -165,11 +178,14 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [promoteModal, setPromoteModal] = useState(false)
   const [demoteModal, setDemoteModal] = useState(false)
   const [noteModal, setNoteModal] = useState(false)
+  const [absenceModal, setAbsenceModal] = useState(false)
   const [terminateReason, setTerminateReason] = useState('')
   const [newRankId, setNewRankId] = useState('')
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
   const [noteForm, setNoteForm] = useState({ title: '', content: '' })
+  const [absenceEndsAt, setAbsenceEndsAt] = useState(dateAfterDays(3))
+  const [absenceReason, setAbsenceReason] = useState('')
   const [form, setForm] = useState<OfficerForm>(EMPTY_OFFICER_FORM)
 
   const startEditing = () => {
@@ -288,6 +304,43 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       addToast({ type: 'success', title: 'Notiz hinzugefügt' })
       setNoteModal(false)
       setNoteForm({ title: '', content: '' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await execute(`/api/notes/${noteId}`, { method: 'DELETE' })
+      addToast({ type: 'success', title: 'Notiz gelöscht' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const openAbsenceModal = () => {
+    setAbsenceEndsAt(dateAfterDays(3))
+    setAbsenceReason('')
+    setAbsenceModal(true)
+  }
+
+  const handleAddAbsence = async () => {
+    if (!absenceReason.trim() || !absenceEndsAt) return
+    try {
+      await execute('/api/absences', {
+        method: 'POST',
+        body: JSON.stringify({
+          officerId: id,
+          endsAt: absenceEndsAt,
+          reason: absenceReason.trim(),
+        }),
+      })
+      addToast({ type: 'success', title: 'Abmeldung eingetragen' })
+      setAbsenceModal(false)
+      setAbsenceReason('')
+      notifyLiveUpdate()
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -542,7 +595,19 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
             className="glass-panel-elevated rounded-[14px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Abmeldungen</h3>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-[13.5px] font-semibold text-[#eee]">Abmeldungen</h3>
+              {canEditOfficer && officer.status !== 'TERMINATED' && (
+                <button
+                  type="button"
+                  onClick={openAbsenceModal}
+                  className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[11.5px] text-[#d4af37] transition-colors hover:bg-[#0f2340]"
+                >
+                  <CalendarPlus size={12} strokeWidth={1.85} />
+                  Eintragen
+                </button>
+              )}
+            </div>
             {officer.absences?.active && (
               <div className="mb-3 rounded-[10px] border border-[#38bdf8]/25 bg-[#06233a]/70 px-3.5 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -711,8 +776,23 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <div className="space-y-2.5">
                 {officer.officerNotes.map((note) => (
                   <div key={note.id} className="bg-[#0f2340] rounded-[8px] p-3">
-                    {note.title && <p className="text-[13px] font-medium text-[#eee] mb-1">{note.title}</p>}
-                    <p className="text-[13px] text-[#999] leading-relaxed">{note.content}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        {note.title && <p className="text-[13px] font-medium text-[#eee] mb-1">{note.title}</p>}
+                        <p className="text-[13px] text-[#999] leading-relaxed">{note.content}</p>
+                      </div>
+                      {canManageNotes && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="shrink-0 rounded-[6px] p-1 text-[#4a6585] transition-colors hover:bg-[#1c1111] hover:text-[#f87171]"
+                          aria-label="Notiz löschen"
+                          title="Notiz löschen"
+                        >
+                          <Trash2 size={13} strokeWidth={1.85} />
+                        </button>
+                      )}
+                    </div>
                     <p className="text-[11px] text-[#4a6585] mt-2">{formatDate(note.createdAt)} · {note.author.displayName}</p>
                   </div>
                 ))}
@@ -791,6 +871,35 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setNoteModal(false)}>Abbrechen</Button>
             <Button size="sm" onClick={handleAddNote} disabled={!noteForm.content.trim()}>Speichern</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={absenceModal} onClose={() => setAbsenceModal(false)} title="Abmeldung eintragen">
+        <div className="space-y-4">
+          <p className="text-[13px] text-[#888]">
+            Abmeldung für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
+          </p>
+          <DateField
+            label="Abgemeldet bis"
+            value={absenceEndsAt}
+            onChange={setAbsenceEndsAt}
+            allowClear={false}
+          />
+          <Textarea
+            label="Grund"
+            value={absenceReason}
+            onChange={(e) => setAbsenceReason(e.target.value)}
+            rows={4}
+            required
+            placeholder="Grund der Abmeldung..."
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setAbsenceModal(false)}>Abbrechen</Button>
+            <Button size="sm" onClick={handleAddAbsence} disabled={!absenceReason.trim() || !absenceEndsAt}>
+              <Send size={13} strokeWidth={2} />
+              Eintragen
+            </Button>
           </div>
         </div>
       </Modal>

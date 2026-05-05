@@ -39,6 +39,7 @@ const actionLabels: Record<string, string> = {
   OFFICER_TERMINATED: 'Gekündigt',
   TRAININGS_UPDATED: 'Ausbildung',
   NOTE_ADDED: 'Notiz',
+  INACTIVITY_NOTE_DISMISSED: 'Fehlzeit-Notiz gelöscht',
 }
 
 export default function LogsPage() {
