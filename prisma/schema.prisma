@@ -76,6 +76,7 @@ model User {
   notesAuthored       Note[]         @relation("NoteAuthor")
   auditLogs           AuditLog[]     @relation("AuditUser")
   createdLists        RankChangeList[] @relation("ListCreator")
+  rankChangeEntriesCreated RankChangeListEntry[] @relation("EntryCreator")
   taskListsCreated    TaskList[]     @relation("TaskListCreator")
   tasksCreated        Task[]         @relation("TaskCreator")
 }
@@ -300,6 +301,8 @@ model RankChangeListEntry {
   note           String?
   executed       Boolean  @default(false)
   executedAt     DateTime?
+  createdById    String?
+  createdBy      User?    @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now())
 
   @@unique([listId, officerId])

@@ -102,19 +102,33 @@ function hasAdminPermission(permissions: string | undefined) {
 
 async function verifySignature(req: NextRequest, rawBody: string) {
   const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim() || process.env.LSPD_DISCORD_PUBLIC_KEY?.trim() || ''
-  if (!publicKey) return false
+  if (!publicKey) {
+    console.error('[DiscordInteractions] DISCORD_PUBLIC_KEY ist nicht gesetzt — alle Interaktionen werden abgelehnt. Setze die Env-Variable in der .env.')
+    return false
+  }
 
   const signature = req.headers.get('x-signature-ed25519')
   const timestamp = req.headers.get('x-signature-timestamp')
-  if (!signature || !timestamp) return false
+  if (!signature || !timestamp) {
+    console.error('[DiscordInteractions] Signatur-Header fehlen (x-signature-ed25519 / x-signature-timestamp).')
+    return false
+  }
 
-  const key = crypto.createPublicKey({
-    key: Buffer.from(`${PUBLIC_KEY_PREFIX}${publicKey}`, 'hex'),
-    format: 'der',
-    type: 'spki',
-  })
-
-  return crypto.verify(null, Buffer.from(`${timestamp}${rawBody}`), key, Buffer.from(signature, 'hex'))
+  try {
+    const key = crypto.createPublicKey({
+      key: Buffer.from(`${PUBLIC_KEY_PREFIX}${publicKey}`, 'hex'),
+      format: 'der',
+      type: 'spki',
+    })
+    const valid = crypto.verify(null, Buffer.from(`${timestamp}${rawBody}`), key, Buffer.from(signature, 'hex'))
+    if (!valid) {
+      console.error('[DiscordInteractions] Signatur-Verifizierung fehlgeschlagen — DISCORD_PUBLIC_KEY passt vermutlich nicht zum Bot.')
+    }
+    return valid
+  } catch (e) {
+    console.error('[DiscordInteractions] Signatur-Verifizierung warf Exception (vermutlich Public-Key-Format falsch):', e)
+    return false
+  }
 }
 
 async function ensureAllowed(interaction: DiscordInteraction) {

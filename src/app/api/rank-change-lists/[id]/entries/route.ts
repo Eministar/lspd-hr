@@ -8,7 +8,7 @@ import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-bl
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['rank-changes:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -76,11 +76,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         proposedRankId,
         newBadgeNumber: nextBadge || null,
         note: note || null,
+        createdById: user.id,
       },
       include: {
         officer: { select: { firstName: true, lastName: true, badgeNumber: true } },
         currentRank: { select: { name: true, color: true } },
         proposedRank: { select: { name: true, color: true } },
+        createdBy: { select: { id: true, displayName: true } },
       },
     })
 

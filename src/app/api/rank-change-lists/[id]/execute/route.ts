@@ -25,6 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             officer: true,
             currentRank: true,
             proposedRank: true,
+            createdBy: { select: { id: true, displayName: true, discordId: true } },
           },
         },
       },
@@ -116,6 +117,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
 
       queueOfficerRoleSync(entry.officerId)
+      const submittedBy = entry.createdBy ?? null
+      const fields: { name: string; value: string; inline?: boolean }[] = [
+        { name: 'Alter Rang', value: entry.currentRank.name, inline: true },
+        { name: 'Neuer Rang', value: `**${entry.proposedRank.name}**`, inline: true },
+        { name: 'DN-Wechsel', value: `${entry.officer.badgeNumber} → **${entry.newBadgeNumber || entry.officer.badgeNumber}**`, inline: true },
+      ]
+      if (submittedBy) {
+        fields.push({
+          name: 'Eingereicht von',
+          value: submittedBy.discordId ? `<@${submittedBy.discordId}>` : submittedBy.displayName,
+          inline: true,
+        })
+      }
       queueDiscordHrEvent({
         type: 'promotion',
         title: `${action}: ${entry.officer.firstName} ${entry.officer.lastName}`,
@@ -128,11 +142,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           rank: entry.proposedRank,
         },
         actor: user,
-        fields: [
-          { name: 'Alter Rang', value: entry.currentRank.name, inline: true },
-          { name: 'Neuer Rang', value: `**${entry.proposedRank.name}**`, inline: true },
-          { name: 'DN-Wechsel', value: `${entry.officer.badgeNumber} → **${entry.newBadgeNumber || entry.officer.badgeNumber}**`, inline: true },
-        ],
+        fields,
       })
 
       executed++

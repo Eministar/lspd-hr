@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, status: true } },
           currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
+          createdBy: { select: { id: true, displayName: true } },
         },
         orderBy: { createdAt: 'asc' },
       },

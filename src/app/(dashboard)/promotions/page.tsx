@@ -40,6 +40,7 @@ interface ListEntry {
   note: string | null
   executed: boolean
   executedAt: string | null
+  createdBy: { id: string; displayName: string } | null
 }
 
 interface RankChangeList {
@@ -257,6 +258,12 @@ export default function PromotionsPage() {
                               <span className="text-[11.5px] text-[#eee] font-medium">{entry.proposedRank.name}</span>
                               {entry.note && <span className="text-[11px] text-[#bbb] ml-1">· {entry.note}</span>}
                             </div>
+                            <p className="text-[11px] text-[#7089a5] mt-0.5">
+                              Eingereicht von <span className="text-[#9fb0c4]">{entry.createdBy?.displayName ?? list.createdBy.displayName}</span>
+                              {entry.executed && entry.executedAt && (
+                                <> · Durchgeführt am {formatDate(entry.executedAt)}</>
+                              )}
+                            </p>
                           </div>
                           {entry.executed ? (
                             <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { normalizePermissions } from '@/lib/permissions'
+import { sanitizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
 
@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ? body.description.trim()
         : null
     }
-    if ('permissions' in body) data.permissions = normalizePermissions(body.permissions)
+    if ('permissions' in body) data.permissions = sanitizePermissions(body.permissions)
 
     const group = await userGroupDelegate(prisma).update({
       where: { id },

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
-import { normalizePermissions } from '@/lib/permissions'
+import { sanitizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         description: typeof body.description === 'string' && body.description.trim()
           ? body.description.trim()
           : null,
-        permissions: normalizePermissions(body.permissions),
+        permissions: sanitizePermissions(body.permissions),
       },
       include: { _count: { select: { users: true } } },
     })

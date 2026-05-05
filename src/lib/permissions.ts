@@ -85,11 +85,26 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'settings:manage': ['dashboard:view', 'duty-times:manage'],
 }
 
-export function normalizePermissions(value: unknown): Permission[] {
+// Filter to known permissions WITHOUT expanding implied permissions.
+// Used at write time so the admin's selection is persisted exactly as chosen
+// (otherwise unchecking an implied permission while keeping its parent
+// silently re-adds it on save).
+export function sanitizePermissions(value: unknown): Permission[] {
   if (!Array.isArray(value)) return []
-  const explicit = value.filter((item): item is Permission => (
-    typeof item === 'string' && PERMISSION_SET.has(item)
-  ))
+  const seen = new Set<Permission>()
+  for (const item of value) {
+    if (typeof item === 'string' && PERMISSION_SET.has(item)) {
+      seen.add(item as Permission)
+    }
+  }
+  return Array.from(seen)
+}
+
+// Filter to known permissions AND expand implied permissions.
+// Used at read/check time so e.g. having `rank-changes:manage` automatically
+// grants `officers:view` for runtime permission checks.
+export function normalizePermissions(value: unknown): Permission[] {
+  const explicit = sanitizePermissions(value)
   const permissions = new Set<Permission>(explicit)
   for (const permission of explicit) {
     for (const implied of IMPLIED_PERMISSIONS[permission] ?? []) {
