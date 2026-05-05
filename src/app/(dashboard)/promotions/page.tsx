@@ -177,8 +177,9 @@ export default function PromotionsPage() {
   const handleUndoEntry = async () => {
     if (!undoEntry) return
     try {
-      await execute(`/api/rank-change-lists/${undoEntry.listId}/entries/${undoEntry.entryId}/undo`, {
+      await execute(`/api/rank-change-lists/${undoEntry.listId}/execute`, {
         method: 'POST',
+        body: JSON.stringify({ entryId: undoEntry.entryId, action: 'undo' }),
       })
       addToast({ type: 'success', title: 'Beförderung rückgängig gemacht' })
       setUndoEntry(null)

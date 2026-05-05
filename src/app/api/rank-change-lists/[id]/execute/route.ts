@@ -8,6 +8,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { undoPromotionListEntry } from '@/lib/rank-change-list-undo'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +16,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params
     const body = await req.json().catch(() => ({}))
     const entryId = typeof body.entryId === 'string' ? body.entryId : null
+    const action = typeof body.action === 'string' ? body.action : null
+
+    if (action === 'undo') {
+      if (!entryId) return error('Entry ID ist erforderlich')
+      const result = await undoPromotionListEntry(id, entryId, user)
+      if (!result.ok) return error(result.message, result.status)
+      return success(result.data)
+    }
 
     const list = await prisma.rankChangeList.findUnique({
       where: { id },
