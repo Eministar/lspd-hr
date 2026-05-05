@@ -7,7 +7,8 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/me') ||
-    pathname.startsWith('/api/runtime-events')
+    pathname.startsWith('/api/runtime-events') ||
+    pathname.startsWith('/api/discord/interactions')
   ) {
     return NextResponse.next()
   }
