@@ -78,6 +78,9 @@ const MODAL_SUBMIT = 5
 const ADMINISTRATOR = BigInt(8)
 const MODAL_CALLBACK = 9
 const DEFERRED_CHANNEL_MESSAGE = 5
+const DEFERRED_UPDATE_MESSAGE = 6
+
+const LSPD_CUSTOM_ID_PREFIX = 'lspd_'
 
 function json(data: unknown) {
   return NextResponse.json(data)
@@ -89,6 +92,17 @@ function reply(content: string) {
 
 function deferEphemeral() {
   return json({ type: DEFERRED_CHANNEL_MESSAGE, data: { flags: EPHEMERAL } })
+}
+
+function silentAck() {
+  return json({ type: DEFERRED_UPDATE_MESSAGE })
+}
+
+function isLspdCustomId(customId: string | undefined | null) {
+  if (!customId) return false
+  if (customId.startsWith(LSPD_CUSTOM_ID_PREFIX)) return true
+  if (customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) return true
+  return false
 }
 
 function modal(data: unknown) {
@@ -364,8 +378,6 @@ async function sendFollowup(interaction: DiscordInteraction, content: string) {
           { name: 'Interaktion', value: interactionLabel(interaction), inline: true },
         ],
       })
-    } else {
-      logConsole('log', `Followup gesendet · interaction=${interactionLabel(interaction)}`)
     }
   } catch (e) {
     logConsole('error', 'Followup-Exception', e)
@@ -380,23 +392,16 @@ async function sendFollowup(interaction: DiscordInteraction, content: string) {
 }
 
 function runDeferred(interaction: DiscordInteraction, label: string, work: () => Promise<string>) {
-  const start = Date.now()
-  logConsole('log', `Defer gestartet · ${label} · discordId=${interaction.member?.user?.id ?? '-'}`)
   after(async () => {
     try {
       const content = await work()
-      const dur = Date.now() - start
-      logConsole('log', `Defer fertig · ${label} · ${dur}ms`)
-      logInteraction(interaction, `Discord ${label} verarbeitet`, 'success', { message: `Dauer ${dur}ms` })
       await sendFollowup(interaction, content)
     } catch (e: unknown) {
-      const dur = Date.now() - start
       const message = isUniqueConstraintError(e)
         ? 'Dienstnummer oder Discord-ID ist bereits vergeben.'
         : e instanceof Error
           ? e.message
           : 'Serverfehler'
-      logConsole('error', `Defer fehlgeschlagen · ${label} · ${dur}ms · ${message}`, e)
       logInteraction(interaction, `Discord ${label} fehlgeschlagen`, 'error', { message, error: e })
       await sendFollowup(interaction, `❌ ${message}`)
     }
@@ -880,24 +885,25 @@ async function performActivityConfirm(interaction: DiscordInteraction, sessionId
 function handleButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
 
+  if (!isLspdCustomId(customId)) {
+    return silentAck()
+  }
+
   if (customId && customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) {
     const sessionId = customId.slice(DUTY_ACTIVITY_CONFIRM_PREFIX.length)
     return runDeferred(interaction, 'Button: Aktivitäts-Bestätigung', () => performActivityConfirm(interaction, sessionId))
   }
 
   if (customId === 'lspd_absence_create') {
-    logConsole('log', 'Button: Abmeldungs-Modal öffnen')
     return absenceModal()
   }
 
   if (customId === 'lspd_duty_refresh') {
-    logConsole('log', 'Button: Dienstzeiten-Refresh')
     queueDiscordDutyStatusUpdate()
     return reply('Dienstzeiten werden aktualisiert.')
   }
 
   if (customId === 'lspd_absence_refresh') {
-    logConsole('log', 'Button: Abmeldungs-Refresh')
     queueDiscordAbsenceStatusUpdate()
     return reply('Abmeldungen werden aktualisiert.')
   }
@@ -914,17 +920,13 @@ function handleButton(interaction: DiscordInteraction) {
     return runDeferred(interaction, 'Button: Ausstempeln', () => performClockOut(interaction))
   }
 
-  logConsole('warn', `Unbekannter Button: ${customId ?? '-'}`)
-  return reply('Unbekannter Dienstzeiten-Button.')
+  return silentAck()
 }
 
 export async function POST(req: NextRequest) {
-  const startedAt = Date.now()
   const rawBody = await req.text()
-  logConsole('log', `POST eingegangen · ${rawBody.length} bytes`)
 
   if (!(await verifySignature(req, rawBody))) {
-    logConsole('warn', `Signatur ungültig — 401 nach ${Date.now() - startedAt}ms`)
     return new NextResponse('Invalid request signature', { status: 401 })
   }
 
@@ -942,10 +944,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Bad Request', { status: 400 })
   }
 
-  logConsole('log', `Interaktion empfangen · type=${interaction.type} · label=${interactionLabel(interaction)} · discordId=${interaction.member?.user?.id ?? '-'}`)
-  logInteraction(interaction, 'Discord-Interaktion empfangen', 'info')
   if (interaction.type === 1) {
-    logConsole('log', 'PING beantwortet')
     return json({ type: 1 })
   }
 
@@ -969,16 +968,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (interaction.type === MODAL_SUBMIT) {
-    if (interaction.data?.custom_id === 'lspd_absence_modal') {
+    const modalId = interaction.data?.custom_id
+    if (modalId === 'lspd_absence_modal') {
       return runDeferred(interaction, 'Modal: Abmeldung', () => performAbsenceModal(interaction))
     }
-    logInteraction(interaction, 'Unbekanntes Discord-Modal', 'warning')
-    return reply('Dieses Formular wird nicht unterstützt.')
+    return silentAck()
   }
 
   if (interaction.type !== APPLICATION_COMMAND) {
-    logInteraction(interaction, 'Discord-Interaktion nicht unterstützt', 'warning')
-    return reply('Diese Discord-Interaktion wird nicht unterstützt.')
+    return silentAck()
   }
 
   const commandName = interaction.data?.name

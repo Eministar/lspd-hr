@@ -98,6 +98,7 @@ const ZWSP = '​'
 
 let syncSchedulerStarted = false
 let dutyActivityCheckerStarted = false
+let absenceExpiryCheckerStarted = false
 
 const DUTY_INACTIVITY_CHECK_AFTER_MS = Number.parseInt(
   process.env.LSPD_DUTY_INACTIVITY_CHECK_AFTER_MS || `${90 * 60 * 1000}`,
@@ -109,6 +110,10 @@ const DUTY_INACTIVITY_CONFIRM_DEADLINE_MS = Number.parseInt(
 ) || 5 * 60 * 1000
 const DUTY_ACTIVITY_CHECK_INTERVAL_MS = Number.parseInt(
   process.env.LSPD_DUTY_ACTIVITY_CHECK_INTERVAL_MS || `${60 * 1000}`,
+  10,
+) || 60 * 1000
+const ABSENCE_EXPIRY_CHECK_INTERVAL_MS = Number.parseInt(
+  process.env.LSPD_ABSENCE_EXPIRY_CHECK_INTERVAL_MS || `${60 * 1000}`,
   10,
 ) || 60 * 1000
 
@@ -597,9 +602,30 @@ async function sendDutyActivityCheckDm(officerName: string, sessionId: string, d
   const hourLabel = Number.isInteger(totalHours)
     ? `${totalHours}`
     : totalHours.toFixed(1).replace('.', ',')
+  const orgName = await getOrgName()
+  const deadline = new Date(Date.now() + DUTY_INACTIVITY_CONFIRM_DEADLINE_MS)
+
+  const embed = {
+    author: { name: `${orgName} · Dienst-Aktivitätsprüfung` },
+    title: '🟡  Bist du noch im Dienst?',
+    description: [
+      `Hey **${officerName}**,`,
+      '',
+      `du bist seit **${hourLabel}h** ohne Aktivität im Dienst eingestempelt.`,
+      `Bitte bestätige unten, dass du noch aktiv bist – sonst wirst du in **${minutes} Minuten** automatisch ausgestempelt.`,
+    ].join('\n'),
+    color: 0xfacc15,
+    fields: [
+      { name: 'Status', value: '🟢 Eingestempelt', inline: true },
+      { name: 'Frist', value: discordTimestamp(deadline, 'R'), inline: true },
+      { name: 'Auto-Ausstempeln', value: discordTimestamp(deadline, 't'), inline: true },
+    ],
+    timestamp: new Date().toISOString(),
+    footer: { text: `${orgName} HR · Dienstzeit-Überwachung` },
+  }
 
   const payload = {
-    content: `Hey ${officerName}, du bist seit ${hourLabel}h im Dienst eingestempelt. Bist du noch aktiv? Bitte bestätige innerhalb von ${minutes} Minuten, sonst wirst du automatisch ausgestempelt.`,
+    embeds: [embed],
     components: [
       {
         type: 1,
@@ -627,11 +653,26 @@ async function sendDutyAutoClockOutDm(discordId: string, officerName: string, du
   try {
     const channelId = await openDmChannel(discordId)
     if (!channelId) return
+    const orgName = await getOrgName()
+    const embed = {
+      author: { name: `${orgName} · Automatisches Dienstende` },
+      title: '🔴  Automatisch ausgestempelt',
+      description: [
+        `**${officerName}**, du wurdest wegen ausbleibender Bestätigung automatisch ausgestempelt.`,
+        '',
+        'Bitte stempel dich beim nächsten Dienstantritt erneut ein.',
+      ].join('\n'),
+      color: 0xef4444,
+      fields: [
+        { name: 'Dienstdauer', value: `**${formatDuration(durationMs)}**`, inline: true },
+        { name: 'Ausgestempelt', value: discordTimestamp(new Date(), 'f'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+      footer: { text: `${orgName} HR · Dienstzeit-Überwachung` },
+    }
     await discordFetch<void>(`/channels/${channelId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({
-        content: `${officerName}, du wurdest wegen ausbleibender Bestätigung automatisch ausgestempelt. Dauer: **${formatDuration(durationMs)}**.`,
-      }),
+      body: JSON.stringify({ embeds: [embed] }),
     })
   } catch (error) {
     console.error('[DiscordIntegration] Auto-Ausstempel-DM fehlgeschlagen:', error)
@@ -736,6 +777,41 @@ export function ensureDutyActivityChecker() {
       console.error('[DiscordIntegration] Aktivitäts-Check fehlgeschlagen:', error)
     })
   }, DUTY_ACTIVITY_CHECK_INTERVAL_MS).unref?.()
+}
+
+async function runAbsenceExpiryTick() {
+  const now = new Date()
+  const stale = await prisma.officer.count({
+    where: {
+      status: 'AWAY',
+      absenceNotices: {
+        none: {
+          startsAt: { lte: now },
+          endsAt: { gte: now },
+        },
+      },
+    },
+  })
+  const recentlyExpired = await prisma.absenceNotice.count({
+    where: {
+      endsAt: {
+        lt: now,
+        gte: new Date(now.getTime() - ABSENCE_EXPIRY_CHECK_INTERVAL_MS - 5_000),
+      },
+    },
+  })
+  if (stale === 0 && recentlyExpired === 0) return
+  await syncDiscordAbsenceStatusMessage()
+}
+
+export function ensureAbsenceExpiryChecker() {
+  if (absenceExpiryCheckerStarted || typeof setInterval !== 'function') return
+  absenceExpiryCheckerStarted = true
+  setInterval(() => {
+    void runAbsenceExpiryTick().catch((error) => {
+      console.error('[DiscordIntegration] Abmeldungs-Ablaufprüfung fehlgeschlagen:', error)
+    })
+  }, ABSENCE_EXPIRY_CHECK_INTERVAL_MS).unref?.()
 }
 
 export function ensureDiscordSyncScheduler() {
@@ -1176,6 +1252,7 @@ export function queueDiscordDutyEvent(
 
 export function queueDiscordDutyStatusUpdate() {
   ensureDutyActivityChecker()
+  ensureAbsenceExpiryChecker()
   void syncDiscordDutyStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
@@ -1188,6 +1265,7 @@ export function queueDiscordDutyStatusUpdate() {
 }
 
 export function queueDiscordAbsenceStatusUpdate() {
+  ensureAbsenceExpiryChecker()
   void syncDiscordAbsenceStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Abmeldungs-Embed fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
