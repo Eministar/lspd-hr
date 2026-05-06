@@ -176,6 +176,11 @@ model DutyTimeSession {
   clockInSource  String    @default("dashboard")
   clockOutSource String?
   actorDiscordId String?
+  activityCheckSentAt    DateTime?
+  activityCheckMessageId String?
+  activityCheckChannelId String?
+  activityConfirmedAt    DateTime?
+  autoClockedOut         Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

@@ -11,6 +11,8 @@ import {
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
+  confirmDutyActivityCheck,
+  DUTY_ACTIVITY_CONFIRM_PREFIX,
   getDiscordApplicationId,
   getDiscordConfig,
   queueDiscordAbsenceStatusUpdate,
@@ -59,6 +61,11 @@ type DiscordInteraction = {
       username?: string
       global_name?: string | null
     }
+  }
+  user?: {
+    id: string
+    username?: string
+    global_name?: string | null
   }
 }
 
@@ -119,7 +126,7 @@ function modalValue(interaction: DiscordInteraction, customId: string) {
 }
 
 function actorFromInteraction(interaction: DiscordInteraction) {
-  const user = interaction.member?.user
+  const user = interaction.member?.user ?? interaction.user
   return {
     displayName: user?.global_name || user?.username || 'Discord Command',
     discordId: user?.id ?? null,
@@ -816,7 +823,7 @@ async function performAbsenceCancel(interaction: DiscordInteraction) {
 }
 
 async function performClockIn(interaction: DiscordInteraction) {
-  const discordId = interaction.member?.user?.id
+  const discordId = interaction.member?.user?.id ?? interaction.user?.id
   if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
   const officer = await prisma.officer.findFirst({
     where: { discordId },
@@ -832,7 +839,7 @@ async function performClockIn(interaction: DiscordInteraction) {
 }
 
 async function performClockOut(interaction: DiscordInteraction) {
-  const discordId = interaction.member?.user?.id
+  const discordId = interaction.member?.user?.id ?? interaction.user?.id
   if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
   const officer = await prisma.officer.findFirst({
     where: { discordId },
@@ -846,8 +853,25 @@ async function performClockOut(interaction: DiscordInteraction) {
   return `Ausgestempelt: ${result.officer.firstName} ${result.officer.lastName} · Dauer ${formatDuration(result.durationMs)}.`
 }
 
+async function performActivityConfirm(interaction: DiscordInteraction, sessionId: string) {
+  const discordId = interaction.member?.user?.id ?? interaction.user?.id
+  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
+  const result = await confirmDutyActivityCheck(sessionId, discordId)
+  if (!result.ok) {
+    if (result.reason === 'already-clocked-out') return 'Du bist bereits ausgestempelt.'
+    if (result.reason === 'forbidden') return 'Diese Bestätigung gehört nicht zu deinem Account.'
+    return 'Diese Dienstzeit-Sitzung wurde nicht gefunden.'
+  }
+  return `Danke ${result.officer.firstName}, du bleibst eingestempelt.`
+}
+
 function handleButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
+
+  if (customId && customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) {
+    const sessionId = customId.slice(DUTY_ACTIVITY_CONFIRM_PREFIX.length)
+    return runDeferred(interaction, 'Button: Aktivitäts-Bestätigung', () => performActivityConfirm(interaction, sessionId))
+  }
 
   if (customId === 'lspd_absence_create') {
     logConsole('log', 'Button: Abmeldungs-Modal öffnen')

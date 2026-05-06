@@ -97,6 +97,20 @@ const EVENT_META = {
 const ZWSP = '​'
 
 let syncSchedulerStarted = false
+let dutyActivityCheckerStarted = false
+
+const DUTY_INACTIVITY_CHECK_AFTER_MS = Number.parseInt(
+  process.env.LSPD_DUTY_INACTIVITY_CHECK_AFTER_MS || `${90 * 60 * 1000}`,
+  10,
+) || 90 * 60 * 1000
+const DUTY_INACTIVITY_CONFIRM_DEADLINE_MS = Number.parseInt(
+  process.env.LSPD_DUTY_INACTIVITY_CONFIRM_DEADLINE_MS || `${5 * 60 * 1000}`,
+  10,
+) || 5 * 60 * 1000
+const DUTY_ACTIVITY_CHECK_INTERVAL_MS = Number.parseInt(
+  process.env.LSPD_DUTY_ACTIVITY_CHECK_INTERVAL_MS || `${60 * 1000}`,
+  10,
+) || 60 * 1000
 
 /* ── Rate-Limit Queue ────────────────────────────────────────────── */
 const MAX_RETRIES = 3
@@ -564,6 +578,166 @@ async function postChannelEmbed(channelId: string, embed: Record<string, unknown
   })
 }
 
+export const DUTY_ACTIVITY_CONFIRM_PREFIX = 'lspd_duty_activity_confirm:'
+
+async function openDmChannel(discordId: string) {
+  const channel = await discordFetch<{ id: string }>(`/users/@me/channels`, {
+    method: 'POST',
+    body: JSON.stringify({ recipient_id: discordId }),
+  })
+  return channel?.id ?? null
+}
+
+async function sendDutyActivityCheckDm(officerName: string, sessionId: string, discordId: string) {
+  const channelId = await openDmChannel(discordId)
+  if (!channelId) return null
+
+  const minutes = Math.round(DUTY_INACTIVITY_CONFIRM_DEADLINE_MS / 60000)
+  const totalHours = DUTY_INACTIVITY_CHECK_AFTER_MS / (60 * 60 * 1000)
+  const hourLabel = Number.isInteger(totalHours)
+    ? `${totalHours}`
+    : totalHours.toFixed(1).replace('.', ',')
+
+  const payload = {
+    content: `Hey ${officerName}, du bist seit ${hourLabel}h im Dienst eingestempelt. Bist du noch aktiv? Bitte bestätige innerhalb von ${minutes} Minuten, sonst wirst du automatisch ausgestempelt.`,
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 3,
+            custom_id: `${DUTY_ACTIVITY_CONFIRM_PREFIX}${sessionId}`,
+            label: 'Ich bin noch aktiv',
+            emoji: { name: '✅' },
+          },
+        ],
+      },
+    ],
+  }
+
+  const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return { channelId, messageId: message.id }
+}
+
+async function sendDutyAutoClockOutDm(discordId: string, officerName: string, durationMs: number) {
+  try {
+    const channelId = await openDmChannel(discordId)
+    if (!channelId) return
+    await discordFetch<void>(`/channels/${channelId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        content: `${officerName}, du wurdest wegen ausbleibender Bestätigung automatisch ausgestempelt. Dauer: **${formatDuration(durationMs)}**.`,
+      }),
+    })
+  } catch (error) {
+    console.error('[DiscordIntegration] Auto-Ausstempel-DM fehlgeschlagen:', error)
+  }
+}
+
+async function tryDeleteDmMessage(channelId: string | null, messageId: string | null) {
+  if (!channelId || !messageId) return
+  try {
+    await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, { method: 'DELETE' })
+  } catch (error) {
+    // ignore — Nachricht ggf. bereits entfernt oder DM unzugänglich
+    console.warn('[DiscordIntegration] DM-Nachricht konnte nicht entfernt werden:', error)
+  }
+}
+
+export async function confirmDutyActivityCheck(sessionId: string, discordId: string) {
+  const session = await prisma.dutyTimeSession.findUnique({
+    where: { id: sessionId },
+    include: { officer: true },
+  })
+  if (!session) return { ok: false as const, reason: 'not-found' }
+  if (session.officer.discordId !== discordId) return { ok: false as const, reason: 'forbidden' }
+  if (session.clockOutAt) return { ok: false as const, reason: 'already-clocked-out' }
+
+  await prisma.dutyTimeSession.update({
+    where: { id: session.id },
+    data: {
+      activityConfirmedAt: new Date(),
+      activityCheckSentAt: null,
+      activityCheckMessageId: null,
+      activityCheckChannelId: null,
+    },
+  })
+
+  void tryDeleteDmMessage(session.activityCheckChannelId, session.activityCheckMessageId)
+  queueDiscordDutyStatusUpdate()
+
+  return { ok: true as const, officer: session.officer }
+}
+
+async function runDutyActivityCheckTick() {
+  if (!botToken()) return
+
+  const now = new Date()
+  const sessions = await prisma.dutyTimeSession.findMany({
+    where: { clockOutAt: null },
+    include: { officer: { include: { rank: true } } },
+  })
+
+  for (const session of sessions) {
+    const officer = session.officer
+    if (!officer || !officer.discordId || officer.status === 'TERMINATED') continue
+
+    if (session.activityCheckSentAt && !session.activityConfirmedAt) {
+      const elapsed = now.getTime() - session.activityCheckSentAt.getTime()
+      if (elapsed >= DUTY_INACTIVITY_CONFIRM_DEADLINE_MS) {
+        try {
+          const { clockOutOfficer, sessionDurationMs } = await import('./duty-times')
+          const result = await clockOutOfficer(officer.id, 'discord', officer.discordId)
+          await prisma.dutyTimeSession.update({
+            where: { id: result.session.id },
+            data: { autoClockedOut: true, clockOutSource: 'discord-auto' },
+          })
+          void tryDeleteDmMessage(session.activityCheckChannelId, session.activityCheckMessageId)
+          await sendDutyAutoClockOutDm(officer.discordId, `${officer.firstName} ${officer.lastName}`, sessionDurationMs(result.session))
+          queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
+          queueDiscordDutyStatusUpdate()
+        } catch (error) {
+          console.error('[DiscordIntegration] Auto-Ausstempeln fehlgeschlagen:', error)
+        }
+      }
+      continue
+    }
+
+    const heartbeat = (session.activityConfirmedAt ?? session.clockInAt).getTime()
+    if (now.getTime() - heartbeat < DUTY_INACTIVITY_CHECK_AFTER_MS) continue
+    if (session.activityCheckSentAt) continue
+
+    try {
+      const sent = await sendDutyActivityCheckDm(`${officer.firstName} ${officer.lastName}`, session.id, officer.discordId)
+      if (!sent) continue
+      await prisma.dutyTimeSession.update({
+        where: { id: session.id },
+        data: {
+          activityCheckSentAt: new Date(),
+          activityCheckMessageId: sent.messageId,
+          activityCheckChannelId: sent.channelId,
+        },
+      })
+    } catch (error) {
+      console.error('[DiscordIntegration] Aktivitäts-Check DM fehlgeschlagen:', error)
+    }
+  }
+}
+
+export function ensureDutyActivityChecker() {
+  if (dutyActivityCheckerStarted || typeof setInterval !== 'function') return
+  dutyActivityCheckerStarted = true
+  setInterval(() => {
+    void runDutyActivityCheckTick().catch((error) => {
+      console.error('[DiscordIntegration] Aktivitäts-Check fehlgeschlagen:', error)
+    })
+  }, DUTY_ACTIVITY_CHECK_INTERVAL_MS).unref?.()
+}
+
 export function ensureDiscordSyncScheduler() {
   if (syncSchedulerStarted || typeof setInterval !== 'function') return
   syncSchedulerStarted = true
@@ -1001,6 +1175,7 @@ export function queueDiscordDutyEvent(
 }
 
 export function queueDiscordDutyStatusUpdate() {
+  ensureDutyActivityChecker()
   void syncDiscordDutyStatusMessage().catch((error) => {
     console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
