@@ -3,6 +3,12 @@ import { getDiscordConfig } from './discord-integration'
 const STRING = 3
 const BOOLEAN = 5
 const USER = 6
+const API_BASE = 'https://discord.com/api/v10'
+
+type DiscordCommand = {
+  id: string
+  name: string
+}
 
 export const DISCORD_COMMANDS = [
   {
@@ -79,6 +85,26 @@ function botToken() {
   return process.env.DISCORD_BOT_TOKEN?.trim() || process.env.LSPD_DISCORD_BOT_TOKEN?.trim() || ''
 }
 
+async function discordCommandRequest<T>(path: string, token: string, init?: RequestInit) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bot ${token}`,
+      'content-type': 'application/json',
+      ...init?.headers,
+    },
+    signal: AbortSignal.timeout(10000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Discord Command-Registrierung fehlgeschlagen: ${res.status} ${text}`)
+  }
+
+  if (res.status === 204) return undefined as T
+  return res.json() as Promise<T>
+}
+
 export async function registerDiscordCommands() {
   const config = await getDiscordConfig()
   const token = botToken()
@@ -86,23 +112,29 @@ export async function registerDiscordCommands() {
   if (!config.guildId) throw new Error('Discord Guild-ID fehlt')
   if (!config.applicationId) throw new Error('Discord Application-ID fehlt')
 
-  const res = await fetch(
-    `https://discord.com/api/v10/applications/${config.applicationId}/guilds/${config.guildId}/commands`,
-    {
-      method: 'PUT',
-      headers: {
-        authorization: `Bot ${token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(DISCORD_COMMANDS),
-      signal: AbortSignal.timeout(10000),
-    },
+  const basePath = `/applications/${config.applicationId}/guilds/${config.guildId}/commands`
+  const existingCommands = await discordCommandRequest<DiscordCommand[]>(basePath, token)
+
+  const updatedCommands = await Promise.all(
+    DISCORD_COMMANDS.map((command) => {
+      const existing = existingCommands.find((item) => item.name === command.name)
+      if (existing) {
+        return discordCommandRequest<DiscordCommand>(`${basePath}/${existing.id}`, token, {
+          method: 'PATCH',
+          body: JSON.stringify(command),
+        })
+      }
+
+      return discordCommandRequest<DiscordCommand>(basePath, token, {
+        method: 'POST',
+        body: JSON.stringify(command),
+      })
+    }),
   )
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Discord Command-Registrierung fehlgeschlagen: ${res.status} ${text}`)
+  return {
+    updated: updatedCommands.length,
+    kept: existingCommands.filter((command) => !DISCORD_COMMANDS.some((item) => item.name === command.name)).length,
+    commands: updatedCommands,
   }
-
-  return res.json() as Promise<unknown>
 }

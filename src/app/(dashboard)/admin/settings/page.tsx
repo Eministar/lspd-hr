@@ -61,6 +61,8 @@ interface DiscordConfigResponse {
   diagnostics: {
     guildConfigured: boolean
     applicationConfigured: boolean
+    publicKeyConfigured: boolean
+    interactionEndpointUrl: string
     announcementsChannelConfigured: boolean
     dutyAdminLogConfigured: boolean
     absenceStatusChannelConfigured: boolean
@@ -311,6 +313,16 @@ export default function SettingsPage() {
           {discordData && !discordData.diagnostics.guildConfigured && (
             <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
               Guild-ID fehlt. Setze sie hier oder über DISCORD_GUILD_ID, sonst können Rollen und Commands nicht geladen werden.
+            </div>
+          )}
+          {discordData && !discordData.diagnostics.publicKeyConfigured && (
+            <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+              DISCORD_PUBLIC_KEY fehlt. Discord-Buttons und Modals werden ohne diesen Public Key von der App abgelehnt.
+            </div>
+          )}
+          {discordData?.diagnostics.interactionEndpointUrl && (
+            <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[12px] text-[#9fb0c4]">
+              Interactions Endpoint URL in Discord: <code className="text-[#edf4fb]">{discordData.diagnostics.interactionEndpointUrl}</code>
             </div>
           )}
           {discordData?.diagnostics.rolesError && (

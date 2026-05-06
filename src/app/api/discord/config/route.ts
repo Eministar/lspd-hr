@@ -12,7 +12,22 @@ import {
   saveDiscordConfig,
 } from '@/lib/discord-integration'
 
-export async function GET() {
+function discordPublicKeyConfigured() {
+  return !!(process.env.DISCORD_PUBLIC_KEY?.trim() || process.env.LSPD_DISCORD_PUBLIC_KEY?.trim())
+}
+
+function firstForwardedValue(value: string | null) {
+  return value?.split(',')[0]?.trim() || ''
+}
+
+function interactionEndpointUrl(req: NextRequest) {
+  const requestUrl = new URL(req.url)
+  const host = firstForwardedValue(req.headers.get('x-forwarded-host')) || req.headers.get('host') || requestUrl.host
+  const proto = firstForwardedValue(req.headers.get('x-forwarded-proto')) || requestUrl.protocol.replace(':', '') || 'https'
+  return `${proto}://${host}/api/discord/interactions`
+}
+
+export async function GET(req: NextRequest) {
   try {
     await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
 
@@ -42,6 +57,8 @@ export async function GET() {
       diagnostics: {
         guildConfigured: !!config.guildId,
         applicationConfigured: !!config.applicationId,
+        publicKeyConfigured: discordPublicKeyConfigured(),
+        interactionEndpointUrl: interactionEndpointUrl(req),
         announcementsChannelConfigured: !!config.announcementsChannelId,
         dutyAdminLogConfigured: !!config.dutyAdminLogChannelId,
         absenceStatusChannelConfigured: !!config.absenceStatusChannelId,

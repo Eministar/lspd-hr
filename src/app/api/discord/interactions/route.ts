@@ -25,6 +25,7 @@ import { clockInOfficer, clockOutOfficer, formatDuration } from '@/lib/duty-time
 import { cancelAbsenceNotice, createAbsenceNotice, formatAbsenceDate, parseAbsenceDate } from '@/lib/absence-status'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
+import { DISCORD_COMMANDS } from '@/lib/discord-commands'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,8 @@ const MODAL_CALLBACK = 9
 const DEFERRED_CHANNEL_MESSAGE = 5
 const DEFERRED_UPDATE_MESSAGE = 6
 
+const LSPD_COMMAND_PREFIX = 'lspd-'
+const LSPD_COMMAND_NAMES = new Set(DISCORD_COMMANDS.map((command) => command.name))
 const LSPD_CUSTOM_ID_PREFIX = 'lspd_'
 
 function json(data: unknown) {
@@ -103,6 +106,19 @@ function isLspdCustomId(customId: string | undefined | null) {
   if (customId.startsWith(LSPD_CUSTOM_ID_PREFIX)) return true
   if (customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) return true
   return false
+}
+
+function isLspdCommandName(commandName: string | undefined | null): commandName is string {
+  return !!commandName && commandName.startsWith(LSPD_COMMAND_PREFIX)
+}
+
+function isKnownLspdCommand(commandName: string | undefined | null): commandName is string {
+  return !!commandName && LSPD_COMMAND_NAMES.has(commandName)
+}
+
+function unhandledInteraction(interaction: DiscordInteraction, title: string) {
+  logConsole('warn', `${title} · interaction=${interactionLabel(interaction)} · type=${interaction.type}`)
+  return new NextResponse(null, { status: 202 })
 }
 
 function modal(data: unknown) {
@@ -886,7 +902,7 @@ function handleButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
 
   if (!isLspdCustomId(customId)) {
-    return silentAck()
+    return unhandledInteraction(interaction, 'Nicht-HR-Button ignoriert')
   }
 
   if (customId && customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) {
@@ -949,6 +965,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (interaction.type === AUTOCOMPLETE) {
+    if (!isLspdCommandName(interaction.data?.name)) {
+      return unhandledInteraction(interaction, 'Nicht-HR-Autocomplete ignoriert')
+    }
+
     const focused = interaction.data?.options?.find((item) => item.focused)
     if (focused?.name === 'rang') return autocompleteFor('rang', typeof focused.value === 'string' ? focused.value : '')
     if (focused?.name === 'ausbildung') return autocompleteFor('ausbildung', typeof focused.value === 'string' ? focused.value : '')
@@ -972,14 +992,25 @@ export async function POST(req: NextRequest) {
     if (modalId === 'lspd_absence_modal') {
       return runDeferred(interaction, 'Modal: Abmeldung', () => performAbsenceModal(interaction))
     }
+    if (!isLspdCustomId(modalId)) {
+      return unhandledInteraction(interaction, 'Nicht-HR-Modal ignoriert')
+    }
     return silentAck()
   }
 
   if (interaction.type !== APPLICATION_COMMAND) {
-    return silentAck()
+    return unhandledInteraction(interaction, 'Nicht unterstützte Discord-Interaction ignoriert')
   }
 
   const commandName = interaction.data?.name
+  if (!isLspdCommandName(commandName)) {
+    return unhandledInteraction(interaction, 'Nicht-HR-Discord-Command ignoriert')
+  }
+  if (!isKnownLspdCommand(commandName)) {
+    logInteraction(interaction, 'Unbekannter LSPD-Discord-Command', 'warning')
+    return reply('Unbekannter HR-Command. Registriere die Discord-Commands neu.')
+  }
+
   const actor = actorFromInteraction(interaction)
   const allowed = await ensureAllowed(interaction)
   if (!allowed && !(commandName === 'lspd-abmeldung' && await isLinkedOfficer(actor.discordId))) {
@@ -1002,7 +1033,7 @@ export async function POST(req: NextRequest) {
     case 'lspd-abmeldung':
       return runDeferred(interaction, `Command: ${commandName}`, () => performAbsence(options, actor, interaction))
     default:
-      logInteraction(interaction, 'Unbekannter Discord-Command', 'warning')
-      return reply('Unbekannter Command.')
+      logInteraction(interaction, 'Unbekannter LSPD-Discord-Command', 'warning')
+      return reply('Unbekannter HR-Command. Registriere die Discord-Commands neu.')
   }
 }
