@@ -831,6 +831,12 @@ async function performClockIn(interaction: DiscordInteraction) {
   })
   if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
 
+  const existing = await prisma.dutyTimeSession.findFirst({
+    where: { officerId: officer.id, clockOutAt: null },
+    select: { id: true },
+  })
+  if (existing) return `Du bist bereits eingestempelt, ${officer.firstName}.`
+
   const result = await clockInOfficer(officer.id, 'discord', discordId)
   queueDiscordDutyEvent('clock-in', result.officer, result.session)
   queueDiscordDutyStatusUpdate()
@@ -846,6 +852,12 @@ async function performClockOut(interaction: DiscordInteraction) {
     select: { id: true, firstName: true, lastName: true },
   })
   if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
+
+  const existing = await prisma.dutyTimeSession.findFirst({
+    where: { officerId: officer.id, clockOutAt: null },
+    select: { id: true },
+  })
+  if (!existing) return `Du bist aktuell nicht eingestempelt, ${officer.firstName}.`
 
   const result = await clockOutOfficer(officer.id, 'discord', discordId)
   queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
