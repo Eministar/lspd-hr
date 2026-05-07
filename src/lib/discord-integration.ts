@@ -19,7 +19,7 @@ type DiscordChannel = {
   type: number
 }
 
-type DiscordField = {
+export type DiscordField = {
   name: string
   value: string
   inline?: boolean
@@ -65,6 +65,24 @@ type OfficerForDiscord = {
 type UserForDiscord = {
   displayName: string
   discordId?: string | null
+}
+
+type DiscordHrEventInput = {
+  type: keyof typeof EVENT_META
+  title: string
+  description?: string
+  officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & {
+    rankId?: string
+    hireDate?: Date
+    rank?: { name: string; color?: string | null } | null
+  }
+  actor?: UserForDiscord
+  fields?: DiscordField[]
+}
+
+export type DiscordHrEventMessage = {
+  channelId: string
+  messageId: string
 }
 
 const API_BASE = 'https://discord.com/api/v10'
@@ -592,8 +610,15 @@ function bracketedServiceNumber(badgeNumber: string, prefix: string) {
 }
 
 async function postChannelEmbed(channelId: string, embed: Record<string, unknown>) {
-  await discordFetch<void>(`/channels/${channelId}/messages`, {
+  return discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
     method: 'POST',
+    body: JSON.stringify({ embeds: [embed] }),
+  })
+}
+
+async function patchChannelEmbed(channelId: string, messageId: string, embed: Record<string, unknown>) {
+  await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, {
+    method: 'PATCH',
     body: JSON.stringify({ embeds: [embed] }),
   })
 }
@@ -651,22 +676,7 @@ function hrEventChannelId(config: DiscordConfig, type: keyof typeof EVENT_META) 
   return config.announcementsChannelId
 }
 
-export async function sendDiscordHrEvent(event: {
-  type: keyof typeof EVENT_META
-  title: string
-  description?: string
-  officer?: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber' | 'discordId'> & {
-    rankId?: string
-    hireDate?: Date
-    rank?: { name: string; color?: string | null } | null
-  }
-  actor?: UserForDiscord
-  fields?: DiscordField[]
-}) {
-  const config = await getDiscordConfig()
-  const channelId = hrEventChannelId(config, event.type)
-  if (!channelId || !botToken()) return
-
+async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: DiscordConfig) {
   const officer = event.officer
   const meta = EVENT_META[event.type]
   const now = new Date()
@@ -688,7 +698,7 @@ export async function sendDiscordHrEvent(event: {
       { name: 'Bearbeitet von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true },
     ]
 
-    await postChannelEmbed(channelId, {
+    return {
       author: { name: `${orgName} · ${meta.section}` },
       title: `${meta.accent}  Neueinstellung  ·  ${officerName(officer)}`,
       description: '> Wurde in den aktiven Dienst aufgenommen. Willkommen!',
@@ -696,8 +706,7 @@ export async function sendDiscordHrEvent(event: {
       fields: hireFields.slice(0, 25).map(cleanEmbedField),
       timestamp: now.toISOString(),
       footer: { text: `${orgName} HR · automatisch verarbeitet · heute um ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
-    })
-    return
+    }
   }
 
   const titleName = officer ? `  ·  ${officerName(officer)}` : ''
@@ -734,7 +743,7 @@ export async function sendDiscordHrEvent(event: {
     { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
   )
 
-  await postChannelEmbed(channelId, {
+  return {
     author: { name: `${orgName} · ${meta.section}` },
     title: truncate(title, 250),
     description,
@@ -742,7 +751,28 @@ export async function sendDiscordHrEvent(event: {
     fields: fields.slice(0, 25).map(cleanEmbedField),
     timestamp: now.toISOString(),
     footer: { text: `${orgName} HR · automatisch verarbeitet · heute um ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
-  })
+  }
+}
+
+export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<DiscordHrEventMessage | null> {
+  const config = await getDiscordConfig()
+  const channelId = hrEventChannelId(config, event.type)
+  if (!channelId || !botToken()) return null
+
+  const embed = await buildDiscordHrEventEmbed(event, config)
+  const message = await postChannelEmbed(channelId, embed)
+  return { channelId, messageId: message.id }
+}
+
+export async function editDiscordHrEventMessage(
+  channelId: string | null | undefined,
+  messageId: string | null | undefined,
+  event: DiscordHrEventInput,
+) {
+  if (!channelId || !messageId || !botToken()) return
+  const config = await getDiscordConfig()
+  const embed = await buildDiscordHrEventEmbed(event, config)
+  await patchChannelEmbed(channelId, messageId, embed)
 }
 
 function chunkLines(lines: string[], maxChars = 1024) {

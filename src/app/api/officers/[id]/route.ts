@@ -13,6 +13,7 @@ import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMemb
 import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
 import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
+import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +25,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return error(msg, 500)
   }
   const { id } = await params
-  await runOfficerStatusAutomation()
+  await Promise.all([
+    runOfficerStatusAutomation(),
+    runSanctionDeadlineAutomation(),
+  ])
 
   const officer = await prisma.officer.findUnique({
     where: { id },

@@ -53,7 +53,13 @@ interface SanctionRecord {
   penalGrade: string
   fineAmount: number | null
   penalty: string | null
+  status: 'OPEN' | 'PAID' | 'ESCALATED'
+  dueAt: string | null
+  paidAt: string | null
+  escalatedAt: string | null
+  parentSanctionId: string | null
   createdAt: string
+  updatedAt: string
   issuedBy: { displayName: string }
 }
 interface OfficerNote {
@@ -135,6 +141,8 @@ interface SanctionForm {
   fineAmount: string
   penalty: string
   reason: string
+  deadlineDays: string
+  dueAt: string
 }
 
 const EMPTY_OFFICER_FORM: OfficerForm = {
@@ -155,6 +163,8 @@ const EMPTY_SANCTION_FORM: SanctionForm = {
   fineAmount: '',
   penalty: '',
   reason: '',
+  deadlineDays: '7',
+  dueAt: '',
 }
 
 const PENAL_GRADE_OPTIONS = [
@@ -181,6 +191,25 @@ function formatFineAmount(amount: number | null | undefined) {
 
 function displayPenalGrade(value: string) {
   return value === 'MANUELL' ? 'Manuell' : `Penal Grade ${value}`
+}
+
+function sanctionStatusLabel(status: SanctionRecord['status']) {
+  if (status === 'PAID') return 'Bezahlt'
+  if (status === 'ESCALATED') return 'Nicht bezahlt / verdoppelt'
+  return 'Offen'
+}
+
+function sanctionStatusClass(status: SanctionRecord['status']) {
+  if (status === 'PAID') return 'border-[#166534]/60 bg-[#052e1a]/60 text-[#86efac]'
+  if (status === 'ESCALATED') return 'border-[#7f1d1d]/60 bg-[#2a1212]/60 text-[#fca5a5]'
+  return 'border-[#b45309]/50 bg-[#1d1608]/70 text-[#fbbf24]'
+}
+
+function sanctionDueLabel(sanction: SanctionRecord) {
+  if (sanction.status === 'PAID' && sanction.paidAt) return `Bezahlt am ${formatDateTime(sanction.paidAt)}`
+  if (sanction.status === 'ESCALATED' && sanction.escalatedAt) return `Verdoppelt am ${formatDateTime(sanction.escalatedAt)}`
+  if (!sanction.dueAt) return 'Keine Frist'
+  return `Frist bis ${formatDateTime(sanction.dueAt)}`
 }
 
 function dateInputValue(date: Date) {
@@ -225,6 +254,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [absenceModal, setAbsenceModal] = useState(false)
   const [terminateReason, setTerminateReason] = useState('')
   const [sanctionForm, setSanctionForm] = useState<SanctionForm>(EMPTY_SANCTION_FORM)
+  const [editingSanction, setEditingSanction] = useState<SanctionRecord | null>(null)
   const [newRankId, setNewRankId] = useState('')
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
@@ -307,25 +337,85 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   const openSanctionModal = () => {
     setSanctionForm(EMPTY_SANCTION_FORM)
+    setEditingSanction(null)
     setSanctionModal(true)
+  }
+
+  const openEditSanctionModal = (sanction: SanctionRecord) => {
+    setEditingSanction(sanction)
+    setSanctionForm({
+      penalGrade: sanction.penalGrade,
+      fineAmount: sanction.fineAmount === null ? '' : String(sanction.fineAmount),
+      penalty: sanction.penalty ?? '',
+      reason: sanction.reason,
+      deadlineDays: '',
+      dueAt: sanction.dueAt?.split('T')[0] ?? '',
+    })
+    setSanctionModal(true)
+  }
+
+  const closeSanctionModal = () => {
+    setSanctionModal(false)
+    setEditingSanction(null)
+    setSanctionForm(EMPTY_SANCTION_FORM)
   }
 
   const handleSanction = async () => {
     if (!sanctionForm.reason.trim()) return
     try {
-      await execute('/api/sanctions', {
-        method: 'POST',
+      const isEditingSanction = !!editingSanction
+      await execute(isEditingSanction ? `/api/sanctions/${editingSanction.id}` : '/api/sanctions', {
+        method: isEditingSanction ? 'PATCH' : 'POST',
         body: JSON.stringify({
-          officerId: id,
+          ...(isEditingSanction ? {} : { officerId: id }),
           penalGrade: sanctionForm.penalGrade,
           fineAmount: sanctionForm.fineAmount.trim() || null,
           penalty: sanctionForm.penalty.trim() || null,
           reason: sanctionForm.reason.trim(),
+          ...(isEditingSanction
+            ? { dueAt: sanctionForm.dueAt || null }
+            : { deadlineDays: sanctionForm.deadlineDays.trim() || null }),
         }),
       })
-      addToast({ type: 'success', title: 'Sanktion ausgestellt' })
-      setSanctionModal(false)
-      setSanctionForm(EMPTY_SANCTION_FORM)
+      addToast({ type: 'success', title: isEditingSanction ? 'Sanktion aktualisiert' : 'Sanktion ausgestellt' })
+      closeSanctionModal()
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleMarkSanctionPaid = async (sanctionId: string) => {
+    try {
+      await execute(`/api/sanctions/${sanctionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'MARK_PAID' }),
+      })
+      addToast({ type: 'success', title: 'Sanktion als bezahlt markiert' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleEscalateSanction = async (sanctionId: string) => {
+    try {
+      await execute(`/api/sanctions/${sanctionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'ESCALATE' }),
+      })
+      addToast({ type: 'success', title: 'Sanktion verdoppelt' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleDeleteSanction = async (sanctionId: string) => {
+    if (!window.confirm('Sanktion wirklich löschen?')) return
+    try {
+      await execute(`/api/sanctions/${sanctionId}`, { method: 'DELETE' })
+      addToast({ type: 'success', title: 'Sanktion gelöscht' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -455,6 +545,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   const higherRanks = ranks?.filter(r => r.sortOrder < officer.rank?.sortOrder) || []
   const lowerRanks = ranks?.filter(r => r.sortOrder > officer.rank?.sortOrder) || []
+  const openSanctions = officer.sanctions?.filter((sanction) => sanction.status === 'OPEN') ?? []
 
   return (
     <div>
@@ -775,10 +866,61 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </motion.div>
           )}
 
-          {officer.sanctions?.length > 0 && (
+          {openSanctions.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.11 }}
               className="glass-panel-elevated rounded-[14px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Sanktionen</h3>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-[13.5px] font-semibold text-[#eee]">Offene Sanktionen</h3>
+                <span className="rounded-full border border-[#b45309]/40 bg-[#1d1608]/70 px-2.5 py-1 text-[11px] font-medium text-[#fbbf24]">
+                  {openSanctions.length} offen
+                </span>
+              </div>
+              <div className="space-y-3">
+                {openSanctions.map((sanction) => (
+                  <div key={sanction.id} className="rounded-[10px] border border-[#b45309]/25 bg-[#1d1608]/40 p-3.5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[13px] font-semibold text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
+                          <span className={cn('rounded-full border px-2 py-0.5 text-[10.5px] font-medium', sanctionStatusClass(sanction.status))}>
+                            {sanctionStatusLabel(sanction.status)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11.5px] text-[#fbbf24] tabular-nums">{formatFineAmount(sanction.fineAmount)} · {sanctionDueLabel(sanction)}</p>
+                        {sanction.penalty && <p className="mt-2 text-[12px] text-[#cbd5e1]">{sanction.penalty}</p>}
+                        <p className="mt-1.5 text-[12px] leading-relaxed text-[#8ea4bd]">{sanction.reason}</p>
+                      </div>
+                      {canSanction && (
+                        <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
+                          <Button size="sm" onClick={() => handleMarkSanctionPaid(sanction.id)}>
+                            <Check size={13} strokeWidth={2} />
+                            Bezahlt
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => openEditSanctionModal(sanction)}>
+                            <Edit size={13} strokeWidth={1.8} />
+                            Bearbeiten
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => handleEscalateSanction(sanction.id)}>
+                            <TrendingUp size={13} strokeWidth={1.8} />
+                            Verdoppeln
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteSanction(sanction.id)}>
+                            <Trash2 size={13} strokeWidth={1.8} />
+                            Löschen
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {officer.sanctions?.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12 }}
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Sanktionshistorie</h3>
               <div className="space-y-3">
                 {officer.sanctions.map((sanction) => (
                   <div key={sanction.id} className="flex items-start gap-3">
@@ -787,12 +929,31 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-[13px] font-medium text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[13px] font-medium text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
+                          <span className={cn('rounded-full border px-2 py-0.5 text-[10.5px] font-medium', sanctionStatusClass(sanction.status))}>
+                            {sanctionStatusLabel(sanction.status)}
+                          </span>
+                        </div>
                         <span className="text-[11.5px] text-[#d4af37] tabular-nums">{formatFineAmount(sanction.fineAmount)}</span>
                       </div>
-                      <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(sanction.createdAt)} · {sanction.issuedBy.displayName}</p>
+                      <p className="text-[11.5px] text-[#999] mt-0.5">
+                        {formatDate(sanction.createdAt)} · {sanction.issuedBy.displayName} · {sanctionDueLabel(sanction)}
+                      </p>
                       {sanction.penalty && <p className="text-[12px] text-[#b7c5d8] mt-1">{sanction.penalty}</p>}
                       <p className="text-[12px] text-[#8ea4bd] mt-1 leading-relaxed">{sanction.reason}</p>
+                      {canSanction && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <Button variant="secondary" size="sm" onClick={() => openEditSanctionModal(sanction)}>
+                            <Edit size={13} strokeWidth={1.8} />
+                            Bearbeiten
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteSanction(sanction.id)}>
+                            <Trash2 size={13} strokeWidth={1.8} />
+                            Löschen
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -932,10 +1093,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </Modal>
 
-      <Modal open={sanctionModal} onClose={() => setSanctionModal(false)} title="Sanktion ausstellen">
+      <Modal open={sanctionModal} onClose={closeSanctionModal} title={editingSanction ? 'Sanktion bearbeiten' : 'Sanktion ausstellen'}>
         <div className="space-y-4">
           <p className="text-[13px] text-[#888]">
-            Sanktion für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
+            {editingSanction ? 'Sanktion bearbeiten' : 'Sanktion'} für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
           </p>
           <Select
             label="Penal Grade"
@@ -950,6 +1111,21 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             inputMode="numeric"
             placeholder="Optional, z.B. 10000"
           />
+          {editingSanction ? (
+            <DateField
+              label="Frist"
+              value={sanctionForm.dueAt}
+              onChange={(dueAt) => setSanctionForm({ ...sanctionForm, dueAt })}
+            />
+          ) : (
+            <Input
+              label="Frist in Tagen"
+              value={sanctionForm.deadlineDays}
+              onChange={(e) => setSanctionForm({ ...sanctionForm, deadlineDays: e.target.value })}
+              inputMode="numeric"
+              placeholder="Optional, z.B. 7"
+            />
+          )}
           <Textarea
             label="Weitere Strafe / Maßnahme"
             value={sanctionForm.penalty}
@@ -966,10 +1142,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             placeholder="Grund der Sanktion..."
           />
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setSanctionModal(false)}>Abbrechen</Button>
+            <Button variant="secondary" size="sm" onClick={closeSanctionModal}>Abbrechen</Button>
             <Button size="sm" onClick={handleSanction} disabled={!sanctionForm.reason.trim() || !sanctionForm.penalGrade}>
               <Gavel size={13} strokeWidth={2} />
-              Ausstellen
+              {editingSanction ? 'Speichern' : 'Ausstellen'}
             </Button>
           </div>
         </div>

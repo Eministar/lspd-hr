@@ -47,6 +47,12 @@ enum OfficerFlag {
   BLUE
 }
 
+enum SanctionStatus {
+  OPEN
+  PAID
+  ESCALATED
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -255,23 +261,36 @@ model Termination {
 }
 
 model Sanction {
-  id                  String   @id @default(cuid())
+  id                  String         @id @default(cuid())
   officerId           String?
-  officer             Officer? @relation(fields: [officerId], references: [id], onDelete: SetNull)
-  reason              String   @db.Text
+  officer             Officer?       @relation(fields: [officerId], references: [id], onDelete: SetNull)
+  reason              String         @db.Text
   penalGrade          String
   fineAmount          Int?
-  penalty             String?  @db.Text
+  penalty             String?        @db.Text
+  status              SanctionStatus @default(OPEN)
+  dueAt               DateTime?
+  paidAt              DateTime?
+  resolvedAt          DateTime?
+  escalatedAt         DateTime?
+  parentSanctionId    String?
+  parentSanction      Sanction?      @relation("SanctionEscalation", fields: [parentSanctionId], references: [id], onDelete: SetNull)
+  escalatedSanctions  Sanction[]     @relation("SanctionEscalation")
+  discordChannelId    String?
+  discordMessageId    String?
   issuedByUserId      String
-  issuedBy            User     @relation("SanctionIssuedBy", fields: [issuedByUserId], references: [id])
+  issuedBy            User           @relation("SanctionIssuedBy", fields: [issuedByUserId], references: [id])
   previousRank        String?
   previousBadgeNumber String?
   previousFirstName   String?
   previousLastName    String?
-  createdAt           DateTime @default(now())
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   @@index([officerId, createdAt])
   @@index([issuedByUserId, createdAt])
+  @@index([status, dueAt])
+  @@index([parentSanctionId])
 }
 
 model Note {
