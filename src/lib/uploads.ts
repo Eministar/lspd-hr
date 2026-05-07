@@ -4,11 +4,6 @@ import path from 'node:path'
 
 export const DEFAULT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 
-const ALLOWED_EXT = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
-  '.pdf', '.txt', '.csv', '.json', '.zip',
-])
-
 export interface UploadedFileInfo {
   id: string
   filename: string
@@ -37,24 +32,20 @@ function uploadDir() {
 
 function sanitizeExt(name: string) {
   const ext = path.extname(name).toLowerCase()
-  if (!ext || ext.length > 10) return ''
+  if (!ext || ext.length > 32) return ''
+  if (!/^\.[a-z0-9][a-z0-9_-]*$/i.test(ext)) return ''
   return ext
 }
 
 function isStoredUploadFilename(filename: string) {
   const clean = path.basename(filename)
   if (clean !== filename) return false
-  const ext = sanitizeExt(filename)
-  if (!ext || !ALLOWED_EXT.has(ext)) return false
-  return /^[a-zA-Z0-9._-]+$/.test(filename)
+  return /^[a-f0-9-]{36}(?:\.[a-z0-9][a-z0-9_-]{0,31})?$/i.test(filename)
 }
 
 export function validateUploadFile(file: File) {
   if (file.size === 0) return 'Datei ist leer'
   if (file.size > uploadMaxBytes()) return `Datei zu groß (max. ${uploadMaxBytes()} Bytes)`
-
-  const ext = sanitizeExt(file.name)
-  if (!ext || !ALLOWED_EXT.has(ext)) return 'Dateityp nicht erlaubt'
 
   return null
 }
