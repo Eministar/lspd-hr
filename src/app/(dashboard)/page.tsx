@@ -529,7 +529,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-white">Dienstzeiten</p>
-                  <p className="text-[11.5px] text-[#9fb0c4]">{stats.dutyTimes.activeCount} eingestempelt · {formatDuration(stats.dutyTimes.totalWeekDurationMs)} diese Woche</p>
+                  <p className="text-[11.5px] text-[#9fb0c4]">{stats.dutyTimes.activeCount} im Dienst · {formatDuration(stats.dutyTimes.totalWeekDurationMs)} diese Woche</p>
                 </div>
               </div>
               <span className="text-[12.5px] font-semibold tabular-nums text-[#d4af37]">

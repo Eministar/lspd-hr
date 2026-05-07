@@ -11,17 +11,13 @@ import {
 import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
-  confirmDutyActivityCheck,
-  DUTY_ACTIVITY_CONFIRM_PREFIX,
   getDiscordApplicationId,
   getDiscordConfig,
   queueDiscordAbsenceStatusUpdate,
-  queueDiscordDutyEvent,
   queueDiscordDutyStatusUpdate,
   queueDiscordHrEvent,
   queueOfficerRoleSync,
 } from '@/lib/discord-integration'
-import { clockInOfficer, clockOutOfficer, formatDuration } from '@/lib/duty-times'
 import { cancelAbsenceNotice, createAbsenceNotice, formatAbsenceDate, parseAbsenceDate } from '@/lib/absence-status'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
@@ -84,6 +80,7 @@ const DEFERRED_UPDATE_MESSAGE = 6
 const LSPD_COMMAND_PREFIX = 'lspd-'
 const LSPD_COMMAND_NAMES = new Set(DISCORD_COMMANDS.map((command) => command.name))
 const LSPD_CUSTOM_ID_PREFIX = 'lspd_'
+const STALE_DUTY_ACTIVITY_CONFIRM_PREFIX = 'lspd_duty_activity_confirm:'
 
 function json(data: unknown) {
   return NextResponse.json(data)
@@ -104,7 +101,7 @@ function silentAck() {
 function isLspdCustomId(customId: string | undefined | null) {
   if (!customId) return false
   if (customId.startsWith(LSPD_CUSTOM_ID_PREFIX)) return true
-  if (customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) return true
+  if (customId.startsWith(STALE_DUTY_ACTIVITY_CONFIRM_PREFIX)) return true
   return false
 }
 
@@ -843,61 +840,6 @@ async function performAbsenceCancel(interaction: DiscordInteraction) {
   return 'Deine Abmeldung wurde beendet.'
 }
 
-async function performClockIn(interaction: DiscordInteraction) {
-  const discordId = interaction.member?.user?.id ?? interaction.user?.id
-  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
-  const officer = await prisma.officer.findFirst({
-    where: { discordId },
-    select: { id: true, firstName: true, lastName: true },
-  })
-  if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
-
-  const existing = await prisma.dutyTimeSession.findFirst({
-    where: { officerId: officer.id, clockOutAt: null },
-    select: { id: true },
-  })
-  if (existing) return `Du bist bereits eingestempelt, ${officer.firstName}.`
-
-  const result = await clockInOfficer(officer.id, 'discord', discordId)
-  queueDiscordDutyEvent('clock-in', result.officer, result.session)
-  queueDiscordDutyStatusUpdate()
-  if (result.endedAbsences > 0) queueDiscordAbsenceStatusUpdate()
-  return `Eingestempelt: ${result.officer.firstName} ${result.officer.lastName}.`
-}
-
-async function performClockOut(interaction: DiscordInteraction) {
-  const discordId = interaction.member?.user?.id ?? interaction.user?.id
-  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
-  const officer = await prisma.officer.findFirst({
-    where: { discordId },
-    select: { id: true, firstName: true, lastName: true },
-  })
-  if (!officer) return 'Dein Discord-Account ist keinem Officer im HR-Tool zugeordnet.'
-
-  const existing = await prisma.dutyTimeSession.findFirst({
-    where: { officerId: officer.id, clockOutAt: null },
-    select: { id: true },
-  })
-  if (!existing) return `Du bist aktuell nicht eingestempelt, ${officer.firstName}.`
-
-  const result = await clockOutOfficer(officer.id, 'discord', discordId)
-  queueDiscordDutyEvent('clock-out', result.officer, result.session, result.durationMs)
-  queueDiscordDutyStatusUpdate()
-  return `Ausgestempelt: ${result.officer.firstName} ${result.officer.lastName} · Dauer ${formatDuration(result.durationMs)}.`
-}
-
-async function performActivityConfirm(interaction: DiscordInteraction, sessionId: string) {
-  const discordId = interaction.member?.user?.id ?? interaction.user?.id
-  if (!discordId) return 'Discord-User konnte nicht erkannt werden.'
-  const result = await confirmDutyActivityCheck(sessionId, discordId)
-  if (!result.ok) {
-    if (result.reason === 'already-clocked-out') return 'Du bist bereits ausgestempelt.'
-    if (result.reason === 'forbidden') return 'Diese Bestätigung gehört nicht zu deinem Account.'
-    return 'Diese Dienstzeit-Sitzung wurde nicht gefunden.'
-  }
-  return `Danke ${result.officer.firstName}, du bleibst eingestempelt.`
-}
-
 function handleButton(interaction: DiscordInteraction) {
   const customId = interaction.data?.custom_id
 
@@ -905,9 +847,8 @@ function handleButton(interaction: DiscordInteraction) {
     return unhandledInteraction(interaction, 'Nicht-HR-Button ignoriert')
   }
 
-  if (customId && customId.startsWith(DUTY_ACTIVITY_CONFIRM_PREFIX)) {
-    const sessionId = customId.slice(DUTY_ACTIVITY_CONFIRM_PREFIX.length)
-    return runDeferred(interaction, 'Button: Aktivitäts-Bestätigung', () => performActivityConfirm(interaction, sessionId))
+  if (customId && customId.startsWith(STALE_DUTY_ACTIVITY_CONFIRM_PREFIX)) {
+    return reply('Manuelle Dienstzeit-Bestätigungen sind deaktiviert. Der Dienststatus kommt automatisch aus der Player-Online-API.')
   }
 
   if (customId === 'lspd_absence_create') {
@@ -929,11 +870,11 @@ function handleButton(interaction: DiscordInteraction) {
   }
 
   if (customId === 'lspd_duty_clock_in') {
-    return runDeferred(interaction, 'Button: Einstempeln', () => performClockIn(interaction))
+    return reply('Manuelles Einstempeln ist deaktiviert. Du wirst automatisch als im Dienst erkannt, wenn du als Police online bist.')
   }
 
   if (customId === 'lspd_duty_clock_out') {
-    return runDeferred(interaction, 'Button: Ausstempeln', () => performClockOut(interaction))
+    return reply('Manuelles Ausstempeln ist deaktiviert. Der Dienststatus endet automatisch, sobald du nicht mehr als Police online bist.')
   }
 
   return silentAck()

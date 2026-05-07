@@ -228,11 +228,6 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
       lastOnline: true,
       createdAt: true,
       hireDate: true,
-      dutySessions: {
-        orderBy: { clockInAt: 'desc' },
-        take: 1,
-        select: { clockInAt: true, clockOutAt: true },
-      },
       playtimeSessions: {
         orderBy: { lastSeenAt: 'desc' },
         take: 1,
@@ -267,12 +262,9 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
 
   for (const officer of officers) {
     const hasActiveAbsence = officer.absenceNotices.length > 0
-    const latestDuty = officer.dutySessions[0]
     const latestPlaytime = officer.playtimeSessions[0]
     const lastActivity = latestDate(
       officer.lastOnline,
-      latestDuty?.clockOutAt,
-      latestDuty?.clockInAt,
       latestPlaytime?.lastSeenAt,
       officer.hireDate,
       officer.createdAt,

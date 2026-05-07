@@ -10,8 +10,8 @@ import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminate
 import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
-import { getOfficerDutyTime } from '@/lib/duty-times'
-import { getOfficerPlaytimeReport } from '@/lib/fivem-playtime'
+import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
+import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -47,9 +47,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!officer) return notFound('Officer')
+  await syncOfficerPlayerPlaytime(id)
   const [dutyTime, playtime, absences] = await Promise.all([
-    getOfficerDutyTime(id),
-    getOfficerPlaytimeReport(id),
+    getOfficerDutyTime(id, { sync: false }),
+    getOfficerPlaytimeReport(id, { sync: false }),
     getOfficerAbsenceReport(id),
   ])
   return success({ ...officer, dutyTime, playtime, absences })

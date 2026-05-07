@@ -74,13 +74,13 @@ interface OfficerDetail {
   officerNotes: OfficerNote[]
   dutyTime?: {
     activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
-    activePlaySession: { id: string; startedAt: string; currentDurationMs: number; playerName: string } | null
+    activePlaySession: { id: string; startedAt: string; currentDurationMs: number; playerName: string; license: string | null; lastSeenAt: string } | null
     weekDurationMs: number
     playtimeWeekDurationMs: number
-    verifiedDutyWeekMs: number
-    unclockedOnlineWeekMs: number
-    dutyWithoutGameWeekMs: number
-    honestyScore: number | null
+    sessionCount: number
+    averageSessionMs: number
+    longestSessionMs: number
+    lastSeenAt: string | null
   }
   playtime?: {
     daily: Array<{ date: string; label: string; durationMs: number; durationLabel: string }>
@@ -526,11 +526,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <DutyMetric
                 label="Status"
-                value={officer.dutyTime?.activeSession ? 'Eingestempelt' : 'Nicht im Dienst'}
+                value={officer.dutyTime?.activeSession ? 'Im Dienst' : 'Offline'}
                 active={!!officer.dutyTime?.activeSession}
               />
               <DutyMetric
-                label="Aktuelle Dienstzeit"
+                label="Aktive Spielzeit"
                 value={formatDuration(officer.dutyTime?.activeSession?.currentDurationMs ?? 0)}
                 active={!!officer.dutyTime?.activeSession}
               />
@@ -541,39 +541,39 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
               <DutyMetric
-                label="Wach diese Woche"
-                value={formatDuration(officer.dutyTime?.playtimeWeekDurationMs ?? 0)}
+                label="Sessions"
+                value={String(officer.dutyTime?.sessionCount ?? 0)}
+              />
+              <DutyMetric
+                label="Ø Session"
+                value={formatDuration(officer.dutyTime?.averageSessionMs ?? 0)}
+              />
+              <DutyMetric
+                label="Längste Session"
+                value={formatDuration(officer.dutyTime?.longestSessionMs ?? 0)}
+              />
+              <DutyMetric
+                label="Zuletzt gesehen"
+                value={formatDateTime(officer.dutyTime?.lastSeenAt)}
                 active={!!officer.dutyTime?.activePlaySession}
-              />
-              <DutyMetric
-                label="Geprüfter Dienst"
-                value={formatDuration(officer.dutyTime?.verifiedDutyWeekMs ?? 0)}
-              />
-              <DutyMetric
-                label="Wach ohne Dienst"
-                value={formatDuration(officer.dutyTime?.unclockedOnlineWeekMs ?? 0)}
-              />
-              <DutyMetric
-                label="Ehrlichkeit"
-                value={officer.dutyTime?.honestyScore === null || officer.dutyTime?.honestyScore === undefined ? '—' : `${officer.dutyTime.honestyScore}%`}
-                active={(officer.dutyTime?.honestyScore ?? 100) >= 80}
               />
             </div>
             {officer.dutyTime?.activeSession && (
               <p className="mt-3 text-[11.5px] text-[#7089a5]">
-                Eingestempelt seit {formatDateTime(officer.dutyTime.activeSession.clockInAt)}
+                Im Dienst seit {formatDateTime(officer.dutyTime.activeSession.clockInAt)}
               </p>
             )}
             {officer.dutyTime?.activePlaySession && (
               <p className="mt-1 text-[11.5px] text-[#7089a5]">
-                FiveM wach seit {formatDateTime(officer.dutyTime.activePlaySession.startedAt)} als {officer.dutyTime.activePlaySession.playerName}
+                Spieler {officer.dutyTime.activePlaySession.playerName}
+                {officer.dutyTime.activePlaySession.license ? ` · ${officer.dutyTime.activePlaySession.license}` : ''}
               </p>
             )}
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.04 }}
             className="glass-panel-elevated rounded-[14px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">FiveM-Spielzeit</h3>
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Spielzeit</h3>
             <PlaytimeChart daily={officer.playtime?.daily ?? []} />
             <div className="gold-line my-4" />
             <div className="space-y-2">
@@ -588,7 +588,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))
               ) : (
-                <p className="text-[12.5px] text-[#4a6585]">Noch keine FiveM-Spielzeit empfangen</p>
+                <p className="text-[12.5px] text-[#4a6585]">Noch keine Spielzeit empfangen</p>
               )}
             </div>
           </motion.div>

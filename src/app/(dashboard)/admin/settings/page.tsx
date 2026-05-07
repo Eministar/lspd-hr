@@ -365,7 +365,7 @@ export default function SettingsPage() {
                 options={channelOptions}
               />
               <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Öffentliches Panel mit Buttons; zeigt, wer eingestempelt ist (wird fortlaufend aktualisiert).
+                Öffentliches Panel ohne Stempelbuttons; zeigt automatisch, wer als Police online ist.
               </p>
             </div>
             <div className="sm:col-span-2">
@@ -376,7 +376,7 @@ export default function SettingsPage() {
                 options={channelOptions}
               />
               <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Hier erscheinen die Protokoll-Einträge zu Ein- und Ausstempeln. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+                Optionaler Admin-Channel für Dienstzeit-Hinweise. Leer lassen, um den Ankündigungs-Channel zu nutzen.
               </p>
             </div>
             <div className="sm:col-span-2">

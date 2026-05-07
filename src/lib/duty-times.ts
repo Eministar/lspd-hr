@@ -1,20 +1,32 @@
 import { prisma } from '@/lib/prisma'
-import { endActiveAbsencesForOfficer, runOfficerStatusAutomation } from '@/lib/absence-status'
+import {
+  syncAllPlayerPlaytime,
+  syncOfficerPlayerPlaytime,
+  type PlayerOnlinePlayer,
+  type PlayerOnlineStatusName,
+  type PlayerOnlineSyncResult,
+} from '@/lib/player-online'
 
 const MS_PER_MINUTE = 60_000
 const MS_PER_HOUR = 60 * MS_PER_MINUTE
 const MS_PER_DAY = 24 * MS_PER_HOUR
 
-export type DutySource = 'dashboard' | 'discord'
-
-type DutySessionRow = {
+type DurationSession = {
   clockInAt: Date
   clockOutAt: Date | null
 }
 
-type RangeSession = {
+type PlaytimeSessionRow = {
+  id: string
   startedAt: Date
   endedAt: Date | null
+  lastSeenAt: Date
+  playerName: string
+  license: string | null
+}
+
+type CurrentPlayer = PlayerOnlinePlayer & {
+  source: 'api' | 'session'
 }
 
 export function formatDuration(ms: number) {
@@ -38,57 +50,89 @@ export function endOfWeek(weekStart: Date) {
   return new Date(weekStart.getTime() + 7 * MS_PER_DAY)
 }
 
-export function sessionDurationMs(session: DutySessionRow, now = new Date()) {
+export function sessionDurationMs(session: DurationSession, now = new Date()) {
   const end = session.clockOutAt ?? now
   return Math.max(0, end.getTime() - session.clockInAt.getTime())
 }
 
-export function clippedSessionDurationMs(session: DutySessionRow, start: Date, end: Date, now = new Date()) {
+export function clippedSessionDurationMs(session: DurationSession, start: Date, end: Date, now = new Date()) {
   const sessionEnd = session.clockOutAt ?? now
   const clippedStart = Math.max(session.clockInAt.getTime(), start.getTime())
   const clippedEnd = Math.min(sessionEnd.getTime(), end.getTime())
   return Math.max(0, clippedEnd - clippedStart)
 }
 
-function rangeOverlapMs(
-  aStart: Date,
-  aEnd: Date | null,
-  bStart: Date,
-  bEnd: Date | null,
-  now = new Date(),
-  rangeStart?: Date,
-  rangeEnd?: Date,
-) {
-  const start = Math.max(aStart.getTime(), bStart.getTime(), rangeStart?.getTime() ?? Number.NEGATIVE_INFINITY)
-  const end = Math.min((aEnd ?? now).getTime(), (bEnd ?? now).getTime(), rangeEnd?.getTime() ?? Number.POSITIVE_INFINITY)
-  return Math.max(0, end - start)
+function playtimeDurationMs(session: PlaytimeSessionRow, now = new Date()) {
+  return sessionDurationMs({ clockInAt: session.startedAt, clockOutAt: session.endedAt }, now)
 }
 
-function overlapDurationMs(
-  dutySessions: DutySessionRow[],
-  playSessions: RangeSession[],
-  now = new Date(),
-  rangeStart?: Date,
-  rangeEnd?: Date,
-) {
-  return dutySessions.reduce((total, dutySession) => (
-    total + playSessions.reduce((sessionTotal, playSession) => (
-      sessionTotal + rangeOverlapMs(
-        dutySession.clockInAt,
-        dutySession.clockOutAt,
-        playSession.startedAt,
-        playSession.endedAt,
-        now,
-        rangeStart,
-        rangeEnd,
-      )
+function clippedPlaytimeDurationMs(session: PlaytimeSessionRow, start: Date, end: Date, now = new Date()) {
+  return clippedSessionDurationMs({ clockInAt: session.startedAt, clockOutAt: session.endedAt }, start, end, now)
+}
+
+function latestDate(dates: Array<Date | null | undefined>) {
+  const timestamps = dates
+    .filter((date): date is Date => !!date)
+    .map((date) => date.getTime())
+  if (timestamps.length === 0) return null
+  return new Date(Math.max(...timestamps))
+}
+
+function dailyPlaytime(sessions: PlaytimeSessionRow[], weekStart: Date, now: Date) {
+  return Array.from({ length: 7 }, (_, index) => {
+    const start = new Date(weekStart.getTime() + index * MS_PER_DAY)
+    const end = new Date(start.getTime() + MS_PER_DAY)
+    const durationMs = sessions.reduce((total, session) => (
+      total + clippedPlaytimeDurationMs(session, start, end, now)
     ), 0)
+    return {
+      date: start,
+      label: new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'Europe/Berlin' }).format(start),
+      durationMs,
+      durationLabel: formatDuration(durationMs),
+    }
+  })
+}
+
+function currentPlayerFromSession(session: PlaytimeSessionRow | null, live: PlayerOnlineSyncResult | undefined): CurrentPlayer | null {
+  if (live?.player) return { ...live.player, source: 'api' }
+  if (!session) return null
+  return {
+    source: 'session',
+    name: session.playerName,
+    identifier: session.license,
+    steamId: null,
+    job: null,
+    ping: null,
+    playtimeSeconds: null,
+    connectedAt: session.startedAt,
+  }
+}
+
+function aggregatePlaytime(sessions: PlaytimeSessionRow[], weekStart: Date, weekEnd: Date, now: Date) {
+  const weekDurationMs = sessions.reduce((total, session) => (
+    total + clippedPlaytimeDurationMs(session, weekStart, weekEnd, now)
   ), 0)
+  const durations = sessions.map((session) => playtimeDurationMs(session, now))
+  const sessionCount = sessions.length
+  const longestSessionMs = durations.length > 0 ? Math.max(...durations) : 0
+  const averageSessionMs = sessionCount > 0 ? Math.round(durations.reduce((sum, value) => sum + value, 0) / sessionCount) : 0
+
+  return {
+    weekDurationMs,
+    sessionCount,
+    longestSessionMs,
+    averageSessionMs,
+    daily: dailyPlaytime(sessions, weekStart, now),
+    lastSeenAt: latestDate(sessions.map((session) => session.lastSeenAt)),
+  }
 }
 
 export async function getDutyTimesSnapshot(now = new Date()) {
+  const sync = await syncAllPlayerPlaytime({ now })
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
+  const statusByOfficerId = new Map(sync.results.map((result) => [result.officerId, result]))
 
   const officers = await prisma.officer.findMany({
     where: { status: { not: 'TERMINATED' } },
@@ -100,16 +144,6 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       discordId: true,
       status: true,
       rank: { select: { name: true, color: true, sortOrder: true } },
-      dutySessions: {
-        where: {
-          clockInAt: { lt: weekEnd },
-          OR: [
-            { clockOutAt: null },
-            { clockOutAt: { gte: weekStart } },
-          ],
-        },
-        orderBy: { clockInAt: 'desc' },
-      },
       playtimeSessions: {
         where: {
           startedAt: { lt: weekEnd },
@@ -125,24 +159,14 @@ export async function getDutyTimesSnapshot(now = new Date()) {
   })
 
   const rows = officers.map((officer) => {
-    const activeSession = officer.dutySessions.find((session) => !session.clockOutAt) ?? null
+    const live = statusByOfficerId.get(officer.id)
     const activePlaySession = officer.playtimeSessions.find((session) => !session.endedAt) ?? null
-    const weekDurationMs = officer.dutySessions.reduce(
-      (total, session) => total + clippedSessionDurationMs(session, weekStart, weekEnd, now),
-      0,
-    )
-    const playtimeWeekDurationMs = officer.playtimeSessions.reduce(
-      (total, session) => total + clippedSessionDurationMs(
-        { clockInAt: session.startedAt, clockOutAt: session.endedAt },
-        weekStart,
-        weekEnd,
-        now,
-      ),
-      0,
-    )
-    const verifiedDutyWeekMs = overlapDurationMs(officer.dutySessions, officer.playtimeSessions, now, weekStart, weekEnd)
-    const unclockedOnlineWeekMs = Math.max(0, playtimeWeekDurationMs - verifiedDutyWeekMs)
-    const dutyWithoutGameWeekMs = Math.max(0, weekDurationMs - verifiedDutyWeekMs)
+    const currentDurationMs = activePlaySession ? playtimeDurationMs(activePlaySession, now) : 0
+    const stats = aggregatePlaytime(officer.playtimeSessions, weekStart, weekEnd, now)
+    const currentPlayer = currentPlayerFromSession(activePlaySession, live)
+    const apiStatus: PlayerOnlineStatusName = !sync.configured
+      ? 'not-configured'
+      : live?.status ?? (officer.discordId ? 'offline' : 'not-linked')
 
     return {
       id: officer.id,
@@ -152,66 +176,72 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       discordId: officer.discordId,
       status: officer.status,
       rank: officer.rank,
-      activeSession: activeSession
+      activeSession: activePlaySession
         ? {
-          id: activeSession.id,
-          clockInAt: activeSession.clockInAt,
-          currentDurationMs: sessionDurationMs(activeSession, now),
+          id: activePlaySession.id,
+          clockInAt: activePlaySession.startedAt,
+          currentDurationMs,
         }
         : null,
       activePlaySession: activePlaySession
         ? {
           id: activePlaySession.id,
           startedAt: activePlaySession.startedAt,
-          currentDurationMs: sessionDurationMs({ clockInAt: activePlaySession.startedAt, clockOutAt: activePlaySession.endedAt }, now),
+          currentDurationMs,
           playerName: activePlaySession.playerName,
+          license: activePlaySession.license,
+          lastSeenAt: activePlaySession.lastSeenAt,
         }
         : null,
-      weekDurationMs,
-      playtimeWeekDurationMs,
-      verifiedDutyWeekMs,
-      unclockedOnlineWeekMs,
-      dutyWithoutGameWeekMs,
-      honestyScore: weekDurationMs > 0 ? Math.round((verifiedDutyWeekMs / weekDurationMs) * 100) : null,
+      currentPlayer,
+      online: apiStatus === 'online',
+      scriptConnected: live?.scriptConnected ?? !!activePlaySession,
+      lastHeartbeat: live?.lastHeartbeat ?? activePlaySession?.lastSeenAt ?? null,
+      apiStatus,
+      apiError: live?.error,
+      weekDurationMs: stats.weekDurationMs,
+      playtimeWeekDurationMs: stats.weekDurationMs,
+      sessionCount: stats.sessionCount,
+      averageSessionMs: stats.averageSessionMs,
+      longestSessionMs: stats.longestSessionMs,
+      lastSeenAt: stats.lastSeenAt,
+      daily: stats.daily,
     }
   })
 
-  const activeRows = rows.filter((row) => row.activeSession)
-  const totalActiveDurationMs = activeRows.reduce((total, row) => total + (row.activeSession?.currentDurationMs ?? 0), 0)
+  const activeRows = rows.filter((row) => row.activePlaySession)
+  const totalActiveDurationMs = activeRows.reduce((total, row) => total + (row.activePlaySession?.currentDurationMs ?? 0), 0)
   const totalWeekDurationMs = rows.reduce((total, row) => total + row.weekDurationMs, 0)
-  const totalPlaytimeWeekDurationMs = rows.reduce((total, row) => total + row.playtimeWeekDurationMs, 0)
-  const totalUnclockedOnlineWeekMs = rows.reduce((total, row) => total + row.unclockedOnlineWeekMs, 0)
-  const totalDutyWithoutGameWeekMs = rows.reduce((total, row) => total + row.dutyWithoutGameWeekMs, 0)
+  const totalSessionCount = rows.reduce((total, row) => total + row.sessionCount, 0)
+  const longestSessionMs = rows.reduce((max, row) => Math.max(max, row.longestSessionMs), 0)
+  const topRows = [...rows]
+    .sort((a, b) => b.weekDurationMs - a.weekDurationMs)
+    .slice(0, 8)
 
   return {
     now,
     weekStart,
     weekEnd,
+    sync,
     activeCount: activeRows.length,
     totalActiveDurationMs,
     totalWeekDurationMs,
-    totalPlaytimeWeekDurationMs,
-    totalUnclockedOnlineWeekMs,
-    totalDutyWithoutGameWeekMs,
+    totalPlaytimeWeekDurationMs: totalWeekDurationMs,
+    totalSessionCount,
+    averageSessionMs: totalSessionCount > 0 ? Math.round(totalWeekDurationMs / totalSessionCount) : 0,
+    longestSessionMs,
     rows,
     activeRows,
+    topRows,
   }
 }
 
-export async function getOfficerDutyTime(officerId: string, now = new Date()) {
+export async function getOfficerDutyTime(officerId: string, options?: { now?: Date; sync?: boolean }) {
+  const now = options?.now ?? new Date()
+  if (options?.sync !== false) await syncOfficerPlayerPlaytime(officerId, { now })
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
-  const sessions = await prisma.dutyTimeSession.findMany({
-    where: {
-      officerId,
-      clockInAt: { lt: weekEnd },
-      OR: [
-        { clockOutAt: null },
-        { clockOutAt: { gte: weekStart } },
-      ],
-    },
-    orderBy: { clockInAt: 'desc' },
-  })
+
   const playtimeSessions = await prisma.playtimeSession.findMany({
     where: {
       officerId,
@@ -223,92 +253,69 @@ export async function getOfficerDutyTime(officerId: string, now = new Date()) {
     },
     orderBy: { startedAt: 'desc' },
   })
-  const activeSession = sessions.find((session) => !session.clockOutAt) ?? null
   const activePlaySession = playtimeSessions.find((session) => !session.endedAt) ?? null
-  const weekDurationMs = sessions.reduce(
-    (total, session) => total + clippedSessionDurationMs(session, weekStart, weekEnd, now),
-    0,
-  )
-  const playtimeWeekDurationMs = playtimeSessions.reduce(
-    (total, session) => total + clippedSessionDurationMs({ clockInAt: session.startedAt, clockOutAt: session.endedAt }, weekStart, weekEnd, now),
-    0,
-  )
-  const verifiedDutyWeekMs = overlapDurationMs(sessions, playtimeSessions, now, weekStart, weekEnd)
+  const currentDurationMs = activePlaySession ? playtimeDurationMs(activePlaySession, now) : 0
+  const stats = aggregatePlaytime(playtimeSessions, weekStart, weekEnd, now)
+
   return {
-    activeSession: activeSession
+    activeSession: activePlaySession
       ? {
-        id: activeSession.id,
-        clockInAt: activeSession.clockInAt,
-        currentDurationMs: sessionDurationMs(activeSession, now),
+        id: activePlaySession.id,
+        clockInAt: activePlaySession.startedAt,
+        currentDurationMs,
       }
       : null,
     activePlaySession: activePlaySession
       ? {
         id: activePlaySession.id,
         startedAt: activePlaySession.startedAt,
-        currentDurationMs: sessionDurationMs({ clockInAt: activePlaySession.startedAt, clockOutAt: activePlaySession.endedAt }, now),
+        currentDurationMs,
         playerName: activePlaySession.playerName,
+        license: activePlaySession.license,
+        lastSeenAt: activePlaySession.lastSeenAt,
       }
       : null,
-    weekDurationMs,
-    playtimeWeekDurationMs,
-    verifiedDutyWeekMs,
-    unclockedOnlineWeekMs: Math.max(0, playtimeWeekDurationMs - verifiedDutyWeekMs),
-    dutyWithoutGameWeekMs: Math.max(0, weekDurationMs - verifiedDutyWeekMs),
-    honestyScore: weekDurationMs > 0 ? Math.round((verifiedDutyWeekMs / weekDurationMs) * 100) : null,
+    weekDurationMs: stats.weekDurationMs,
+    playtimeWeekDurationMs: stats.weekDurationMs,
+    sessionCount: stats.sessionCount,
+    averageSessionMs: stats.averageSessionMs,
+    longestSessionMs: stats.longestSessionMs,
+    lastSeenAt: stats.lastSeenAt,
   }
 }
 
-export async function clockInOfficer(officerId: string, source: DutySource, actorDiscordId?: string | null) {
-  const officer = await prisma.officer.findUnique({
-    where: { id: officerId },
-    include: { rank: true },
-  })
-  if (!officer) throw new Error('Officer nicht gefunden')
-  if (officer.status === 'TERMINATED') throw new Error('Gekündigte Officers können nicht eingestempelt werden')
+export async function getOfficerPlaytimeReport(officerId: string, options?: { now?: Date; sync?: boolean }) {
+  const now = options?.now ?? new Date()
+  if (options?.sync !== false) await syncOfficerPlayerPlaytime(officerId, { now })
+  const weekStart = startOfCurrentWeek(now)
+  const weekEnd = endOfWeek(weekStart)
+  const chartStart = new Date(weekStart.getTime() - 6 * MS_PER_DAY)
 
-  const active = await prisma.dutyTimeSession.findFirst({
-    where: { officerId, clockOutAt: null },
-  })
-  if (active) throw new Error('Officer ist bereits eingestempelt')
-
-  const now = new Date()
-  const endedAbsences = await endActiveAbsencesForOfficer(officerId, now)
-  const session = await prisma.dutyTimeSession.create({
-    data: {
+  const sessions = await prisma.playtimeSession.findMany({
+    where: {
       officerId,
-      clockInAt: now,
-      clockInSource: source,
-      actorDiscordId: actorDiscordId ?? null,
+      startedAt: { lt: weekEnd },
+      OR: [
+        { endedAt: null },
+        { endedAt: { gte: chartStart } },
+      ],
     },
+    orderBy: { startedAt: 'desc' },
+    take: 80,
   })
 
-  await runOfficerStatusAutomation({ force: true })
-  return { officer, session, endedAbsences }
-}
+  const recentSessions = sessions.slice(0, 12).map((session) => ({
+    id: session.id,
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    lastSeenAt: session.lastSeenAt,
+    playerName: session.playerName,
+    license: session.license,
+    durationMs: playtimeDurationMs(session, now),
+  }))
 
-export async function clockOutOfficer(officerId: string, source: DutySource, actorDiscordId?: string | null) {
-  const officer = await prisma.officer.findUnique({
-    where: { id: officerId },
-    include: { rank: true },
-  })
-  if (!officer) throw new Error('Officer nicht gefunden')
-
-  const active = await prisma.dutyTimeSession.findFirst({
-    where: { officerId, clockOutAt: null },
-    orderBy: { clockInAt: 'desc' },
-  })
-  if (!active) throw new Error('Officer ist nicht eingestempelt')
-
-  const session = await prisma.dutyTimeSession.update({
-    where: { id: active.id },
-    data: {
-      clockOutAt: new Date(),
-      clockOutSource: source,
-      actorDiscordId: actorDiscordId ?? active.actorDiscordId,
-    },
-  })
-
-  await runOfficerStatusAutomation({ force: true })
-  return { officer, session, durationMs: sessionDurationMs(session), endedAbsences: 0 }
+  return {
+    recentSessions,
+    daily: dailyPlaytime(sessions, weekStart, now),
+  }
 }
