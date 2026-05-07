@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -47,6 +47,15 @@ interface PromotionLog {
   newRank: Rank
   performedBy: { displayName: string }
 }
+interface SanctionRecord {
+  id: string
+  reason: string
+  penalGrade: string
+  fineAmount: number | null
+  penalty: string | null
+  createdAt: string
+  issuedBy: { displayName: string }
+}
 interface OfficerNote {
   id: string
   title: string | null
@@ -71,6 +80,7 @@ interface OfficerDetail {
   discordId: string | null
   trainings: OfficerTraining[]
   promotionLogs: PromotionLog[]
+  sanctions: SanctionRecord[]
   officerNotes: OfficerNote[]
   dutyTime?: {
     activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
@@ -120,6 +130,12 @@ interface OfficerForm {
   hireDate: string
   discordId: string
 }
+interface SanctionForm {
+  penalGrade: string
+  fineAmount: string
+  penalty: string
+  reason: string
+}
 
 const EMPTY_OFFICER_FORM: OfficerForm = {
   badgeNumber: '',
@@ -134,12 +150,37 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
   discordId: '',
 }
 
+const EMPTY_SANCTION_FORM: SanctionForm = {
+  penalGrade: 'I',
+  fineAmount: '',
+  penalty: '',
+  reason: '',
+}
+
+const PENAL_GRADE_OPTIONS = [
+  { value: 'I', label: 'Penal Grade I' },
+  { value: 'II', label: 'Penal Grade II' },
+  { value: 'III', label: 'Penal Grade III' },
+  { value: 'IV', label: 'Penal Grade IV' },
+  { value: 'V', label: 'Penal Grade V' },
+  { value: 'MANUELL', label: 'Manuell / ohne Penal Grade' },
+]
+
 function formatDuration(ms: number) {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000))
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
   if (hours <= 0) return `${minutes}m`
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`
+}
+
+function formatFineAmount(amount: number | null | undefined) {
+  if (amount === null || amount === undefined) return '—'
+  return `${new Intl.NumberFormat('de-DE').format(amount)} $`
+}
+
+function displayPenalGrade(value: string) {
+  return value === 'MANUELL' ? 'Manuell' : `Penal Grade ${value}`
 }
 
 function dateInputValue(date: Date) {
@@ -167,6 +208,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
   const canTerminate = hasPermission(user, 'terminations:manage')
+  const groupName = user?.group?.name?.toLowerCase() ?? ''
+  const canSanction = canTerminate || canRankChange || groupName === 'hr' || groupName === 'administration'
   const canManageNotes = hasPermission(user, 'notes:manage')
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
@@ -175,11 +218,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [editing, setEditing] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
   const [terminateModal, setTerminateModal] = useState(false)
+  const [sanctionModal, setSanctionModal] = useState(false)
   const [promoteModal, setPromoteModal] = useState(false)
   const [demoteModal, setDemoteModal] = useState(false)
   const [noteModal, setNoteModal] = useState(false)
   const [absenceModal, setAbsenceModal] = useState(false)
   const [terminateReason, setTerminateReason] = useState('')
+  const [sanctionForm, setSanctionForm] = useState<SanctionForm>(EMPTY_SANCTION_FORM)
   const [newRankId, setNewRankId] = useState('')
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
@@ -254,6 +299,33 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       addToast({ type: 'success', title: 'Officer gekündigt' })
       setTerminateModal(false)
       setTerminateReason('')
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const openSanctionModal = () => {
+    setSanctionForm(EMPTY_SANCTION_FORM)
+    setSanctionModal(true)
+  }
+
+  const handleSanction = async () => {
+    if (!sanctionForm.reason.trim()) return
+    try {
+      await execute('/api/sanctions', {
+        method: 'POST',
+        body: JSON.stringify({
+          officerId: id,
+          penalGrade: sanctionForm.penalGrade,
+          fineAmount: sanctionForm.fineAmount.trim() || null,
+          penalty: sanctionForm.penalty.trim() || null,
+          reason: sanctionForm.reason.trim(),
+        }),
+      })
+      addToast({ type: 'success', title: 'Sanktion ausgestellt' })
+      setSanctionModal(false)
+      setSanctionForm(EMPTY_SANCTION_FORM)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -702,6 +774,31 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </motion.div>
           )}
+
+          {officer.sanctions?.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.11 }}
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Sanktionen</h3>
+              <div className="space-y-3">
+                {officer.sanctions.map((sanction) => (
+                  <div key={sanction.id} className="flex items-start gap-3">
+                    <div className="h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 mt-0.5 bg-[#1d1608]">
+                      <Gavel size={13} className="text-[#f59e0b]" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-[13px] font-medium text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
+                        <span className="text-[11.5px] text-[#d4af37] tabular-nums">{formatFineAmount(sanction.fineAmount)}</span>
+                      </div>
+                      <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(sanction.createdAt)} · {sanction.issuedBy.displayName}</p>
+                      {sanction.penalty && <p className="text-[12px] text-[#b7c5d8] mt-1">{sanction.penalty}</p>}
+                      <p className="text-[12px] text-[#8ea4bd] mt-1 leading-relaxed">{sanction.reason}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Right column: actions + notes */}
@@ -737,6 +834,12 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <StickyNote size={15} strokeWidth={1.75} /> Notiz hinzufügen
+                  </button>
+                )}
+                {canSanction && officer.status !== 'TERMINATED' && (
+                  <button onClick={openSanctionModal}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f59e0b] hover:bg-[#1d1608] transition-colors text-left">
+                    <Gavel size={15} strokeWidth={1.75} /> Sanktion
                   </button>
                 )}
                 {canEditOfficer && officer.status === 'TERMINATED' ? (
@@ -825,6 +928,49 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setTerminateModal(false)}>Abbrechen</Button>
             <Button variant="danger" size="sm" onClick={handleTerminate} disabled={!terminateReason.trim()}>Kündigung bestätigen</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={sanctionModal} onClose={() => setSanctionModal(false)} title="Sanktion ausstellen">
+        <div className="space-y-4">
+          <p className="text-[13px] text-[#888]">
+            Sanktion für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
+          </p>
+          <Select
+            label="Penal Grade"
+            value={sanctionForm.penalGrade}
+            onValueChange={(penalGrade) => setSanctionForm({ ...sanctionForm, penalGrade })}
+            options={PENAL_GRADE_OPTIONS}
+          />
+          <Input
+            label="Geldstrafe"
+            value={sanctionForm.fineAmount}
+            onChange={(e) => setSanctionForm({ ...sanctionForm, fineAmount: e.target.value })}
+            inputMode="numeric"
+            placeholder="Optional, z.B. 10000"
+          />
+          <Textarea
+            label="Weitere Strafe / Maßnahme"
+            value={sanctionForm.penalty}
+            onChange={(e) => setSanctionForm({ ...sanctionForm, penalty: e.target.value })}
+            rows={2}
+            placeholder="Optional, z.B. 24h Suspendierung"
+          />
+          <Textarea
+            label="Grund"
+            value={sanctionForm.reason}
+            onChange={(e) => setSanctionForm({ ...sanctionForm, reason: e.target.value })}
+            rows={4}
+            required
+            placeholder="Grund der Sanktion..."
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setSanctionModal(false)}>Abbrechen</Button>
+            <Button size="sm" onClick={handleSanction} disabled={!sanctionForm.reason.trim() || !sanctionForm.penalGrade}>
+              <Gavel size={13} strokeWidth={2} />
+              Ausstellen
+            </Button>
           </div>
         </div>
       </Modal>

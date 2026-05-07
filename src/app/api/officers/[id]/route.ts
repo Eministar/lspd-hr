@@ -39,6 +39,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         include: { terminatedBy: { select: { displayName: true } } },
         orderBy: { terminatedAt: 'desc' },
       },
+      sanctions: {
+        include: { issuedBy: { select: { displayName: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
       officerNotes: {
         include: { author: { select: { displayName: true } } },
         orderBy: { createdAt: 'desc' },

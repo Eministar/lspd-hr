@@ -42,11 +42,13 @@ interface DiscordConfigResponse {
     guildId: string
     applicationId: string
     announcementsChannelId: string
+    sanctionsChannelId: string
     dutyStatusChannelId: string
     dutyAdminLogChannelId: string
     dutyStatusMessageId: string
     absenceStatusChannelId: string
     absenceStatusMessageId: string
+    humanResourcesRoleId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
     rankRoleMap: Record<string, string>
@@ -64,6 +66,7 @@ interface DiscordConfigResponse {
     publicKeyConfigured: boolean
     interactionEndpointUrl: string
     announcementsChannelConfigured: boolean
+    sanctionsChannelConfigured: boolean
     dutyAdminLogConfigured: boolean
     absenceStatusChannelConfigured: boolean
     rolesError: string | null
@@ -83,11 +86,13 @@ export default function SettingsPage() {
     guildId: '',
     applicationId: '',
     announcementsChannelId: '',
+    sanctionsChannelId: '',
     dutyStatusChannelId: '',
     dutyAdminLogChannelId: '',
     dutyStatusMessageId: '',
     absenceStatusChannelId: '',
     absenceStatusMessageId: '',
+    humanResourcesRoleId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
     rankRoleMap: {},
@@ -359,6 +364,17 @@ export default function SettingsPage() {
             </div>
             <div className="sm:col-span-2">
               <Select
+                label="Sanktions-Channel"
+                value={discordForm.sanctionsChannelId}
+                onValueChange={(sanctionsChannelId) => setDiscordForm({ ...discordForm, sanctionsChannelId })}
+                options={channelOptions}
+              />
+              <p className="text-[11px] text-[#5c728a] mt-1.5">
+                Channel für neue Sanktionen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <Select
                 label="Dienstzeiten-Channel"
                 value={discordForm.dutyStatusChannelId}
                 onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
@@ -388,6 +404,17 @@ export default function SettingsPage() {
               />
               <p className="text-[11px] text-[#5c728a] mt-1.5">
                 Öffentliches Panel mit allen aktuell abgemeldeten Officers. Leer lassen, um den Dienstzeiten- oder Ankündigungs-Channel zu nutzen.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <Select
+                label="Human-Resources-Rolle"
+                value={discordForm.humanResourcesRoleId}
+                onValueChange={(humanResourcesRoleId) => setDiscordForm({ ...discordForm, humanResourcesRoleId })}
+                options={roleOptions}
+              />
+              <p className="text-[11px] text-[#5c728a] mt-1.5">
+                Diese Rolle wird in Sanktions-Embeds als Human Resources erwähnt.
               </p>
             </div>
           </div>

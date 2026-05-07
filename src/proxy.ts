@@ -7,13 +7,14 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/me') ||
+    pathname.startsWith('/api/uploads') ||
     pathname.startsWith('/api/runtime-events') ||
     pathname.startsWith('/api/discord/interactions')
   ) {
     return NextResponse.next()
   }
 
-  if (pathname.startsWith('/public') || pathname.startsWith('/api/public/')) {
+  if (pathname.startsWith('/public') || pathname.startsWith('/uploads') || pathname.startsWith('/api/public/')) {
     return NextResponse.next()
   }
 

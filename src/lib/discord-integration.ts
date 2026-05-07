@@ -34,11 +34,13 @@ type DiscordConfig = {
   guildId: string
   applicationId: string
   announcementsChannelId: string
+  sanctionsChannelId: string
   dutyStatusChannelId: string
   dutyAdminLogChannelId: string
   dutyStatusMessageId: string
   absenceStatusChannelId: string
   absenceStatusMessageId: string
+  humanResourcesRoleId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
   rankRoleMap: Record<string, string>
@@ -71,11 +73,13 @@ export const DISCORD_SETTING_KEYS = {
   guildId: 'discord.guildId',
   applicationId: 'discord.applicationId',
   announcementsChannelId: 'discord.announcementsChannelId',
+  sanctionsChannelId: 'discord.sanctionsChannelId',
   dutyStatusChannelId: 'discord.dutyStatusChannelId',
   dutyAdminLogChannelId: 'discord.dutyAdminLogChannelId',
   dutyStatusMessageId: 'discord.dutyStatusMessageId',
   absenceStatusChannelId: 'discord.absenceStatusChannelId',
   absenceStatusMessageId: 'discord.absenceStatusMessageId',
+  humanResourcesRoleId: 'discord.humanResourcesRoleId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   rankRoleMap: 'discord.rankRoleMap',
@@ -88,6 +92,7 @@ const EVENT_META = {
   promotion:   { color: 0xd4af37, accent: '🟡', label: 'Rangänderung',              section: 'Personalmeldung' },
   training:    { color: 0x3b82f6, accent: '🔵', label: 'Ausbildung aktualisiert',   section: 'Personalmeldung' },
   units:       { color: 0x06b6d4, accent: '🔷', label: 'Unit-Zuordnung geändert',   section: 'Personalmeldung' },
+  sanction:    { color: 0xf97316, accent: '🟠', label: 'Sanktion ausgestellt',      section: 'Sanktion' },
   termination: { color: 0xef4444, accent: '🔴', label: 'Dienstverhältnis beendet',  section: 'Personalmeldung' },
   update:      { color: 0x8b5cf6, accent: '🟣', label: 'Personalakte aktualisiert', section: 'Personalmeldung' },
 } as const
@@ -177,6 +182,14 @@ function envAnnouncementsChannelId() {
   )
 }
 
+function envSanctionsChannelId() {
+  return (
+    process.env.DISCORD_SANCTIONS_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_SANCTIONS_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
 function envDutyStatusChannelId() {
   return (
     process.env.DISCORD_DUTY_STATUS_CHANNEL_ID?.trim() ||
@@ -197,6 +210,14 @@ function envAbsenceStatusChannelId() {
   return (
     process.env.DISCORD_ABSENCE_STATUS_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_ABSENCE_STATUS_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
+function envHumanResourcesRoleId() {
+  return (
+    process.env.DISCORD_HUMAN_RESOURCES_ROLE_ID?.trim() ||
+    process.env.LSPD_DISCORD_HUMAN_RESOURCES_ROLE_ID?.trim() ||
     ''
   )
 }
@@ -250,6 +271,11 @@ function desiredNickname(officer: Pick<OfficerForDiscord, 'firstName' | 'lastNam
 function mention(discordId: string | null | undefined) {
   const id = snowflake(discordId)
   return id ? `<@${id}>` : 'Nicht verknüpft'
+}
+
+function roleMention(roleId: string | null | undefined, fallback: string) {
+  const id = snowflake(roleId)
+  return id ? `<@&${id}>` : fallback
 }
 
 export function discordUserLabel(user: UserForDiscord | null | undefined) {
@@ -329,11 +355,13 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     guildId: map[DISCORD_SETTING_KEYS.guildId] || envGuildId(),
     applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
     announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
+    sanctionsChannelId: map[DISCORD_SETTING_KEYS.sanctionsChannelId] || envSanctionsChannelId(),
     dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
     dutyAdminLogChannelId: map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] || envDutyAdminLogChannelId(),
     dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
     absenceStatusChannelId: map[DISCORD_SETTING_KEYS.absenceStatusChannelId] || envAbsenceStatusChannelId(),
     absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
+    humanResourcesRoleId: map[DISCORD_SETTING_KEYS.humanResourcesRoleId] || envHumanResourcesRoleId(),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
@@ -348,11 +376,13 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.guildId !== undefined) data[DISCORD_SETTING_KEYS.guildId] = input.guildId.trim()
   if (input.applicationId !== undefined) data[DISCORD_SETTING_KEYS.applicationId] = input.applicationId.trim()
   if (input.announcementsChannelId !== undefined) data[DISCORD_SETTING_KEYS.announcementsChannelId] = input.announcementsChannelId.trim()
+  if (input.sanctionsChannelId !== undefined) data[DISCORD_SETTING_KEYS.sanctionsChannelId] = input.sanctionsChannelId.trim()
   if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
   if (input.dutyAdminLogChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] = input.dutyAdminLogChannelId.trim()
   if (input.dutyStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusMessageId] = input.dutyStatusMessageId.trim()
   if (input.absenceStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusChannelId] = input.absenceStatusChannelId.trim()
   if (input.absenceStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusMessageId] = input.absenceStatusMessageId.trim()
+  if (input.humanResourcesRoleId !== undefined) data[DISCORD_SETTING_KEYS.humanResourcesRoleId] = input.humanResourcesRoleId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
@@ -616,6 +646,11 @@ export function ensureDiscordSyncScheduler() {
   }, safeIntervalMs).unref?.()
 }
 
+function hrEventChannelId(config: DiscordConfig, type: keyof typeof EVENT_META) {
+  if (type === 'sanction') return config.sanctionsChannelId || config.announcementsChannelId
+  return config.announcementsChannelId
+}
+
 export async function sendDiscordHrEvent(event: {
   type: keyof typeof EVENT_META
   title: string
@@ -629,7 +664,8 @@ export async function sendDiscordHrEvent(event: {
   fields?: DiscordField[]
 }) {
   const config = await getDiscordConfig()
-  if (!config.announcementsChannelId || !botToken()) return
+  const channelId = hrEventChannelId(config, event.type)
+  if (!channelId || !botToken()) return
 
   const officer = event.officer
   const meta = EVENT_META[event.type]
@@ -652,7 +688,7 @@ export async function sendDiscordHrEvent(event: {
       { name: 'Bearbeitet von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true },
     ]
 
-    await postChannelEmbed(config.announcementsChannelId, {
+    await postChannelEmbed(channelId, {
       author: { name: `${orgName} · ${meta.section}` },
       title: `${meta.accent}  Neueinstellung  ·  ${officerName(officer)}`,
       description: '> Wurde in den aktiven Dienst aufgenommen. Willkommen!',
@@ -667,9 +703,11 @@ export async function sendDiscordHrEvent(event: {
   const titleName = officer ? `  ·  ${officerName(officer)}` : ''
   const title = `${meta.accent}  ${meta.label}${titleName}`
 
-  const description = event.description
-    ? `> ${truncate(event.description, 2000)}`
-    : undefined
+  const description = event.type === 'sanction'
+    ? `> Folgender Beamter bekommt im Namen der ${roleMention(config.humanResourcesRoleId, '@Human-Resources')} eine Sanktion.${event.description ? `\n> ${truncate(event.description, 1800)}` : ''}`
+    : event.description
+      ? `> ${truncate(event.description, 2000)}`
+      : undefined
 
   const fields: DiscordField[] = []
 
@@ -696,7 +734,7 @@ export async function sendDiscordHrEvent(event: {
     { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
   )
 
-  await postChannelEmbed(config.announcementsChannelId, {
+  await postChannelEmbed(channelId, {
     author: { name: `${orgName} · ${meta.section}` },
     title: truncate(title, 250),
     description,
