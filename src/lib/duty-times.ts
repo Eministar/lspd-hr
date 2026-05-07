@@ -143,6 +143,7 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       lastName: true,
       discordId: true,
       status: true,
+      lastOnline: true,
       rank: { select: { name: true, color: true, sortOrder: true } },
       playtimeSessions: {
         where: {
@@ -204,12 +205,12 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       sessionCount: stats.sessionCount,
       averageSessionMs: stats.averageSessionMs,
       longestSessionMs: stats.longestSessionMs,
-      lastSeenAt: stats.lastSeenAt,
+      lastSeenAt: latestDate([live?.lastHeartbeat, activePlaySession?.lastSeenAt, officer.lastOnline, stats.lastSeenAt]),
       daily: stats.daily,
     }
   })
 
-  const activeRows = rows.filter((row) => row.activePlaySession)
+  const activeRows = rows.filter((row) => row.apiStatus === 'online' && row.activePlaySession)
   const totalActiveDurationMs = activeRows.reduce((total, row) => total + (row.activePlaySession?.currentDurationMs ?? 0), 0)
   const totalWeekDurationMs = rows.reduce((total, row) => total + row.weekDurationMs, 0)
   const totalSessionCount = rows.reduce((total, row) => total + row.sessionCount, 0)

@@ -20,6 +20,23 @@ export function formatDateTime(date: Date | string | null | undefined): string {
   })
 }
 
+export function formatRelativeTime(date: Date | string | null | undefined, now: Date = new Date()): string {
+  if (!date) return '—'
+  const d = new Date(date)
+  const diffMs = now.getTime() - d.getTime()
+  if (!Number.isFinite(diffMs)) return '—'
+  if (diffMs < 0) return 'gerade eben'
+  const seconds = Math.floor(diffMs / 1000)
+  if (seconds < 45) return 'gerade eben'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `vor ${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `vor ${hours}h ${minutes % 60}m`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `vor ${days}d`
+  return formatDate(d)
+}
+
 export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     ACTIVE: 'Aktiv',

@@ -4,7 +4,7 @@ import { endActiveAbsencesForOfficer, runOfficerStatusAutomation } from '@/lib/a
 const DEFAULT_PLAYER_ONLINE_API_URL = 'https://dash.nero-v.cc/api/external/player-online'
 const DEFAULT_POLICE_JOB = 'police'
 const DEFAULT_TIMEOUT_MS = 8_000
-const DEFAULT_SYNC_TTL_MS = 15_000
+const DEFAULT_SYNC_TTL_MS = 5_000
 const DEFAULT_CONCURRENCY = 8
 
 export type PlayerOnlineStatusName = 'online' | 'offline' | 'ignored-job' | 'not-linked' | 'not-configured' | 'error'
@@ -174,6 +174,7 @@ async function fetchPlayerOnline(discordId: string): Promise<{
   scriptConnected: boolean
   lastHeartbeat: Date | null
   player: PlayerOnlinePlayer | null
+  treatAsOffline?: boolean
 }> {
   const secret = playerOnlineApiSecret()
   if (!secret) throw new Error('Player-Online API-Secret fehlt')
@@ -187,6 +188,17 @@ async function fetchPlayerOnline(discordId: string): Promise<{
     cache: 'no-store',
     signal: AbortSignal.timeout(playerOnlineTimeoutMs()),
   })
+
+  if (res.status === 403 || res.status === 404) {
+    return {
+      discordId,
+      online: false,
+      scriptConnected: false,
+      lastHeartbeat: null,
+      player: null,
+      treatAsOffline: true,
+    }
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -233,6 +245,7 @@ async function upsertActivePlaytime(officer: OfficerForPlayerSync, player: Playe
   })
 
   if (active) {
+    const earliestStart = startedAt.getTime() < active.startedAt.getTime() ? startedAt : active.startedAt
     return prisma.playtimeSession.update({
       where: { id: active.id },
       data: {
@@ -240,7 +253,7 @@ async function upsertActivePlaytime(officer: OfficerForPlayerSync, player: Playe
         discordId: officer.discordId,
         license: player.identifier,
         playerName: player.name,
-        startedAt,
+        startedAt: earliestStart,
         lastSeenAt,
       },
     })

@@ -10,7 +10,7 @@ import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Button } from '@/components/ui/button'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuth } from '@/context/auth-context'
-import { cn, formatDateTime } from '@/lib/utils'
+import { cn, formatDateTime, formatRelativeTime } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
@@ -273,6 +273,15 @@ export default function DutyTimesPage() {
                     {officer.currentPlayer.identifier ? ` · ${officer.currentPlayer.identifier}` : ''}
                     {officer.currentPlayer.steamId ? ` · ${officer.currentPlayer.steamId}` : ''}
                   </p>
+                )}
+                {officer.apiStatus !== 'online' && officer.lastSeenAt && (
+                  <p className="mt-1 text-[11px] text-[#7089a5]">
+                    Zuletzt online: <span className="text-[#c7d4e4]">{formatRelativeTime(officer.lastSeenAt)}</span>
+                    <span className="text-[#4a6585]"> · {formatDateTime(officer.lastSeenAt)}</span>
+                  </p>
+                )}
+                {officer.apiStatus !== 'online' && !officer.lastSeenAt && officer.apiStatus !== 'not-linked' && officer.apiStatus !== 'not-configured' && (
+                  <p className="mt-1 text-[11px] text-[#5c728a]">Zuletzt online: noch nie erfasst</p>
                 )}
                 {officer.apiError && <p className="mt-1 truncate text-[11px] text-[#fca5a5]">{officer.apiError}</p>}
               </div>
