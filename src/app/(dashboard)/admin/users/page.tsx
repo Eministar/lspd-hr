@@ -39,7 +39,7 @@ const MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWi
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
   const { data: groups } = useFetch<UserGroup[]>('/api/user-groups')
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, refreshUser } = useAuth()
   const { execute } = useApi()
   const { addToast } = useToast()
 
@@ -143,6 +143,7 @@ export default function UsersPage() {
       await execute(`/api/users/${editUser.id}`, { method: 'PATCH', body: JSON.stringify(data) })
       addToast({ type: 'success', title: 'Benutzer aktualisiert' })
       setEditUser(null)
+      if (editUser.id === currentUser?.id) await refreshUser()
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
