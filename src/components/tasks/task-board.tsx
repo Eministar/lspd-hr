@@ -71,7 +71,7 @@ interface TaskItem {
   completedAt: string | null
   sortOrder: number
   createdAt: string
-  createdBy: { id: string; displayName: string }
+  createdBy: { id: string; displayName: string } | null
   assignments: TaskAssignment[]
 }
 
@@ -84,7 +84,7 @@ interface TaskList {
   archived: boolean
   sortOrder: number
   createdAt: string
-  createdBy: { id: string; displayName: string }
+  createdBy: { id: string; displayName: string } | null
   tasks: TaskItem[]
 }
 
@@ -836,7 +836,7 @@ export function TaskBoard({ module, title, description, accentLabel, headerActio
                                       </div>
                                     )}
                                     <p className="text-[10.5px] text-[#4a6585] mt-2">
-                                      {task.createdBy.displayName} · erstellt {formatDate(task.createdAt)}
+                                      {task.createdBy?.displayName ?? 'Gelöscht'} · erstellt {formatDate(task.createdAt)}
                                     </p>
                                   </div>
 

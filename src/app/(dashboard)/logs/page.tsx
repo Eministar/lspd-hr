@@ -19,7 +19,7 @@ interface AuditLog {
   newValue: string | null
   details: string | null
   createdAt: string
-  user: { displayName: string }
+  user: { displayName: string } | null
   officer: { firstName: string; lastName: string; badgeNumber: string } | null
 }
 
@@ -97,7 +97,7 @@ export default function LogsPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[12px] text-[#999]">{formatDateTime(log.createdAt)}</p>
-                      <p className="text-[11px] text-[#4a6585]">{log.user.displayName}</p>
+                      <p className="text-[11px] text-[#4a6585]">{log.user?.displayName ?? 'Gelöscht'}</p>
                     </div>
                   </motion.div>
                 )

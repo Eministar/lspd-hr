@@ -17,7 +17,7 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage', 'rank-changes:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage', 'terminations:manage', 'rank-changes:manage'])
     const body = await req.json()
 
     const officerId = cleanSanctionText(body.officerId)

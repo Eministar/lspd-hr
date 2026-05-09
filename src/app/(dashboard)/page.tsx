@@ -70,7 +70,7 @@ interface ActivityItem {
   newValue: string | null
   details: string | null
   createdAt: string
-  user: { displayName: string }
+  user: { displayName: string } | null
   officer: { id: string; firstName: string; lastName: string; badgeNumber: string } | null
 }
 
@@ -80,7 +80,7 @@ interface NotePreview {
   content: string
   createdAt: string
   updatedAt: string
-  author: { displayName: string }
+  author: { displayName: string } | null
   officer: { id: string; firstName: string; lastName: string; badgeNumber: string } | null
 }
 
@@ -677,7 +677,7 @@ export default function DashboardPage() {
                         <p className="text-[11.5px] text-[#7089a5] mt-0.5">{entry.oldValue} → {entry.newValue}</p>
                       )}
                       <p className="text-[11px] text-[#7089a5] mt-1">
-                        {entry.user.displayName} · {formatDateTime(entry.createdAt)}
+                        {entry.user?.displayName ?? 'Gelöscht'} · {formatDateTime(entry.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -708,7 +708,7 @@ export default function DashboardPage() {
                     <p className="text-[13px] font-medium text-white">{note.title || 'Notiz'}</p>
                     <p className="text-[12px] text-[#b7c5d8] mt-1 leading-relaxed">{truncateText(note.content, 120)}</p>
                     <p className="text-[11px] text-[#d4af37] mt-2">
-                      {note.officer ? `${officerName(note.officer)} · ` : ''}{note.author.displayName}
+                      {note.officer ? `${officerName(note.officer)} · ` : ''}{note.author?.displayName ?? 'Gelöscht'}
                     </p>
                   </Link>
                 ))}

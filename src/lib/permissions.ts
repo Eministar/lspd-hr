@@ -8,6 +8,7 @@ export const PERMISSIONS = [
   'officers:delete',
   'terminations:view',
   'terminations:manage',
+  'sanctions:manage',
   'rank-changes:view',
   'rank-changes:manage',
   'rank-change-lists:execute',
@@ -42,6 +43,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'officers:delete': 'Officers löschen',
   'terminations:view': 'Kündigungen ansehen',
   'terminations:manage': 'Kündigungen verwalten',
+  'sanctions:manage': 'Sanktionen ausstellen',
   'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
   'rank-changes:manage': 'Beförderungen/Degradierungen',
   'rank-change-lists:delete': 'Beförderungs-/Degradierungslisten löschen',
@@ -72,6 +74,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
   'terminations:manage': ['terminations:view', 'officers:view'],
+  'sanctions:manage': ['officers:view'],
   // Backward-compatibility: managing rank changes should include ability to execute rank-change-lists
   'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],
   'rank-change-lists:execute': ['rank-changes:view', 'officers:view', 'ranks:view'],

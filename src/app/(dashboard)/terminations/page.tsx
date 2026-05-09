@@ -43,7 +43,7 @@ interface Termination {
     status: string
     rank: { name: string; color: string }
   } | null
-  terminatedBy: { displayName: string }
+  terminatedBy: { displayName: string } | null
 }
 
 function terminationOfficerNames(t: Termination): { first: string; last: string } {
@@ -153,7 +153,7 @@ export default function TerminationsPage() {
                   </p>
                   <p className="text-[13px] text-[#999]">{t.reason}</p>
                   <p className="text-[11px] text-[#4a6585] mt-1.5">
-                    {formatDate(t.terminatedAt)} · von {t.terminatedBy.displayName}
+                    {formatDate(t.terminatedAt)} · von {t.terminatedBy?.displayName ?? 'Gelöscht'}
                   </p>
                 </div>
                 {canManage && (

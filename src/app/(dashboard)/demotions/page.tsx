@@ -49,7 +49,7 @@ interface RankChangeList {
   description: string | null
   type: string
   status: string
-  createdBy: { displayName: string }
+  createdBy: { displayName: string } | null
   createdAt: string
   entries: ListEntry[]
 }
@@ -228,7 +228,7 @@ export default function DemotionsPage() {
                     </span>
                   </div>
                   <p className="text-[11.5px] text-[#999] mt-0.5">
-                    {list.entries.length} Einträge · {formatDate(list.createdAt)} · {list.createdBy.displayName}
+                    {list.entries.length} Einträge · {formatDate(list.createdAt)} · {list.createdBy?.displayName ?? 'Gelöscht'}
                     {list.description && <span> · {list.description}</span>}
                   </p>
                 </div>
@@ -259,7 +259,7 @@ export default function DemotionsPage() {
                               {entry.note && <span className="text-[11px] text-[#bbb] ml-1">· {entry.note}</span>}
                             </div>
                             <p className="text-[11px] text-[#7089a5] mt-0.5">
-                              Eingereicht von <span className="text-[#9fb0c4]">{entry.createdBy?.displayName ?? list.createdBy.displayName}</span>
+                              Eingereicht von <span className="text-[#9fb0c4]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
                               {entry.executed && entry.executedAt && (
                                 <> · Durchgeführt am {formatDate(entry.executedAt)}</>
                               )}

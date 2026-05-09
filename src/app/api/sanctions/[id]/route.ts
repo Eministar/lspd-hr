@@ -30,7 +30,7 @@ function sanctionSummary(sanction: NonNullable<Awaited<ReturnType<typeof getSanc
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage', 'rank-changes:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage', 'terminations:manage', 'rank-changes:manage'])
     const { id } = await params
     const body = await req.json()
     const action = cleanSanctionText(body.action).toUpperCase()
@@ -152,7 +152,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage', 'rank-changes:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage', 'terminations:manage', 'rank-changes:manage'])
     const { id } = await params
     const existing = await getSanctionById(id)
     if (!existing) return notFound('Sanktion')

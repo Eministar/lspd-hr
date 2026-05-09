@@ -45,7 +45,7 @@ interface PromotionLog {
   createdAt: string
   oldRank: Rank
   newRank: Rank
-  performedBy: { displayName: string }
+  performedBy: { displayName: string } | null
 }
 interface SanctionRecord {
   id: string
@@ -60,14 +60,14 @@ interface SanctionRecord {
   parentSanctionId: string | null
   createdAt: string
   updatedAt: string
-  issuedBy: { displayName: string }
+  issuedBy: { displayName: string } | null
 }
 interface OfficerNote {
   id: string
   title: string | null
   content: string
   createdAt: string
-  author: { displayName: string }
+  author: { displayName: string } | null
 }
 interface OfficerDetail {
   id: string
@@ -243,8 +243,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
   const canTerminate = hasPermission(user, 'terminations:manage')
-  const groupName = user?.group?.name?.toLowerCase() ?? ''
-  const canSanction = canTerminate || canRankChange || groupName === 'hr' || groupName === 'administration'
+  const canSanction = hasPermission(user, 'sanctions:manage')
   const canManageNotes = hasPermission(user, 'notes:manage')
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
@@ -901,7 +900,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                       <p className="text-[13px] font-medium text-[#eee]">
                         {log.oldRank.name} → {log.newRank.name}
                       </p>
-                      <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(log.createdAt)} · {log.performedBy.displayName}</p>
+                      <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(log.createdAt)} · {log.performedBy?.displayName ?? 'Gelöscht'}</p>
                       {log.note && <p className="text-[11.5px] text-[#666] mt-0.5">{log.note}</p>}
                     </div>
                   </div>
@@ -1057,7 +1056,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                         </button>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#4a6585] mt-2">{formatDate(note.createdAt)} · {note.author.displayName}</p>
+                    <p className="text-[11px] text-[#4a6585] mt-2">{formatDate(note.createdAt)} · {note.author?.displayName ?? 'Gelöscht'}</p>
                   </div>
                 ))}
               </div>
@@ -1372,7 +1371,7 @@ function SanctionCard({
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-[11px] text-[#4a6585]">{formatDate(sanction.createdAt)}</span>
           <span className="text-[10px] text-[#2a4a6a]">·</span>
-          <span className="text-[11px] text-[#4a6585]">{sanction.issuedBy.displayName}</span>
+          <span className="text-[11px] text-[#4a6585]">{sanction.issuedBy?.displayName ?? 'Gelöscht'}</span>
           <span className="text-[10px] text-[#2a4a6a]">·</span>
           <span className="text-[11px] text-[#4a6585]">{sanctionDueLabel(sanction)}</span>
         </div>

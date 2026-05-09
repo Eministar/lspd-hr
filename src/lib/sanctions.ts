@@ -139,7 +139,7 @@ export async function syncSanctionDiscordMessage(
     title: `Sanktion: ${sanctionOfficerName(sanction)}`,
     description: statusDescription(sanction, options?.description),
     officer: officerSnapshot(sanction),
-    actor: sanction.issuedBy,
+    actor: sanction.issuedBy ?? undefined,
     fields: sanctionDiscordFields(sanction, options?.note),
   }
 

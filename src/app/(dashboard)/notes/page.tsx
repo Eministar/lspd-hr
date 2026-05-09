@@ -24,7 +24,7 @@ interface Note {
   pinned: boolean
   officerId: string | null
   officer: { firstName: string; lastName: string; badgeNumber: string } | null
-  author: { displayName: string }
+  author: { displayName: string } | null
   createdAt: string
   updatedAt: string
 }
@@ -187,7 +187,7 @@ export default function NotesPage() {
               )}
               <p className="text-[13px] text-[#999] whitespace-pre-wrap leading-relaxed">{note.content}</p>
               <p className="text-[11px] text-[#4a6585] mt-3">
-                {note.author.displayName} · {formatDateTime(note.createdAt)}
+                {note.author?.displayName ?? 'Gelöscht'} · {formatDateTime(note.createdAt)}
               </p>
             </motion.div>
           ))}
