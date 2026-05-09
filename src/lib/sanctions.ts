@@ -25,12 +25,10 @@ export function cleanSanctionText(value: unknown) {
 
 export function parseFineAmount(value: unknown) {
   if (value === null || value === undefined || value === '') return null
-  const raw = typeof value === 'number'
-    ? String(value)
-    : String(value).replace(/[^\d]/g, '')
-  if (!raw) return null
-
-  const amount = Number.parseInt(raw, 10)
+  const str = (typeof value === 'number' ? String(value) : String(value)).trim()
+  if (!str) return null
+  if (!/^\d+$/.test(str)) return undefined
+  const amount = Number.parseInt(str, 10)
   if (!Number.isSafeInteger(amount) || amount < 0) return undefined
   if (amount > 1_000_000) return undefined
   return amount

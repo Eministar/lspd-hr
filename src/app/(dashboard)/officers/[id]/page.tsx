@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -144,6 +144,12 @@ interface SanctionForm {
   deadlineDays: string
   dueAt: string
 }
+interface RankChangeList {
+  id: string
+  name: string
+  type: string
+  status: string
+}
 
 const EMPTY_OFFICER_FORM: OfficerForm = {
   badgeNumber: '',
@@ -243,6 +249,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
   const { data: units } = useFetch<Unit[]>(canEditOfficer ? '/api/units?active=true' : null)
+  const { data: promotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=PROMOTION' : null)
+  const { data: demotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=DEMOTION' : null)
+  const draftPromotionLists = promotionLists?.filter(l => l.status === 'DRAFT') ?? []
+  const draftDemotionLists = demotionLists?.filter(l => l.status === 'DRAFT') ?? []
 
   const [editing, setEditing] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -262,6 +272,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [absenceEndsAt, setAbsenceEndsAt] = useState(dateAfterDays(3))
   const [absenceReason, setAbsenceReason] = useState('')
   const [form, setForm] = useState<OfficerForm>(EMPTY_OFFICER_FORM)
+  const [addToListModal, setAddToListModal] = useState<'PROMOTION' | 'DEMOTION' | null>(null)
+  const [addToListId, setAddToListId] = useState('')
+  const [addToListRankId, setAddToListRankId] = useState('')
+  const [addToListBadgeNumber, setAddToListBadgeNumber] = useState('')
+  const [addToListNote, setAddToListNote] = useState('')
 
   const startEditing = () => {
     if (!officer) return
@@ -509,6 +524,34 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  const openAddToListModal = (type: 'PROMOTION' | 'DEMOTION') => {
+    setAddToListModal(type)
+    setAddToListId('')
+    setAddToListRankId('')
+    setAddToListBadgeNumber('')
+    setAddToListNote('')
+  }
+
+  const handleAddToList = async () => {
+    if (!addToListModal || !addToListId || !addToListRankId) return
+    try {
+      await execute(`/api/rank-change-lists/${addToListId}/entries`, {
+        method: 'POST',
+        body: JSON.stringify({
+          officerId: id,
+          proposedRankId: addToListRankId,
+          newBadgeNumber: addToListBadgeNumber || undefined,
+          note: addToListNote || undefined,
+        }),
+      })
+      const label = addToListModal === 'PROMOTION' ? 'Beförderungsliste' : 'Degradierungsliste'
+      addToast({ type: 'success', title: `Zur ${label} hinzugefügt` })
+      setAddToListModal(null)
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
   const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
     if (!canEditTrainings) return
     if (!officer) return
@@ -545,6 +588,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   const higherRanks = ranks?.filter(r => r.sortOrder < officer.rank?.sortOrder) || []
   const lowerRanks = ranks?.filter(r => r.sortOrder > officer.rank?.sortOrder) || []
+  const addToListRanks = addToListModal === 'PROMOTION' ? higherRanks : lowerRanks
   const openSanctions = officer.sanctions?.filter((sanction) => sanction.status === 'OPEN') ?? []
 
   return (
@@ -875,43 +919,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   {openSanctions.length} offen
                 </span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {openSanctions.map((sanction) => (
-                  <div key={sanction.id} className="rounded-[10px] border border-[#b45309]/25 bg-[#1d1608]/40 p-3.5">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[13px] font-semibold text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
-                          <span className={cn('rounded-full border px-2 py-0.5 text-[10.5px] font-medium', sanctionStatusClass(sanction.status))}>
-                            {sanctionStatusLabel(sanction.status)}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-[11.5px] text-[#fbbf24] tabular-nums">{formatFineAmount(sanction.fineAmount)} · {sanctionDueLabel(sanction)}</p>
-                        {sanction.penalty && <p className="mt-2 text-[12px] text-[#cbd5e1]">{sanction.penalty}</p>}
-                        <p className="mt-1.5 text-[12px] leading-relaxed text-[#8ea4bd]">{sanction.reason}</p>
-                      </div>
-                      {canSanction && (
-                        <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
-                          <Button size="sm" onClick={() => handleMarkSanctionPaid(sanction.id)}>
-                            <Check size={13} strokeWidth={2} />
-                            Bezahlt
-                          </Button>
-                          <Button variant="secondary" size="sm" onClick={() => openEditSanctionModal(sanction)}>
-                            <Edit size={13} strokeWidth={1.8} />
-                            Bearbeiten
-                          </Button>
-                          <Button variant="secondary" size="sm" onClick={() => handleEscalateSanction(sanction.id)}>
-                            <TrendingUp size={13} strokeWidth={1.8} />
-                            Verdoppeln
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteSanction(sanction.id)}>
-                            <Trash2 size={13} strokeWidth={1.8} />
-                            Löschen
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <SanctionCard key={sanction.id} sanction={sanction} canSanction={canSanction}
+                    onPaid={() => handleMarkSanctionPaid(sanction.id)}
+                    onEdit={() => openEditSanctionModal(sanction)}
+                    onEscalate={() => handleEscalateSanction(sanction.id)}
+                    onDelete={() => handleDeleteSanction(sanction.id)}
+                    variant="open"
+                  />
                 ))}
               </div>
             </motion.div>
@@ -921,41 +937,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12 }}
               className="glass-panel-elevated rounded-[14px] p-5">
               <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Sanktionshistorie</h3>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {officer.sanctions.map((sanction) => (
-                  <div key={sanction.id} className="flex items-start gap-3">
-                    <div className="h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 mt-0.5 bg-[#1d1608]">
-                      <Gavel size={13} className="text-[#f59e0b]" strokeWidth={1.75} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[13px] font-medium text-[#eee]">{displayPenalGrade(sanction.penalGrade)}</p>
-                          <span className={cn('rounded-full border px-2 py-0.5 text-[10.5px] font-medium', sanctionStatusClass(sanction.status))}>
-                            {sanctionStatusLabel(sanction.status)}
-                          </span>
-                        </div>
-                        <span className="text-[11.5px] text-[#d4af37] tabular-nums">{formatFineAmount(sanction.fineAmount)}</span>
-                      </div>
-                      <p className="text-[11.5px] text-[#999] mt-0.5">
-                        {formatDate(sanction.createdAt)} · {sanction.issuedBy.displayName} · {sanctionDueLabel(sanction)}
-                      </p>
-                      {sanction.penalty && <p className="text-[12px] text-[#b7c5d8] mt-1">{sanction.penalty}</p>}
-                      <p className="text-[12px] text-[#8ea4bd] mt-1 leading-relaxed">{sanction.reason}</p>
-                      {canSanction && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <Button variant="secondary" size="sm" onClick={() => openEditSanctionModal(sanction)}>
-                            <Edit size={13} strokeWidth={1.8} />
-                            Bearbeiten
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteSanction(sanction.id)}>
-                            <Trash2 size={13} strokeWidth={1.8} />
-                            Löschen
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <SanctionCard key={sanction.id} sanction={sanction} canSanction={canSanction}
+                    onEdit={() => openEditSanctionModal(sanction)}
+                    onDelete={() => handleDeleteSanction(sanction.id)}
+                    variant="history"
+                  />
                 ))}
               </div>
             </motion.div>
@@ -985,10 +973,22 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     <TrendingUp size={15} strokeWidth={1.75} /> Befördern
                   </button>
                 )}
+                {canRankChange && officer.status !== 'TERMINATED' && draftPromotionLists.length > 0 && (
+                  <button onClick={() => openAddToListModal('PROMOTION')}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    <ListPlus size={15} strokeWidth={1.75} /> Zur Beförderungsliste
+                  </button>
+                )}
                 {canRankChange && officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setDemoteModal(true) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <TrendingDown size={15} strokeWidth={1.75} /> Degradieren
+                  </button>
+                )}
+                {canRankChange && officer.status !== 'TERMINATED' && draftDemotionLists.length > 0 && (
+                  <button onClick={() => openAddToListModal('DEMOTION')}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    <ListPlus size={15} strokeWidth={1.75} /> Zur Degradierungsliste
                   </button>
                 )}
                 {canManageNotes && (
@@ -1095,57 +1095,67 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
       <Modal open={sanctionModal} onClose={closeSanctionModal} title={editingSanction ? 'Sanktion bearbeiten' : 'Sanktion ausstellen'}>
         <div className="space-y-4">
-          <p className="text-[13px] text-[#888]">
-            {editingSanction ? 'Sanktion bearbeiten' : 'Sanktion'} für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
-          </p>
+          <div className="flex items-center gap-3 rounded-[10px] border border-[#18385f]/60 bg-[#0a1e38]/70 px-3.5 py-3">
+            <Gavel size={15} className="text-[#f59e0b] shrink-0" strokeWidth={1.75} />
+            <p className="text-[13px] text-[#9fb0c4]">
+              {editingSanction ? 'Sanktion bearbeiten für' : 'Neue Sanktion für'}{' '}
+              <strong className="text-[#eee] font-semibold">{officer.firstName} {officer.lastName}</strong>
+            </p>
+          </div>
+
           <Select
             label="Penal Grade"
             value={sanctionForm.penalGrade}
             onValueChange={(penalGrade) => setSanctionForm({ ...sanctionForm, penalGrade })}
             options={PENAL_GRADE_OPTIONS}
           />
-          <Input
-            label="Geldstrafe"
-            value={sanctionForm.fineAmount}
-            onChange={(e) => setSanctionForm({ ...sanctionForm, fineAmount: e.target.value })}
-            inputMode="numeric"
-            placeholder="Optional, z.B. 10000"
-          />
-          {editingSanction ? (
-            <DateField
-              label="Frist"
-              value={sanctionForm.dueAt}
-              onChange={(dueAt) => setSanctionForm({ ...sanctionForm, dueAt })}
-            />
-          ) : (
+
+          <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Frist in Tagen"
-              value={sanctionForm.deadlineDays}
-              onChange={(e) => setSanctionForm({ ...sanctionForm, deadlineDays: e.target.value })}
+              label="Geldstrafe (optional)"
+              value={sanctionForm.fineAmount}
+              onChange={(e) => setSanctionForm({ ...sanctionForm, fineAmount: e.target.value })}
               inputMode="numeric"
-              placeholder="Optional, z.B. 7"
+              placeholder="Nur Zahlen, z.B. 10000"
             />
-          )}
-          <Textarea
-            label="Weitere Strafe / Maßnahme"
+            {editingSanction ? (
+              <DateField
+                label="Frist"
+                value={sanctionForm.dueAt}
+                onChange={(dueAt) => setSanctionForm({ ...sanctionForm, dueAt })}
+              />
+            ) : (
+              <Input
+                label="Frist in Tagen (optional)"
+                value={sanctionForm.deadlineDays}
+                onChange={(e) => setSanctionForm({ ...sanctionForm, deadlineDays: e.target.value })}
+                inputMode="numeric"
+                placeholder="z.B. 7"
+              />
+            )}
+          </div>
+
+          <Input
+            label="Weitere Strafe / Maßnahme (optional)"
             value={sanctionForm.penalty}
             onChange={(e) => setSanctionForm({ ...sanctionForm, penalty: e.target.value })}
-            rows={2}
-            placeholder="Optional, z.B. 24h Suspendierung"
+            placeholder="z.B. 24h Suspendierung"
           />
+
           <Textarea
-            label="Grund"
+            label="Grund *"
             value={sanctionForm.reason}
             onChange={(e) => setSanctionForm({ ...sanctionForm, reason: e.target.value })}
             rows={4}
             required
-            placeholder="Grund der Sanktion..."
+            placeholder="Detaillierter Grund der Sanktion..."
           />
-          <div className="flex justify-end gap-2">
+
+          <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={closeSanctionModal}>Abbrechen</Button>
             <Button size="sm" onClick={handleSanction} disabled={!sanctionForm.reason.trim() || !sanctionForm.penalGrade}>
               <Gavel size={13} strokeWidth={2} />
-              {editingSanction ? 'Speichern' : 'Ausstellen'}
+              {editingSanction ? 'Speichern' : 'Sanktion ausstellen'}
             </Button>
           </div>
         </div>
@@ -1197,6 +1207,55 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </Modal>
 
+      {/* Add to rank-change-list modal */}
+      <Modal
+        open={!!addToListModal}
+        onClose={() => setAddToListModal(null)}
+        title={addToListModal === 'PROMOTION' ? 'Zur Beförderungsliste hinzufügen' : 'Zur Degradierungsliste hinzufügen'}
+      >
+        <div className="space-y-4">
+          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
+            <p className="text-[13px] text-[#888]">
+              Officer: <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>
+              <span className="ml-2 text-[#999]">· Aktuell: {officer.rank?.name}</span>
+            </p>
+          </div>
+          <Select
+            label={addToListModal === 'PROMOTION' ? 'Beförderungsliste' : 'Degradierungsliste'}
+            value={addToListId}
+            onChange={(e) => setAddToListId(e.target.value)}
+            options={(addToListModal === 'PROMOTION' ? draftPromotionLists : draftDemotionLists).map(l => ({ value: l.id, label: l.name }))}
+            placeholder="Liste wählen..."
+          />
+          <Select
+            label={addToListModal === 'PROMOTION' ? 'Neuer Rang (höher)' : 'Neuer Rang (niedriger)'}
+            value={addToListRankId}
+            onChange={(e) => setAddToListRankId(e.target.value)}
+            options={addToListRanks.map(r => ({ value: r.id, label: r.name }))}
+            placeholder="Rang wählen..."
+          />
+          <Input
+            label="Neue DN (optional)"
+            value={addToListBadgeNumber}
+            onChange={(e) => setAddToListBadgeNumber(e.target.value)}
+            placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`}
+          />
+          <Input
+            label="Notiz (optional)"
+            value={addToListNote}
+            onChange={(e) => setAddToListNote(e.target.value)}
+            placeholder="Optional"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setAddToListModal(null)}>Abbrechen</Button>
+            <Button size="sm" onClick={handleAddToList} disabled={!addToListId || !addToListRankId}>
+              <ListPlus size={13} strokeWidth={2} />
+              Hinzufügen
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal open={absenceModal} onClose={() => setAbsenceModal(false)} title="Abmeldung eintragen">
         <div className="space-y-4">
           <p className="text-[13px] text-[#888]">
@@ -1225,6 +1284,125 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </Modal>
+    </div>
+  )
+}
+
+const SANCTION_STATUS_CONFIG = {
+  OPEN: {
+    accent: 'bg-[#d97706]',
+    glow: 'shadow-[0_0_0_1px_rgba(217,119,6,0.2)]',
+    border: 'border-[#d97706]/25',
+    bg: 'bg-[#0d0a02]',
+  },
+  PAID: {
+    accent: 'bg-[#16a34a]',
+    glow: 'shadow-[0_0_0_1px_rgba(22,163,74,0.15)]',
+    border: 'border-[#16a34a]/20',
+    bg: 'bg-[#020d04]',
+  },
+  ESCALATED: {
+    accent: 'bg-[#dc2626]',
+    glow: 'shadow-[0_0_0_1px_rgba(220,38,38,0.2)]',
+    border: 'border-[#dc2626]/25',
+    bg: 'bg-[#0d0202]',
+  },
+} as const
+
+function SanctionCard({
+  sanction,
+  canSanction,
+  variant,
+  onPaid,
+  onEdit,
+  onEscalate,
+  onDelete,
+}: {
+  sanction: SanctionRecord
+  canSanction: boolean
+  variant: 'open' | 'history'
+  onPaid?: () => void
+  onEdit?: () => void
+  onEscalate?: () => void
+  onDelete?: () => void
+}) {
+  const cfg = SANCTION_STATUS_CONFIG[sanction.status]
+  const showActions = canSanction && (onPaid || onEdit || onEscalate || onDelete)
+
+  return (
+    <div className={cn('relative flex overflow-hidden rounded-[12px] border', cfg.border, cfg.bg, cfg.glow)}>
+      {/* Left accent bar */}
+      <div className={cn('w-[3.5px] shrink-0 rounded-l-[12px]', cfg.accent)} />
+
+      <div className="flex-1 min-w-0 p-4">
+        {/* Top row: grade + status + amount */}
+        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-[6px] bg-white/[0.04] px-2.5 py-1">
+              <Gavel size={11} className="text-[#f59e0b] shrink-0" strokeWidth={2} />
+              <span className="text-[12.5px] font-bold tracking-wide text-[#edf4fb]">{displayPenalGrade(sanction.penalGrade)}</span>
+            </div>
+            <span className={cn('rounded-full border px-2.5 py-[2px] text-[10.5px] font-semibold tracking-wide', sanctionStatusClass(sanction.status))}>
+              {sanctionStatusLabel(sanction.status)}
+            </span>
+          </div>
+          {sanction.fineAmount !== null && sanction.fineAmount > 0 && (
+            <div className="flex items-baseline gap-1 rounded-[6px] bg-[#d4af37]/10 border border-[#d4af37]/20 px-2.5 py-1">
+              <span className="text-[13px] font-bold tabular-nums text-[#d4af37]">
+                {new Intl.NumberFormat('de-DE').format(sanction.fineAmount)}
+              </span>
+              <span className="text-[10px] font-medium text-[#b8973a]">$</span>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/[0.05] mb-3" />
+
+        {/* Body: penalty + reason */}
+        {sanction.penalty && (
+          <div className="mb-2 flex gap-2">
+            <span className="mt-[2px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#94a3b8]" />
+            <p className="text-[12.5px] font-medium text-[#cbd5e1] leading-relaxed">{sanction.penalty}</p>
+          </div>
+        )}
+        <p className="text-[12.5px] leading-relaxed text-[#8ea4bd]">{sanction.reason}</p>
+
+        {/* Footer metadata */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-[11px] text-[#4a6585]">{formatDate(sanction.createdAt)}</span>
+          <span className="text-[10px] text-[#2a4a6a]">·</span>
+          <span className="text-[11px] text-[#4a6585]">{sanction.issuedBy.displayName}</span>
+          <span className="text-[10px] text-[#2a4a6a]">·</span>
+          <span className="text-[11px] text-[#4a6585]">{sanctionDueLabel(sanction)}</span>
+        </div>
+
+        {/* Action bar */}
+        {showActions && (
+          <div className="mt-3.5 flex flex-wrap gap-1.5 border-t border-white/[0.06] pt-3.5">
+            {variant === 'open' && onPaid && (
+              <Button size="sm" onClick={onPaid}>
+                <Check size={12} strokeWidth={2.5} /> Als bezahlt markieren
+              </Button>
+            )}
+            {onEdit && (
+              <Button variant="secondary" size="sm" onClick={onEdit}>
+                <Edit size={12} strokeWidth={1.8} /> Bearbeiten
+              </Button>
+            )}
+            {variant === 'open' && onEscalate && (
+              <Button variant="secondary" size="sm" onClick={onEscalate}>
+                <TrendingUp size={12} strokeWidth={1.8} /> Verdoppeln
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="danger" size="sm" onClick={onDelete}>
+                <Trash2 size={12} strokeWidth={1.8} /> Löschen
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
