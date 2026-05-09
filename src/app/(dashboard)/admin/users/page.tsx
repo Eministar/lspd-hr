@@ -228,7 +228,7 @@ export default function UsersPage() {
             ]}
           />
           <p className="text-[11.5px] text-[#6b8299]">
-            Sobald direkte Rechte gesetzt sind, überschreiben sie die Benutzergruppe. Ohne direkte Rechte gelten die Gruppenrechte.
+            Direkte Rechte werden zusätzlich zu den Rechten der Benutzergruppe vergeben.
           </p>
           {permissionSections}
           <div className="flex justify-end gap-2 pt-1">
@@ -253,7 +253,7 @@ export default function UsersPage() {
             ]}
           />
           <p className="text-[11.5px] text-[#6b8299]">
-            Sobald direkte Rechte gesetzt sind, überschreiben sie die Benutzergruppe. Ohne direkte Rechte gelten die Gruppenrechte.
+            Direkte Rechte werden zusätzlich zu den Rechten der Benutzergruppe vergeben.
           </p>
           {permissionSections}
           <div className="flex justify-end gap-2 pt-1">

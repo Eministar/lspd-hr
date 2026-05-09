@@ -22,6 +22,17 @@ interface AuthContextType {
   clearClientCache: () => Promise<void>
 }
 
+async function readApiResponse(res: Response) {
+  const text = await res.text().catch(() => '')
+  if (!text) return null
+
+  try {
+    return JSON.parse(text) as { success?: boolean; error?: string; data?: { user: User } }
+  } catch {
+    return null
+  }
+}
+
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function useAuth() {
@@ -70,8 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Login fehlgeschlagen')
+    const data = await readApiResponse(res)
+    if (!res.ok || !data?.success || !data.data?.user) {
+      throw new Error(data?.error || 'Login fehlgeschlagen')
+    }
     setUser(data.data.user)
     setAuthError(null)
     router.push('/')
