@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -180,6 +180,7 @@ const PENAL_GRADE_OPTIONS = [
   { value: 'V', label: 'Penal Grade V' },
   { value: 'MANUELL', label: 'Manuell / ohne Penal Grade' },
 ]
+const PLAYTIME_HISTORY_COLLAPSE_LIMIT = 5
 
 function formatDuration(ms: number) {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000))
@@ -270,6 +271,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [addToListRankId, setAddToListRankId] = useState('')
   const [addToListBadgeNumber, setAddToListBadgeNumber] = useState('')
   const [addToListNote, setAddToListNote] = useState('')
+  const [playtimeHistoryExpanded, setPlaytimeHistoryExpanded] = useState(false)
 
   const startEditing = () => {
     if (!officer) return
@@ -583,6 +585,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const lowerRanks = ranks?.filter(r => r.sortOrder > officer.rank?.sortOrder) || []
   const addToListRanks = addToListModal === 'PROMOTION' ? higherRanks : lowerRanks
   const openSanctions = officer.sanctions?.filter((sanction) => sanction.status === 'OPEN') ?? []
+  const playtimeSessions = officer.playtime?.recentSessions ?? []
+  const canTogglePlaytimeHistory = playtimeSessions.length > PLAYTIME_HISTORY_COLLAPSE_LIMIT
+  const visiblePlaytimeSessions = playtimeHistoryExpanded
+    ? playtimeSessions
+    : playtimeSessions.slice(0, PLAYTIME_HISTORY_COLLAPSE_LIMIT)
 
   return (
     <div>
@@ -756,9 +763,31 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Spielzeit</h3>
             <PlaytimeChart daily={officer.playtime?.daily ?? []} />
             <div className="gold-line my-4" />
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h4 className="text-[12.5px] font-semibold text-[#c7d4e4]">Verlauf</h4>
+              {canTogglePlaytimeHistory && (
+                <button
+                  type="button"
+                  onClick={() => setPlaytimeHistoryExpanded((expanded) => !expanded)}
+                  className="inline-flex h-[30px] items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] font-medium text-[#d4af37] transition-colors hover:bg-[#0f2340] hover:text-white"
+                >
+                  {playtimeHistoryExpanded ? (
+                    <>
+                      <ChevronUp size={13} strokeWidth={1.9} />
+                      Weniger anzeigen
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={13} strokeWidth={1.9} />
+                      Alle anzeigen ({playtimeSessions.length})
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
             <div className="space-y-2">
-              {(officer.playtime?.recentSessions ?? []).length > 0 ? (
-                officer.playtime!.recentSessions.map((session) => (
+              {playtimeSessions.length > 0 ? (
+                visiblePlaytimeSessions.map((session) => (
                   <div key={session.id} className="flex flex-col gap-1 rounded-[8px] bg-[#0f2340]/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-[12.5px] font-medium text-[#edf4fb] truncate">{session.playerName}</p>
