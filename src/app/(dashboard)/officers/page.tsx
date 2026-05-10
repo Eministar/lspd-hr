@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Select } from '@/components/ui/select'
+import { UnitBadges } from '@/components/officers/unit-badges'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useAuth } from '@/context/auth-context'
@@ -31,8 +32,6 @@ import {
   formatDate,
   getStatusLabel,
   getStatusDot,
-  getUnitLabel,
-  getUnitBadgeClass,
   getFlagLabel,
   getFlagColor,
   getFlagRowClass,
@@ -91,30 +90,6 @@ interface Officer {
   lastOnline: string | null
   discordId: string | null
   trainings: OfficerTraining[]
-}
-
-function UnitBadges({ officer, unitsByKey }: { officer: Pick<Officer, 'unit' | 'units'>; unitsByKey: Map<string, Unit> }) {
-  const keys = officerUnitKeys(officer)
-  if (keys.length === 0) return <span className="text-[11px] text-[#4a6585]">—</span>
-  return (
-    <span className="inline-flex flex-wrap gap-1">
-      {keys.map((unitKey) => {
-        const unitInfo = unitsByKey.get(unitKey)
-        return (
-          <span
-            key={unitKey}
-            className={cn(
-              'inline-flex min-w-0 max-w-full items-center px-2 py-[3px] rounded-full text-[10.5px] font-medium border',
-              unitInfo ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unitKey)
-            )}
-            style={unitInfo ? { borderColor: `${unitInfo.color}66`, color: unitInfo.color } : undefined}
-          >
-            <span className="min-w-0 truncate">{unitInfo?.name ?? getUnitLabel(unitKey)}</span>
-          </span>
-        )
-      })}
-    </span>
-  )
 }
 
 const rankDropCollision: CollisionDetection = (args) => {
@@ -316,7 +291,7 @@ function DraggableOfficerRow({
         )
       })}
       <td className="px-3 py-2.5 whitespace-nowrap">
-        <UnitBadges officer={officer} unitsByKey={unitsByKey} />
+        <UnitBadges officer={officer} unitsByKey={unitsByKey} maxVisible={2} />
       </td>
       <td className="px-3 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
@@ -395,7 +370,7 @@ function MobileOfficerCard({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 mb-2.5">
         <div className="min-w-0">
           {officerUnitKeys(officer).length > 0 ? (
-            <UnitBadges officer={officer} unitsByKey={unitsByKey} />
+            <UnitBadges officer={officer} unitsByKey={unitsByKey} maxVisible={3} />
           ) : (
             <span className="text-[11px] text-[#4a6585]">—</span>
           )}

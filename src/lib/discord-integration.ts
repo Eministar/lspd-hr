@@ -291,11 +291,6 @@ function mention(discordId: string | null | undefined) {
   return id ? `<@${id}>` : 'Nicht verknüpft'
 }
 
-function roleMention(roleId: string | null | undefined, fallback: string) {
-  const id = snowflake(roleId)
-  return id ? `<@&${id}>` : fallback
-}
-
 export function discordUserLabel(user: UserForDiscord | null | undefined) {
   if (!user) return 'System'
   const id = snowflake(user.discordId)
@@ -709,14 +704,34 @@ async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: Disc
     }
   }
 
+  if (event.type === 'sanction') {
+    const fields: DiscordField[] = []
+
+    if (officer) {
+      fields.push({ name: 'Wer', value: mention(officer.discordId), inline: false })
+    }
+
+    if (event.fields && event.fields.length > 0) {
+      for (const f of event.fields) fields.push(f)
+    }
+
+    fields.push({ name: 'Ausgestellt von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true })
+
+    return {
+      author: { name: `${orgName} · ${meta.section}` },
+      title: truncate(`${meta.accent}  ${meta.label}`, 250),
+      color: meta.color,
+      fields: fields.slice(0, 25).map(cleanEmbedField),
+      timestamp: now.toISOString(),
+    }
+  }
+
   const titleName = officer ? `  ·  ${officerName(officer)}` : ''
   const title = `${meta.accent}  ${meta.label}${titleName}`
 
-  const description = event.type === 'sanction'
-    ? `> Folgender Beamter bekommt im Namen der ${roleMention(config.humanResourcesRoleId, '@Human-Resources')} eine Sanktion.${event.description ? `\n> ${truncate(event.description, 1800)}` : ''}`
-    : event.description
-      ? `> ${truncate(event.description, 2000)}`
-      : undefined
+  const description = event.description
+    ? `> ${truncate(event.description, 2000)}`
+    : undefined
 
   const fields: DiscordField[] = []
 

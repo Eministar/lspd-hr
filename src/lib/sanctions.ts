@@ -104,30 +104,21 @@ function sanctionOfficerName(sanction: SanctionWithRelations) {
   return `${officer.firstName} ${officer.lastName}`.trim()
 }
 
-function sanctionDiscordFields(sanction: SanctionWithRelations, note?: string): DiscordField[] {
-  const fields: DiscordField[] = [
-    { name: 'Penal Grade', value: penalGradeLabel(sanction.penalGrade), inline: true },
-    { name: 'Geldstrafe', value: formatFineAmount(sanction.fineAmount), inline: true },
-    { name: 'Status', value: sanctionStatusLabel(sanction.status), inline: true },
+function sanctionPenaltyText(sanction: SanctionWithRelations) {
+  const parts = [
+    penalGradeLabel(sanction.penalGrade),
+    `Geldstrafe: ${formatFineAmount(sanction.fineAmount)}`,
   ]
-
-  if (sanction.dueAt) fields.push({ name: 'Frist', value: formatDateTime(sanction.dueAt), inline: true })
-  if (sanction.paidAt) fields.push({ name: 'Bezahlt am', value: formatDateTime(sanction.paidAt), inline: true })
-  if (sanction.escalatedAt) fields.push({ name: 'Verdoppelt am', value: formatDateTime(sanction.escalatedAt), inline: true })
-  if (sanction.parentSanctionId) fields.push({ name: 'Folgesanktion', value: 'Automatisch aus nicht bezahlter Sanktion erstellt.', inline: false })
-  if (sanction.penalty) fields.push({ name: 'Weitere Strafe', value: sanction.penalty, inline: false })
-  fields.push({ name: 'Grund', value: sanction.reason, inline: false })
-  if (note) fields.push({ name: 'Hinweis', value: note, inline: false })
-
-  return fields
+  if (sanction.penalty) parts.push(sanction.penalty)
+  return parts.join('\n')
 }
 
-function statusDescription(sanction: SanctionWithRelations, override?: string) {
-  if (override) return override
-  if (sanction.status === 'PAID') return 'Sanktion wurde bezahlt.'
-  if (sanction.status === 'ESCALATED') return 'Sanktion wurde nicht bezahlt. Es wurde eine weitere Sanktion erstellt.'
-  if (sanction.dueAt) return `Zahlungsfrist bis ${formatDateTime(sanction.dueAt)}.`
-  return undefined
+function sanctionDiscordFields(sanction: SanctionWithRelations): DiscordField[] {
+  return [
+    { name: 'Warum', value: sanction.reason, inline: false },
+    { name: 'Strafe', value: sanctionPenaltyText(sanction), inline: false },
+    { name: 'Frist', value: sanction.dueAt ? formatDateTime(sanction.dueAt) : '—', inline: true },
+  ]
 }
 
 export async function syncSanctionDiscordMessage(
@@ -137,10 +128,10 @@ export async function syncSanctionDiscordMessage(
   const event = {
     type: 'sanction' as const,
     title: `Sanktion: ${sanctionOfficerName(sanction)}`,
-    description: statusDescription(sanction, options?.description),
+    description: options?.description,
     officer: officerSnapshot(sanction),
     actor: sanction.issuedBy ?? undefined,
-    fields: sanctionDiscordFields(sanction, options?.note),
+    fields: sanctionDiscordFields(sanction),
   }
 
   try {

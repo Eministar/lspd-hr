@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
+import { UnitBadges } from '@/components/officers/unit-badges'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -25,8 +26,6 @@ import {
   formatDateTime,
   getStatusLabel,
   getStatusDot,
-  getUnitLabel,
-  getUnitBadgeClass,
   getFlagLabel,
   getFlagColor,
 } from '@/lib/utils'
@@ -188,11 +187,6 @@ function formatDuration(ms: number) {
   const minutes = totalMinutes % 60
   if (hours <= 0) return `${minutes}m`
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`
-}
-
-function formatFineAmount(amount: number | null | undefined) {
-  if (amount === null || amount === undefined) return '—'
-  return `${new Intl.NumberFormat('de-DE').format(amount)} $`
 }
 
 function displayPenalGrade(value: string) {
@@ -678,27 +672,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
                 <InfoRow label="Units">
-                  {officerUnitKeys(officer).length > 0 ? (
-                    <span className="inline-flex flex-wrap gap-1.5">
-                      {officerUnitKeys(officer).map((unitKey) => {
-                        const unit = units?.find((u) => u.key === unitKey)
-                        return (
-                          <span
-                            key={unitKey}
-                            className={cn(
-                              'inline-flex items-center px-2 py-[3px] rounded-full text-[11.5px] font-medium border',
-                              unit ? 'bg-[#0f2340]/70' : getUnitBadgeClass(unitKey)
-                            )}
-                            style={unit ? { borderColor: `${unit.color}66`, color: unit.color } : undefined}
-                          >
-                            {unit?.name ?? getUnitLabel(unitKey)}
-                          </span>
-                        )
-                      })}
-                    </span>
-                  ) : (
-                    <span className="text-[13.5px] text-[#4a6585]">—</span>
-                  )}
+                  <UnitBadges officer={officer} units={units ?? undefined} emptyClassName="text-[13.5px]" />
                 </InfoRow>
                 <InfoRow label="Markierung">
                   {officer.flag ? (

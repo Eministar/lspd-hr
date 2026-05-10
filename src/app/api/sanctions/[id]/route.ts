@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth'
 import { createAuditLog } from '@/lib/audit'
 import { error, notFound, success, unauthorized } from '@/lib/api-response'
 import {
@@ -30,7 +30,7 @@ function sanctionSummary(sanction: NonNullable<Awaited<ReturnType<typeof getSanc
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage'])
+    const user = await requirePermission('sanctions:manage')
     const { id } = await params
     const body = await req.json()
     const action = cleanSanctionText(body.action).toUpperCase()
@@ -152,7 +152,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage'])
+    const user = await requirePermission('sanctions:manage')
     const { id } = await params
     const existing = await getSanctionById(id)
     if (!existing) return notFound('Sanktion')

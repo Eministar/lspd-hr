@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import {
@@ -17,7 +17,7 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['sanctions:manage'])
+    const user = await requirePermission('sanctions:manage')
     const body = await req.json()
 
     const officerId = cleanSanctionText(body.officerId)
