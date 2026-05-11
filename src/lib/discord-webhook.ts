@@ -67,19 +67,23 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
   if (!url) return
 
   const severity = event.severity ?? 'info'
-  const userFields = (event.fields ?? []).map(cleanField)
-  const metaFields: WebhookField[] = [
-    { name: 'Quelle', value: event.source ?? 'server', inline: true },
-    { name: 'Umgebung', value: process.env.NODE_ENV || 'unknown', inline: true },
-  ]
-  const fields: WebhookField[] = [...userFields, ...metaFields]
+  const now = new Date()
+  const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })
+
+  const descParts: string[] = []
+  if (event.description) {
+    descParts.push(event.description.split('\n').map(l => `> ${l}`).join('\n'))
+  }
+  descParts.push(`- **Quelle:** \`${event.source ?? 'server'}\`  ·  **Umgebung:** \`${process.env.NODE_ENV || 'unknown'}\``)
+  const description = truncate(descParts.join('\n\n'), MAX_DESCRIPTION)
+
+  const fields: WebhookField[] = (event.fields ?? []).map(cleanField)
 
   const errorText = stringifyError(event.error)
   if (errorText) {
     fields.push({ name: 'Fehlerdetails', value: `\`\`\`\n${truncate(errorText, MAX_FIELD_VALUE - 8)}\n\`\`\``, inline: false })
   }
 
-  const now = new Date()
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -90,11 +94,11 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
           {
             author: { name: SEVERITY_LABEL[severity] },
             title: truncate(event.title, 250),
-            description: event.description ? truncate(event.description, MAX_DESCRIPTION) : undefined,
+            description,
             color: COLORS[severity],
             fields: fields.slice(0, 25).map(cleanField),
             timestamp: now.toISOString(),
-            footer: { text: `LSPD HR Dashboard · System-Monitor · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
+            footer: { text: `LSPD HR Dashboard · System-Monitor · ${timeStr} Uhr` },
           },
         ],
       }),

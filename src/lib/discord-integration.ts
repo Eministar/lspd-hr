@@ -691,6 +691,7 @@ async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: Disc
     return {
       author: { name: `${orgName} · Personalmeldung` },
       title: `Neueinstellung · ${officerName(officer)}`,
+      description: `> Willkommen bei der ${orgName}, **${officerName(officer)}**!`,
       color,
       fields: [
         { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
@@ -739,10 +740,14 @@ async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: Disc
   fields.push({ name: 'Bearbeitet von', value: actorLabel, inline: true })
   fields.push({ name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true })
 
+  const descriptionText = event.description
+    ? event.description.split('\n').map(l => `> ${l}`).join('\n')
+    : undefined
+
   return {
     author: { name: `${orgName} · ${meta.section}` },
     title: `${meta.label}${titleName}`,
-    description: event.description ? truncate(event.description, 2000) : undefined,
+    description: descriptionText ? truncate(descriptionText, 2000) : undefined,
     color,
     fields: fields.slice(0, 25).map(cleanEmbedField),
     timestamp: now.toISOString(),
@@ -808,17 +813,16 @@ async function dutyStatusPayload() {
     fields.push({ name: 'Aktive Police-Spieler', value: '*Niemand ist aktuell als Police online.*', inline: false })
   } else {
     const lines = visible.map((row, index) => {
-      const num = String(index + 1).padStart(2, '00')
+      const num = String(index + 1).padStart(2, '0')
       const active = row.activePlaySession
       const player = row.currentPlayer
       const since = active?.startedAt ? discordTimestamp(active.startedAt, 'R') : '—'
       const current = formatDuration(active?.currentDurationMs ?? 0)
       const dn = bracketedServiceNumber(officerBadge(row), prefix)
-      const ping = player?.ping !== null && player?.ping !== undefined ? ` · ${player.ping}ms` : ''
+      const ping = player?.ping !== null && player?.ping !== undefined ? `  \`${player.ping}ms\`` : ''
       return [
         `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}  ·  **${current}**${ping}`,
-        ` \`${dn}\`  ·  ${mention(row.discordId)}`,
-        ` seit ${since}`,
+        `> \`${dn}\`  ·  ${mention(row.discordId)}  ·  seit ${since}`,
       ].join('\n')
     })
     const chunks = chunkLines(lines, 1024)
@@ -890,14 +894,14 @@ async function absenceStatusPayload() {
     fields.push({ name: 'Abmeldungen', value: '*Aktuell ist niemand abgemeldet.*', inline: false })
   } else {
     const lines = visible.map((notice, index) => {
-      const num = String(index + 1).padStart(2, '00')
+      const num = String(index + 1).padStart(2, '0')
       const officer = notice.officer
       const reason = truncate(notice.reason.replace(/\s+/g, ' '), 180)
       const dn = bracketedServiceNumber(officerBadge(officer), prefix)
       return [
         `\`${num}\`  **${officerName(officer)}**  ·  ${officer.rank.name}`,
-        ` \`${dn}\`  ·  ${mention(officer.discordId)}  ·  bis ${discordTimestamp(notice.endsAt, 'R')}`,
-        ` ${reason}`,
+        `> \`${dn}\`  ·  ${mention(officer.discordId)}  ·  bis ${discordTimestamp(notice.endsAt, 'R')}`,
+        `> *${reason}*`,
       ].join('\n')
     })
     chunkLines(lines, 1024).forEach((value, index) => {
