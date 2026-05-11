@@ -22,20 +22,21 @@ const COLORS: Record<WebhookSeverity, number> = {
   error: 0xef4444,
 }
 
-const SEVERITY_ICON: Record<WebhookSeverity, string> = {
-  info: 'ℹ️',
-  success: '✅',
-  warning: '⚠️',
-  error: '🛑',
+const SEVERITY_LABEL: Record<WebhookSeverity, string> = {
+  info: 'Information',
+  success: 'Erfolg',
+  warning: 'Warnung',
+  error: 'Fehler',
 }
 
-const COMPONENTS_V2_FLAG = 1 << 15
+const MAX_FIELD_VALUE = 1024
+const MAX_DESCRIPTION = 4096
 
 function webhookUrl() {
   return process.env.DISCORD_WEBHOOK_URL?.trim() || process.env.LSPD_DISCORD_WEBHOOK_URL?.trim() || ''
 }
 
-function truncate(value: string, max: number) {
+function truncate(value: string, max = MAX_FIELD_VALUE) {
   if (value.length <= max) return value
   return `${value.slice(0, max - 1)}…`
 }
@@ -53,16 +54,12 @@ function stringifyError(error: unknown) {
   }
 }
 
-function cv2Text(content: string) {
-  return { type: 10, content }
-}
-
-function cv2Section(content: string) {
-  return { type: 9, components: [cv2Text(content)] }
-}
-
-function cv2Separator(divider = true, spacing: 1 | 2 = 1) {
-  return { type: 14, divider, spacing }
+function cleanField(field: WebhookField): WebhookField {
+  return {
+    name: truncate(field.name, 250),
+    value: truncate(field.value || '—'),
+    inline: field.inline,
+  }
 }
 
 export async function sendDiscordWebhookEvent(event: WebhookEvent) {
@@ -70,48 +67,43 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
   if (!url) return
 
   const severity = event.severity ?? 'info'
-  const icon = SEVERITY_ICON[severity]
-  const accentColor = COLORS[severity]
-  const now = new Date()
-
-  const headerParts = [`## ${icon} ${truncate(event.title, 200)}`]
-  if (event.description) headerParts.push(truncate(event.description, 1500))
-
-  const fieldLines: string[] = []
-  for (const field of event.fields ?? []) {
-    fieldLines.push(`**${truncate(field.name, 150)}** · ${truncate(field.value || '—', 400)}`)
-  }
-  fieldLines.push(`**Quelle** · ${event.source ?? 'server'}`)
-  fieldLines.push(`**Umgebung** · ${process.env.NODE_ENV || 'unknown'}`)
-
-  const containerComponents: unknown[] = [
-    cv2Section(headerParts.join('\n')),
-    cv2Separator(),
-    cv2Section(fieldLines.join('\n')),
+  const userFields = (event.fields ?? []).map(cleanField)
+  const metaFields: WebhookField[] = [
+    { name: 'Quelle', value: event.source ?? 'server', inline: true },
+    { name: 'Umgebung', value: process.env.NODE_ENV || 'unknown', inline: true },
   ]
+  const fields: WebhookField[] = [...userFields, ...metaFields]
 
   const errorText = stringifyError(event.error)
   if (errorText) {
-    containerComponents.push(cv2Separator())
-    containerComponents.push(cv2Section(`**Fehlerdetails**\n\`\`\`\n${truncate(errorText, 900)}\n\`\`\``))
+    fields.push({ name: 'Fehlerdetails', value: `\`\`\`\n${truncate(errorText, MAX_FIELD_VALUE - 8)}\n\`\`\``, inline: false })
   }
 
-  containerComponents.push(cv2Separator(false))
-  containerComponents.push(cv2Section(
-    `-# LSPD HR Monitor · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr`,
-  ))
-
+  const now = new Date()
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         username: 'LSPD HR Monitor',
-        flags: COMPONENTS_V2_FLAG,
-        components: [{ type: 17, accent_color: accentColor, components: containerComponents }],
+        embeds: [
+          {
+            author: { name: SEVERITY_LABEL[severity] },
+            title: truncate(event.title, 250),
+            description: event.description ? truncate(event.description, MAX_DESCRIPTION) : undefined,
+            color: COLORS[severity],
+            fields: fields.slice(0, 25).map(cleanField),
+            timestamp: now.toISOString(),
+            footer: { text: `LSPD HR Dashboard · System-Monitor · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
+          },
+        ],
       }),
       signal: AbortSignal.timeout(5000),
     })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.error(`[DiscordWebhook] HTTP ${res.status}: ${text}`)
+    }
   } catch (e) {
     console.error('[DiscordWebhook] Senden fehlgeschlagen:', e)
   }
