@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+﻿import { prisma } from './prisma'
 import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
@@ -116,6 +116,30 @@ const EVENT_META = {
 } as const
 
 const ZWSP = '​'
+
+const COMPONENTS_V2_FLAG = 1 << 15 // MessageFlags.IsComponentsV2
+
+function cv2Text(content: string) {
+  return { type: 10, content }
+}
+
+function cv2Section(content: string, accessory?: unknown) {
+  const s: Record<string, unknown> = { type: 9, components: [cv2Text(content)] }
+  if (accessory !== undefined) s.accessory = accessory
+  return s
+}
+
+function cv2Separator(divider = true, spacing: 1 | 2 = 1) {
+  return { type: 14, divider, spacing }
+}
+
+function cv2Container(accentColor: number, components: unknown[]) {
+  return { type: 17, accent_color: accentColor, components }
+}
+
+function cv2Payload(components: unknown[]) {
+  return { flags: COMPONENTS_V2_FLAG, components }
+}
 
 let syncSchedulerStarted = false
 let absenceExpiryCheckerStarted = false
@@ -307,14 +331,6 @@ function unixSeconds(date: Date) {
 
 function discordTimestamp(date: Date, style: 'F' | 'f' | 'R' | 't' | 'D' = 'f') {
   return `<t:${unixSeconds(date)}:${style}>`
-}
-
-function cleanEmbedField(field: DiscordField): DiscordField {
-  return {
-    name: truncate(field.name || ZWSP, 256),
-    value: truncate(field.value || '—', 1024),
-    inline: field.inline,
-  }
 }
 
 function hexColorToDiscord(color: string | null | undefined, fallback: number) {
@@ -604,17 +620,17 @@ function bracketedServiceNumber(badgeNumber: string, prefix: string) {
   return `[${join}]`
 }
 
-async function postChannelEmbed(channelId: string, embed: Record<string, unknown>) {
+async function postChannelMessage(channelId: string, payload: Record<string, unknown>) {
   return discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ embeds: [embed] }),
+    body: JSON.stringify(payload),
   })
 }
 
-async function patchChannelEmbed(channelId: string, messageId: string, embed: Record<string, unknown>) {
+async function patchChannelMessage(channelId: string, messageId: string, payload: Record<string, unknown>) {
   await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ embeds: [embed] }),
+    body: JSON.stringify(payload),
   })
 }
 
@@ -671,102 +687,107 @@ function hrEventChannelId(config: DiscordConfig, type: keyof typeof EVENT_META) 
   return config.announcementsChannelId
 }
 
-async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: DiscordConfig) {
+async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: DiscordConfig) {
   const officer = event.officer
   const meta = EVENT_META[event.type]
   const now = new Date()
   const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
+  const accentColor = officer?.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color
+  const actorLabel = event.actor ? discordUserLabel(event.actor) : 'System'
+  const footerText = `-# ${orgName} HR · <t:${unixSeconds(now)}:f>`
 
   if (event.type === 'hire' && officer) {
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
-    const rankValue = rankRoleSnow
-      ? `<@&${rankRoleSnow}>`
-      : officer.rank?.name ?? '—'
+    const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
     const hireAt = officer.hireDate ?? now
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
 
-    const hireFields: DiscordField[] = [
-      { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
-      { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
-      { name: 'Rang', value: rankValue, inline: true },
-      { name: 'Eintrittsdatum', value: discordTimestamp(hireAt, 'D'), inline: true },
-      { name: 'Bearbeitet von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true },
-    ]
+    const infoText = [
+      `**Officer** · ${mention(officer.discordId) || `**${officerName(officer)}**`}`,
+      `**Dienstnummer** · \`${dn}\``,
+      `**Rang** · ${rankValue}`,
+      `**Eintrittsdatum** · ${discordTimestamp(hireAt, 'D')}`,
+    ].join('\n')
 
-    return {
-      author: { name: `${orgName} · ${meta.section}` },
-      title: `${meta.accent}  Neueinstellung  ·  ${officerName(officer)}`,
-      description: '> Wurde in den aktiven Dienst aufgenommen. Willkommen!',
-      color: officer.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color,
-      fields: hireFields.slice(0, 25).map(cleanEmbedField),
-      timestamp: now.toISOString(),
-      footer: { text: `${orgName} HR · automatisch verarbeitet · heute um ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
-    }
+    return cv2Payload([cv2Container(accentColor, [
+      cv2Section(`## Neueinstellung · ${officerName(officer)}\n${orgName} · Personalmeldung`),
+      cv2Separator(),
+      cv2Section(infoText),
+      cv2Separator(),
+      cv2Section(`**Bearbeitet von** · ${actorLabel}`),
+      cv2Separator(false),
+      cv2Section(footerText),
+    ])])
   }
 
   if (event.type === 'sanction') {
-    const fields: DiscordField[] = []
+    const parts: string[] = []
 
     if (officer) {
-      fields.push({ name: 'Wer', value: mention(officer.discordId), inline: false })
+      const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
+      parts.push(`**Officer** · ${mention(officer.discordId)}\n**Dienstnummer** · \`${dn}\``)
     }
 
     if (event.fields && event.fields.length > 0) {
-      for (const f of event.fields) fields.push(f)
+      parts.push(event.fields.map((f) => `**${truncate(f.name, 150)}**\n${truncate(f.value || '—', 800)}`).join('\n\n'))
     }
 
-    fields.push({ name: 'Ausgestellt von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true })
-
-    return {
-      author: { name: `${orgName} · ${meta.section}` },
-      title: truncate(`${meta.accent}  ${meta.label}`, 250),
-      color: meta.color,
-      fields: fields.slice(0, 25).map(cleanEmbedField),
-      timestamp: now.toISOString(),
+    const components: unknown[] = [
+      cv2Section(`## Sanktion · ${orgName}`),
+      cv2Separator(),
+    ]
+    if (parts.length > 0) {
+      components.push(cv2Section(parts.join('\n\n')))
+      components.push(cv2Separator())
     }
+    components.push(cv2Section(`**Ausgestellt von** · ${actorLabel}`))
+    components.push(cv2Separator(false))
+    components.push(cv2Section(footerText))
+
+    return cv2Payload([cv2Container(accentColor, components)])
   }
 
-  const titleName = officer ? `  ·  ${officerName(officer)}` : ''
-  const title = `${meta.accent}  ${meta.label}${titleName}`
+  // Default: promotion, training, units, termination, update
+  const titleName = officer ? ` · ${officerName(officer)}` : ''
+  const headerLines = [`## ${meta.label}${titleName}`, `${orgName} · ${meta.section}`]
+  if (event.description) headerLines.push(truncate(event.description, 400))
 
-  const description = event.description
-    ? `> ${truncate(event.description, 2000)}`
-    : undefined
-
-  const fields: DiscordField[] = []
-
+  const officerLines: string[] = []
   if (officer) {
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
-    const rankValue = rankRoleSnow
-      ? `<@&${rankRoleSnow}>`
-      : officer.rank?.name ?? '—'
-
-    fields.push(
-      { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
-      { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
-      { name: 'Rang', value: rankValue, inline: true },
-    )
+    const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
+    officerLines.push(`**Officer** · ${mention(officer.discordId) || `**${officerName(officer)}**`}`)
+    officerLines.push(`**Dienstnummer** · \`${dn}\``)
+    officerLines.push(`**Rang** · ${rankValue}`)
   }
 
+  const extraLines: string[] = []
   if (event.fields && event.fields.length > 0) {
-    for (const f of event.fields) fields.push(f)
+    for (const f of event.fields) {
+      extraLines.push(`**${truncate(f.name, 150)}**\n${truncate(f.value || '—', 800)}`)
+    }
   }
 
-  fields.push(
-    { name: 'Bearbeitet von', value: event.actor ? discordUserLabel(event.actor) : 'System', inline: true },
-    { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
-  )
+  const components: unknown[] = [cv2Section(headerLines.join('\n')), cv2Separator()]
 
-  return {
-    author: { name: `${orgName} · ${meta.section}` },
-    title: truncate(title, 250),
-    description,
-    color: officer?.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color,
-    fields: fields.slice(0, 25).map(cleanEmbedField),
-    timestamp: now.toISOString(),
-    footer: { text: `${orgName} HR · automatisch verarbeitet · heute um ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr` },
+  if (officerLines.length > 0) {
+    components.push(cv2Section(officerLines.join('\n')))
+    if (extraLines.length > 0) {
+      components.push(cv2Separator())
+      components.push(cv2Section(extraLines.join('\n\n')))
+    }
+    components.push(cv2Separator())
+  } else if (extraLines.length > 0) {
+    components.push(cv2Section(extraLines.join('\n\n')))
+    components.push(cv2Separator())
   }
+
+  components.push(cv2Section(`**Bearbeitet von** · ${actorLabel} · ${discordTimestamp(now, 'f')}`))
+  components.push(cv2Separator(false))
+  components.push(cv2Section(footerText))
+
+  return cv2Payload([cv2Container(accentColor, components)])
 }
 
 export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<DiscordHrEventMessage | null> {
@@ -774,8 +795,8 @@ export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<Di
   const channelId = hrEventChannelId(config, event.type)
   if (!channelId || !botToken()) return null
 
-  const embed = await buildDiscordHrEventEmbed(event, config)
-  const message = await postChannelEmbed(channelId, embed)
+  const payload = await buildDiscordHrEventPayload(event, config)
+  const message = await postChannelMessage(channelId, payload as Record<string, unknown>)
   return { channelId, messageId: message.id }
 }
 
@@ -786,8 +807,8 @@ export async function editDiscordHrEventMessage(
 ) {
   if (!channelId || !messageId || !botToken()) return
   const config = await getDiscordConfig()
-  const embed = await buildDiscordHrEventEmbed(event, config)
-  await patchChannelEmbed(channelId, messageId, embed)
+  const payload = await buildDiscordHrEventPayload(event, config)
+  await patchChannelMessage(channelId, messageId, payload as Record<string, unknown>)
 }
 
 function chunkLines(lines: string[], maxChars = 1024) {
@@ -818,61 +839,40 @@ async function dutyStatusPayload() {
   const visible = snapshot.activeRows.slice(0, DUTY_LIST_LIMIT)
   const overflow = Math.max(0, snapshot.activeRows.length - visible.length)
 
-  const fields: DiscordField[] = [
-    { name: 'Im Dienst', value: `**${snapshot.activeCount}**`, inline: true },
-    { name: 'Spielzeit Woche', value: `**${formatDuration(snapshot.totalWeekDurationMs)}**`, inline: true },
+  const headerText = [
+    `# Dienstzeiten`,
+    `**${snapshot.activeCount}** im Dienst · **${formatDuration(snapshot.totalWeekDurationMs)}** diese Woche`,
+  ].join('\n')
+
+  const listLines: string[] = visible.length === 0
+    ? ['-# Niemand ist aktuell als Police online.']
+    : visible.map((row, index) => {
+        const num = String(index + 1).padStart(2, '0')
+        const active = row.activePlaySession
+        const player = row.currentPlayer
+        const since = active?.startedAt ? discordTimestamp(active.startedAt, 'R') : '—'
+        const current = formatDuration(active?.currentDurationMs ?? 0)
+        const dn = bracketedServiceNumber(officerBadge(row), prefix)
+        const ping = player?.ping !== null && player?.ping !== undefined ? ` · ${player.ping}ms` : ''
+        return [
+          `\`${num}\` **${officerName(row)}** · ${row.rank.name} · **${current}**${ping}`,
+          `\`${dn}\` · ${mention(row.discordId)} · seit ${since}`,
+        ].join('\n')
+      })
+
+  if (overflow > 0) listLines.push(`-# … und ${overflow} weitere`)
+
+  const listChunks = chunkLines(listLines, 2000)
+  const containerComponents: unknown[] = [
+    cv2Section(headerText),
+    cv2Separator(),
+    ...listChunks.map((chunk) => cv2Section(chunk)),
+    cv2Separator(false),
+    cv2Section(`-# ${orgName} · Dienstzeiten`),
   ]
 
-  if (visible.length === 0) {
-    fields.push({
-      name: 'Aktive Police-Spieler',
-      value: '*Niemand ist aktuell als Police online.*',
-      inline: false,
-    })
-  } else {
-    const lines = visible.map((row, index) => {
-      const num = String(index + 1).padStart(2, '0')
-      const active = row.activePlaySession
-      const player = row.currentPlayer
-      const since = active?.startedAt ? discordTimestamp(active.startedAt, 'R') : '—'
-      const current = formatDuration(active?.currentDurationMs ?? 0)
-      const dn = bracketedServiceNumber(officerBadge(row), prefix)
-      const mentionStr = mention(row.discordId)
-      const ping = player?.ping !== null && player?.ping !== undefined ? ` · ${player.ping}ms` : ''
-      return [
-        `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}  ·  **${current}**${ping}`,
-        ` \`${dn}\`  ·  ${mentionStr}`,
-        ` ${player?.name ?? active?.playerName ?? 'Spieler'}  ·  seit ${since}`,
-      ].join('\n')
-    })
-
-    const chunks = chunkLines(lines, 1024)
-    chunks.forEach((value, i) => {
-      fields.push({
-        name: i === 0 ? 'Aktive Police-Spieler' : ZWSP,
-        value,
-        inline: false,
-      })
-    })
-
-    if (overflow > 0) {
-      fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
-    }
-  }
-
-  return {
-    embeds: [
-      {
-        author: { name: `${orgName} · Dienstzeiten` },
-        title: 'Dienstzeiten',
-        color: 0x3b82f6,
-        fields: fields.slice(0, 25).map(cleanEmbedField),
-      },
-    ],
-    components: [],
-  }
+  return cv2Payload([cv2Container(0x3b82f6, containerComponents)])
 }
-
 async function saveDutyStatusMessageId(messageId: string) {
   await prisma.systemSetting.upsert({
     where: { key: DISCORD_SETTING_KEYS.dutyStatusMessageId },
@@ -888,23 +888,14 @@ export async function syncDiscordDutyStatusMessage(options?: { forceCreate?: boo
 
   const payload = await dutyStatusPayload()
   if (config.dutyStatusMessageId && !options?.forceCreate) {
-    await discordFetch<void>(`/channels/${channelId}/messages/${config.dutyStatusMessageId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }).catch(async () => {
-      const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+    await patchChannelMessage(channelId, config.dutyStatusMessageId, payload as Record<string, unknown>).catch(async () => {
+      const message = await postChannelMessage(channelId, payload as Record<string, unknown>)
       await saveDutyStatusMessageId(message.id)
     })
     return
   }
 
-  const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  const message = await postChannelMessage(channelId, payload as Record<string, unknown>)
   await saveDutyStatusMessageId(message.id)
 }
 
@@ -920,62 +911,45 @@ async function absenceStatusPayload() {
   const visible = absences.slice(0, ABSENCE_LIST_LIMIT)
   const overflow = Math.max(0, absences.length - visible.length)
 
-  const fields: DiscordField[] = [
-    { name: 'Aktiv', value: `**${absences.length}**`, inline: true },
+  const headerText = [
+    `# Abmeldungen`,
+    `**${absences.length}** aktive Abmeldungen`,
+  ].join('\n')
+
+  const listLines: string[] = visible.length === 0
+    ? ['-# Aktuell ist niemand abgemeldet.']
+    : visible.map((notice, index) => {
+        const num = String(index + 1).padStart(2, '0')
+        const officer = notice.officer
+        const reason = truncate(notice.reason.replace(/\s+/g, ' '), 180)
+        const dn = bracketedServiceNumber(officerBadge(officer), prefix)
+        return [
+          `\`${num}\` **${officerName(officer)}** · ${officer.rank.name}`,
+          `\`${dn}\` · ${mention(officer.discordId)} · bis ${discordTimestamp(notice.endsAt, 'R')}`,
+          reason,
+        ].join('\n')
+      })
+
+  if (overflow > 0) listLines.push(`-# … und ${overflow} weitere`)
+
+  const listChunks = chunkLines(listLines, 2000)
+  const containerComponents: unknown[] = [
+    cv2Section(headerText),
+    cv2Separator(),
+    ...listChunks.map((chunk) => cv2Section(chunk)),
+    cv2Separator(false),
+    cv2Section(`-# ${orgName} · Abmeldungen`),
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 1, custom_id: 'lspd_absence_create', label: 'Abmelden' },
+        { type: 2, style: 4, custom_id: 'lspd_absence_cancel', label: 'Abmeldung beenden' },
+        { type: 2, style: 2, custom_id: 'lspd_absence_refresh', label: 'Aktualisieren' },
+      ],
+    },
   ]
 
-  if (visible.length === 0) {
-    fields.push({
-      name: 'Abmeldungen',
-      value: '*Aktuell ist niemand abgemeldet.*',
-      inline: false,
-    })
-  } else {
-    const lines = visible.map((notice, index) => {
-      const num = String(index + 1).padStart(2, '0')
-      const officer = notice.officer
-      const reason = truncate(notice.reason.replace(/\s+/g, ' '), 180)
-      const dn = bracketedServiceNumber(officerBadge(officer), prefix)
-      return [
-        `\`${num}\`  **${officerName(officer)}**  ·  ${officer.rank.name}`,
-        ` \`${dn}\`  ·  ${mention(officer.discordId)}  ·  bis ${discordTimestamp(notice.endsAt, 'R')}`,
-        ` ${reason}`,
-      ].join('\n')
-    })
-
-    chunkLines(lines, 1024).forEach((value, index) => {
-      fields.push({
-        name: index === 0 ? 'Abmeldungen' : ZWSP,
-        value,
-        inline: false,
-      })
-    })
-
-    if (overflow > 0) {
-      fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
-    }
-  }
-
-  return {
-    embeds: [
-      {
-        author: { name: `${orgName} · Abmeldungen` },
-        title: 'Abmeldungen',
-        color: 0x38bdf8,
-        fields: fields.slice(0, 25).map(cleanEmbedField),
-      },
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
-          { type: 2, style: 1, custom_id: 'lspd_absence_create', label: 'Abmelden' },
-          { type: 2, style: 4, custom_id: 'lspd_absence_cancel', label: 'Abmeldung beenden' },
-          { type: 2, style: 2, custom_id: 'lspd_absence_refresh', label: 'Aktualisieren', emoji: { name: '🔄' } },
-        ],
-      },
-    ],
-  }
+  return cv2Payload([cv2Container(0x38bdf8, containerComponents)])
 }
 
 async function saveAbsenceStatusMessageId(messageId: string) {
@@ -993,23 +967,14 @@ export async function syncDiscordAbsenceStatusMessage(options?: { forceCreate?: 
 
   const payload = await absenceStatusPayload()
   if (config.absenceStatusMessageId && !options?.forceCreate) {
-    await discordFetch<void>(`/channels/${channelId}/messages/${config.absenceStatusMessageId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }).catch(async () => {
-      const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+    await patchChannelMessage(channelId, config.absenceStatusMessageId, payload as Record<string, unknown>).catch(async () => {
+      const message = await postChannelMessage(channelId, payload as Record<string, unknown>)
       await saveAbsenceStatusMessageId(message.id)
     })
     return
   }
 
-  const message = await discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  const message = await postChannelMessage(channelId, payload as Record<string, unknown>)
   await saveAbsenceStatusMessageId(message.id)
 }
 
