@@ -41,6 +41,9 @@ export async function GET() {
     draftRankChangeLists,
     dutyTimes,
     activeAbsences,
+    overdueSanctions,
+    probationsEndingSoon,
+    upcomingEvents,
   ] = await Promise.all([
     prisma.officer.findMany({
       select: {
@@ -69,6 +72,36 @@ export async function GET() {
     prisma.rankChangeList.count({ where: { status: 'DRAFT' } }),
     canViewDutyTimes ? getDutyTimesSnapshot() : Promise.resolve(null),
     getActiveAbsenceNotices(),
+    prisma.sanction.count({
+      where: { status: 'OPEN', dueAt: { lt: new Date() } },
+    }),
+    prisma.probation.findMany({
+      where: {
+        status: 'ACTIVE',
+        endsAt: {
+          gte: new Date(),
+          lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+      include: {
+        officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, rank: true } },
+      },
+      orderBy: { endsAt: 'asc' },
+      take: 5,
+    }),
+    prisma.calendarEvent.findMany({
+      where: {
+        startsAt: {
+          gte: new Date(),
+          lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+      include: {
+        officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, rank: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+      take: 5,
+    }),
   ])
 
   const [recentActivity, pinnedNotes] = await Promise.all([
@@ -168,6 +201,39 @@ export async function GET() {
     }))
 
   const readinessRate = currentOfficers > 0 ? Math.round((activeOfficers / currentOfficers) * 100) : 0
+  const officersMissingTraining = currentOfficerList.filter((officer) => (
+    trainings.some((training) => !officer.trainings.some((item) => item.trainingId === training.id && item.completed))
+  )).length
+  const notifications = [
+    ...(overdueSanctions > 0 ? [{
+      id: 'overdue-sanctions',
+      severity: 'error',
+      title: `${overdueSanctions} Sanktion${overdueSanctions === 1 ? '' : 'en'} überfällig`,
+      description: 'Offene Sanktionen mit überschrittener Frist prüfen.',
+      href: '/officers',
+    }] : []),
+    ...(officersMissingTraining > 0 ? [{
+      id: 'missing-trainings',
+      severity: 'warning',
+      title: `${officersMissingTraining} Officer ohne vollständige Ausbildung`,
+      description: 'Mindestens eine Ausbildung ist noch offen.',
+      href: '/officers',
+    }] : []),
+    ...(probationsEndingSoon.length > 0 ? [{
+      id: 'probations-ending',
+      severity: 'warning',
+      title: `${probationsEndingSoon.length} Probezeit${probationsEndingSoon.length === 1 ? '' : 'en'} endet diese Woche`,
+      description: probationsEndingSoon.map((item) => `${item.officer.firstName} ${item.officer.lastName}`).join(', '),
+      href: '/probations',
+    }] : []),
+    ...(upcomingEvents.length > 0 ? [{
+      id: 'upcoming-events',
+      severity: 'info',
+      title: `${upcomingEvents.length} Termin${upcomingEvents.length === 1 ? '' : 'e'} in den nächsten 7 Tagen`,
+      description: upcomingEvents[0]?.title ?? 'Kalender prüfen.',
+      href: '/calendar',
+    }] : []),
+  ]
 
   return success({
     totalOfficers,
@@ -197,6 +263,19 @@ export async function GET() {
       reason: absence.reason,
       source: absence.source,
       officer: absence.officer,
+    })),
+    notifications,
+    probationsEndingSoon: probationsEndingSoon.map((probation) => ({
+      id: probation.id,
+      endsAt: probation.endsAt,
+      officer: probation.officer,
+    })),
+    upcomingEvents: upcomingEvents.map((event) => ({
+      id: event.id,
+      title: event.title,
+      type: event.type,
+      startsAt: event.startsAt,
+      officer: event.officer,
     })),
     recentWindowDays: RECENT_WINDOW_DAYS,
     rankDistribution: distribution,

@@ -51,6 +51,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         include: { author: { select: { displayName: true } } },
         orderBy: { createdAt: 'desc' },
       },
+      probation: {
+        include: {
+          createdBy: { select: { displayName: true } },
+          decidedBy: { select: { displayName: true } },
+        },
+      },
+      calendarEvents: {
+        where: { startsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        orderBy: { startsAt: 'desc' },
+        take: 10,
+      },
     },
   })
 

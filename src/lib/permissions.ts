@@ -1,5 +1,7 @@
 export const PERMISSIONS = [
   'dashboard:view',
+  'calendar:view',
+  'calendar:manage',
   'duty-times:view',
   'duty-times:manage',
   'officers:view',
@@ -8,6 +10,8 @@ export const PERMISSIONS = [
   'officers:delete',
   'terminations:view',
   'terminations:manage',
+  'probations:view',
+  'probations:manage',
   'sanctions:manage',
   'rank-changes:view',
   'rank-changes:manage',
@@ -18,6 +22,7 @@ export const PERMISSIONS = [
   'notes:view',
   'notes:manage',
   'logs:view',
+  'exports:view',
   'ranks:view',
   'ranks:manage',
   'trainings:view',
@@ -35,6 +40,8 @@ export type Permission = (typeof PERMISSIONS)[number]
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'dashboard:view': 'Dashboard ansehen',
+  'calendar:view': 'Kalender ansehen',
+  'calendar:manage': 'Kalender verwalten',
   'duty-times:view': 'Dienstzeiten ansehen',
   'duty-times:manage': 'Dienstzeiten verwalten',
   'officers:view': 'Officers ansehen',
@@ -43,6 +50,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'officers:delete': 'Officers löschen',
   'terminations:view': 'Kündigungen ansehen',
   'terminations:manage': 'Kündigungen verwalten',
+  'probations:view': 'Probezeiten ansehen',
+  'probations:manage': 'Probezeiten verwalten',
   'sanctions:manage': 'Sanktionen ausstellen',
   'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
   'rank-changes:manage': 'Beförderungen/Degradierungen',
@@ -53,6 +62,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'notes:view': 'Notizen ansehen',
   'notes:manage': 'Notizen verwalten',
   'logs:view': 'Protokoll ansehen',
+  'exports:view': 'Exporte verwenden',
   'ranks:view': 'Ränge ansehen',
   'ranks:manage': 'Ränge verwalten',
   'trainings:view': 'Ausbildungen ansehen',
@@ -69,11 +79,13 @@ const PERMISSION_SET = new Set<string>(PERMISSIONS)
 
 const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'dashboard:view': ['duty-times:view'],
+  'calendar:manage': ['calendar:view', 'officers:view'],
   'duty-times:manage': ['duty-times:view', 'officers:view'],
   'officers:write': ['officers:view', 'ranks:view', 'units:view', 'duty-times:manage'],
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
   'terminations:manage': ['terminations:view', 'officers:view'],
+  'probations:manage': ['probations:view', 'officers:view'],
   'sanctions:manage': ['officers:view'],
   // Backward-compatibility: managing rank changes should include ability to execute rank-change-lists
   'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],

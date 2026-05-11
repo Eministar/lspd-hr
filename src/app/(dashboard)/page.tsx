@@ -138,6 +138,13 @@ interface Stats {
   recentHires: OfficerPreview[]
   recentActivity: ActivityItem[]
   pinnedNotes: NotePreview[]
+  notifications: Array<{
+    id: string
+    severity: 'info' | 'warning' | 'error'
+    title: string
+    description: string
+    href: string
+  }>
 }
 
 type StatKey = 'activeOfficers' | 'awayOfficers' | 'inactiveOfficers' | 'totalOfficers' | 'recentPromotions' | 'recentTerminations'
@@ -218,6 +225,12 @@ function EmptyState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
       <p className="text-[12.5px] text-[#8ea4bd]">{text}</p>
     </div>
   )
+}
+
+function notificationClass(severity: 'info' | 'warning' | 'error') {
+  if (severity === 'error') return 'border-[#7f1d1d]/60 bg-[#2a1212]/60 text-[#fca5a5]'
+  if (severity === 'warning') return 'border-[#b45309]/55 bg-[#1d1608]/70 text-[#fbbf24]'
+  return 'border-[#234568]/70 bg-[#0a1a33]/70 text-[#93c5fd]'
 }
 
 function officerName(officer: { firstName: string; lastName: string }) {
@@ -427,6 +440,25 @@ export default function DashboardPage() {
           )
         })}
       </div>
+
+      {stats.notifications.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.06 }}
+          className={panelClass}
+        >
+          <SectionTitle icon={AlertTriangle} title="Benachrichtigungen" description="Interne Hinweise aus Fristen, Ausbildung, Probezeiten und Kalender" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+            {stats.notifications.map((item) => (
+              <Link key={item.id} href={item.href} className={cn('block rounded-[10px] border px-4 py-3 transition-colors hover:border-[#d4af37]/25', notificationClass(item.severity))}>
+                <p className="text-[13px] font-semibold">{item.title}</p>
+                <p className="mt-1 text-[12px] opacity-85">{item.description}</p>
+              </Link>
+            ))}
+          </div>
+        </motion.section>
+      )}
 
       <motion.section
         initial={{ opacity: 0, y: 8 }}

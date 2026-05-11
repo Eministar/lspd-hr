@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus, ChevronDown, ChevronUp, History, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -601,6 +601,12 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <Link href="/officers">
               <Button variant="ghost" size="sm"><ArrowLeft size={15} strokeWidth={1.75} /> Zurück</Button>
             </Link>
+            <Link href={`/officers/${id}/timeline`}>
+              <Button variant="secondary" size="sm"><History size={14} strokeWidth={1.75} /> Akte</Button>
+            </Link>
+            <a href={`/api/exports?type=officer&format=html&officerId=${id}`} target="_blank" rel="noreferrer">
+              <Button variant="secondary" size="sm"><Download size={14} strokeWidth={1.75} /> Export</Button>
+            </a>
             {!editing ? (
               canEditOfficer && (
                 <Button variant="secondary" size="sm" onClick={startEditing}><Edit size={14} strokeWidth={1.75} /> Bearbeiten</Button>
