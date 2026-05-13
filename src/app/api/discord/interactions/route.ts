@@ -673,6 +673,7 @@ async function performAbsence(
   const endsAt = parseAbsenceUntil(textOption(options, 'bis'), startsAt)
   const reason = textOption(options, 'grund')
   if (!endsAt) return 'Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.'
+  if (endsAt <= startsAt) return 'Das Ende muss nach dem Start liegen. Gib ein Datum oder eine Dauer an, die noch nicht abgelaufen ist.'
   if (!reason) return 'Ein Grund ist erforderlich.'
 
   const result = await createAbsenceNotice({
@@ -778,6 +779,7 @@ async function performAbsenceModal(interaction: DiscordInteraction) {
   const endsAt = parseAbsenceUntil(modalValue(interaction, 'bis'), startsAt)
   const reason = modalValue(interaction, 'grund')
   if (!endsAt) return 'Ende ist ungültig. Nutze z.B. 12.05.2026 20:00, 3 Tage oder 1 Woche.'
+  if (endsAt <= startsAt) return 'Das Ende muss in der Zukunft liegen. Gib ein Datum oder eine Dauer an, die noch nicht abgelaufen ist.'
   if (!reason) return 'Ein Grund ist erforderlich.'
 
   const result = await createAbsenceNotice({
