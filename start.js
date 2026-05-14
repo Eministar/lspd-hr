@@ -23,7 +23,17 @@ const discordBotToken =
   String(process.env.DISCORD_BOT_TOKEN || '').trim() ||
   String(process.env.LSPD_DISCORD_BOT_TOKEN || '').trim()
 const discordGatewayEnabled = String(process.env.DISCORD_BOT_GATEWAY_ENABLED || 'true').toLowerCase() !== 'false'
+const discordMemberJoinSyncEnabled = String(process.env.DISCORD_MEMBER_JOIN_SYNC_ENABLED || 'true').toLowerCase() !== 'false'
+const discordRoleSyncOnReady = String(process.env.DISCORD_ROLE_SYNC_ON_READY || 'true').toLowerCase() !== 'false'
 const discordPresenceText = String(process.env.DISCORD_BOT_STATUS || 'LSPD HR').trim() || 'LSPD HR'
+
+const discordSettingKeys = {
+  guildId: 'discord.guildId',
+  employeeRoleIds: 'discord.employeeRoleIds',
+  rankRoleMap: 'discord.rankRoleMap',
+  trainingRoleMap: 'discord.trainingRoleMap',
+  unitRoleMap: 'discord.unitRoleMap',
+}
 
 const webhookColors = {
   info: 0x3b82f6,
@@ -92,6 +102,285 @@ async function sendWebhookEvent(event) {
 
 function queueWebhookEvent(event) {
   void sendWebhookEvent(event)
+}
+
+let prismaClient = null
+let prismaCompat = null
+let discordApiQueue = Promise.resolve()
+
+function getPrismaClient() {
+  if (prismaCompat) return prismaCompat
+  const url = String(process.env.DATABASE_URL || '').trim()
+  if (!url) throw new Error('[Prisma] DATABASE_URL fehlt oder ist leer.')
+
+  const { PrismaClient } = require('./src/generated/prisma/client')
+  const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
+  const adapter = new PrismaMariaDb(url)
+  prismaClient = prismaClient || new PrismaClient({ adapter })
+  prismaCompat = new Proxy(prismaClient, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && !(prop in target)) {
+        const lower = prop.toLowerCase()
+        if (lower in target) return Reflect.get(target, lower, receiver)
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+  })
+  return prismaCompat
+}
+
+function prismaDelegate(client, ...names) {
+  for (const name of names) {
+    if (client[name]) return client[name]
+  }
+  throw new Error(`Prisma-Delegate nicht gefunden: ${names.join(' / ')}`)
+}
+
+function parseJson(value, fallback) {
+  if (!value) return fallback
+  try {
+    return JSON.parse(value) ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function cleanRoleIds(value) {
+  if (!Array.isArray(value)) return []
+  return Array.from(new Set(value.filter((item) => typeof item === 'string' && /^\d{17,22}$/.test(item))))
+}
+
+function cleanRoleMap(value) {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(value).filter(([key, roleId]) => (
+      typeof key === 'string' &&
+      key.trim().length > 0 &&
+      typeof roleId === 'string' &&
+      /^\d{17,22}$/.test(roleId)
+    )),
+  )
+}
+
+function snowflake(value) {
+  const id = String(value || '').trim()
+  return /^\d{17,22}$/.test(id) ? id : ''
+}
+
+function normalizeUnitKeys(value) {
+  if (!Array.isArray(value)) return []
+  return Array.from(new Set(value.filter((item) => (
+    typeof item === 'string' && item.trim().length > 0
+  )).map((item) => item.trim())))
+}
+
+function officerUnitKeys(officer) {
+  const units = normalizeUnitKeys(officer.units)
+  if (units.length > 0) return units
+  return officer.unit ? [officer.unit] : []
+}
+
+function desiredNickname(officer) {
+  const name = `${officer.firstName} ${officer.lastName}`.replace(/\s+/g, ' ').trim()
+  const nick = `[LSPD-${String(officer.badgeNumber || '').trim()}] ${name}`.replace(/\s+/g, ' ').trim()
+  return truncate(nick, 32)
+}
+
+async function getGatewayDiscordConfig() {
+  const prisma = getPrismaClient()
+  const systemSetting = prismaDelegate(prisma, 'systemSetting', 'systemsetting')
+  const rows = await systemSetting.findMany({
+    where: { key: { in: Object.values(discordSettingKeys) } },
+  })
+  const map = Object.fromEntries(rows.map((row) => [row.key, row.value]))
+
+  return {
+    guildId: map[discordSettingKeys.guildId] || String(process.env.DISCORD_GUILD_ID || process.env.LSPD_DISCORD_GUILD_ID || '').trim(),
+    employeeRoleIds: cleanRoleIds(parseJson(map[discordSettingKeys.employeeRoleIds], [])),
+    rankRoleMap: cleanRoleMap(parseJson(map[discordSettingKeys.rankRoleMap], {})),
+    trainingRoleMap: cleanRoleMap(parseJson(map[discordSettingKeys.trainingRoleMap], {})),
+    unitRoleMap: cleanRoleMap(parseJson(map[discordSettingKeys.unitRoleMap], {})),
+  }
+}
+
+function configuredRoleIds(config) {
+  return Array.from(new Set([
+    ...config.employeeRoleIds,
+    ...Object.values(config.rankRoleMap),
+    ...Object.values(config.trainingRoleMap),
+    ...Object.values(config.unitRoleMap),
+  ].filter(Boolean)))
+}
+
+function desiredRoleIds(officer, config) {
+  if (officer.status === 'TERMINATED') return []
+  return Array.from(new Set([
+    ...config.employeeRoleIds,
+    config.rankRoleMap[officer.rankId],
+    ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
+    ...(officer.trainings || [])
+      .filter((training) => training.completed)
+      .map((training) => config.trainingRoleMap[training.trainingId]),
+  ].filter(Boolean)))
+}
+
+function enqueueDiscordApi(fn) {
+  return new Promise((resolve, reject) => {
+    discordApiQueue = discordApiQueue.then(async () => {
+      try {
+        resolve(await fn())
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })
+}
+
+async function discordApiRaw(pathname, init = {}, attempt = 0) {
+  const res = await fetch(`https://discord.com/api/v10${pathname}`, {
+    ...init,
+    headers: {
+      authorization: `Bot ${discordBotToken}`,
+      'content-type': 'application/json',
+      ...init.headers,
+    },
+    signal: AbortSignal.timeout(15000),
+  })
+
+  if (res.status === 429 && attempt < 3) {
+    const body = await res.json().catch(() => ({ retry_after: 2 }))
+    const waitMs = Math.min((body.retry_after || 2) * 1000, 30000)
+    await new Promise((resolve) => setTimeout(resolve, waitMs + 250))
+    return discordApiRaw(pathname, init, attempt + 1)
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    const error = new Error(`Discord API ${res.status}: ${text || res.statusText}`)
+    error.status = res.status
+    throw error
+  }
+
+  if (res.status === 204) return undefined
+  return res.json()
+}
+
+function discordApi(pathname, init) {
+  return enqueueDiscordApi(() => discordApiRaw(pathname, init))
+}
+
+async function getDiscordMember(guildId, memberId) {
+  try {
+    return await discordApi(`/guilds/${guildId}/members/${memberId}`)
+  } catch (error) {
+    if (error?.status === 404) return null
+    throw error
+  }
+}
+
+async function syncGatewayOfficerMember(officer, config, member) {
+  const memberId = snowflake(officer.discordId)
+  if (!config.guildId || !memberId) return false
+
+  const guildMember = member || await getDiscordMember(config.guildId, memberId)
+  if (!guildMember) return false
+
+  const allManaged = configuredRoleIds(config)
+  const desired = desiredRoleIds(officer, config)
+  const currentRoles = new Set(guildMember.roles || [])
+  const desiredSet = new Set(desired)
+  const toAdd = desired.filter((roleId) => !currentRoles.has(roleId))
+  const toRemove = allManaged.filter((roleId) => currentRoles.has(roleId) && !desiredSet.has(roleId))
+
+  for (const roleId of toRemove) {
+    await discordApi(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' }).catch((error) => {
+      console.error('[DiscordGateway] Rolle entfernen fehlgeschlagen:', error)
+    })
+  }
+
+  for (const roleId of toAdd) {
+    await discordApi(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'PUT' }).catch((error) => {
+      console.error('[DiscordGateway] Rolle hinzufügen fehlgeschlagen:', error)
+    })
+  }
+
+  if (officer.status === 'TERMINATED') {
+    if (guildMember.nick !== null) {
+      await discordApi(`/guilds/${config.guildId}/members/${memberId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nick: null }),
+      }).catch((error) => {
+        console.error('[DiscordGateway] Nickname-Entfernung fehlgeschlagen:', error)
+      })
+    }
+    return true
+  }
+
+  const nick = desiredNickname(officer)
+  if (guildMember.nick !== nick) {
+    await discordApi(`/guilds/${config.guildId}/members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nick }),
+    }).catch((error) => {
+      console.error('[DiscordGateway] Nickname-Sync fehlgeschlagen:', error)
+    })
+  }
+
+  return true
+}
+
+async function syncGatewayMemberByDiscordId(discordId, eventGuildId, member) {
+  const memberId = snowflake(discordId)
+  if (!memberId) return { matched: false, synced: false }
+
+  const config = await getGatewayDiscordConfig()
+  if (!config.guildId || (eventGuildId && eventGuildId !== config.guildId)) {
+    return { matched: false, synced: false }
+  }
+
+  const prisma = getPrismaClient()
+  const officerDelegate = prismaDelegate(prisma, 'officer')
+  const officer = await officerDelegate.findUnique({
+    where: { discordId: memberId },
+    include: {
+      rank: true,
+      trainings: { include: { training: true } },
+    },
+  })
+  if (!officer) return { matched: false, synced: false }
+
+  const synced = await syncGatewayOfficerMember(officer, config, member)
+  return { matched: true, synced, officer }
+}
+
+async function syncAllGatewayOfficerRoles() {
+  const config = await getGatewayDiscordConfig()
+  if (!config.guildId) return { synced: 0, skipped: 0, failed: 0, total: 0 }
+
+  const prisma = getPrismaClient()
+  const officerDelegate = prismaDelegate(prisma, 'officer')
+  const officers = await officerDelegate.findMany({
+    where: { discordId: { not: null } },
+    include: {
+      rank: true,
+      trainings: { include: { training: true } },
+    },
+    orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
+  })
+
+  let synced = 0
+  let skipped = 0
+  let failed = 0
+  for (const officer of officers) {
+    try {
+      if (await syncGatewayOfficerMember(officer, config)) synced++
+      else skipped++
+    } catch (error) {
+      failed++
+      console.error(`[DiscordGateway] Rollensync fehlgeschlagen für Officer ${officer.badgeNumber}:`, error)
+    }
+  }
+  return { synced, skipped, failed, total: officers.length }
 }
 
 const staticContentTypes = {
@@ -200,6 +489,7 @@ function startDiscordBotGateway() {
   let reconnectTimer = null
   let sequence = null
   let closedByReconnect = false
+  let readyFullSyncStarted = false
 
   function clearHeartbeat() {
     if (heartbeatTimer) {
@@ -237,7 +527,7 @@ function startDiscordBotGateway() {
       op: 2,
       d: {
         token: discordBotToken,
-        intents: 1,
+        intents: discordMemberJoinSyncEnabled ? 3 : 1,
         properties: {
           os: process.platform,
           browser: 'lspd-hr-dashboard',
@@ -307,11 +597,71 @@ function startDiscordBotGateway() {
           severity: 'success',
           fields: [{ name: 'Status', value: discordPresenceText, inline: true }],
         })
+
+        if (discordMemberJoinSyncEnabled && discordRoleSyncOnReady && !readyFullSyncStarted) {
+          readyFullSyncStarted = true
+          void syncAllGatewayOfficerRoles()
+            .then((result) => {
+              console.log(`[DiscordGateway] Initialer Rollensync abgeschlossen: ${result.synced} synchronisiert, ${result.skipped} übersprungen, ${result.failed} fehlgeschlagen.`)
+              if (result.failed > 0) {
+                queueWebhookEvent({
+                  title: 'Discord-Rollensync teilweise fehlgeschlagen',
+                  description: 'Der initiale Sync nach Gateway-Start konnte nicht alle Officers synchronisieren.',
+                  severity: 'warning',
+                  fields: [
+                    { name: 'Synchronisiert', value: String(result.synced), inline: true },
+                    { name: 'Übersprungen', value: String(result.skipped), inline: true },
+                    { name: 'Fehlgeschlagen', value: String(result.failed), inline: true },
+                  ],
+                })
+              }
+            })
+            .catch((error) => {
+              console.error('[DiscordGateway] Initialer Rollensync fehlgeschlagen:', error)
+              queueWebhookEvent({
+                title: 'Discord-Rollensync fehlgeschlagen',
+                description: 'Der initiale Sync nach Gateway-Start konnte nicht abgeschlossen werden.',
+                severity: 'error',
+                error,
+              })
+            })
+        }
+      }
+
+      if (packet.t === 'GUILD_MEMBER_ADD' && discordMemberJoinSyncEnabled) {
+        const member = packet.d
+        const memberId = member?.user?.id
+        const guildId = member?.guild_id
+        if (!memberId) return
+
+        void syncGatewayMemberByDiscordId(memberId, guildId, member)
+          .then((result) => {
+            if (result.matched && result.synced) {
+              console.log(`[DiscordGateway] Rollen für beigetretenen Discord-User ${memberId} synchronisiert.`)
+            }
+          })
+          .catch((error) => {
+            console.error('[DiscordGateway] Rollensync bei Member-Join fehlgeschlagen:', error)
+            queueWebhookEvent({
+              title: 'Discord-Rollensync bei Beitritt fehlgeschlagen',
+              severity: 'error',
+              fields: [{ name: 'Discord-ID', value: memberId, inline: true }],
+              error,
+            })
+          })
       }
     })
 
     socket.addEventListener('close', (event) => {
       clearHeartbeat()
+      if (event.code === 4014) {
+        queueWebhookEvent({
+          title: 'Discord Bot Gateway abgelehnt',
+          description: 'Discord hat die Gateway-Verbindung wegen fehlender Intents abgelehnt. Für automatische Rollenvergabe beim Beitritt muss im Discord Developer Portal der Server Members Intent aktiviert sein.',
+          severity: 'error',
+        })
+        if (discordMemberJoinSyncEnabled) return
+      }
       if (!closedByReconnect) {
         scheduleReconnect(`Gateway geschlossen (${event.code || 'unbekannt'})`)
       }
