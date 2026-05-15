@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Clock3, Plus, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, Clock3, Copy, Eraser, Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, UserPlus, Users, Wand2, X } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { PageLoader } from '@/components/ui/loading'
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { Select } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/context/auth-context'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -80,6 +81,10 @@ interface BoardDraft {
   patrols: PatrolDraft[]
 }
 
+const ASSIGNMENT_PRESETS = ['Patrol', 'Verkehr', 'Training', 'Einsatzleitung', 'Bank', 'Academy']
+
+type OfficerFilter = 'all' | 'free' | 'assigned' | 'rookie'
+
 function officerName(officer: Pick<PatrolOfficer, 'firstName' | 'lastName'>) {
   return `${officer.firstName} ${officer.lastName}`
 }
@@ -141,7 +146,10 @@ export default function PatrolBoardPage() {
 
   const [selectedBoardId, setSelectedBoardId] = useState('')
   const [draft, setDraft] = useState<BoardDraft | null>(null)
+  const [dirty, setDirty] = useState(false)
   const [selectedOfficerId, setSelectedOfficerId] = useState('')
+  const [officerSearch, setOfficerSearch] = useState('')
+  const [officerFilter, setOfficerFilter] = useState<OfficerFilter>('all')
   const [createModal, setCreateModal] = useState(false)
   const [confirmModal, setConfirmModal] = useState(false)
   const [createForm, setCreateForm] = useState({ title: '', startsAt: emptyCreateDateTime() })
@@ -151,6 +159,8 @@ export default function PatrolBoardPage() {
     return data.boards.find((board) => board.id === selectedBoardId) ?? data.activeBoard
   }, [data, selectedBoardId])
 
+  const selectedBoardKey = selectedBoard ? `${selectedBoard.id}:${selectedBoard.updatedAt}` : ''
+
   useEffect(() => {
     if (!data?.activeBoard) return
     setSelectedBoardId((current) => current || data.activeBoard?.id || '')
@@ -159,11 +169,16 @@ export default function PatrolBoardPage() {
   useEffect(() => {
     if (!selectedBoard) {
       setDraft(null)
+      setDirty(false)
       return
     }
+
+    if (draft?.id === selectedBoard.id && dirty) return
+
     setDraft(toDraft(selectedBoard))
     setSelectedOfficerId('')
-  }, [selectedBoard])
+    setDirty(false)
+  }, [selectedBoard, selectedBoardKey, draft?.id, dirty])
 
   const assignedOfficerIds = useMemo(() => {
     const ids = new Set<string>()
@@ -171,14 +186,40 @@ export default function PatrolBoardPage() {
     return ids
   }, [draft])
 
+  const assignedPatrolByOfficerId = useMemo(() => {
+    const map = new Map<string, string>()
+    draft?.patrols.forEach((patrol) => patrol.members.forEach((officer) => map.set(officer.id, patrol.localId)))
+    return map
+  }, [draft])
+
   const activeOfficers = data?.activeDutyOfficers ?? []
   const selectedOfficer = activeOfficers.find((officer) => officer.id === selectedOfficerId) ?? null
   const unassignedActiveOfficers = activeOfficers.filter((officer) => !assignedOfficerIds.has(officer.id))
   const assignedActiveCount = activeOfficers.length - unassignedActiveOfficers.length
   const draftValidation = validateDraft(draft)
+  const patrolOptions = draft?.patrols.map((patrol) => ({
+    value: patrol.localId,
+    label: `${patrol.callSign || patrol.name} · ${patrol.name}`,
+  })) ?? []
+  const filteredActiveOfficers = activeOfficers.filter((officer) => {
+    const assigned = assignedOfficerIds.has(officer.id)
+    const query = officerSearch.trim().toLowerCase()
+    if (officerFilter === 'free' && assigned) return false
+    if (officerFilter === 'assigned' && !assigned) return false
+    if (officerFilter === 'rookie' && !officer.isRookie) return false
+    if (!query) return true
+    return [
+      officer.badgeNumber,
+      officer.firstName,
+      officer.lastName,
+      officer.rank.name,
+      officer.playerName ?? '',
+    ].some((value) => value.toLowerCase().includes(query))
+  })
 
   const updateDraft = (updater: (current: BoardDraft) => BoardDraft) => {
     setDraft((current) => current ? updater(current) : current)
+    setDirty(true)
   }
 
   const updatePatrol = (localId: string, patch: Partial<PatrolDraft>) => {
@@ -217,20 +258,27 @@ export default function PatrolBoardPage() {
 
   const addSelectedOfficer = (patrolId: string) => {
     if (!selectedOfficer) return
+    assignOfficerToPatrol(selectedOfficer, patrolId)
+    setSelectedOfficerId('')
+  }
+
+  const assignOfficerToPatrol = (officer: PatrolOfficer, patrolId: string) => {
     updateDraft((current) => ({
       ...current,
       patrols: current.patrols.map((patrol) => {
+        if (!patrolId) {
+          return { ...patrol, members: patrol.members.filter((member) => member.id !== officer.id) }
+        }
         if (patrol.localId !== patrolId) {
           return {
             ...patrol,
-            members: patrol.members.filter((member) => member.id !== selectedOfficer.id),
+            members: patrol.members.filter((member) => member.id !== officer.id),
           }
         }
-        if (patrol.members.some((member) => member.id === selectedOfficer.id) || patrol.members.length >= 3) return patrol
-        return { ...patrol, members: [...patrol.members, selectedOfficer] }
+        if (patrol.members.some((member) => member.id === officer.id) || patrol.members.length >= 3) return patrol
+        return { ...patrol, members: [...patrol.members, officer] }
       }),
     }))
-    setSelectedOfficerId('')
   }
 
   const removeMember = (patrolId: string, officerId: string) => {
@@ -242,6 +290,93 @@ export default function PatrolBoardPage() {
           : patrol
       )),
     }))
+  }
+
+  const duplicatePatrol = (localId: string) => {
+    updateDraft((current) => {
+      const source = current.patrols.find((patrol) => patrol.localId === localId)
+      if (!source) return current
+      const nextNumber = current.patrols.length + 1
+      return {
+        ...current,
+        patrols: [
+          ...current.patrols,
+          {
+            ...source,
+            localId: `local-${Date.now()}`,
+            name: `${source.name} Kopie`,
+            callSign: `S-${nextNumber}`,
+            members: [],
+          },
+        ],
+      }
+    })
+  }
+
+  const clearAssignments = () => {
+    updateDraft((current) => ({
+      ...current,
+      patrols: current.patrols.map((patrol) => ({ ...patrol, members: [] })),
+    }))
+    setSelectedOfficerId('')
+  }
+
+  const removeEmptyPatrols = () => {
+    updateDraft((current) => ({
+      ...current,
+      patrols: current.patrols.filter((patrol) => (
+        patrol.members.length > 0 || patrol.assignment.trim() || patrol.notes.trim()
+      )),
+    }))
+  }
+
+  const autoAssignUnassigned = () => {
+    if (!draft) return
+    updateDraft((current) => {
+      const alreadyAssigned = new Set(current.patrols.flatMap((patrol) => patrol.members.map((member) => member.id)))
+      const free = activeOfficers.filter((officer) => !alreadyAssigned.has(officer.id))
+      const rookies = free.filter((officer) => officer.isRookie)
+      const experienced = free.filter((officer) => !officer.isRookie)
+      const groups: PatrolOfficer[][] = []
+
+      while (rookies.length > 0 && experienced.length > 0) {
+        const group = [experienced.shift()!, rookies.shift()!]
+        if (experienced.length > rookies.length) group.push(experienced.shift()!)
+        groups.push(group)
+      }
+      while (experienced.length >= 2) {
+        groups.push(experienced.splice(0, Math.min(3, experienced.length)))
+      }
+      if (experienced.length > 0) groups.push(experienced.splice(0, 1))
+      while (rookies.length > 0) groups.push(rookies.splice(0, 1))
+
+      if (groups.length === 0) return current
+
+      const patrols = current.patrols.map((patrol) => ({ ...patrol, members: [...patrol.members] }))
+      for (const group of groups) {
+        const target = patrols.find((patrol) => patrol.members.length === 0)
+        if (target) {
+          target.members = group
+          continue
+        }
+        const nextNumber = patrols.length + 1
+        patrols.push({
+          localId: `local-auto-${Date.now()}-${nextNumber}`,
+          name: `Streife ${nextNumber}`,
+          callSign: `S-${nextNumber}`,
+          assignment: '',
+          notes: '',
+          members: group,
+        })
+      }
+
+      return { ...current, patrols }
+    })
+  }
+
+  const refreshFromServer = async () => {
+    setDirty(false)
+    await refetch()
   }
 
   const saveDraft = async (confirmRuleViolations = false) => {
@@ -279,7 +414,11 @@ export default function PatrolBoardPage() {
       })
       addToast({ type: 'success', title: 'Streifenliste gespeichert' })
       setConfirmModal(false)
-      if (updated) setSelectedBoardId(updated.id)
+      if (updated) {
+        setSelectedBoardId(updated.id)
+        setDraft(toDraft(updated))
+        setDirty(false)
+      }
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : 'Speichern fehlgeschlagen' })
@@ -303,7 +442,11 @@ export default function PatrolBoardPage() {
       addToast({ type: 'success', title: 'Streifenliste erstellt' })
       setCreateModal(false)
       setCreateForm({ title: '', startsAt: emptyCreateDateTime() })
-      if (created) setSelectedBoardId(created.id)
+      if (created) {
+        setSelectedBoardId(created.id)
+        setDraft(toDraft(created))
+        setDirty(false)
+      }
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : 'Erstellen fehlgeschlagen' })
@@ -333,7 +476,7 @@ export default function PatrolBoardPage() {
         description={draft ? `${draft.patrols.length} Streifen · ${assignedActiveCount}/${activeOfficers.length} im Dienst eingeteilt` : 'Aktive Einteilungen und Einsatznotizen'}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={refetch}>
+            <Button variant="secondary" size="sm" onClick={refreshFromServer}>
               <RefreshCw size={13} /> Aktualisieren
             </Button>
             {canManage && (
@@ -341,7 +484,7 @@ export default function PatrolBoardPage() {
                 <Button variant="secondary" size="sm" onClick={() => setCreateModal(true)}>
                   <Plus size={13} /> Neue Liste
                 </Button>
-                <Button size="sm" onClick={() => saveDraft()} loading={saving} disabled={!draft}>
+                <Button size="sm" onClick={() => saveDraft()} loading={saving} disabled={!draft || !dirty}>
                   <Save size={13} /> Speichern
                 </Button>
               </>
@@ -353,21 +496,29 @@ export default function PatrolBoardPage() {
       {data && data.boards.length > 0 && (
         <div className="glass-panel-elevated rounded-[14px] p-4">
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
-            <Select
-              label="Streifenliste"
-              value={selectedBoard?.id ?? ''}
-              onValueChange={setSelectedBoardId}
-              options={data.boards.map((board, index) => ({
-                value: board.id,
-                label: `${board.title}${index === 0 ? ' · Aktiv' : ''}`,
-              }))}
-            />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12.5px] font-medium text-[#9fb0c4]">Streifenliste</span>
+                {dirty && <Badge variant="warning">Ungespeichert</Badge>}
+              </div>
+              <Select
+                value={selectedBoard?.id ?? ''}
+                onValueChange={setSelectedBoardId}
+                options={data.boards.map((board, index) => ({
+                  value: board.id,
+                  label: `${board.title}${index === 0 ? ' · Aktiv' : ''}`,
+                }))}
+              />
+            </div>
             <Input
               label="Datum und Uhrzeit"
               type="datetime-local"
               value={draft ? toDateTimeLocal(draft.startsAt) : ''}
               disabled={!canManage || !draft}
-              onChange={(event) => updateDraft((current) => ({ ...current, startsAt: new Date(event.target.value).toISOString() }))}
+              onChange={(event) => {
+                if (!event.target.value) return
+                updateDraft((current) => ({ ...current, startsAt: new Date(event.target.value).toISOString() }))
+              }}
             />
             <Input
               label="Titel"
@@ -414,27 +565,63 @@ export default function PatrolBoardPage() {
                 </span>
               </div>
 
+              <div className="mb-3 space-y-2.5">
+                <div className="relative">
+                  <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+                  <input
+                    value={officerSearch}
+                    onChange={(event) => setOfficerSearch(event.target.value)}
+                    placeholder="Suchen"
+                    className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33]/60 pl-8 pr-3 text-[13px] text-[#edf4fb] placeholder:text-[#4a6585] focus:border-[#d4af37] focus:outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {([
+                    ['all', 'Alle'],
+                    ['free', 'Frei'],
+                    ['assigned', 'Drin'],
+                    ['rookie', 'Rookie'],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setOfficerFilter(value)}
+                      className={cn(
+                        'h-[28px] rounded-[7px] text-[11.5px] font-medium transition-colors',
+                        officerFilter === value
+                          ? 'bg-[#d4af37] text-[#071b33]'
+                          : 'bg-[#0a1a33]/60 text-[#8ea4bd] hover:bg-[#102542] hover:text-white',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {activeOfficers.length > 0 ? (
                 <div className="space-y-2">
-                  {activeOfficers.map((officer) => {
+                  {filteredActiveOfficers.map((officer) => {
                     const assigned = assignedOfficerIds.has(officer.id)
                     const selected = selectedOfficerId === officer.id
                     return (
-                      <button
+                      <div
                         key={officer.id}
-                        type="button"
-                        disabled={!canManage}
-                        onClick={() => setSelectedOfficerId(selected ? '' : officer.id)}
                         className={cn(
-                          'w-full rounded-[10px] border px-3 py-2.5 text-left transition-colors',
+                          'rounded-[10px] border px-3 py-2.5 transition-colors',
                           selected
                             ? 'border-[#d4af37]/70 bg-[#1d2b22]/80'
                             : assigned
                               ? 'border-[#1f3d5f]/45 bg-[#071a31]/45 opacity-65'
-                              : 'border-[#1e3a5c]/55 bg-[#0a1e38]/70 hover:border-[#d4af37]/30',
+                              : 'border-[#1e3a5c]/55 bg-[#0a1e38]/70',
                         )}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <button
+                          type="button"
+                          disabled={!canManage}
+                          onClick={() => setSelectedOfficerId(selected ? '' : officer.id)}
+                          className="flex w-full items-start justify-between gap-2 text-left"
+                        >
                           <div className="min-w-0">
                             <p className="truncate text-[13px] font-medium text-white">{officerLabel(officer)}</p>
                             <p className="mt-0.5 truncate text-[11.5px] text-[#8ea4bd]">
@@ -442,10 +629,25 @@ export default function PatrolBoardPage() {
                             </p>
                           </div>
                           {officer.isRookie && <span className="rounded-full bg-[#2a2f3a] px-2 py-0.5 text-[10.5px] text-[#d7dde6]">Rookie</span>}
-                        </div>
-                      </button>
+                        </button>
+                        {canManage && (
+                          <div className="mt-2">
+                            <Select
+                              size="sm"
+                              value={assignedPatrolByOfficerId.get(officer.id) ?? ''}
+                              onValueChange={(value) => assignOfficerToPatrol(officer, value)}
+                              options={[{ value: '', label: 'Frei' }, ...patrolOptions]}
+                            />
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
+                  {filteredActiveOfficers.length === 0 && (
+                    <p className="rounded-[10px] border border-[#1e3a5c]/40 bg-[#0a1e38]/50 px-4 py-8 text-center text-[13px] text-[#8ea4bd]">
+                      Keine Treffer
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-[10px] border border-[#1e3a5c]/40 bg-[#0a1e38]/50 px-4 py-10 text-center">
@@ -468,9 +670,20 @@ export default function PatrolBoardPage() {
                   )}
                 </div>
                 {canManage && (
-                  <Button variant="secondary" size="sm" onClick={addPatrol}>
-                    <Plus size={13} /> Streife
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" size="sm" onClick={autoAssignUnassigned} disabled={unassignedActiveOfficers.length === 0}>
+                      <Wand2 size={13} /> Auto
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={clearAssignments} disabled={assignedOfficerIds.size === 0}>
+                      <Eraser size={13} /> Abräumen
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={removeEmptyPatrols}>
+                      <Trash2 size={13} /> Leere weg
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={addPatrol}>
+                      <Plus size={13} /> Streife
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -506,14 +719,24 @@ export default function PatrolBoardPage() {
                           />
                         </div>
                         {canManage && (
-                          <button
-                            type="button"
-                            onClick={() => removePatrol(patrol.localId)}
-                            className="mt-1 rounded-[8px] p-1.5 text-[#6b8299] transition-colors hover:bg-[#1c1111] hover:text-[#f87171]"
-                            title="Streife löschen"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <div className="mt-1 flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => duplicatePatrol(patrol.localId)}
+                              className="rounded-[8px] p-1.5 text-[#6b8299] transition-colors hover:bg-[#102542] hover:text-white"
+                              title="Streife kopieren"
+                            >
+                              <Copy size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removePatrol(patrol.localId)}
+                              className="rounded-[8px] p-1.5 text-[#6b8299] transition-colors hover:bg-[#1c1111] hover:text-[#f87171]"
+                              title="Streife löschen"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -525,6 +748,25 @@ export default function PatrolBoardPage() {
                           placeholder="z. B. Patrol, Bank, Einsatzleitung"
                           onChange={(event) => updatePatrol(patrol.localId, { assignment: event.target.value })}
                         />
+                        {canManage && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {ASSIGNMENT_PRESETS.map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => updatePatrol(patrol.localId, { assignment: preset })}
+                                className={cn(
+                                  'rounded-[7px] border px-2.5 py-1 text-[11.5px] transition-colors',
+                                  patrol.assignment === preset
+                                    ? 'border-[#d4af37]/50 bg-[#2a2412] text-[#e8c979]'
+                                    : 'border-[#1e3a5c]/50 bg-[#061426]/45 text-[#8ea4bd] hover:border-[#d4af37]/25 hover:text-white',
+                                )}
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <Textarea
                           label="Notizen"
                           value={patrol.notes}
