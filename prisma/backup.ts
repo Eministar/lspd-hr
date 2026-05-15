@@ -29,6 +29,9 @@ type SnapshotData = {
   taskLists: unknown[]
   tasks: unknown[]
   taskAssignments: unknown[]
+  patrolBoards: unknown[]
+  patrolUnits: unknown[]
+  patrolAssignments: unknown[]
   badgeBlacklists: unknown[]
 }
 
@@ -68,6 +71,9 @@ const TABLES: { key: SnapshotKey; delegateNames: readonly string[] }[] = [
   { key: 'taskLists', delegateNames: ['taskList', 'tasklist'] },
   { key: 'tasks', delegateNames: ['task'] },
   { key: 'taskAssignments', delegateNames: ['taskAssignment', 'taskassignment'] },
+  { key: 'patrolBoards', delegateNames: ['patrolBoard', 'patrolboard'] },
+  { key: 'patrolUnits', delegateNames: ['patrolUnit', 'patrolunit'] },
+  { key: 'patrolAssignments', delegateNames: ['patrolAssignment', 'patrolassignment'] },
   { key: 'badgeBlacklists', delegateNames: ['badgeBlacklist', 'badgeblacklist'] },
 ]
 

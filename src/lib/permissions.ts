@@ -4,6 +4,8 @@ export const PERMISSIONS = [
   'calendar:manage',
   'duty-times:view',
   'duty-times:manage',
+  'patrol-board:view',
+  'patrol-board:manage',
   'officers:view',
   'officers:write',
   'officer-trainings:manage',
@@ -44,6 +46,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'calendar:manage': 'Kalender verwalten',
   'duty-times:view': 'Dienstzeiten ansehen',
   'duty-times:manage': 'Dienstzeiten verwalten',
+  'patrol-board:view': 'Streifenboard ansehen',
+  'patrol-board:manage': 'Streifenboard verwalten',
   'officers:view': 'Officers ansehen',
   'officers:write': 'Officers bearbeiten',
   'officer-trainings:manage': 'Officer-Ausbildungen setzen',
@@ -81,6 +85,8 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'dashboard:view': ['duty-times:view'],
   'calendar:manage': ['calendar:view', 'officers:view'],
   'duty-times:manage': ['duty-times:view', 'officers:view'],
+  'patrol-board:view': ['officers:view', 'duty-times:view'],
+  'patrol-board:manage': ['patrol-board:view', 'officers:view', 'duty-times:view'],
   'officers:write': ['officers:view', 'ranks:view', 'units:view', 'duty-times:manage'],
   'officer-trainings:manage': ['officers:view', 'trainings:view'],
   'officers:delete': ['officers:view'],
@@ -97,7 +103,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'units:manage': ['units:view'],
   'users:manage': ['groups:manage'],
   'groups:manage': ['users:manage'],
-  'settings:manage': ['dashboard:view', 'duty-times:manage'],
+  'settings:manage': ['dashboard:view', 'duty-times:manage', 'patrol-board:manage'],
 }
 
 // Filter to known permissions WITHOUT expanding implied permissions.

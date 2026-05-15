@@ -105,6 +105,7 @@ model User {
   calendarEventsCreated CalendarEvent[] @relation("CalendarEventCreator")
   probationsCreated  Probation[]     @relation("ProbationCreator")
   probationsDecided  Probation[]     @relation("ProbationDecider")
+  patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
 }
 
 model Unit {
@@ -178,6 +179,7 @@ model Officer {
   absenceNotices  AbsenceNotice[]
   probation        Probation?
   calendarEvents   CalendarEvent[] @relation("CalendarEventOfficer")
+  patrolAssignments PatrolAssignment[] @relation("PatrolAssigned")
 }
 
 model CalendarEvent {
@@ -473,6 +475,50 @@ model TaskAssignment {
   assignedAt DateTime @default(now())
 
   @@unique([taskId, officerId])
+  @@index([officerId])
+}
+
+model PatrolBoard {
+  id          String   @id @default(cuid())
+  title       String
+  startsAt    DateTime
+  createdById String?
+  createdBy   User?    @relation("PatrolBoardCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patrols     PatrolUnit[]
+
+  @@index([startsAt])
+}
+
+model PatrolUnit {
+  id         String   @id @default(cuid())
+  boardId    String
+  board      PatrolBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name       String
+  callSign   String?
+  assignment String?  @db.Text
+  notes      String?  @db.Text
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members    PatrolAssignment[]
+
+  @@index([boardId, sortOrder])
+}
+
+model PatrolAssignment {
+  id         String   @id @default(cuid())
+  patrolId   String
+  patrol     PatrolUnit @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  officerId  String
+  officer    Officer @relation("PatrolAssigned", fields: [officerId], references: [id], onDelete: Cascade)
+  sortOrder  Int      @default(0)
+  assignedAt DateTime @default(now())
+
+  @@unique([patrolId, officerId])
   @@index([officerId])
 }
 
