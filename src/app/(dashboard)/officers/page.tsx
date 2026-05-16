@@ -493,9 +493,12 @@ export default function OfficersPage() {
 
   const groupedByRank = useMemo(() => {
     const groups: Map<string, { rank: Rank; officers: Officer[] }> = new Map()
-    for (const rank of ranks ?? []) {
-      if (rankFilter && rank.id !== rankFilter) continue
-      groups.set(rank.id, { rank, officers: [] })
+    const showEmptyRanks = !search.trim() && !statusFilter && !unitFilter && !flagFilter
+    if (showEmptyRanks) {
+      for (const rank of ranks ?? []) {
+        if (rankFilter && rank.id !== rankFilter) continue
+        groups.set(rank.id, { rank, officers: [] })
+      }
     }
     for (const officer of filteredOfficers) {
       const key = officer.rankId
@@ -511,7 +514,7 @@ export default function OfficersPage() {
       group.officers.sort((a, b) => compareBadgeNumbers(a.badgeNumber, b.badgeNumber))
     }
     return result
-  }, [filteredOfficers, ranks, rankFilter])
+  }, [filteredOfficers, ranks, rankFilter, search, statusFilter, unitFilter, flagFilter])
 
   const allTrainings = useMemo(() => {
     if (!officers || officers.length === 0) return []
