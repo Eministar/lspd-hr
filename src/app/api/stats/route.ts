@@ -4,6 +4,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { hasPermission } from '@/lib/permissions'
 import { getDutyTimesSnapshot } from '@/lib/duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from '@/lib/absence-status'
+import { eligibleTrainingsForRank, isTrainingAvailableForRank } from '@/lib/officer-trainings'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -61,7 +62,10 @@ export async function GET() {
       },
     }),
     prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.training.findMany({ orderBy: { sortOrder: 'asc' } }),
+    prisma.training.findMany({
+      include: { minRank: true },
+      orderBy: { sortOrder: 'asc' },
+    }),
     prisma.promotionLog.count(),
     prisma.promotionLog.count({
       where: { createdAt: { gte: recentSince } },
@@ -148,10 +152,17 @@ export async function GET() {
     count: officers.filter((officer) => officer.status === status).length,
   }))
 
-  const trainingIds = new Set(trainings.map((training) => training.id))
-  const totalTrainingAssignments = currentOfficers * trainings.length
+  const eligibleTrainingsByOfficerId = new Map(
+    currentOfficerList.map((officer) => [officer.id, eligibleTrainingsForRank(trainings, officer.rank)]),
+  )
+  const totalTrainingAssignments = currentOfficerList.reduce((total, officer) => (
+    total + (eligibleTrainingsByOfficerId.get(officer.id)?.length ?? 0)
+  ), 0)
   const completedTrainingAssignments = currentOfficerList.reduce((total, officer) => (
-    total + officer.trainings.filter((training) => training.completed && trainingIds.has(training.trainingId)).length
+    total + officer.trainings.filter((training) => (
+      training.completed &&
+      (eligibleTrainingsByOfficerId.get(officer.id) ?? []).some((eligible) => eligible.id === training.trainingId)
+    )).length
   ), 0)
   const trainingCompletionRate = totalTrainingAssignments > 0
     ? Math.round((completedTrainingAssignments / totalTrainingAssignments) * 100)
@@ -159,17 +170,19 @@ export async function GET() {
 
   const trainingBreakdown = trainings.map((training) => {
     const completed = currentOfficerList.filter((officer) => (
+      isTrainingAvailableForRank(training, officer.rank) &&
       officer.trainings.some((officerTraining) => (
         officerTraining.trainingId === training.id && officerTraining.completed
       ))
     )).length
+    const total = currentOfficerList.filter((officer) => isTrainingAvailableForRank(training, officer.rank)).length
 
     return {
       id: training.id,
       label: training.label,
       completed,
-      total: currentOfficers,
-      percentage: currentOfficers > 0 ? Math.round((completed / currentOfficers) * 100) : 0,
+      total,
+      percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
     }
   })
 
@@ -202,7 +215,9 @@ export async function GET() {
 
   const readinessRate = currentOfficers > 0 ? Math.round((activeOfficers / currentOfficers) * 100) : 0
   const officersMissingTraining = currentOfficerList.filter((officer) => (
-    trainings.some((training) => !officer.trainings.some((item) => item.trainingId === training.id && item.completed))
+    (eligibleTrainingsByOfficerId.get(officer.id) ?? []).some((training) => (
+      !officer.trainings.some((item) => item.trainingId === training.id && item.completed)
+    ))
   )).length
   const notifications = [
     ...(overdueSanctions > 0 ? [{

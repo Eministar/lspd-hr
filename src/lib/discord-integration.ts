@@ -4,6 +4,7 @@ import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix, getOrgName } from './settings-helpers'
 import { queueDiscordWebhookEvent } from './discord-webhook'
+import { isTrainingAvailableForRank } from './officer-trainings'
 
 type DiscordRole = {
   id: string
@@ -58,8 +59,12 @@ type OfficerForDiscord = {
   units?: unknown
   unit?: string | null
   rankId: string
-  rank?: { name: string; color?: string | null } | null
-  trainings?: { trainingId: string; completed: boolean; training?: { label: string } | null }[]
+  rank?: { name: string; sortOrder: number; color?: string | null } | null
+  trainings?: {
+    trainingId: string
+    completed: boolean
+    training?: { id: string; label: string; sortOrder: number; minRank?: { sortOrder: number } | null } | null
+  }[]
 }
 
 type UserForDiscord = {
@@ -454,7 +459,7 @@ async function getOfficerForDiscord(officerId: string) {
     where: { id: officerId },
     include: {
       rank: true,
-      trainings: { include: { training: true } },
+      trainings: { include: { training: { include: { minRank: true } } } },
     },
   })
 }
@@ -476,7 +481,10 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
     config.rankRoleMap[officer.rankId],
     ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
     ...(officer.trainings ?? [])
-      .filter((training) => training.completed)
+      .filter((training) => (
+        training.completed &&
+        (!officer.rank || !training.training || isTrainingAvailableForRank(training.training, officer.rank))
+      ))
       .map((training) => config.trainingRoleMap[training.trainingId]),
   ].filter((roleId): roleId is string => !!roleId)))
 }
@@ -561,7 +569,7 @@ export async function syncAllOfficerDiscordRoles() {
   const officers = await prisma.officer.findMany({
     include: {
       rank: true,
-      trainings: { include: { training: true } },
+      trainings: { include: { training: { include: { minRank: true } } } },
     },
     orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
   })

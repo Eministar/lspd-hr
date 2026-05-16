@@ -99,7 +99,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'tasks:manage': ['tasks:view', 'officers:view'],
   'notes:manage': ['notes:view', 'officers:view'],
   'ranks:manage': ['ranks:view'],
-  'trainings:manage': ['trainings:view'],
+  'trainings:manage': ['trainings:view', 'ranks:view'],
   'units:manage': ['units:view'],
   'users:manage': ['groups:manage'],
   'groups:manage': ['users:manage'],

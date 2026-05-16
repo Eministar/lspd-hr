@@ -14,6 +14,7 @@ import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
 import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
+import { withEligibleOfficerTrainings } from '@/lib/officer-trainings'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,49 +31,56 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     runSanctionDeadlineAutomation(),
   ])
 
-  const officer = await prisma.officer.findUnique({
-    where: { id },
-    include: {
-      rank: true,
-      trainings: { include: { training: true } },
-      promotionLogs: {
-        include: { oldRank: true, newRank: true, performedBy: { select: { displayName: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-      terminations: {
-        include: { terminatedBy: { select: { displayName: true } } },
-        orderBy: { terminatedAt: 'desc' },
-      },
-      sanctions: {
-        include: { issuedBy: { select: { displayName: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-      officerNotes: {
-        include: { author: { select: { displayName: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-      probation: {
-        include: {
-          createdBy: { select: { displayName: true } },
-          decidedBy: { select: { displayName: true } },
+  const [officer, trainings] = await Promise.all([
+    prisma.officer.findUnique({
+      where: { id },
+      include: {
+        rank: true,
+        trainings: { include: { training: { include: { minRank: true } } } },
+        promotionLogs: {
+          include: { oldRank: true, newRank: true, performedBy: { select: { displayName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        terminations: {
+          include: { terminatedBy: { select: { displayName: true } } },
+          orderBy: { terminatedAt: 'desc' },
+        },
+        sanctions: {
+          include: { issuedBy: { select: { displayName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        officerNotes: {
+          include: { author: { select: { displayName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        probation: {
+          include: {
+            createdBy: { select: { displayName: true } },
+            decidedBy: { select: { displayName: true } },
+          },
+        },
+        calendarEvents: {
+          where: { startsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+          orderBy: { startsAt: 'desc' },
+          take: 10,
         },
       },
-      calendarEvents: {
-        where: { startsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-        orderBy: { startsAt: 'desc' },
-        take: 10,
-      },
-    },
-  })
+    }),
+    prisma.training.findMany({
+      include: { minRank: true },
+      orderBy: { sortOrder: 'asc' },
+    }),
+  ])
 
   if (!officer) return notFound('Officer')
+  const officerWithEligibleTrainings = withEligibleOfficerTrainings(officer, trainings)
   await syncOfficerPlayerPlaytime(id)
   const [dutyTime, playtime, absences] = await Promise.all([
     getOfficerDutyTime(id, { sync: false }),
     getOfficerPlaytimeReport(id, { sync: false }),
     getOfficerAbsenceReport(id),
   ])
-  return success({ ...officer, dutyTime, playtime, absences })
+  return success({ ...officerWithEligibleTrainings, dutyTime, playtime, absences })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

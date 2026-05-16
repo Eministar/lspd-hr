@@ -6,6 +6,7 @@ import { getDutyTimesSnapshot, formatDuration } from '@/lib/duty-times'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import { formatFineAmount, penalGradeLabel } from '@/lib/sanction-catalog'
+import { withEligibleOfficerTrainings } from '@/lib/officer-trainings'
 
 function csvEscape(value: unknown) {
   const text = value === null || value === undefined ? '' : String(value)
@@ -158,18 +159,25 @@ export async function GET(req: NextRequest) {
 
   if (type === 'officer') {
     const officerId = req.nextUrl.searchParams.get('officerId') ?? ''
-    const officer = await prisma.officer.findUnique({
-      where: { id: officerId },
-      include: {
-        rank: true,
-        trainings: { include: { training: true } },
-        sanctions: true,
-        promotionLogs: { include: { oldRank: true, newRank: true } },
-        officerNotes: true,
-        probation: true,
-      },
-    })
+    const [officer, trainings] = await Promise.all([
+      prisma.officer.findUnique({
+        where: { id: officerId },
+        include: {
+          rank: true,
+          trainings: { include: { training: { include: { minRank: true } } } },
+          sanctions: true,
+          promotionLogs: { include: { oldRank: true, newRank: true } },
+          officerNotes: true,
+          probation: true,
+        },
+      }),
+      prisma.training.findMany({
+        include: { minRank: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+    ])
     if (!officer) return error('Officer nicht gefunden', 404)
+    const officerWithEligibleTrainings = withEligibleOfficerTrainings(officer, trainings)
 
     if (format === 'html') {
       return new NextResponse(html(
@@ -184,7 +192,7 @@ export async function GET(req: NextRequest) {
           ['Probezeit', officer.probation ? `${officer.probation.status} bis ${formatDate(officer.probation.endsAt)}` : 'Keine'],
         ],
         [
-          { title: 'Ausbildungen', rows: [['Ausbildung', 'Status'], ...officer.trainings.map((item) => [item.training.label, item.completed ? 'Abgeschlossen' : 'Offen'])] },
+          { title: 'Ausbildungen', rows: [['Ausbildung', 'Status'], ...officerWithEligibleTrainings.trainings.map((item) => [item.training.label, item.completed ? 'Abgeschlossen' : 'Offen'])] },
           { title: 'Rangverlauf', rows: [['Datum', 'Von', 'Nach', 'Notiz'], ...officer.promotionLogs.map((item) => [formatDateTime(item.createdAt), item.oldRank.name, item.newRank.name, item.note ?? ''])] },
           { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), penalGradeLabel(item.penalGrade), item.status, formatFineAmount(item.fineAmount), item.penalty ?? '', item.reason])] },
           { title: 'Notizen', rows: [['Datum', 'Titel', 'Inhalt'], ...officer.officerNotes.map((item) => [formatDateTime(item.createdAt), item.title ?? '', item.content])] },

@@ -47,6 +47,8 @@ interface Training {
   key: string
   label: string
   sortOrder: number
+  minRankId: string | null
+  minRank: { id: string; name: string; sortOrder: number } | null
 }
 
 interface OfficerTraining {
@@ -122,6 +124,10 @@ const FLAG_OPTIONS: Array<{ id: string | null; label: string; color: string }> =
   { id: 'YELLOW', label: 'Gelb', color: '#facc15' },
   { id: 'BLUE', label: 'Blau', color: '#38bdf8' },
 ]
+
+function trainingAvailableForOfficer(training: Training, officer: Officer) {
+  return !training.minRank || officer.rank.sortOrder <= training.minRank.sortOrder
+}
 
 function FlagButton({
   value,
@@ -272,6 +278,13 @@ function DraggableOfficerRow({
       </td>
       {allTrainings.map((t) => {
         const ot = officer.trainings.find((x) => x.trainingId === t.id)
+        if (!trainingAvailableForOfficer(t, officer)) {
+          return (
+            <td key={t.id} className="px-2 py-2.5 text-center">
+              <span className="text-[11px] text-[#2a4a6a]">—</span>
+            </td>
+          )
+        }
         const completed = ot?.completed || false
         return (
           <td key={t.id} className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
@@ -387,7 +400,7 @@ function MobileOfficerCard({
 
       {allTrainings.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {allTrainings.map((t) => {
+          {allTrainings.filter((t) => trainingAvailableForOfficer(t, officer)).map((t) => {
             const ot = officer.trainings.find((x) => x.trainingId === t.id)
             const completed = ot?.completed || false
             return (
@@ -492,9 +505,13 @@ export default function OfficersPage() {
 
   const allTrainings = useMemo(() => {
     if (!officers || officers.length === 0) return []
-    const first = officers.find((o) => o.trainings.length > 0)
-    if (!first) return []
-    return first.trainings.map((t) => t.training).sort((a, b) => a.sortOrder - b.sortOrder)
+    const byId = new Map<string, Training>()
+    for (const officer of officers) {
+      for (const row of officer.trainings) {
+        byId.set(row.training.id, row.training)
+      }
+    }
+    return Array.from(byId.values()).sort((a, b) => a.sortOrder - b.sortOrder)
   }, [officers])
 
   const toggleRankCollapse = (rankId: string) => {
@@ -512,6 +529,7 @@ export default function OfficersPage() {
       const list = officers
       const o = list?.find((x) => x.id === officerId)
       if (!o) return
+      if (!o.trainings.some((t) => t.trainingId === trainingId)) return
       const previousTrainings = o.trainings.map((t) => ({ ...t }))
       setData((prev) => {
         if (!prev) return prev

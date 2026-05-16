@@ -9,6 +9,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
+import { eligibleTrainingsForRank, withEligibleOfficerTrainings } from '@/lib/officer-trainings'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
@@ -41,16 +42,22 @@ export async function GET(req: NextRequest) {
   else where.status = { not: 'TERMINATED' }
   if (rankId) where.rankId = rankId
 
-  const officers = await prisma.officer.findMany({
-    where,
-    include: {
-      rank: true,
-      trainings: { include: { training: true } },
-    },
-    orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
-  })
+  const [officers, trainings] = await Promise.all([
+    prisma.officer.findMany({
+      where,
+      include: {
+        rank: true,
+        trainings: { include: { training: { include: { minRank: true } } } },
+      },
+      orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
+    }),
+    prisma.training.findMany({
+      include: { minRank: true },
+      orderBy: { sortOrder: 'asc' },
+    }),
+  ])
 
-  return success(officers)
+  return success(officers.map((officer) => withEligibleOfficerTrainings(officer, trainings)))
 }
 
 export async function POST(req: NextRequest) {
@@ -111,10 +118,11 @@ export async function POST(req: NextRequest) {
       include: { rank: true },
     })
 
-    const trainings = await prisma.training.findMany()
-    if (trainings.length > 0) {
+    const trainings = await prisma.training.findMany({ include: { minRank: true } })
+    const eligibleTrainings = eligibleTrainingsForRank(trainings, rank)
+    if (eligibleTrainings.length > 0) {
       await prisma.officerTraining.createMany({
-        data: trainings.map(t => ({
+        data: eligibleTrainings.map(t => ({
           officerId: officer.id,
           trainingId: t.id,
           completed: false,

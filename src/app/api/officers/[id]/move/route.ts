@@ -8,10 +8,11 @@ import { getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { withEligibleOfficerTrainings } from '@/lib/officer-trainings'
 
 const includeOfficer = {
   rank: true,
-  trainings: { include: { training: true } },
+  trainings: { include: { training: { include: { minRank: true } } } },
 } as const
 
 /**
@@ -30,8 +31,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!officer) return notFound('Officer')
 
     if (officer.rankId === targetRankId) {
-      const same = await prisma.officer.findUnique({ where: { id }, include: includeOfficer })
-      return success(same)
+      const [same, trainings] = await Promise.all([
+        prisma.officer.findUnique({ where: { id }, include: includeOfficer }),
+        prisma.training.findMany({ include: { minRank: true }, orderBy: { sortOrder: 'asc' } }),
+      ])
+      return success(same ? withEligibleOfficerTrainings(same, trainings) : same)
     }
 
     const targetRank = await prisma.rank.findUnique({ where: { id: targetRankId } })
@@ -69,6 +73,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: { rankId: targetRankId, badgeNumber: newBadge },
       include: includeOfficer,
     })
+    const trainings = await prisma.training.findMany({
+      include: { minRank: true },
+      orderBy: { sortOrder: 'asc' },
+    })
+    const updatedWithEligibleTrainings = withEligibleOfficerTrainings(updated, trainings)
 
     await createAuditLog({
       action: 'OFFICER_PROMOTED',
@@ -84,7 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       type: 'promotion',
       title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
       description: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Roster-Verschiebung.`,
-      officer: updated,
+      officer: updatedWithEligibleTrainings,
       actor: user,
       fields: [
         { name: 'Alter Rang', value: officer.rank.name, inline: true },
@@ -93,7 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ],
     })
 
-    return success(updated)
+    return success(updatedWithEligibleTrainings)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'

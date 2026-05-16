@@ -186,6 +186,11 @@ function desiredNickname(officer) {
   return truncate(nick, 32)
 }
 
+function trainingAvailableForOfficer(trainingRow, officer) {
+  const minRank = trainingRow?.training?.minRank || trainingRow?.minRank
+  return !minRank || !officer.rank || officer.rank.sortOrder <= minRank.sortOrder
+}
+
 async function getGatewayDiscordConfig() {
   const prisma = getPrismaClient()
   const systemSetting = prismaDelegate(prisma, 'systemSetting', 'systemsetting')
@@ -219,7 +224,7 @@ function desiredRoleIds(officer, config) {
     config.rankRoleMap[officer.rankId],
     ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
     ...(officer.trainings || [])
-      .filter((training) => training.completed)
+      .filter((training) => training.completed && trainingAvailableForOfficer(training, officer))
       .map((training) => config.trainingRoleMap[training.trainingId]),
   ].filter(Boolean)))
 }
@@ -344,7 +349,7 @@ async function syncGatewayMemberByDiscordId(discordId, eventGuildId, member) {
     where: { discordId: memberId },
     include: {
       rank: true,
-      trainings: { include: { training: true } },
+      trainings: { include: { training: { include: { minRank: true } } } },
     },
   })
   if (!officer) return { matched: false, synced: false }
@@ -363,7 +368,7 @@ async function syncAllGatewayOfficerRoles() {
     where: { discordId: { not: null } },
     include: {
       rank: true,
-      trainings: { include: { training: true } },
+      trainings: { include: { training: { include: { minRank: true } } } },
     },
     orderBy: [{ rank: { sortOrder: 'asc' } }, { badgeNumber: 'asc' }],
   })

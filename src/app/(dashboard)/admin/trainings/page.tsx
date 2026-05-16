@@ -18,6 +18,14 @@ interface Training {
   key: string
   label: string
   sortOrder: number
+  minRankId: string | null
+  minRank: Rank | null
+}
+
+interface Rank {
+  id: string
+  name: string
+  sortOrder: number
 }
 
 interface DiscordRole {
@@ -34,16 +42,17 @@ interface DiscordConfigResponse {
 
 export default function TrainingsPage() {
   const { data: trainings, loading, refetch } = useFetch<Training[]>('/api/trainings')
+  const { data: ranks, loading: ranksLoading } = useFetch<Rank[]>('/api/ranks')
   const { data: discordData, loading: discordLoading, refetch: refetchDiscord } = useFetch<DiscordConfigResponse>('/api/discord/config')
   const { execute } = useApi()
   const { addToast } = useToast()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editTraining, setEditTraining] = useState<Training | null>(null)
-  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0, discordRoleId: '' })
+  const [form, setForm] = useState({ key: '', label: '', sortOrder: 0, minRankId: '', discordRoleId: '' })
 
   const openCreate = () => {
-    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1, discordRoleId: '' })
+    setForm({ key: '', label: '', sortOrder: (trainings?.length || 0) + 1, minRankId: '', discordRoleId: '' })
     setEditTraining(null)
     setModalOpen(true)
   }
@@ -53,6 +62,7 @@ export default function TrainingsPage() {
       key: t.key,
       label: t.label,
       sortOrder: t.sortOrder,
+      minRankId: t.minRankId ?? '',
       discordRoleId: discordData?.config.trainingRoleMap[t.id] || '',
     })
     setEditTraining(t)
@@ -76,6 +86,7 @@ export default function TrainingsPage() {
       key: form.key,
       label: form.label,
       sortOrder: form.sortOrder,
+      minRankId: form.minRankId || null,
     }
     try {
       if (editTraining) {
@@ -105,11 +116,15 @@ export default function TrainingsPage() {
     }
   }
 
-  if (loading || discordLoading) return <PageLoader />
+  if (loading || ranksLoading || discordLoading) return <PageLoader />
 
   const roleOptions = [
     { value: '', label: 'Keine Discord-Rolle' },
     ...(discordData?.roles.map((role) => ({ value: role.id, label: role.name })) || []),
+  ]
+  const rankOptions = [
+    { value: '', label: 'Alle Ränge' },
+    ...(ranks?.map((rank) => ({ value: rank.id, label: rank.name })) || []),
   ]
 
   const roleName = (roleId: string | undefined) => discordData?.roles.find((role) => role.id === roleId)?.name
@@ -136,6 +151,7 @@ export default function TrainingsPage() {
               <div className="flex-1">
                 <span className="text-[13.5px] font-medium text-[#eee]">{t.label}</span>
                 <span className="text-[11px] text-[#4a6585] ml-2 font-mono">({t.key})</span>
+                <span className="text-[11px] text-[#6b8299] ml-2">ab {t.minRank?.name ?? 'allen Rängen'}</span>
                 {roleName(discordData?.config.trainingRoleMap[t.id]) && (
                   <span className="text-[11px] text-[#6b8299] ml-2">Discord: {roleName(discordData?.config.trainingRoleMap[t.id])}</span>
                 )}
@@ -164,6 +180,12 @@ export default function TrainingsPage() {
           <Input label="Label (Anzeigename)" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required placeholder="z.B. Erste Hilfe" />
           <Input label="Key (intern)" value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} required placeholder="z.B. erste_hilfe" />
           <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
+          <Select
+            label="Mindestrang"
+            value={form.minRankId}
+            onValueChange={(minRankId) => setForm({ ...form, minRankId })}
+            options={rankOptions}
+          />
           <Select
             label="Discord-Rolle"
             value={form.discordRoleId}

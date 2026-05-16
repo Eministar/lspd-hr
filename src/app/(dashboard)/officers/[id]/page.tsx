@@ -43,7 +43,14 @@ import {
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
-interface Training { id: string; key: string; label: string; sortOrder: number }
+interface Training {
+  id: string
+  key: string
+  label: string
+  sortOrder: number
+  minRankId: string | null
+  minRank: { id: string; name: string; sortOrder: number } | null
+}
 interface OfficerTraining { id: string; trainingId: string; completed: boolean; training: Training }
 interface PromotionLog {
   id: string

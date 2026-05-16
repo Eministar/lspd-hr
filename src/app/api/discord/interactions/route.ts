@@ -22,6 +22,7 @@ import { cancelAbsenceNotice, createAbsenceNotice, formatAbsenceDate, parseAbsen
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 import { DISCORD_COMMANDS } from '@/lib/discord-commands'
+import { eligibleTrainingsForRank, isTrainingAvailableForRank } from '@/lib/officer-trainings'
 
 export const runtime = 'nodejs'
 
@@ -298,6 +299,7 @@ async function findTraining(value: string) {
         { label: { equals: value } },
       ],
     },
+    include: { minRank: true },
   })
 }
 
@@ -464,10 +466,11 @@ async function performHire(options: DiscordOption[] | undefined, actor: ReturnTy
     include: { rank: true },
   })
 
-  const trainings = await prisma.training.findMany()
-  if (trainings.length > 0) {
+  const trainings = await prisma.training.findMany({ include: { minRank: true } })
+  const eligibleTrainings = eligibleTrainingsForRank(trainings, rank)
+  if (eligibleTrainings.length > 0) {
     await prisma.officerTraining.createMany({
-      data: trainings.map((training) => ({ officerId: officer.id, trainingId: training.id, completed: false })),
+      data: eligibleTrainings.map((training) => ({ officerId: officer.id, trainingId: training.id, completed: false })),
     })
   }
 
@@ -553,6 +556,9 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
   const officer = await prisma.officer.findFirst({ where: { discordId }, include: { rank: true } })
   const training = await findTraining(textOption(options, 'ausbildung'))
   if (!officer || !training) return 'Officer oder Ausbildung wurde nicht gefunden.'
+  if (!isTrainingAvailableForRank(training, officer.rank)) {
+    return 'Diese Ausbildung ist für den Rang dieses Officers nicht verfügbar.'
+  }
 
   const completed = boolOption(options, 'abgeschlossen')
   await prisma.officerTraining.upsert({

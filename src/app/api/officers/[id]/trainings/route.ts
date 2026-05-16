@@ -5,6 +5,7 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateTrainingsSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { isTrainingAvailableForRank, withEligibleOfficerTrainings } from '@/lib/officer-trainings'
 
 function trainingStateLabel(completed: boolean) {
   return completed ? 'abgeschlossen' : 'offen'
@@ -25,10 +26,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         firstName: true,
         lastName: true,
         badgeNumber: true,
-        trainings: { include: { training: true } },
+        rank: true,
+        trainings: { include: { training: { include: { minRank: true } } } },
       },
     })
     if (!previousOfficer) return notFound('Officer')
+
+    const trainings = await prisma.training.findMany({
+      include: { minRank: true },
+      orderBy: { sortOrder: 'asc' },
+    })
+    const trainingById = new Map(trainings.map((training) => [training.id, training]))
+
+    for (const t of parsed.data.trainings) {
+      const training = trainingById.get(t.trainingId)
+      if (!training) return error('Ausbildung nicht gefunden')
+      if (!isTrainingAvailableForRank(training, previousOfficer.rank)) {
+        return error('Ausbildung ist für den Rang dieses Officers nicht verfügbar')
+      }
+    }
 
     const previousByTrainingId = new Map(
       previousOfficer.trainings.map((training) => [training.trainingId, training]),
@@ -46,16 +62,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id },
       include: {
         rank: true,
-        trainings: { include: { training: true } },
+        trainings: { include: { training: { include: { minRank: true } } } },
       },
     })
     if (!officer) return notFound('Officer')
+    const officerWithEligibleTrainings = withEligibleOfficerTrainings(officer, trainings)
 
     const changedTrainings = parsed.data.trainings.flatMap((trainingUpdate) => {
       const previous = previousByTrainingId.get(trainingUpdate.trainingId)
       if (previous?.completed === trainingUpdate.completed) return []
 
-      const current = officer.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
+      const current = officerWithEligibleTrainings.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
       const label = current?.training.label ?? previous?.training.label ?? trainingUpdate.trainingId
       return [
         `${label}: ${trainingStateLabel(previous?.completed ?? false)} → ${trainingStateLabel(trainingUpdate.completed)}`,
@@ -77,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         type: 'training',
         title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
         description: 'Ausbildungsstand wurde aktualisiert.',
-        officer,
+        officer: officerWithEligibleTrainings,
         actor: user,
         fields: [
           { name: 'Änderungen', value: changedTrainings.map((line) => `• ${line}`).join('\n'), inline: false },
@@ -85,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
-    return success({ message: 'Ausbildungen aktualisiert', officer })
+    return success({ message: 'Ausbildungen aktualisiert', officer: officerWithEligibleTrainings })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

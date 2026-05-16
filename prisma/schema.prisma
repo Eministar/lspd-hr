@@ -131,6 +131,7 @@ model Rank {
   updatedAt DateTime @updatedAt
 
   officers     Officer[]
+  minimumForTrainings Training[] @relation("TrainingMinimumRank")
   oldRankLogs  PromotionLog[] @relation("OldRank")
   newRankLogs  PromotionLog[] @relation("NewRank")
   entryCurrentRanks  RankChangeListEntry[] @relation("EntryCurrentRank")
@@ -142,9 +143,13 @@ model Training {
   key       String   @unique
   label     String
   sortOrder Int      @default(0)
+  minRankId String?
+  minRank   Rank?    @relation("TrainingMinimumRank", fields: [minRankId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 
   officerTrainings OfficerTraining[]
+
+  @@index([minRankId])
 }
 
 model Officer {
