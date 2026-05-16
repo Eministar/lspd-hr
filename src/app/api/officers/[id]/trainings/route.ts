@@ -78,6 +78,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         `${label}: ${trainingStateLabel(previous?.completed ?? false)} → ${trainingStateLabel(trainingUpdate.completed)}`,
       ]
     })
+    const trainingChanges = parsed.data.trainings.flatMap((trainingUpdate) => {
+      const previous = previousByTrainingId.get(trainingUpdate.trainingId)
+      if (previous?.completed === trainingUpdate.completed) return []
+
+      const current = officerWithTrainingRows.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
+      const training = current?.training ?? previous?.training
+      const label = training?.label ?? trainingUpdate.trainingId
+      const minRankName = training?.minRank?.name ?? null
+      const outsideMinimum = !!training && trainingUpdate.completed && !isTrainingAvailableForRank(training, previousOfficer.rank)
+
+      return [{
+        trainingId: trainingUpdate.trainingId,
+        label,
+        completed: trainingUpdate.completed,
+        previousCompleted: previous?.completed ?? false,
+        minRankName,
+        outsideMinimum,
+      }]
+    })
 
     if (changedTrainings.length > 0) {
       await createAuditLog({
@@ -96,9 +115,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         description: 'Ausbildungsstand wurde aktualisiert.',
         officer: officerWithTrainingRows,
         actor: user,
-        fields: [
-          { name: 'Änderungen', value: changedTrainings.map((line) => `• ${line}`).join('\n'), inline: false },
-        ],
+        trainingChanges,
       })
     }
 

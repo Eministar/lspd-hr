@@ -25,6 +25,15 @@ export type DiscordField = {
   inline?: boolean
 }
 
+type DiscordTrainingChange = {
+  trainingId: string
+  label: string
+  completed: boolean
+  previousCompleted?: boolean
+  minRankName?: string | null
+  outsideMinimum?: boolean
+}
+
 type DiscordGuildMember = {
   roles?: string[]
   nick?: string | null
@@ -82,6 +91,7 @@ type DiscordHrEventInput = {
   }
   actor?: UserForDiscord
   fields?: DiscordField[]
+  trainingChanges?: DiscordTrainingChange[]
 }
 
 export type DiscordHrEventMessage = {
@@ -678,6 +688,31 @@ function cleanEmbedField(field: DiscordField): DiscordField {
   }
 }
 
+function trainingRoleLine(config: DiscordConfig, trainingId: string) {
+  const roleId = snowflake(config.trainingRoleMap[trainingId])
+  return roleId ? `Rolle: ✅ <@&${roleId}>` : 'Rolle: ❌ `Keine Rolle verknüpft`'
+}
+
+function trainingStatusLabel(completed: boolean) {
+  return completed ? '✅' : '❌'
+}
+
+function trainingChangeField(change: DiscordTrainingChange, config: DiscordConfig): DiscordField {
+  const lines = [
+    trainingRoleLine(config, change.trainingId),
+    `Änderung: ${trainingStatusLabel(change.previousCompleted ?? false)} → **${trainingStatusLabel(change.completed)}**`,
+  ]
+  if (change.outsideMinimum) {
+    lines.push(`Hinweis: außerhalb Mindestrang${change.minRankName ? ` (${change.minRankName})` : ''} bestätigt`)
+  }
+
+  return {
+    name: `${change.completed ? '✅' : '❌'} ${change.label}`,
+    value: lines.join('\n'),
+    inline: true,
+  }
+}
+
 async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: DiscordConfig) {
   const officer = event.officer
   const meta = EVENT_META[event.type]
@@ -740,7 +775,13 @@ async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: Disc
     fields.push({ name: 'Rang', value: rankValue, inline: true })
   }
 
-  for (const f of event.fields ?? []) fields.push(f)
+  if (event.type === 'training' && event.trainingChanges?.length) {
+    for (const change of event.trainingChanges) {
+      fields.push(trainingChangeField(change, config))
+    }
+  } else {
+    for (const f of event.fields ?? []) fields.push(f)
+  }
   fields.push({ name: 'Bearbeitet von', value: actorLabel, inline: true })
   fields.push({ name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true })
 

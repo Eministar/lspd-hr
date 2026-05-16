@@ -561,6 +561,10 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
   }
 
   const completed = boolOption(options, 'abgeschlossen')
+  const previousTraining = await prisma.officerTraining.findUnique({
+    where: { officerId_trainingId: { officerId: officer.id, trainingId: training.id } },
+    select: { completed: true },
+  })
   await prisma.officerTraining.upsert({
     where: { officerId_trainingId: { officerId: officer.id, trainingId: training.id } },
     create: { officerId: officer.id, trainingId: training.id, completed },
@@ -574,9 +578,14 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
     description: 'Ausbildungsstand wurde via Discord aktualisiert.',
     officer,
     actor,
-    fields: [
-      { name: training.label, value: completed ? '✅ **abgeschlossen**' : '⏳ offen', inline: true },
-    ],
+    trainingChanges: [{
+      trainingId: training.id,
+      label: training.label,
+      completed,
+      previousCompleted: previousTraining?.completed ?? false,
+      minRankName: training.minRank?.name ?? null,
+      outsideMinimum: false,
+    }],
   })
 
   return `${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`
