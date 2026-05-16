@@ -12,8 +12,8 @@ import {
   getSanctionById,
   parseDeadlineDays,
   parseDueAt,
-  parseFineAmount,
   penalGradeLabel,
+  resolveSanctionPenalty,
   sanctionInclude,
   sanctionStatusLabel,
   syncSanctionDiscordMessage,
@@ -74,26 +74,21 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if ('penalGrade' in body) {
       const penalGrade = cleanSanctionText(body.penalGrade).toUpperCase()
       if (!PENAL_GRADES.has(penalGrade)) return error('Penal Grade ist erforderlich')
+      const penaltyRule = resolveSanctionPenalty(penalGrade)
+      if (!penaltyRule) return error('Penal Grade ist erforderlich')
       if (penalGrade !== existing.penalGrade) {
         data.penalGrade = penalGrade
+        data.fineAmount = penaltyRule.fineAmount
+        data.penalty = penaltyRule.penalty
         changes.push(`Penal Grade: ${penalGradeLabel(existing.penalGrade)} → ${penalGradeLabel(penalGrade)}`)
       }
-    }
-
-    if ('fineAmount' in body) {
-      const fineAmount = parseFineAmount(body.fineAmount)
-      if (fineAmount === undefined) return error('Geldstrafe ist ungültig')
-      if (fineAmount !== existing.fineAmount) {
-        data.fineAmount = fineAmount
-        changes.push(`Geldstrafe: ${formatFineAmount(existing.fineAmount)} → ${formatFineAmount(fineAmount)}`)
+      if (penaltyRule.fineAmount !== existing.fineAmount) {
+        data.fineAmount = penaltyRule.fineAmount
+        changes.push(`Geldstrafe: ${formatFineAmount(existing.fineAmount)} → ${formatFineAmount(penaltyRule.fineAmount)}`)
       }
-    }
-
-    if ('penalty' in body) {
-      const penalty = cleanSanctionText(body.penalty) || null
-      if (penalty !== existing.penalty) {
-        data.penalty = penalty
-        changes.push('Weitere Strafe geändert')
+      if (penaltyRule.penalty !== existing.penalty) {
+        data.penalty = penaltyRule.penalty
+        changes.push(`Maßnahme: ${existing.penalty ?? '—'} → ${penaltyRule.penalty}`)
       }
     }
 

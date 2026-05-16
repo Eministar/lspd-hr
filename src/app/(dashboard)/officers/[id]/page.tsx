@@ -33,6 +33,13 @@ import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import {
+  PENAL_GRADES,
+  SANCTION_CATALOG,
+  formatFineAmount,
+  penalGradeLabel,
+  resolveSanctionPenalty,
+} from '@/lib/sanction-catalog'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
@@ -137,8 +144,6 @@ interface OfficerForm {
 }
 interface SanctionForm {
   penalGrade: string
-  fineAmount: string
-  penalty: string
   reason: string
   deadlineDays: string
   dueAt: string
@@ -165,21 +170,15 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
 
 const EMPTY_SANCTION_FORM: SanctionForm = {
   penalGrade: 'I',
-  fineAmount: '',
-  penalty: '',
   reason: '',
   deadlineDays: '7',
   dueAt: '',
 }
 
-const PENAL_GRADE_OPTIONS = [
-  { value: 'I', label: 'Penal Grade I' },
-  { value: 'II', label: 'Penal Grade II' },
-  { value: 'III', label: 'Penal Grade III' },
-  { value: 'IV', label: 'Penal Grade IV' },
-  { value: 'V', label: 'Penal Grade V' },
-  { value: 'MANUELL', label: 'Manuell / ohne Penal Grade' },
-]
+const PENAL_GRADE_OPTIONS = Object.values(SANCTION_CATALOG).map((rule) => ({
+  value: rule.grade,
+  label: penalGradeLabel(rule.grade),
+}))
 const PLAYTIME_HISTORY_COLLAPSE_LIMIT = 5
 
 function formatDuration(ms: number) {
@@ -188,10 +187,6 @@ function formatDuration(ms: number) {
   const minutes = totalMinutes % 60
   if (hours <= 0) return `${minutes}m`
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`
-}
-
-function displayPenalGrade(value: string) {
-  return value === 'MANUELL' ? 'Manuell' : `Penal Grade ${value}`
 }
 
 function sanctionStatusLabel(status: SanctionRecord['status']) {
@@ -272,6 +267,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [addToListBadgeNumber, setAddToListBadgeNumber] = useState('')
   const [addToListNote, setAddToListNote] = useState('')
   const [playtimeHistoryExpanded, setPlaytimeHistoryExpanded] = useState(false)
+  const selectedSanctionRule = resolveSanctionPenalty(sanctionForm.penalGrade) ?? SANCTION_CATALOG.I
 
   const startEditing = () => {
     if (!officer) return
@@ -354,9 +350,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const openEditSanctionModal = (sanction: SanctionRecord) => {
     setEditingSanction(sanction)
     setSanctionForm({
-      penalGrade: sanction.penalGrade,
-      fineAmount: sanction.fineAmount === null ? '' : String(sanction.fineAmount),
-      penalty: sanction.penalty ?? '',
+      penalGrade: PENAL_GRADES.has(sanction.penalGrade) ? sanction.penalGrade : 'I',
       reason: sanction.reason,
       deadlineDays: '',
       dueAt: sanction.dueAt?.split('T')[0] ?? '',
@@ -379,8 +373,6 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         body: JSON.stringify({
           ...(isEditingSanction ? {} : { officerId: id }),
           penalGrade: sanctionForm.penalGrade,
-          fineAmount: sanctionForm.fineAmount.trim() || null,
-          penalty: sanctionForm.penalty.trim() || null,
           reason: sanctionForm.reason.trim(),
           ...(isEditingSanction
             ? { dueAt: sanctionForm.dueAt || null }
@@ -1118,37 +1110,32 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             options={PENAL_GRADE_OPTIONS}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Geldstrafe (optional)"
-              value={sanctionForm.fineAmount}
-              onChange={(e) => setSanctionForm({ ...sanctionForm, fineAmount: e.target.value })}
-              inputMode="numeric"
-              placeholder="Nur Zahlen, z.B. 10000"
-            />
-            {editingSanction ? (
-              <DateField
-                label="Frist"
-                value={sanctionForm.dueAt}
-                onChange={(dueAt) => setSanctionForm({ ...sanctionForm, dueAt })}
-              />
-            ) : (
-              <Input
-                label="Frist in Tagen (optional)"
-                value={sanctionForm.deadlineDays}
-                onChange={(e) => setSanctionForm({ ...sanctionForm, deadlineDays: e.target.value })}
-                inputMode="numeric"
-                placeholder="z.B. 7"
-              />
-            )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Geldstrafe</p>
+              <p className="mt-1 text-[14px] font-semibold text-[#d4af37]">{formatFineAmount(selectedSanctionRule.fineAmount)}</p>
+            </div>
+            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Maßnahme</p>
+              <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{selectedSanctionRule.penalty}</p>
+            </div>
           </div>
 
-          <Input
-            label="Weitere Strafe / Maßnahme (optional)"
-            value={sanctionForm.penalty}
-            onChange={(e) => setSanctionForm({ ...sanctionForm, penalty: e.target.value })}
-            placeholder="z.B. 24h Suspendierung"
-          />
+          {editingSanction ? (
+            <DateField
+              label="Frist"
+              value={sanctionForm.dueAt}
+              onChange={(dueAt) => setSanctionForm({ ...sanctionForm, dueAt })}
+            />
+          ) : (
+            <Input
+              label="Frist in Tagen (optional)"
+              value={sanctionForm.deadlineDays}
+              onChange={(e) => setSanctionForm({ ...sanctionForm, deadlineDays: e.target.value })}
+              inputMode="numeric"
+              placeholder="z.B. 7"
+            />
+          )}
 
           <Textarea
             label="Grund *"
@@ -1348,7 +1335,7 @@ function SanctionCard({
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-[6px] bg-white/[0.04] px-2.5 py-1">
               <Gavel size={11} className="text-[#f59e0b] shrink-0" strokeWidth={2} />
-              <span className="text-[12.5px] font-bold tracking-wide text-[#edf4fb]">{displayPenalGrade(sanction.penalGrade)}</span>
+              <span className="text-[12.5px] font-bold tracking-wide text-[#edf4fb]">{penalGradeLabel(sanction.penalGrade)}</span>
             </div>
             <span className={cn('rounded-full border px-2.5 py-[2px] text-[10.5px] font-semibold tracking-wide', sanctionStatusClass(sanction.status))}>
               {sanctionStatusLabel(sanction.status)}

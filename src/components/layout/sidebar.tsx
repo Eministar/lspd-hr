@@ -45,7 +45,6 @@ const mainNav: NavItem[] = [
   { name: 'Probezeiten', href: '/probations', icon: ClipboardCheck, permission: 'probations:view' },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
   { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
-  { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
 ]
 
 const tasksNav: NavItem[] = [
@@ -60,6 +59,7 @@ const adminNav: NavItem[] = [
   { name: 'Units', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
+  { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
   { name: 'Uploads', href: '/admin/uploads', icon: Upload, permission: 'settings:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
 ]
@@ -116,6 +116,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
     'units:manage',
     'users:manage',
     'groups:manage',
+    'exports:view',
     'settings:manage',
   ])
 

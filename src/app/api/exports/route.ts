@@ -5,6 +5,7 @@ import { error, unauthorized } from '@/lib/api-response'
 import { getDutyTimesSnapshot, formatDuration } from '@/lib/duty-times'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { formatFineAmount, penalGradeLabel } from '@/lib/sanction-catalog'
 
 function csvEscape(value: unknown) {
   const text = value === null || value === undefined ? '' : String(value)
@@ -116,15 +117,16 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
     const rows = [
-      ['Datum', 'Officer', 'Dienstnummer', 'Rang', 'Penal Grade', 'Status', 'Geldstrafe', 'Frist', 'Grund', 'Ausgestellt von'],
+      ['Datum', 'Officer', 'Dienstnummer', 'Rang', 'Penal Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Frist', 'Grund', 'Ausgestellt von'],
       ...sanctions.map((sanction) => [
         formatDateTime(sanction.createdAt),
         sanction.officer ? `${sanction.officer.firstName} ${sanction.officer.lastName}` : `${sanction.previousFirstName ?? ''} ${sanction.previousLastName ?? ''}`.trim(),
         displayBadgeNumber(sanction.officer?.badgeNumber ?? sanction.previousBadgeNumber),
         sanction.officer?.rank.name ?? sanction.previousRank ?? '',
-        sanction.penalGrade,
+        penalGradeLabel(sanction.penalGrade),
         sanction.status,
-        sanction.fineAmount ?? '',
+        formatFineAmount(sanction.fineAmount),
+        sanction.penalty ?? '',
         formatDateTime(sanction.dueAt),
         sanction.reason,
         sanction.issuedBy?.displayName ?? '',
@@ -184,7 +186,7 @@ export async function GET(req: NextRequest) {
         [
           { title: 'Ausbildungen', rows: [['Ausbildung', 'Status'], ...officer.trainings.map((item) => [item.training.label, item.completed ? 'Abgeschlossen' : 'Offen'])] },
           { title: 'Rangverlauf', rows: [['Datum', 'Von', 'Nach', 'Notiz'], ...officer.promotionLogs.map((item) => [formatDateTime(item.createdAt), item.oldRank.name, item.newRank.name, item.note ?? ''])] },
-          { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), item.penalGrade, item.status, item.reason])] },
+          { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), penalGradeLabel(item.penalGrade), item.status, formatFineAmount(item.fineAmount), item.penalty ?? '', item.reason])] },
           { title: 'Notizen', rows: [['Datum', 'Titel', 'Inhalt'], ...officer.officerNotes.map((item) => [formatDateTime(item.createdAt), item.title ?? '', item.content])] },
         ],
       ), { headers: { 'content-type': 'text/html; charset=utf-8' } })

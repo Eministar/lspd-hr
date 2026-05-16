@@ -9,8 +9,8 @@ import {
   dueAtFromDeadlineDays,
   formatFineAmount,
   parseDeadlineDays,
-  parseFineAmount,
   penalGradeLabel,
+  resolveSanctionPenalty,
   sanctionInclude,
   syncSanctionDiscordMessage,
 } from '@/lib/sanctions'
@@ -23,15 +23,14 @@ export async function POST(req: NextRequest) {
     const officerId = cleanSanctionText(body.officerId)
     const reason = cleanSanctionText(body.reason)
     const penalGrade = cleanSanctionText(body.penalGrade).toUpperCase()
-    const penalty = cleanSanctionText(body.penalty)
-    const fineAmount = parseFineAmount(body.fineAmount)
     const deadlineDays = parseDeadlineDays(body.deadlineDays)
 
     if (!officerId) return error('Officer ist erforderlich')
     if (!reason) return error('Grund ist erforderlich')
     if (!PENAL_GRADES.has(penalGrade)) return error('Penal Grade ist erforderlich')
-    if (fineAmount === undefined) return error('Geldstrafe ist ungültig')
     if (deadlineDays === undefined) return error('Frist muss zwischen 1 und 365 Tagen liegen')
+    const penaltyRule = resolveSanctionPenalty(penalGrade)
+    if (!penaltyRule) return error('Penal Grade ist erforderlich')
 
     const officer = await prisma.officer.findUnique({
       where: { id: officerId },
@@ -45,8 +44,8 @@ export async function POST(req: NextRequest) {
         officerId,
         reason,
         penalGrade,
-        fineAmount,
-        penalty: penalty || null,
+        fineAmount: penaltyRule.fineAmount,
+        penalty: penaltyRule.penalty,
         dueAt: dueAtFromDeadlineDays(deadlineDays),
         issuedByUserId: user.id,
         previousRank: officer.rank.name,
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId,
       newValue: penalGradeLabel(penalGrade),
-      details: `${officer.firstName} ${officer.lastName}: ${penalGradeLabel(penalGrade)} · Geldstrafe: ${formatFineAmount(fineAmount)} · Frist: ${deadlineDays ? `${deadlineDays} Tage` : '—'} · Grund: ${reason}`,
+      details: `${officer.firstName} ${officer.lastName}: ${penalGradeLabel(penalGrade)} · Geldstrafe: ${formatFineAmount(penaltyRule.fineAmount)} · Maßnahme: ${penaltyRule.penalty} · Frist: ${deadlineDays ? `${deadlineDays} Tage` : '—'} · Grund: ${reason}`,
     })
 
     await syncSanctionDiscordMessage(sanction)

@@ -1,8 +1,14 @@
 import { createAuditLog } from './audit'
 import { editDiscordHrEventMessage, sendDiscordHrEvent, type DiscordField } from './discord-integration'
 import { prisma } from './prisma'
+import {
+  PENAL_GRADES,
+  formatFineAmount,
+  penalGradeLabel,
+  resolveSanctionPenalty,
+} from './sanction-catalog'
 
-export const PENAL_GRADES = new Set(['I', 'II', 'III', 'IV', 'V', 'MANUELL'])
+export { PENAL_GRADES, formatFineAmount, penalGradeLabel, resolveSanctionPenalty }
 export const SANCTION_STATUSES = new Set(['OPEN', 'PAID', 'ESCALATED'])
 
 export const sanctionInclude = {
@@ -21,17 +27,6 @@ export type SanctionWithRelations = NonNullable<Awaited<ReturnType<typeof getSan
 
 export function cleanSanctionText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
-}
-
-export function parseFineAmount(value: unknown) {
-  if (value === null || value === undefined || value === '') return null
-  const str = (typeof value === 'number' ? String(value) : String(value)).trim()
-  if (!str) return null
-  if (!/^\d+$/.test(str)) return undefined
-  const amount = Number.parseInt(str, 10)
-  if (!Number.isSafeInteger(amount) || amount < 0) return undefined
-  if (amount > 1_000_000) return undefined
-  return amount
 }
 
 export function parseDeadlineDays(value: unknown) {
@@ -56,15 +51,6 @@ export function parseDueAt(value: unknown) {
   const date = new Date(raw.length <= 10 ? `${raw}T23:59:59` : raw)
   if (Number.isNaN(date.getTime())) return undefined
   return date
-}
-
-export function formatFineAmount(value: number | null) {
-  if (value === null) return '—'
-  return `${new Intl.NumberFormat('de-DE').format(value)} $`
-}
-
-export function penalGradeLabel(value: string) {
-  return value === 'MANUELL' ? 'Manuell' : `Penal Grade ${value}`
 }
 
 export function sanctionStatusLabel(status: string) {
