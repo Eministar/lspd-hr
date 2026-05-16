@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     for (const t of parsed.data.trainings) {
       const training = trainingById.get(t.trainingId)
       if (!training) return error('Ausbildung nicht gefunden')
-      if (!isTrainingAvailableForRank(training, previousOfficer.rank) && !parsed.data.overrideTrainingIds.includes(t.trainingId)) {
+      if (t.completed && !isTrainingAvailableForRank(training, previousOfficer.rank) && !parsed.data.overrideTrainingIds.includes(t.trainingId)) {
         return error('Ausbildung ist für den Rang dieses Officers nicht verfügbar')
       }
     }

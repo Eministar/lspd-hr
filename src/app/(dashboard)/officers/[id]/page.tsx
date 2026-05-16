@@ -265,6 +265,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [terminateReason, setTerminateReason] = useState('')
   const [sanctionForm, setSanctionForm] = useState<SanctionForm>(EMPTY_SANCTION_FORM)
   const [editingSanction, setEditingSanction] = useState<SanctionRecord | null>(null)
+  const [sanctionToDelete, setSanctionToDelete] = useState<SanctionRecord | null>(null)
   const [newRankId, setNewRankId] = useState('')
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
@@ -278,6 +279,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [addToListBadgeNumber, setAddToListBadgeNumber] = useState('')
   const [addToListNote, setAddToListNote] = useState('')
   const [playtimeHistoryExpanded, setPlaytimeHistoryExpanded] = useState(false)
+  const [pendingTrainingOverride, setPendingTrainingOverride] = useState<{
+    training: Training
+    completed: boolean
+  } | null>(null)
   const selectedSanctionRule = resolveSanctionPenalty(sanctionForm.penalGrade) ?? SANCTION_CATALOG.I
 
   const startEditing = () => {
@@ -425,10 +430,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const handleDeleteSanction = async (sanctionId: string) => {
-    if (!window.confirm('Sanktion wirklich löschen?')) return
     try {
       await execute(`/api/sanctions/${sanctionId}`, { method: 'DELETE' })
       addToast({ type: 'success', title: 'Sanktion gelöscht' })
+      setSanctionToDelete(null)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -550,17 +555,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
+  const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean, overrideConfirmed = false) => {
     if (!canEditTrainings) return
     if (!officer) return
     const trainingRow = officer.trainings.find((t) => t.trainingId === trainingId)
     if (!trainingRow) return
     const requiresOverride = completed && !trainingAvailableForOfficer(trainingRow.training, officer)
-    if (requiresOverride) {
-      const ok = window.confirm(
-        `Die Ausbildung "${trainingRow.training.label}" ist erst ab "${trainingRow.training.minRank?.name ?? 'Mindestrang'}" vorgesehen.\n\nMöchtest du sie wirklich exakt ${officer.firstName} ${officer.lastName} geben?`,
-      )
-      if (!ok) return
+    if (requiresOverride && !overrideConfirmed) {
+      setPendingTrainingOverride({ training: trainingRow.training, completed })
+      return
     }
     const previous = officer
     const trainings = officer.trainings.map((t) => ({
@@ -579,7 +582,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trainings,
-          overrideTrainingIds: requiresOverride ? [trainingId] : [],
+          overrideTrainingIds: requiresOverride && overrideConfirmed ? [trainingId] : [],
         }),
       })
       const json = await res.json() as { data?: { officer?: OfficerDetail }; error?: string }
@@ -590,7 +593,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       setOfficer(previous)
       addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
     }
-  }, [canEditTrainings, officer, id, setOfficer, addToast])
+  }, [canEditTrainings, officer, id, setOfficer, setPendingTrainingOverride, addToast])
 
   if (!canViewOfficer) return <UnauthorizedContent />
   if (loading) return <PageLoader />
@@ -951,7 +954,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     onPaid={() => handleMarkSanctionPaid(sanction.id)}
                     onEdit={() => openEditSanctionModal(sanction)}
                     onEscalate={() => handleEscalateSanction(sanction.id)}
-                    onDelete={() => handleDeleteSanction(sanction.id)}
+                    onDelete={() => setSanctionToDelete(sanction)}
                     variant="open"
                   />
                 ))}
@@ -967,7 +970,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 {officer.sanctions.map((sanction) => (
                   <SanctionCard key={sanction.id} sanction={sanction} canSanction={canSanction}
                     onEdit={() => openEditSanctionModal(sanction)}
-                    onDelete={() => handleDeleteSanction(sanction.id)}
+                    onDelete={() => setSanctionToDelete(sanction)}
                     variant="history"
                   />
                 ))}
@@ -1304,6 +1307,78 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={!!pendingTrainingOverride}
+        onClose={() => setPendingTrainingOverride(null)}
+        title="Ausbildung außerhalb des Mindestrangs"
+      >
+        {pendingTrainingOverride && (
+          <div className="space-y-4">
+            <div className="rounded-[10px] border border-[#d4af37]/25 bg-[#1d1608]/60 px-3.5 py-3">
+              <p className="text-[13px] font-medium text-[#edf4fb]">
+                {pendingTrainingOverride.training.label}
+              </p>
+              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+                Vorgesehen ab: {pendingTrainingOverride.training.minRank?.name ?? 'Mindestrang'}
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-[#18385f]/70 bg-[#0a1a33]/70 px-3.5 py-3">
+              <p className="text-[12px] text-[#8ea4bd]">Officer</p>
+              <p className="mt-1 text-[14px] font-semibold text-white">
+                {officer.firstName} {officer.lastName}
+              </p>
+              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+                DN {displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}
+              </p>
+            </div>
+            <p className="text-[13px] leading-relaxed text-[#9fb0c4]">
+              Möchtest du diese Ausbildung wirklich exakt diesem Officer geben?
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" onClick={() => setPendingTrainingOverride(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const pending = pendingTrainingOverride
+                  setPendingTrainingOverride(null)
+                  void handleTrainingToggle(pending.training.id, pending.completed, true)
+                }}
+              >
+                Bestätigen
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={!!sanctionToDelete} onClose={() => setSanctionToDelete(null)} title="Sanktion löschen">
+        {sanctionToDelete && (
+          <div className="space-y-4">
+            <div className="rounded-[10px] border border-[#7f1d1d]/50 bg-[#2a1212]/60 px-3.5 py-3">
+              <p className="text-[13px] font-semibold text-[#fca5a5]">
+                {penalGradeLabel(sanctionToDelete.penalGrade)}
+              </p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-[#c7d4e4]">
+                {sanctionToDelete.reason}
+              </p>
+            </div>
+            <p className="text-[13px] text-[#9fb0c4]">
+              Diese Sanktion wird dauerhaft gelöscht.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" onClick={() => setSanctionToDelete(null)}>
+                Abbrechen
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => handleDeleteSanction(sanctionToDelete.id)}>
+                Löschen
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

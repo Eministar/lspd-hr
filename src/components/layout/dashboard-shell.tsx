@@ -23,7 +23,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-[#061426]">
       <Sidebar />
       <main className="flex-1 min-h-screen min-w-0">
-        <div className="px-3 sm:px-6 lg:px-8 pt-16 lg:pt-6 pb-6 max-w-[1360px]">
+        <div className="w-full max-w-[1360px] px-3 sm:px-6 lg:px-8 pt-16 lg:pt-6 pb-6">
           {children}
         </div>
       </main>

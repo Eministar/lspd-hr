@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Select } from '@/components/ui/select'
+import { Modal } from '@/components/ui/modal'
 import { UnitBadges } from '@/components/officers/unit-badges'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
@@ -108,7 +109,7 @@ function DropRankZone({ rankId, canHighlight, children }: { rankId: string; canH
     <div
       ref={setNodeRef}
       className={cn(
-        'rounded-[10px] transition-[box-shadow] duration-150',
+        'w-full min-w-0 rounded-[10px] transition-[box-shadow] duration-150',
         canHighlight && isOver && 'ring-1 ring-[#d4af37]/50 ring-inset'
       )}
     >
@@ -343,7 +344,7 @@ function MobileOfficerCard({
   return (
     <div
       className={cn(
-        'relative rounded-[10px] border border-[#18385f]/40 px-3.5 py-3 transition-colors',
+        'relative w-full rounded-[10px] border border-[#18385f]/40 px-3.5 py-3 transition-colors',
         officer.flag ? getFlagRowClass(officer.flag) : 'bg-[#0a1a33]/60 hover:bg-[#0f2340]'
       )}
     >
@@ -453,6 +454,11 @@ export default function OfficersPage() {
   const [flagFilter, setFlagFilter] = useState('')
   const [collapsedRanks, setCollapsedRanks] = useState<Set<string>>(new Set())
   const [movePending, setMovePending] = useState(false)
+  const [pendingTrainingOverride, setPendingTrainingOverride] = useState<{
+    officer: Officer
+    training: Training
+    completed: boolean
+  } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -524,7 +530,7 @@ export default function OfficersPage() {
   }
 
   const handleTrainingToggle = useCallback(
-    async (officerId: string, trainingId: string, completed: boolean) => {
+    async (officerId: string, trainingId: string, completed: boolean, overrideConfirmed = false) => {
       if (!canEditTrainings) return
       const list = officers
       const o = list?.find((x) => x.id === officerId)
@@ -532,11 +538,9 @@ export default function OfficersPage() {
       const trainingRow = o.trainings.find((t) => t.trainingId === trainingId)
       if (!trainingRow) return
       const requiresOverride = completed && !trainingAvailableForOfficer(trainingRow.training, o)
-      if (requiresOverride) {
-        const ok = window.confirm(
-          `Die Ausbildung "${trainingRow.training.label}" ist erst ab "${trainingRow.training.minRank?.name ?? 'Mindestrang'}" vorgesehen.\n\nMöchtest du sie wirklich exakt ${o.firstName} ${o.lastName} geben?`,
-        )
-        if (!ok) return
+      if (requiresOverride && !overrideConfirmed) {
+        setPendingTrainingOverride({ officer: o, training: trainingRow.training, completed })
+        return
       }
       const previousTrainings = o.trainings.map((t) => ({ ...t }))
       setData((prev) => {
@@ -561,7 +565,7 @@ export default function OfficersPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             trainings,
-            overrideTrainingIds: requiresOverride ? [trainingId] : [],
+            overrideTrainingIds: requiresOverride && overrideConfirmed ? [trainingId] : [],
           }),
         })
         const json = await res.json()
@@ -667,7 +671,7 @@ export default function OfficersPage() {
   const totalFlagged = officers?.filter((o) => o.flag).length || 0
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeader
         title="Officers"
         description={
@@ -752,7 +756,7 @@ export default function OfficersPage() {
         onDragEnd={canMove ? handleDragEnd : () => {}}
         collisionDetection={rankDropCollision}
       >
-        <div className="rounded-[12px] overflow-hidden">
+        <div className="w-full min-w-0 rounded-[12px] overflow-hidden">
           {groupedByRank.length === 0 && (
             <div className="text-center py-24">
               <Users size={28} className="mx-auto text-[#4a6585] mb-3" strokeWidth={1.5} />
@@ -763,7 +767,7 @@ export default function OfficersPage() {
           {groupedByRank.map(({ rank, officers: groupOfficers }, groupIndex) => {
             const isCollapsed = collapsedRanks.has(rank.id)
             return (
-              <div key={rank.id} className={cn(groupIndex > 0 && 'mt-1')}>
+              <div key={rank.id} className={cn('w-full min-w-0', groupIndex > 0 && 'mt-1')}>
                 <DropRankZone rankId={rank.id} canHighlight={canMove}>
                   <button
                     type="button"
@@ -795,8 +799,11 @@ export default function OfficersPage() {
                         className="overflow-hidden"
                       >
                         {/* Desktop / tablet: table view */}
-                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
-                          <table className="w-full table-fixed">
+                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-x-auto mt-1 mb-2">
+                          <table
+                            className="w-full table-fixed"
+                            style={{ minWidth: `${493 + allTrainings.length * 104}px` }}
+                          >
                             <thead>
                               <tr>
                                 <th className="w-[3px] p-0" />
@@ -842,7 +849,7 @@ export default function OfficersPage() {
                         </div>
 
                         {/* Mobile / tablet: card view */}
-                        <div className="lg:hidden mt-1 mb-2 space-y-1.5">
+                        <div className="lg:hidden w-full min-w-0 mt-1 mb-2 space-y-1.5">
                           {groupOfficers.map((officer) => (
                             <MobileOfficerCard
                               key={officer.id}
@@ -865,6 +872,52 @@ export default function OfficersPage() {
           })}
         </div>
       </DndContext>
+
+      <Modal
+        open={!!pendingTrainingOverride}
+        onClose={() => setPendingTrainingOverride(null)}
+        title="Ausbildung außerhalb des Mindestrangs"
+      >
+        {pendingTrainingOverride && (
+          <div className="space-y-4">
+            <div className="rounded-[10px] border border-[#d4af37]/25 bg-[#1d1608]/60 px-3.5 py-3">
+              <p className="text-[13px] font-medium text-[#edf4fb]">
+                {pendingTrainingOverride.training.label}
+              </p>
+              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+                Vorgesehen ab: {pendingTrainingOverride.training.minRank?.name ?? 'Mindestrang'}
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-[#18385f]/70 bg-[#0a1a33]/70 px-3.5 py-3">
+              <p className="text-[12px] text-[#8ea4bd]">Officer</p>
+              <p className="mt-1 text-[14px] font-semibold text-white">
+                {pendingTrainingOverride.officer.firstName} {pendingTrainingOverride.officer.lastName}
+              </p>
+              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+                DN {pendingTrainingOverride.officer.badgeNumber} · {pendingTrainingOverride.officer.rank.name}
+              </p>
+            </div>
+            <p className="text-[13px] leading-relaxed text-[#9fb0c4]">
+              Möchtest du diese Ausbildung wirklich exakt diesem Officer geben?
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" onClick={() => setPendingTrainingOverride(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const pending = pendingTrainingOverride
+                  setPendingTrainingOverride(null)
+                  void handleTrainingToggle(pending.officer.id, pending.training.id, pending.completed, true)
+                }}
+              >
+                Bestätigen
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
