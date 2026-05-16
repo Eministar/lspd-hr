@@ -493,6 +493,10 @@ export default function OfficersPage() {
 
   const groupedByRank = useMemo(() => {
     const groups: Map<string, { rank: Rank; officers: Officer[] }> = new Map()
+    for (const rank of ranks ?? []) {
+      if (rankFilter && rank.id !== rankFilter) continue
+      groups.set(rank.id, { rank, officers: [] })
+    }
     for (const officer of filteredOfficers) {
       const key = officer.rankId
       if (!groups.has(key)) {
@@ -507,7 +511,7 @@ export default function OfficersPage() {
       group.officers.sort((a, b) => compareBadgeNumbers(a.badgeNumber, b.badgeNumber))
     }
     return result
-  }, [filteredOfficers])
+  }, [filteredOfficers, ranks, rankFilter])
 
   const allTrainings = useMemo(() => {
     if (!officers || officers.length === 0) return []
@@ -760,7 +764,7 @@ export default function OfficersPage() {
           {groupedByRank.length === 0 && (
             <div className="text-center py-24">
               <Users size={28} className="mx-auto text-[#4a6585] mb-3" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#8ea4bd]">Keine Officers gefunden</p>
+              <p className="text-[13px] text-[#8ea4bd]">Keine Ränge gefunden</p>
             </div>
           )}
 
@@ -827,38 +831,52 @@ export default function OfficersPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupOfficers.map((officer, i) => (
-                                <DraggableOfficerRow
-                                  key={officer.id}
-                                  officer={officer}
-                                  canDrag={canMove}
-                                  canEdit={canEdit}
-                                  canEditTrainings={canEditTrainings}
-                                  allTrainings={allTrainings}
-                                  unitsByKey={unitsByKey}
-                                  rowIndex={i}
-                                  onTrainToggle={handleTrainingToggle}
-                                  onFlagChange={handleFlagChange}
-                                />
-                              ))}
+                              {groupOfficers.length > 0 ? (
+                                groupOfficers.map((officer, i) => (
+                                  <DraggableOfficerRow
+                                    key={officer.id}
+                                    officer={officer}
+                                    canDrag={canMove}
+                                    canEdit={canEdit}
+                                    canEditTrainings={canEditTrainings}
+                                    allTrainings={allTrainings}
+                                    unitsByKey={unitsByKey}
+                                    rowIndex={i}
+                                    onTrainToggle={handleTrainingToggle}
+                                    onFlagChange={handleFlagChange}
+                                  />
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={8 + allTrainings.length} className="px-4 py-4 text-center text-[12.5px] text-[#6b8299]">
+                                    — Kein Officer hat diesen Rang
+                                  </td>
+                                </tr>
+                              )}
                             </tbody>
                           </table>
                         </div>
 
                         {/* Mobile / tablet: card view */}
                         <div className="lg:hidden w-full min-w-0 mt-1 mb-2 space-y-1.5">
-                          {groupOfficers.map((officer) => (
-                            <MobileOfficerCard
-                              key={officer.id}
-                              officer={officer}
-                              allTrainings={allTrainings}
-                              unitsByKey={unitsByKey}
-                              canEdit={canEdit}
-                              canEditTrainings={canEditTrainings}
-                              onTrainToggle={handleTrainingToggle}
-                              onFlagChange={handleFlagChange}
-                            />
-                          ))}
+                          {groupOfficers.length > 0 ? (
+                            groupOfficers.map((officer) => (
+                              <MobileOfficerCard
+                                key={officer.id}
+                                officer={officer}
+                                allTrainings={allTrainings}
+                                unitsByKey={unitsByKey}
+                                canEdit={canEdit}
+                                canEditTrainings={canEditTrainings}
+                                onTrainToggle={handleTrainingToggle}
+                                onFlagChange={handleFlagChange}
+                              />
+                            ))
+                          ) : (
+                            <div className="rounded-[10px] border border-dashed border-[#18385f]/70 bg-[#0a1a33]/40 px-3.5 py-3 text-center text-[12.5px] text-[#6b8299]">
+                              — Kein Officer hat diesen Rang
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     )}
