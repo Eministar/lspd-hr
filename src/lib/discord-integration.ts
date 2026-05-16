@@ -4,7 +4,6 @@ import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix, getOrgName } from './settings-helpers'
 import { queueDiscordWebhookEvent } from './discord-webhook'
-import { isTrainingAvailableForRank } from './officer-trainings'
 
 type DiscordRole = {
   id: string
@@ -481,10 +480,7 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
     config.rankRoleMap[officer.rankId],
     ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
     ...(officer.trainings ?? [])
-      .filter((training) => (
-        training.completed &&
-        (!officer.rank || !training.training || isTrainingAvailableForRank(training.training, officer.rank))
-      ))
+      .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),
   ].filter((roleId): roleId is string => !!roleId)))
 }

@@ -8,7 +8,7 @@ import { getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
-import { withEligibleOfficerTrainings } from '@/lib/officer-trainings'
+import { withOfficerTrainingRows } from '@/lib/officer-trainings'
 
 const includeOfficer = {
   rank: true,
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         prisma.officer.findUnique({ where: { id }, include: includeOfficer }),
         prisma.training.findMany({ include: { minRank: true }, orderBy: { sortOrder: 'asc' } }),
       ])
-      return success(same ? withEligibleOfficerTrainings(same, trainings) : same)
+      return success(same ? withOfficerTrainingRows(same, trainings) : same)
     }
 
     const targetRank = await prisma.rank.findUnique({ where: { id: targetRankId } })
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       include: { minRank: true },
       orderBy: { sortOrder: 'asc' },
     })
-    const updatedWithEligibleTrainings = withEligibleOfficerTrainings(updated, trainings)
+    const updatedWithTrainingRows = withOfficerTrainingRows(updated, trainings)
 
     await createAuditLog({
       action: 'OFFICER_PROMOTED',
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       type: 'promotion',
       title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
       description: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Roster-Verschiebung.`,
-      officer: updatedWithEligibleTrainings,
+      officer: updatedWithTrainingRows,
       actor: user,
       fields: [
         { name: 'Alter Rang', value: officer.rank.name, inline: true },
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ],
     })
 
-    return success(updatedWithEligibleTrainings)
+    return success(updatedWithTrainingRows)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'

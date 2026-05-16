@@ -14,7 +14,7 @@ import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
 import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
-import { withEligibleOfficerTrainings } from '@/lib/officer-trainings'
+import { withOfficerTrainingRows } from '@/lib/officer-trainings'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -73,14 +73,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   ])
 
   if (!officer) return notFound('Officer')
-  const officerWithEligibleTrainings = withEligibleOfficerTrainings(officer, trainings)
+  const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
   await syncOfficerPlayerPlaytime(id)
   const [dutyTime, playtime, absences] = await Promise.all([
     getOfficerDutyTime(id, { sync: false }),
     getOfficerPlaytimeReport(id, { sync: false }),
     getOfficerAbsenceReport(id),
   ])
-  return success({ ...officerWithEligibleTrainings, dutyTime, playtime, absences })
+  return success({ ...officerWithTrainingRows, dutyTime, playtime, absences })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

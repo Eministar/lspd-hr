@@ -186,11 +186,6 @@ function desiredNickname(officer) {
   return truncate(nick, 32)
 }
 
-function trainingAvailableForOfficer(trainingRow, officer) {
-  const minRank = trainingRow?.training?.minRank || trainingRow?.minRank
-  return !minRank || !officer.rank || officer.rank.sortOrder <= minRank.sortOrder
-}
-
 async function getGatewayDiscordConfig() {
   const prisma = getPrismaClient()
   const systemSetting = prismaDelegate(prisma, 'systemSetting', 'systemsetting')
@@ -224,7 +219,7 @@ function desiredRoleIds(officer, config) {
     config.rankRoleMap[officer.rankId],
     ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
     ...(officer.trainings || [])
-      .filter((training) => training.completed && trainingAvailableForOfficer(training, officer))
+      .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),
   ].filter(Boolean)))
 }

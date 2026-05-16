@@ -278,23 +278,19 @@ function DraggableOfficerRow({
       </td>
       {allTrainings.map((t) => {
         const ot = officer.trainings.find((x) => x.trainingId === t.id)
-        if (!trainingAvailableForOfficer(t, officer)) {
-          return (
-            <td key={t.id} className="px-2 py-2.5 text-center">
-              <span className="text-[11px] text-[#2a4a6a]">—</span>
-            </td>
-          )
-        }
         const completed = ot?.completed || false
+        const available = trainingAvailableForOfficer(t, officer)
         return (
           <td key={t.id} className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => onTrainToggle(officer.id, t.id, !completed)}
               disabled={!canEditTrainings}
+              title={!available ? `${t.label} ist erst ab ${t.minRank?.name ?? 'Mindestrang'} vorgesehen` : t.label}
               className={cn(
                 'mx-auto h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
-                completed ? 'bg-[#d4af37]' : 'bg-[#18385f]',
+                completed ? 'bg-[#d4af37]' : available ? 'bg-[#18385f]' : 'bg-[#0b1f3a] border border-dashed border-[#4a6585]/60',
+                !available && !completed && 'opacity-70',
                 canEditTrainings ? 'hover:bg-[#1e3a5f]' : 'cursor-not-allowed opacity-70'
               )}
             >
@@ -400,20 +396,24 @@ function MobileOfficerCard({
 
       {allTrainings.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {allTrainings.filter((t) => trainingAvailableForOfficer(t, officer)).map((t) => {
+          {allTrainings.map((t) => {
             const ot = officer.trainings.find((x) => x.trainingId === t.id)
             const completed = ot?.completed || false
+            const available = trainingAvailableForOfficer(t, officer)
             return (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => onTrainToggle(officer.id, t.id, !completed)}
                 disabled={!canEditTrainings}
+                title={!available ? `${t.label} ist erst ab ${t.minRank?.name ?? 'Mindestrang'} vorgesehen` : t.label}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[10.5px] font-medium border transition-colors',
                   completed
                     ? 'bg-[#d4af37]/15 border-[#d4af37]/40 text-[#e6d27a]'
-                    : 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299]',
+                    : available
+                      ? 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299]'
+                      : 'bg-[#061426] border-dashed border-[#4a6585]/50 text-[#4a6585]',
                   canEditTrainings ? 'hover:border-[#234568]' : 'cursor-not-allowed opacity-70'
                 )}
               >
@@ -529,7 +529,15 @@ export default function OfficersPage() {
       const list = officers
       const o = list?.find((x) => x.id === officerId)
       if (!o) return
-      if (!o.trainings.some((t) => t.trainingId === trainingId)) return
+      const trainingRow = o.trainings.find((t) => t.trainingId === trainingId)
+      if (!trainingRow) return
+      const requiresOverride = completed && !trainingAvailableForOfficer(trainingRow.training, o)
+      if (requiresOverride) {
+        const ok = window.confirm(
+          `Die Ausbildung "${trainingRow.training.label}" ist erst ab "${trainingRow.training.minRank?.name ?? 'Mindestrang'}" vorgesehen.\n\nMöchtest du sie wirklich exakt ${o.firstName} ${o.lastName} geben?`,
+        )
+        if (!ok) return
+      }
       const previousTrainings = o.trainings.map((t) => ({ ...t }))
       setData((prev) => {
         if (!prev) return prev
@@ -551,7 +559,10 @@ export default function OfficersPage() {
         const res = await fetch(`/api/officers/${officerId}/trainings`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trainings }),
+          body: JSON.stringify({
+            trainings,
+            overrideTrainingIds: requiresOverride ? [trainingId] : [],
+          }),
         })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Fehler')

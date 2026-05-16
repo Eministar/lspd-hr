@@ -32,12 +32,12 @@ export function eligibleTrainingsForRank<TTraining extends TrainingMinimum>(trai
     .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
-export function withEligibleOfficerTrainings<
+export function withOfficerTrainingRows<
   TOfficer extends OfficerWithTrainingRows<TTraining>,
   TTraining extends TrainingMinimum,
 >(officer: TOfficer, trainings: TTraining[]) {
   const existingByTrainingId = new Map(officer.trainings.map((row) => [row.trainingId, row]))
-  const rows = eligibleTrainingsForRank(trainings, officer.rank).map((training) => {
+  const rows = [...trainings].sort((a, b) => a.sortOrder - b.sortOrder).map((training) => {
     const existing = existingByTrainingId.get(training.id)
     if (existing) {
       return { ...existing, training }

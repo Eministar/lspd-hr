@@ -188,6 +188,10 @@ const PENAL_GRADE_OPTIONS = Object.values(SANCTION_CATALOG).map((rule) => ({
 }))
 const PLAYTIME_HISTORY_COLLAPSE_LIMIT = 5
 
+function trainingAvailableForOfficer(training: Training, officer: OfficerDetail) {
+  return !training.minRank || officer.rank.sortOrder <= training.minRank.sortOrder
+}
+
 function formatDuration(ms: number) {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000))
   const hours = Math.floor(totalMinutes / 60)
@@ -549,6 +553,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const handleTrainingToggle = useCallback(async (trainingId: string, completed: boolean) => {
     if (!canEditTrainings) return
     if (!officer) return
+    const trainingRow = officer.trainings.find((t) => t.trainingId === trainingId)
+    if (!trainingRow) return
+    const requiresOverride = completed && !trainingAvailableForOfficer(trainingRow.training, officer)
+    if (requiresOverride) {
+      const ok = window.confirm(
+        `Die Ausbildung "${trainingRow.training.label}" ist erst ab "${trainingRow.training.minRank?.name ?? 'Mindestrang'}" vorgesehen.\n\nMöchtest du sie wirklich exakt ${officer.firstName} ${officer.lastName} geben?`,
+      )
+      if (!ok) return
+    }
     const previous = officer
     const trainings = officer.trainings.map((t) => ({
       trainingId: t.trainingId,
@@ -564,7 +577,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       const res = await fetch(`/api/officers/${id}/trainings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trainings }),
+        body: JSON.stringify({
+          trainings,
+          overrideTrainingIds: requiresOverride ? [trainingId] : [],
+        }),
       })
       const json = await res.json() as { data?: { officer?: OfficerDetail }; error?: string }
       if (!res.ok) throw new Error(json.error || 'Fehler')
@@ -862,11 +878,14 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   key={t.id}
                   disabled={!canEditTrainings}
                   onClick={() => canEditTrainings && handleTrainingToggle(t.trainingId, !t.completed)}
+                  title={!trainingAvailableForOfficer(t.training, officer) ? `${t.training.label} ist erst ab ${t.training.minRank?.name ?? 'Mindestrang'} vorgesehen` : t.training.label}
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all duration-150 text-left',
                     t.completed
                       ? 'bg-[#0f2340] hover:bg-[#142d52]'
-                      : 'hover:bg-[#0f2340]',
+                      : trainingAvailableForOfficer(t.training, officer)
+                        ? 'hover:bg-[#0f2340]'
+                        : 'border border-dashed border-[#4a6585]/45 bg-[#061426]/70 hover:bg-[#0f2340]',
                     !canEditTrainings && 'cursor-not-allowed opacity-75'
                   )}
                 >
@@ -878,7 +897,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                   <span className={cn(
                     'text-[13px]',
-                    t.completed ? 'text-[#eee]' : 'text-[#4a6585]'
+                    t.completed ? 'text-[#eee]' : trainingAvailableForOfficer(t.training, officer) ? 'text-[#4a6585]' : 'text-[#3f5874]'
                   )}>{t.training.label}</span>
                 </button>
               ))}

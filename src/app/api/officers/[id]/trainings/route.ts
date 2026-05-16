@@ -5,7 +5,7 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateTrainingsSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
-import { isTrainingAvailableForRank, withEligibleOfficerTrainings } from '@/lib/officer-trainings'
+import { isTrainingAvailableForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
 
 function trainingStateLabel(completed: boolean) {
   return completed ? 'abgeschlossen' : 'offen'
@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     for (const t of parsed.data.trainings) {
       const training = trainingById.get(t.trainingId)
       if (!training) return error('Ausbildung nicht gefunden')
-      if (!isTrainingAvailableForRank(training, previousOfficer.rank)) {
+      if (!isTrainingAvailableForRank(training, previousOfficer.rank) && !parsed.data.overrideTrainingIds.includes(t.trainingId)) {
         return error('Ausbildung ist für den Rang dieses Officers nicht verfügbar')
       }
     }
@@ -66,13 +66,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     })
     if (!officer) return notFound('Officer')
-    const officerWithEligibleTrainings = withEligibleOfficerTrainings(officer, trainings)
+    const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
 
     const changedTrainings = parsed.data.trainings.flatMap((trainingUpdate) => {
       const previous = previousByTrainingId.get(trainingUpdate.trainingId)
       if (previous?.completed === trainingUpdate.completed) return []
 
-      const current = officerWithEligibleTrainings.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
+      const current = officerWithTrainingRows.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
       const label = current?.training.label ?? previous?.training.label ?? trainingUpdate.trainingId
       return [
         `${label}: ${trainingStateLabel(previous?.completed ?? false)} → ${trainingStateLabel(trainingUpdate.completed)}`,
@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         type: 'training',
         title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
         description: 'Ausbildungsstand wurde aktualisiert.',
-        officer: officerWithEligibleTrainings,
+        officer: officerWithTrainingRows,
         actor: user,
         fields: [
           { name: 'Änderungen', value: changedTrainings.map((line) => `• ${line}`).join('\n'), inline: false },
@@ -102,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
-    return success({ message: 'Ausbildungen aktualisiert', officer: officerWithEligibleTrainings })
+    return success({ message: 'Ausbildungen aktualisiert', officer: officerWithTrainingRows })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

@@ -40,5 +40,6 @@ export const updateTrainingsSchema = z.object({
   trainings: z.array(z.object({
     trainingId: z.string(),
     completed: z.boolean(),
-  }))
+  })),
+  overrideTrainingIds: z.array(z.string()).optional().default([]),
 })

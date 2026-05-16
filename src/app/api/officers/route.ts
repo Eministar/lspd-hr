@@ -9,7 +9,7 @@ import { getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
-import { eligibleTrainingsForRank, withEligibleOfficerTrainings } from '@/lib/officer-trainings'
+import { eligibleTrainingsForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return success(officers.map((officer) => withEligibleOfficerTrainings(officer, trainings)))
+  return success(officers.map((officer) => withOfficerTrainingRows(officer, trainings)))
 }
 
 export async function POST(req: NextRequest) {
