@@ -267,7 +267,7 @@ function DraggableOfficerRow({
       <td className="px-2 py-2.5 font-mono text-[12px] text-[#b7c5d8] align-middle">
         {officer.badgeNumber}
       </td>
-      <td className="px-3 py-2.5 align-middle min-w-0 max-w-0 overflow-hidden">
+      <td className="px-3 py-2.5 align-middle min-w-0 overflow-hidden">
         <Link
           href={`/officers/${officer.id}`}
           onClick={(e) => e.stopPropagation()}
@@ -282,7 +282,7 @@ function DraggableOfficerRow({
         const completed = ot?.completed || false
         const available = trainingAvailableForOfficer(t, officer)
         return (
-          <td key={t.id} className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+          <td key={t.id} className="px-1.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => onTrainToggle(officer.id, t.id, !completed)}
@@ -300,17 +300,17 @@ function DraggableOfficerRow({
           </td>
         )
       })}
-      <td className="px-3 py-2.5 whitespace-nowrap">
+      <td className="px-2 py-2.5 whitespace-nowrap">
         <UnitBadges officer={officer} unitsByKey={unitsByKey} maxVisible={2} />
       </td>
-      <td className="px-3 py-2.5 whitespace-nowrap">
+      <td className="px-2 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
           <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
           <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
         </span>
       </td>
-      <td className="px-3 py-2.5 text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</td>
-      <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+      <td className="px-2 py-2.5 text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</td>
+      <td className="px-1.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex items-center gap-1.5">
           <FlagButton
             value={officer.flag}
@@ -799,32 +799,29 @@ export default function OfficersPage() {
                         className="overflow-hidden"
                       >
                         {/* Desktop / tablet: table view */}
-                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-x-auto mt-1 mb-2">
-                          <table
-                            className="w-full table-fixed"
-                            style={{ minWidth: `${493 + allTrainings.length * 104}px` }}
-                          >
+                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
+                          <table className="w-full table-fixed">
                             <thead>
                               <tr>
                                 <th className="w-[3px] p-0" />
-                                <th className="w-7 px-1 py-2.5" />
-                                <th className="px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-16">DN</th>
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] min-w-[160px]">Name</th>
+                                <th className="w-[28px] px-1 py-2.5" />
+                                <th className="w-[58px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">DN</th>
+                                <th className="w-[170px] px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Name</th>
                                 {allTrainings.map((t) => (
                                   <th
                                     key={t.id}
-                                    className="px-2 py-2.5 text-center text-[10.5px] font-medium text-[#6b8299] w-[104px]"
+                                    className="px-1.5 py-2.5 text-center text-[10.5px] font-medium text-[#6b8299]"
                                     title={t.label}
                                   >
-                                    <span className="block mx-auto max-w-[92px] whitespace-normal break-words leading-tight">
+                                    <span className="block mx-auto max-w-full whitespace-normal break-words leading-tight">
                                       {t.label}
                                     </span>
                                   </th>
                                 ))}
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Unit</th>
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[110px]">Status</th>
-                                <th className="px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] w-[100px]">Einstellung</th>
-                                <th className="px-2 py-2.5 w-[56px] text-center text-[11px] font-medium text-[#6b8299]">
+                                <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Unit</th>
+                                <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Status</th>
+                                <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Einstellung</th>
+                                <th className="w-[44px] px-1.5 py-2.5 text-center text-[11px] font-medium text-[#6b8299]">
                                   <Flag size={11} className="inline" strokeWidth={1.75} />
                                 </th>
                               </tr>
