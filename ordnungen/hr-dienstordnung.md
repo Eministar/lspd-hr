@@ -1,198 +1,97 @@
-# HR-Dienstordnung
+# Dienstordnung der Human Resources Abteilung
 
-**Los Santos Police Department (LSPD)**
-
-Diese Dienstordnung regelt die Grundprinzipien, Verfahren und Richtlinien für die Arbeit der Human Resources (HR) Abteilung.
-
-## Inhaltsverzeichnis
-
-1. [Allgemeine Grundsätze](#allgemeine-grundsätze)
-2. [Aufgabenbereiche](#aufgabenbereiche)
-3. [Onboarding und Ausbildung](#onboarding-und-ausbildung)
-4. [Leistungsbewertung](#leistungsbewertung)
-5. [Disziplinarmaßnahmen](#disziplinarmaßnahmen)
-6. [Befugnisse und Escalation](#befugnisse-und-escalation)
+**Las Santos Police Department – Nerowood**
 
 ---
 
-## Allgemeine Grundsätze
+## §1 Grundordnung
 
-Die HR-Abteilung arbeitet nach folgenden Grundprinzipien:
+(1) Die Human Resources Abteilung (nachfolgend „HR") versteht sich als **unterstützende und beaufsichtigende Instanz** der Leitungs- und Chiefebene des LSPD Nerowood.
 
-### 1. Fairness und Transparenz
-- Alle Maßnahmen müssen dokumentiert und nachvollziehbar sein
-- Betroffene Personen haben das Recht, zu Vorwürfen Stellung zu nehmen
-- Entscheidungen basieren auf objektiven Kriterien
+(2) Die HR ist **keine bestimmende Institution**. Sie hat keine eigenständige Weisungsbefugnis gegenüber der Leitungs- oder Chiefebene, sondern wirkt beratend, kontrollierend und unterstützend.
 
-### 2. Professionalität
-- HR-Mitarbeiter halten strikte Vertraulichkeit
-- Persönliche Konflikte dürfen nicht in Entscheidungen einfließen
-- Alle Vorgänge sind sachlich und zielorientiert zu führen
-
-### 3. Einheitlichkeit
-- Verfahren werden konsistent angewandt
-- Ähnliche Fälle werden gleichbehandelt
-- Richtlinien werden einheitlich durchgesetzt
+(3) Sämtliche Entscheidungen der HR erfolgen im Einklang mit den Vorgaben der übergeordneten Ebenen des Departments.
 
 ---
 
-## Aufgabenbereiche
+## §2 Bewerbungsordnung
 
-Die HR-Abteilung ist zuständig für:
+(1) Neueinstellungen erfolgen **ausschließlich auf Rookie-Ebene**.
 
-### Personal-Administration
-- Anstellung und Einstellung neuer Beamter
-- Verwaltung von Personalakten
-- Dokumentation von Dienstzeiten und Abwesenheiten
-- Rang- und Funktionswechsel
+(2) Abweichungen von dieser Regelung (z. B. Quereinstiege auf höheren Rängen) sind **ausnahmslos mit der Chiefebene abzustimmen** und bedürfen deren ausdrücklicher Zustimmung.
 
-### Schulung und Entwicklung
-- Planung und Durchführung von Trainings
-- Fachliche Weiterbildung
-- Assessments und Evaluationen
-- Spezialausbildungen (z.B. SRU-Training)
-
-### Disziplin und Compliance
-- Untersuchung von Verstößen
-- Umsetzung des Sanktionskatalogs
-- Dokumentation von Disziplinarmaßnahmen
-- Monitoring der Compliance
-
-### Beratung und Support
-- Beratung für Offiziere in administrativen Fragen
-- Unterstützung bei Karriereplanungen
-- Vermittlung bei Konflikten (sofern möglich)
+(3) Eine eigenmächtige Einstellung auf einem höheren Rang durch die HR ist untersagt.
 
 ---
 
-## Onboarding und Ausbildung
+## §3 Sanktionsordnung
 
-### Neue Beamte (Academy)
+(1) Sanktionen dürfen ausschließlich von Personen ausgesprochen werden, die den **Status eines HR-Officers** innehaben.
 
-Neue Beamte durchlaufen ein strukturiertes Onboarding-Programm:
+(2) Jede Sanktion bedarf der **vorherigen Freigabe durch die HR-Leitung**.
 
-1. **Erste Woche:** Grundlagen, Sicherheit, Systeme
-2. **Zweite Woche:** Standard Operating Procedures (SOPs)
-3. **Dritte bis vierte Woche:** Feldtraining mit Mentor
-4. **Evaluation:** Überprüfung durch HR vor permanenter Anstellung
+(3) Jede Sanktion ist **zwingend per Clip nachzuweisen**. Ohne entsprechenden Clip-Nachweis ist die Sanktion ungültig und unwirksam.
 
-### Mentor-Programm
-
-- Erfahrene Offiziere werden als Mentoren zugewiesen
-- Mentoren werden für diese Aufgabe honoriert/anerkannt
-- Regelmäßige Check-ins zwischen Mentor, Recruit und HR
-
-### Probation
-
-- Neue Beamte unterliegen einer Probezeit
-- HR kann die Anstellung während der Probezeit beenden
-- Beamte können zuvor nicht zu ernsthaften Disziplinarmaßnahmen führen
+(4) Sanktionen ohne Freigabe oder ohne Clip-Nachweis können rückwirkend annulliert werden und ziehen ggf. interne Konsequenzen nach sich.
 
 ---
 
-## Leistungsbewertung
+## §4 Beschwerdenordnung
 
-### Jährliche Evaluationen
+(1) Beschwerden werden **nicht voreilig** bearbeitet. Jede Beschwerde ist sorgfältig, objektiv und unter Berücksichtigung aller Seiten zu prüfen.
 
-- Mindestens jährlich findet eine formale Leistungsbewertung statt
-- Bewerter sind direkte Vorgesetzte oder HR-Lead
-- Bewertungen basieren auf definierten Kriterien
+(2) Zuständigkeiten bei Beschwerden:
 
-### Beförderungskriterien
+| Beschwerde gegen | Bearbeitung durch |
+|---|---|
+| Mitglied der HR | HR-Leitung |
+| Leitungs-/Chiefebene des FJD | HR-Leitungsebene |
+| Leitungs-/Chiefebene des MD | HR-Leitungsebene |
+| Leitungs-/Chiefebene des PD | HR-Leitungsebene |
 
-**Für jeden Rang gelten folgende Mindestanforderungen:**
+(3) Reguläre Beschwerden gegen einfache Beamte werden durch die zuständigen HR-Officer bearbeitet.
 
-- Erfolgreich abgeschlossene aktuelle Schulungen
-- Zufriedenstellende bis gute Leistungsbewertung
-- Keine laufenden Disziplinarverfahren (außer Grade I)
-- Mindestdauer im aktuellen Rang
-
-### Leistungsverbesserungspläne (Performance Improvement Plan - PIP)
-
-- HR kann ein PIP initiieren, wenn Leistung nicht zufriedenstellend ist
-- Pläne haben eine definierte Dauer (üblicherweise 30-60 Tage)
-- Regelmäßige Überprüfung mit klaren Metriken
-- Nichterfüllung kann zu Degradierung führen
+(4) Eine voreilige oder einseitige Bearbeitung von Beschwerden stellt einen Verstoß gegen diese Dienstordnung dar.
 
 ---
 
-## Disziplinarmaßnahmen
+## §5 Versetzungsordnung
 
-Alle Disziplinarmaßnahmen folgen dem Sanktionskatalog. Grundsätze:
+(1) Versetzungsanträge müssen durch **ein Mitglied der HR-Leitung abgesegnet** werden.
 
-### Verfahrensschritte
+(2) Jede genehmigte Versetzung ist mit der **Unterschrift des freigebenden HR-Leitungsmitglieds** zu versehen. Ohne diese Unterschrift ist die Versetzung ungültig.
 
-1. **Anfängliches Gespräch:** HR führt ein Gespräch mit dem Beschuldigten
-2. **Stellungnahme:** Der Beamte kann zur Anschuldigung Stellung nehmen
-3. **Überprüfung:** HR überprüft die Vorwürfe sorgfältig
-4. **Entscheidung:** HR bestimmt Grad und Art der Maßnahme
-5. **Mitteilung:** Schriftliche Bestätigung der Sanktion
-6. **Dokumentation:** Eintrag in Personalakte
+(3) Bei Versetzungen **zum Police Department (PD)** ist zusätzlich die **ausdrückliche Zustimmung der HR-Leitung** erforderlich.
 
-### Progressives Disziplinarverfahren
-
-- Wiederholte Verstöße führen zu höheren Strafen
-- Kontext und Absicht werden berücksichtigt
-- Schwerwiegende Verstöße können zu direkter Degradierung führen
-- Besonders schwerwiegende Verstöße führen zur Kündigung
-
-### Sperrfristen
-
-- Grade I Sanktionen verfallen nach 12 Monaten
-- Grade II Sanktionen verfallen nach 18 Monaten
-- Grade III und höher: Keine Verfallsfrist (bleiben in Personalakte)
+(4) Ohne ordnungsgemäße Dokumentation und Unterschrift erlangt eine Versetzung keine Rechtswirksamkeit.
 
 ---
 
-## Befugnisse und Escalation
+## §6 Uprank- / Derank-Ordnung
 
-### HR-Team Befugnisse
+**Upranks**
 
-**HR-Koordinator:**
-- Grade I Sanktionen
-- Routineverwaltung
-- Schulungsplanung
+(1) Die HR kann **Vorschläge** für Beförderungen aussprechen.
 
-**HR-Sergeant/Senior:**
-- Grade I und II Sanktionen
-- Aufnahmeentscheidungen
-- Trainingskoordination
+(2) Die **endgültige Entscheidungsgewalt** über jede Beförderung liegt ausschließlich bei der **Chiefebene**.
 
-**HR-Lead (Captain/Lieutenant):**
-- Alle Grade Sanktionen
-- Strategische Entscheidungen
-- Beförderungen bestätigen
+**Deranks**
 
-### Escalation-Richtlinien
+(3) Deranks dürfen ausschließlich von einer Person eingetragen werden, die **im Rang höher steht als die zu derankende Person**.
 
-**Zur Abteilungsleitung (Commander/Chief):**
-- Grade IV und V Sanktionen
-- Kündigung von Beamten
-- Größere strategische Entscheidungen
-
-**Nach außen:**
-- Externe Beschwerde eines Offiziers
-- Juristische Fragen
-- Öffentlichkeitswirksame Fälle
-
-### Vier-Augen-Prinzip
-
-- Grade III+ Sanktionen müssen von zwei HR-Mitarbeitern genehmigt werden
-- Kumulative Sanktionen benötigen Bestätigung durch HR-Lead
-- Kündigung benötigt Commander-Genehmigung
+(4) Auch hier gilt: Die endgültige Entscheidung über einen Derank liegt bei der Chiefebene; die HR äußert lediglich Vorschläge.
 
 ---
 
-## Konfidentialität und Datenschutz
+## §7 Schlussbestimmungen
 
-- Alle Personalinformationen sind vertraulich
-- Einsicht in Personalakten nur mit berechtigtem Interesse
-- Gespräche sind privat und werden nicht weitergeleitet
-- Daten werden nach geltendem Datenschutz behandelt
+(1) Diese Dienstordnung tritt mit Veröffentlichung in Kraft und ist für alle Angehörigen der HR-Abteilung verbindlich.
+
+(2) Änderungen und Ergänzungen dieser Ordnung obliegen der HR-Leitung in Abstimmung mit der Chiefebene des LSPD Nerowood.
+
+(3) Verstöße gegen diese Dienstordnung können interne Konsequenzen bis hin zur Entlassung aus der HR-Abteilung nach sich ziehen.
 
 ---
 
-**Letzte Überprüfung:** Mai 2026
-
-Diese Ordnung wird regelmäßig überprüft und bei Bedarf aktualisiert.
-
+*Las Santos Police Department – Nerowood*
+*Human Resources Abteilung*
