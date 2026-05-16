@@ -30,8 +30,6 @@ type DiscordTrainingChange = {
   label: string
   completed: boolean
   previousCompleted?: boolean
-  minRankName?: string | null
-  outsideMinimum?: boolean
 }
 
 type DiscordGuildMember = {
@@ -688,9 +686,9 @@ function cleanEmbedField(field: DiscordField): DiscordField {
   }
 }
 
-function trainingRoleLine(config: DiscordConfig, trainingId: string) {
-  const roleId = snowflake(config.trainingRoleMap[trainingId])
-  return roleId ? `Rolle: ✅ <@&${roleId}>` : 'Rolle: ❌ `Keine Rolle verknüpft`'
+function trainingRoleValue(config: DiscordConfig, change: DiscordTrainingChange) {
+  const roleId = snowflake(config.trainingRoleMap[change.trainingId])
+  return roleId ? `<@&${roleId}>` : change.label
 }
 
 function trainingStatusLabel(completed: boolean) {
@@ -698,17 +696,12 @@ function trainingStatusLabel(completed: boolean) {
 }
 
 function trainingChangeField(change: DiscordTrainingChange, config: DiscordConfig): DiscordField {
-  const lines = [
-    trainingRoleLine(config, change.trainingId),
-    `Änderung: ${trainingStatusLabel(change.previousCompleted ?? false)} → **${trainingStatusLabel(change.completed)}**`,
-  ]
-  if (change.outsideMinimum) {
-    lines.push(`Hinweis: außerhalb Mindestrang${change.minRankName ? ` (${change.minRankName})` : ''} bestätigt`)
-  }
-
   return {
-    name: `${change.completed ? '✅' : '❌'} ${change.label}`,
-    value: lines.join('\n'),
+    name: ZWSP,
+    value: [
+      trainingRoleValue(config, change),
+      `${trainingStatusLabel(change.previousCompleted ?? false)} → ${trainingStatusLabel(change.completed)}`,
+    ].join('\n'),
     inline: true,
   }
 }

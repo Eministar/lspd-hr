@@ -583,8 +583,6 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
       label: training.label,
       completed,
       previousCompleted: previousTraining?.completed ?? false,
-      minRankName: training.minRank?.name ?? null,
-      outsideMinimum: false,
     }],
   })
 

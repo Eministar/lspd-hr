@@ -85,16 +85,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const current = officerWithTrainingRows.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
       const training = current?.training ?? previous?.training
       const label = training?.label ?? trainingUpdate.trainingId
-      const minRankName = training?.minRank?.name ?? null
-      const outsideMinimum = !!training && trainingUpdate.completed && !isTrainingAvailableForRank(training, previousOfficer.rank)
 
       return [{
         trainingId: trainingUpdate.trainingId,
         label,
         completed: trainingUpdate.completed,
         previousCompleted: previous?.completed ?? false,
-        minRankName,
-        outsideMinimum,
       }]
     })
 
