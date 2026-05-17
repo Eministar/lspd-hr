@@ -13,6 +13,7 @@ require('dotenv/config')
 const path = require('node:path')
 const http = require('node:http')
 const fs = require('node:fs')
+const { spawnSync } = require('node:child_process')
 const { parse } = require('node:url')
 
 const projectDir = path.resolve(__dirname)
@@ -108,11 +109,43 @@ let prismaClient = null
 let prismaCompat = null
 let discordApiQueue = Promise.resolve()
 
+function prismaClientEntryExists() {
+  return (
+    fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.ts')) ||
+    fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'))
+  )
+}
+
+function ensureGeneratedPrismaClient() {
+  if (prismaClientEntryExists()) return
+
+  const prismaCli = path.join(projectDir, 'node_modules', 'prisma', 'build', 'index.js')
+  if (!fs.existsSync(prismaCli)) {
+    throw new Error(
+      `[Prisma] Generierter Client fehlt und Prisma CLI wurde nicht gefunden: ${prismaCli}. Auf dem Server npm install und npm run build ausführen.`,
+    )
+  }
+
+  console.warn('[Prisma] Generierter Client fehlt. Führe prisma generate als Start-Fallback aus.')
+  const result = spawnSync(process.execPath, [prismaCli, 'generate'], {
+    cwd: projectDir,
+    env: process.env,
+    encoding: 'utf8',
+    windowsHide: true,
+  })
+
+  if (result.status !== 0 || !prismaClientEntryExists()) {
+    const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+    throw new Error(`[Prisma] prisma generate fehlgeschlagen.${output ? `\n${output}` : ''}`)
+  }
+}
+
 function getPrismaClient() {
   if (prismaCompat) return prismaCompat
   const url = String(process.env.DATABASE_URL || '').trim()
   if (!url) throw new Error('[Prisma] DATABASE_URL fehlt oder ist leer.')
 
+  ensureGeneratedPrismaClient()
   const { PrismaClient } = require('./src/generated/prisma/client')
   const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
   const adapter = new PrismaMariaDb(url)

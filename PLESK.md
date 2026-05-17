@@ -47,6 +47,8 @@ Bei weißer/leerer Seite oder kaputten CSS-Dateien: Document Root `.next/static`
    - `npm run build`
 6. **Start:** Entweder **Application Startup File** = **`start.js`** (wie in diesem Repo) **oder**, falls die Oberfläche es hergibt, **`npm`** mit Script **`start`**. **`PORT`** setzt Plesk meist automatisch — `start.js` liest ihn (nicht einen festen Port hardcodieren).
 
+`src/generated/prisma` wird nicht versioniert. `npm install`/`npm run build` erzeugt den Prisma-Client normalerweise automatisch. Falls Plesk den Prozess ohne vorherigen Build startet, erzeugt `start.js` den fehlenden Prisma-Client einmalig direkt über das lokal installierte Prisma CLI nach.
+
 ## Datenbank
 
 MySQL/MariaDB muss für die App erreichbar sein (bei vielen Hosting-Paketen **localhost** und Port **3306** mit Nutzer wie in der Plesk-DB-Verwaltung angelegt).
