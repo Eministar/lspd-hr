@@ -6,6 +6,21 @@ import { sanitizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
 
+function serializeGroup<T extends {
+  users: { id: string }[]
+  memberships: { userId: string }[]
+}>(group: T) {
+  const userIds = new Set([
+    ...group.users.map((user) => user.id),
+    ...group.memberships.map((membership) => membership.userId),
+  ])
+  const { users, memberships, ...rest } = group
+  return {
+    ...rest,
+    _count: { users: userIds.size },
+  }
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth(['ADMIN'], ['groups:manage'])
@@ -28,10 +43,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const group = await userGroupDelegate(prisma).update({
       where: { id },
       data,
-      include: { _count: { select: { users: true } } },
+      include: {
+        users: { select: { id: true } },
+        memberships: { select: { userId: true } },
+      },
     })
 
-    return success(group)
+    return success(serializeGroup(group))
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Benutzergruppe existiert bereits')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
@@ -48,10 +66,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const group = await userGroupDelegate(prisma).findUnique({
       where: { id },
-      include: { _count: { select: { users: true } } },
+      include: {
+        users: { select: { id: true } },
+        memberships: { select: { userId: true } },
+      },
     })
     if (!group) return notFound('Benutzergruppe')
-    if (group._count.users > 0) return error('Benutzergruppe wird noch verwendet')
+    if (serializeGroup(group)._count.users > 0) return error('Benutzergruppe wird noch verwendet')
 
     await userGroupDelegate(prisma).delete({ where: { id } })
     return success({ message: 'Benutzergruppe gelöscht' })

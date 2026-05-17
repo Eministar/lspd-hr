@@ -8,7 +8,7 @@ interface User {
   username: string
   displayName: string
   discordId: string | null
-  group: { id: string; name: string } | null
+  groups: { id: string; name: string }[]
   permissions: string[]
 }
 

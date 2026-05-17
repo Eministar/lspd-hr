@@ -51,6 +51,23 @@ Bei weißer/leerer Seite oder kaputten CSS-Dateien: Document Root `.next/static`
 
 MySQL/MariaDB muss für die App erreichbar sein (bei vielen Hosting-Paketen **localhost** und Port **3306** mit Nutzer wie in der Plesk-DB-Verwaltung angelegt).
 
+## Uploads ohne Rebuild-404
+
+Uploads dürfen in Produktion nicht im Build-Output liegen. Die App schreibt Dateien in `UPLOAD_DIR` und liefert sie über `/uploads/<dateiname>` dynamisch aus. Dadurch muss nach einem Upload **kein** `npm run build` laufen.
+
+Empfohlen in Plesk:
+
+- Einen persistenten Ordner außerhalb des Deploy-/Build-Outputs anlegen, z. B. `private/uploads`.
+- In den Node.js-Umgebungsvariablen setzen:
+
+```bash
+UPLOAD_DIR="/var/www/vhosts/deine-domain.tld/private/uploads"
+```
+
+Wenn `UPLOAD_DIR` leer ist, nutzt die App `./uploads` im Anwendungsstamm. Das funktioniert lokal, ist für Deployments aber nur dann sicher, wenn dieser Ordner beim Git-Pull/Upload nicht gelöscht wird.
+
+Alte Dateien aus `public/uploads` bei Bedarf einmalig in den neuen `UPLOAD_DIR` verschieben. Die URLs bleiben gleich (`/uploads/<dateiname>`).
+
 ## Kurz: Deploy-Zyklus
 
 ```bash

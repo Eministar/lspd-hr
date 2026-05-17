@@ -26,8 +26,14 @@ export function uploadMaxBytes() {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_UPLOAD_MAX_BYTES
 }
 
-function uploadDir() {
-  return path.join(process.cwd(), 'public', 'uploads')
+export function uploadDir() {
+  const configured = process.env.UPLOAD_DIR?.trim()
+  if (configured) {
+    return path.isAbsolute(configured)
+      ? path.normalize(configured)
+      : path.join(/*turbopackIgnore: true*/ process.cwd(), configured)
+  }
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), 'uploads')
 }
 
 function sanitizeExt(name: string) {
@@ -37,10 +43,20 @@ function sanitizeExt(name: string) {
   return ext
 }
 
-function isStoredUploadFilename(filename: string) {
+export function isStoredUploadFilename(filename: string) {
   const clean = path.basename(filename)
   if (clean !== filename) return false
   return /^[a-f0-9-]{36}(?:\.[a-z0-9][a-z0-9_-]{0,31})?$/i.test(filename)
+}
+
+export function resolveUploadPath(filename: string) {
+  if (!isStoredUploadFilename(filename)) throw new Error('Dateiname ist ungültig')
+
+  const base = uploadDir()
+  const target = path.normalize(path.join(base, filename))
+  if (!target.startsWith(`${base}${path.sep}`)) throw new Error('Dateiname ist ungültig')
+
+  return target
 }
 
 export function validateUploadFile(file: File) {
@@ -61,7 +77,7 @@ export async function saveUploadedFile(file: File): Promise<UploadedFileInfo> {
   await mkdir(dir, { recursive: true })
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(dir, filename), buffer)
+  await writeFile(resolveUploadPath(filename), buffer)
 
   return {
     id,
@@ -82,7 +98,7 @@ export async function listUploadedFiles(): Promise<StoredUploadInfo[]> {
     entries
       .filter((entry) => entry.isFile() && isStoredUploadFilename(entry.name))
       .map(async (entry) => {
-        const fileStat = await stat(path.join(dir, entry.name))
+        const fileStat = await stat(resolveUploadPath(entry.name))
         return {
           filename: entry.name,
           url: `/uploads/${entry.name}`,
@@ -99,9 +115,5 @@ export async function listUploadedFiles(): Promise<StoredUploadInfo[]> {
 export async function deleteUploadedFile(filename: string) {
   if (!isStoredUploadFilename(filename)) throw new Error('Dateiname ist ungültig')
 
-  const target = path.resolve(uploadDir(), filename)
-  const base = path.resolve(uploadDir())
-  if (!target.startsWith(`${base}${path.sep}`)) throw new Error('Dateiname ist ungültig')
-
-  await unlink(target)
+  await unlink(resolveUploadPath(filename))
 }

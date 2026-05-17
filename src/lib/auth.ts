@@ -16,7 +16,7 @@ export interface CurrentUser {
   username: string
   displayName: string
   discordId: string | null
-  group: { id: string; name: string } | null
+  groups: { id: string; name: string }[]
   permissions: Permission[]
 }
 
@@ -57,18 +57,27 @@ export async function getCurrentUser() {
       discordId: true,
       permissions: true,
       group: { select: { id: true, name: true, permissions: true } },
+      groupMemberships: {
+        select: {
+          group: { select: { id: true, name: true, permissions: true } },
+        },
+      },
     },
   })
 
   if (!user) return null
+
+  const groupsById = new Map(user.groupMemberships.map((membership) => [membership.group.id, membership.group]))
+  if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
+  const groups = Array.from(groupsById.values())
   
   return {
     id: user.id,
     username: user.username,
     displayName: user.displayName,
     discordId: user.discordId,
-    group: user.group ? { id: user.group.id, name: user.group.name } : null,
-    permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
+    groups: groups.map((group) => ({ id: group.id, name: group.name })),
+    permissions: resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions)),
   } satisfies CurrentUser
 }
 
@@ -82,12 +91,8 @@ export async function requireAuth(allowedRoles?: string[], allowedPermissions?: 
   if (!hasRoles && !hasPermissions) return user
 
   if (hasRoles) {
-    const groupName = user.group?.name
-    if (groupName) {
-      const groupLower = groupName.toLowerCase()
-      const allowedLower = allowedRoles!.map((r) => String(r).toLowerCase())
-      if (allowedLower.includes(groupLower)) return user
-    }
+    const allowedLower = allowedRoles!.map((r) => String(r).toLowerCase())
+    if (user.groups.some((group) => allowedLower.includes(group.name.toLowerCase()))) return user
   }
 
   if (hasPermissions && hasAnyPermission(user, allowedPermissions!)) return user

@@ -14,7 +14,14 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { username: parsed.data.username },
-      include: { group: { select: { id: true, name: true, permissions: true } } },
+      include: {
+        group: { select: { id: true, name: true, permissions: true } },
+        groupMemberships: {
+          select: {
+            group: { select: { id: true, name: true, permissions: true } },
+          },
+        },
+      },
     })
     if (!user) return error('Benutzername oder Passwort falsch', 401)
 
@@ -31,14 +38,18 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
     })
 
+    const groupsById = new Map(user.groupMemberships.map((membership) => [membership.group.id, membership.group]))
+    if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
+    const groups = Array.from(groupsById.values())
+
     return success({
       user: {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
         discordId: user.discordId,
-        group: user.group ? { id: user.group.id, name: user.group.name } : null,
-        permissions: resolveEffectivePermissions(user.permissions, user.group?.permissions),
+        groups: groups.map((group) => ({ id: group.id, name: group.name })),
+        permissions: resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions)),
       },
     })
   } catch {

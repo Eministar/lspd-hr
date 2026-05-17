@@ -53,3 +53,6 @@ next-env.d.ts
 
 # lokale Deployment-Logs
 /deploy-logs/
+
+# lokale Uploads (in Produktion per UPLOAD_DIR persistent ablegen)
+/uploads/

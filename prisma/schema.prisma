@@ -77,7 +77,8 @@ model UserGroup {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users User[]
+  users       User[]
+  memberships UserGroupMembership[]
 }
 
 model User {
@@ -93,6 +94,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  groupMemberships UserGroupMembership[]
   promotionsPerformed PromotionLog[] @relation("PerformedBy")
   terminationsPerformed Termination[] @relation("TerminatedBy")
   sanctionsIssued      Sanction[]     @relation("SanctionIssuedBy")
@@ -106,6 +108,18 @@ model User {
   probationsCreated  Probation[]     @relation("ProbationCreator")
   probationsDecided  Probation[]     @relation("ProbationDecider")
   patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
+}
+
+model UserGroupMembership {
+  userId    String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([groupId])
 }
 
 model Unit {

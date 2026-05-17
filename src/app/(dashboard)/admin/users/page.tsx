@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Plus, Edit, Trash2, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/layout/page-header'
@@ -22,9 +21,9 @@ interface User {
   username: string
   displayName: string
   discordId: string | null
-  groupId: string | null
+  groupIds: string[]
   permissions: Permission[]
-  group: { id: string; name: string } | null
+  groups: { id: string; name: string }[]
   createdAt: string
 }
 
@@ -50,12 +49,12 @@ export default function UsersPage() {
     password: '',
     displayName: '',
     discordId: '',
-    groupId: '',
+    groupIds: [] as string[],
     permissions: [] as Permission[],
   })
 
   const openCreate = () => {
-    setForm({ username: '', password: '', displayName: '', discordId: '', groupId: '', permissions: [] })
+    setForm({ username: '', password: '', displayName: '', discordId: '', groupIds: [], permissions: [] })
     setCreateModal(true)
   }
 
@@ -65,7 +64,7 @@ export default function UsersPage() {
       password: '',
       displayName: u.displayName,
       discordId: u.discordId ?? '',
-      groupId: u.groupId ?? '',
+      groupIds: u.groupIds ?? [],
       permissions: u.permissions ?? [],
     })
     setEditUser(u)
@@ -79,6 +78,35 @@ export default function UsersPage() {
         : prev.permissions.filter((p) => p !== permission),
     }))
   }
+
+  const toggleGroup = (groupId: string, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      groupIds: checked
+        ? Array.from(new Set([...prev.groupIds, groupId]))
+        : prev.groupIds.filter((id) => id !== groupId),
+    }))
+  }
+
+  const groupSections = (
+    <div>
+      <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {(groups ?? []).map((group) => (
+          <Checkbox
+            key={group.id}
+            checked={form.groupIds.includes(group.id)}
+            onCheckedChange={(checked) => toggleGroup(group.id, checked)}
+            label={group.name}
+            className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+          />
+        ))}
+        {(groups ?? []).length === 0 && (
+          <p className="text-[12px] text-[#6b8299]">Keine Benutzergruppen vorhanden</p>
+        )}
+      </div>
+    </div>
+  )
 
   const permissionSections = (
     <>
@@ -130,13 +158,13 @@ export default function UsersPage() {
       const data: {
         displayName: string
         discordId: string | null
-        groupId: string | null
+        groupIds: string[]
         permissions: Permission[]
         password?: string
       } = {
         displayName: form.displayName,
         discordId: form.discordId.trim() || null,
-        groupId: form.groupId || null,
+        groupIds: form.groupIds,
         permissions: form.permissions,
       }
       if (form.password) data.password = form.password
@@ -186,11 +214,11 @@ export default function UsersPage() {
               <div className="flex-1 min-w-0">
               <p className="text-[13.5px] font-medium text-[#eee]">{u.displayName}</p>
                 <p className="text-[11.5px] text-[#4a6585]">
-                  @{u.username} · Discord: {u.discordId || 'nicht verbunden'} · {u.group?.name || 'Keine Gruppe'} · {u.permissions.length} direkte Rechte · Erstellt: {formatDate(u.createdAt)}
+                  @{u.username} · Discord: {u.discordId || 'nicht verbunden'} · {u.groups.length ? u.groups.map((group) => group.name).join(', ') : 'Keine Gruppe'} · {u.permissions.length} direkte Rechte · Erstellt: {formatDate(u.createdAt)}
                 </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
-                {u.group?.name || 'Keine Gruppe'}
+                {u.groups.length ? `${u.groups.length} Gruppen` : 'Keine Gruppe'}
               </span>
               <div className="flex gap-0.5">
                 <button onClick={() => openEdit(u)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
@@ -219,17 +247,9 @@ export default function UsersPage() {
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
           <Input label="Discord-ID (optional)" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} placeholder="17–22 Ziffern" />
           <Input label="Passwort" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-          <Select
-            label="Benutzergruppe"
-            value={form.groupId}
-            onValueChange={(groupId) => setForm({ ...form, groupId })}
-            options={[
-              { value: '', label: 'Keine Gruppe' },
-              ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
-            ]}
-          />
+          {groupSections}
           <p className="text-[11.5px] text-[#6b8299]">
-            Direkte Rechte werden zusätzlich zu den Rechten der Benutzergruppe vergeben.
+            Direkte Rechte werden zusätzlich zu den Rechten aller Benutzergruppen vergeben.
           </p>
           {permissionSections}
           <div className="flex justify-end gap-2 pt-1">
@@ -244,17 +264,9 @@ export default function UsersPage() {
           <Input label="Anzeigename" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
           <Input label="Discord-ID (optional)" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} placeholder="17–22 Ziffern" />
           <Input label="Neues Passwort (optional)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leer lassen um nicht zu ändern" />
-          <Select
-            label="Benutzergruppe"
-            value={form.groupId}
-            onValueChange={(groupId) => setForm({ ...form, groupId })}
-            options={[
-              { value: '', label: 'Keine Gruppe' },
-              ...(groups?.map((group) => ({ value: group.id, label: group.name })) || []),
-            ]}
-          />
+          {groupSections}
           <p className="text-[11.5px] text-[#6b8299]">
-            Direkte Rechte werden zusätzlich zu den Rechten der Benutzergruppe vergeben.
+            Direkte Rechte werden zusätzlich zu den Rechten aller Benutzergruppen vergeben.
           </p>
           {permissionSections}
           <div className="flex justify-end gap-2 pt-1">

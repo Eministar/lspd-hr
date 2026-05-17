@@ -13,5 +13,6 @@ export const createUserSchema = z.object({
   displayName: z.string().min(1, 'Anzeigename ist erforderlich'),
   discordId: discordIdSchema,
   groupId: z.string().nullable().optional(),
+  groupIds: z.array(z.string()).optional(),
   permissions: z.array(z.enum(PERMISSIONS)).optional(),
 })

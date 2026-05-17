@@ -34,5 +34,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/login', '/((?!_next/static|_next/image|favicon.ico|shield.webp|logo.webp).*)'],
+  matcher: [
+    '/api/:path*',
+    '/login',
+    '/((?!_next/static|_next/image|favicon.ico|shield.webp|logo.webp|logo-og.png|opengraph-image|twitter-image).*)',
+  ],
 }

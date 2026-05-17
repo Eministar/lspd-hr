@@ -87,7 +87,12 @@ async function main() {
       displayName: 'Administrator',
       groupId: adminGroup.id,
     },
-  }) as { username: string }
+  }) as { id: string; username: string }
+  await getUpsertDelegate(['userGroupMembership', 'usergroupmembership']).upsert({
+    where: { userId_groupId: { userId: admin.id, groupId: adminGroup.id } },
+    update: {},
+    create: { userId: admin.id, groupId: adminGroup.id },
+  })
   console.log('Admin user created:', admin.username)
 
   const units = [

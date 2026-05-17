@@ -6,15 +6,33 @@ import { sanitizePermissions } from '@/lib/permissions'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
 
+function serializeGroup<T extends {
+  users: { id: string }[]
+  memberships: { userId: string }[]
+}>(group: T) {
+  const userIds = new Set([
+    ...group.users.map((user) => user.id),
+    ...group.memberships.map((membership) => membership.userId),
+  ])
+  const { users, memberships, ...rest } = group
+  return {
+    ...rest,
+    _count: { users: userIds.size },
+  }
+}
+
 export async function GET() {
   try {
     await requireAuth(['ADMIN'], ['groups:manage', 'users:manage'])
 
     const groups = await userGroupDelegate(prisma).findMany({
-      include: { _count: { select: { users: true } } },
+      include: {
+        users: { select: { id: true } },
+        memberships: { select: { userId: true } },
+      },
       orderBy: { name: 'asc' },
     })
-    return success(groups)
+    return success(groups.map(serializeGroup))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -39,10 +57,13 @@ export async function POST(req: NextRequest) {
           : null,
         permissions: sanitizePermissions(body.permissions),
       },
-      include: { _count: { select: { users: true } } },
+      include: {
+        users: { select: { id: true } },
+        memberships: { select: { userId: true } },
+      },
     })
 
-    return success(group, 201)
+    return success(serializeGroup(group), 201)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Benutzergruppe existiert bereits')
     const msg = e instanceof Error ? e.message : 'Serverfehler'

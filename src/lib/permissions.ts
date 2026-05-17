@@ -139,10 +139,14 @@ export function resolvePermissions(groupPermissions?: unknown): Permission[] {
   return normalizePermissions(groupPermissions)
 }
 
-export function resolveEffectivePermissions(userPermissions?: unknown, groupPermissions?: unknown): Permission[] {
+export function resolveEffectivePermissions(userPermissions?: unknown, groupPermissions?: unknown | unknown[]): Permission[] {
+  const groupPermissionList = Array.isArray(groupPermissions) && groupPermissions.some(Array.isArray)
+    ? groupPermissions.flatMap((permissions) => sanitizePermissions(permissions))
+    : sanitizePermissions(groupPermissions)
+
   return normalizePermissions([
-    ...sanitizePermissions(groupPermissions),
     ...sanitizePermissions(userPermissions),
+    ...groupPermissionList,
   ])
 }
 
