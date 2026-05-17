@@ -301,13 +301,31 @@ select option:hover {
 }
 
 .markdown-document .markdown-signature {
+  position: relative;
   display: inline-block;
-  color: #f3d675;
-  font-family: "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive;
-  font-size: 1.55em;
+  margin: 0.15rem 0.1rem 0.05rem;
+  padding: 0 0.35rem 0.18rem 0.15rem;
+  color: #f7dc86;
+  font-family: "Lucida Handwriting", "Segoe Script", "Brush Script MT", cursive;
+  font-size: 1.75em;
   font-weight: 400;
-  line-height: 1.15;
-  transform: rotate(-1deg);
+  line-height: 1;
+  text-shadow:
+    0 0 12px rgba(212, 175, 55, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: rotate(-2deg) skewX(-6deg);
+  transform-origin: left bottom;
+}
+
+.markdown-document .markdown-signature::after {
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(247, 220, 134, 0), rgba(247, 220, 134, 0.8) 22%, rgba(247, 220, 134, 0.15));
+  content: "";
 }
 
 .markdown-document em {
