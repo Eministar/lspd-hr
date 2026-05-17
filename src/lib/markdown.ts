@@ -17,16 +17,28 @@ function slugify(value: string) {
     .replace(/\s+/g, '-')
 }
 
+function isSafeLinkHref(href: string) {
+  return /^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(href)
+}
+
 function renderInline(value: string) {
-  let html = escapeHtml(value)
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+  const codeSpans: string[] = []
+  let html = escapeHtml(value).replace(/`([^`]+)`/g, (_, code: string) => {
+    const index = codeSpans.push(`<code>${code}</code>`) - 1
+    return `\u0000CODE${index}\u0000`
+  })
+
+  html = html.replace(/&lt;br\s*\/?&gt;/gi, '<br />')
+  html = html.replace(/\*\*~([^~]+)~\*\*/g, '<span class="markdown-signature">$1</span>')
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  html = html.replace(
-    /\[([^\]]+)]\((https?:\/\/[^)\s]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
-  )
-  return html
+  html = html.replace(/\[([^\]]+)]\(([^)\s]+)\)/g, (match, label: string, href: string) => {
+    if (!isSafeLinkHref(href)) return match
+    const externalAttrs = /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''
+    return `<a href="${href}"${externalAttrs}>${label}</a>`
+  })
+
+  return html.replace(/\u0000CODE(\d+)\u0000/g, (_, index: string) => codeSpans[Number(index)] ?? '')
 }
 
 function splitTableRow(row: string) {
