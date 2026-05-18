@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireTaskModuleManage } from '@/lib/module-permissions'
 
 const VALID_STATUS = ['OPEN', 'IN_PROGRESS', 'COMPLETED']
 const VALID_PRIORITY = ['LOW', 'NORMAL', 'HIGH', 'URGENT']
@@ -25,12 +25,12 @@ const taskInclude = {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
     const body = await req.json()
 
-    const existing = await prisma.task.findUnique({ where: { id } })
+    const existing = await prisma.task.findUnique({ where: { id }, include: { list: { select: { module: true } } } })
     if (!existing) return notFound('Aufgabe')
+    await requireTaskModuleManage(existing.list.module)
 
     const data: Record<string, unknown> = {}
 
@@ -77,11 +77,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
 
-    const existing = await prisma.task.findUnique({ where: { id } })
+    const existing = await prisma.task.findUnique({ where: { id }, include: { list: { select: { module: true } } } })
     if (!existing) return notFound('Aufgabe')
+    await requireTaskModuleManage(existing.list.module)
 
     await prisma.task.delete({ where: { id } })
     return success({ message: 'Aufgabe gelöscht' })

@@ -50,7 +50,7 @@ const mainNav: NavItem[] = [
 const tasksNav: NavItem[] = [
   { name: 'Academy', href: '/academy', icon: ListChecks, permission: 'tasks:view' },
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'tasks:view' },
-  { name: 'SRU', href: '/sru', icon: Shield, permission: 'tasks:view' },
+  { name: 'SRU', href: '/sru', icon: Shield, permission: 'sru:view' },
 ]
 
 const adminNav: NavItem[] = [
@@ -143,7 +143,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
           .filter((item) => !item.permission || hasPermission(user, item.permission))
           .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        {hasAnyPermission(user, ['tasks:view']) && (
+        {hasAnyPermission(user, ['tasks:view', 'sru:view']) && (
           <>
             <div className="gold-line my-3 mx-2" />
             <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>

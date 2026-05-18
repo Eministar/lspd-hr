@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent } from '@/lib/discord-integration'
+import { requireCalendarModuleManage, requireCalendarModuleView } from '@/lib/module-permissions'
 
-const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'OTHER'])
-type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'OTHER'
+const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'OTHER'])
+type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'OTHER'
 
 function eventType(value: string): CalendarEventTypeValue | null {
   return EVENT_TYPES.has(value) ? value as CalendarEventTypeValue : null
@@ -23,8 +23,10 @@ function cleanText(value: unknown) {
 }
 
 export async function GET(req: NextRequest) {
+  const eventModule = req.nextUrl.searchParams.get('module') === 'SRU' ? 'SRU' : null
+
   try {
-    await requirePermission('calendar:view')
+    await requireCalendarModuleView(eventModule)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -38,6 +40,7 @@ export async function GET(req: NextRequest) {
 
   const events = await prisma.calendarEvent.findMany({
     where: {
+      module: eventModule,
       ...(type ? { type } : {}),
       ...(from || to ? {
         startsAt: {
@@ -58,8 +61,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requirePermission('calendar:manage')
     const body = await req.json()
+    const eventModule = body.module === 'SRU' ? 'SRU' : null
+    const user = await requireCalendarModuleManage(eventModule)
     const title = cleanText(body.title)
     const description = cleanText(body.description)
     const location = cleanText(body.location)
@@ -81,6 +85,7 @@ export async function POST(req: NextRequest) {
     const event = await prisma.calendarEvent.create({
       data: {
         title,
+        module: eventModule,
         description: description || null,
         type,
         startsAt,

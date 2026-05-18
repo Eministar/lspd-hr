@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireTaskModuleManage } from '@/lib/module-permissions'
 
 const taskInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -22,7 +22,6 @@ const taskInclude = {
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
     const body = await req.json()
 
@@ -31,8 +30,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       (v: unknown): v is string => typeof v === 'string',
     )
 
-    const task = await prisma.task.findUnique({ where: { id }, include: { assignments: true } })
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { assignments: true, list: { select: { module: true } } },
+    })
     if (!task) return notFound('Aufgabe')
+    await requireTaskModuleManage(task.list.module)
 
     const current = new Set(task.assignments.map((a) => a.officerId))
     const next = new Set(officerIds)

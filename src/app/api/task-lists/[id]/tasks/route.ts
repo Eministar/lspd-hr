@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireTaskModuleManage } from '@/lib/module-permissions'
 
 const VALID_PRIORITY = ['LOW', 'NORMAL', 'HIGH', 'URGENT']
 
@@ -24,12 +24,12 @@ const taskInclude = {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id: listId } = await params
     const body = await req.json()
 
     const list = await prisma.taskList.findUnique({ where: { id: listId } })
     if (!list) return notFound('Liste')
+    const user = await requireTaskModuleManage(list.module)
 
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     if (!title) return error('Titel ist erforderlich')

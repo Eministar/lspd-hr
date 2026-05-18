@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { requireCalendarModuleManage } from '@/lib/module-permissions'
 
-const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'OTHER'])
-type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'OTHER'
+const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'OTHER'])
+type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'OTHER'
 
 function eventType(value: string): CalendarEventTypeValue | null {
   return EVENT_TYPES.has(value) ? value as CalendarEventTypeValue : null
@@ -23,11 +23,11 @@ function cleanText(value: unknown) {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('calendar:manage')
     const { id } = await params
     const body = await req.json()
     const existing = await prisma.calendarEvent.findUnique({ where: { id } })
     if (!existing) return notFound('Termin')
+    const user = await requireCalendarModuleManage(existing.module)
 
     const data: Record<string, unknown> = {}
     if ('title' in body) {
@@ -92,10 +92,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('calendar:manage')
     const { id } = await params
     const event = await prisma.calendarEvent.findUnique({ where: { id } })
     if (!event) return notFound('Termin')
+    const user = await requireCalendarModuleManage(event.module)
 
     await prisma.calendarEvent.delete({ where: { id } })
     await createAuditLog({

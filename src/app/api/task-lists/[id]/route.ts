@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
 
 const taskListInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -27,32 +27,32 @@ const taskListInclude = {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const list = await prisma.taskList.findUnique({
+    where: { id },
+    include: taskListInclude,
+  })
+  if (!list) return notFound('Liste')
+
   try {
-    await requirePermission('tasks:view')
+    await requireTaskModuleView(list.module)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
     return error(msg, 500)
   }
-  const { id } = await params
-
-  const list = await prisma.taskList.findUnique({
-    where: { id },
-    include: taskListInclude,
-  })
-  if (!list) return notFound('Liste')
   return success(list)
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
     const body = await req.json()
 
     const list = await prisma.taskList.findUnique({ where: { id } })
     if (!list) return notFound('Liste')
+    await requireTaskModuleManage(list.module)
 
     const data: Record<string, unknown> = {}
     if (typeof body.title === 'string') {
@@ -84,11 +84,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const { id } = await params
 
     const list = await prisma.taskList.findUnique({ where: { id } })
     if (!list) return notFound('Liste')
+    await requireTaskModuleManage(list.module)
 
     await prisma.taskList.delete({ where: { id } })
     return success({ message: 'Liste gelöscht' })

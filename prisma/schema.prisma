@@ -59,6 +59,8 @@ enum CalendarEventType {
   ACADEMY
   EXAM
   HR_DEADLINE
+  SRU_TRAINING
+  SRU_OPERATION
   OTHER
 }
 
@@ -105,6 +107,9 @@ model User {
   taskListsCreated    TaskList[]     @relation("TaskListCreator")
   tasksCreated        Task[]         @relation("TaskCreator")
   calendarEventsCreated CalendarEvent[] @relation("CalendarEventCreator")
+  sruFoldersCreated SruFolder[] @relation("SruFolderCreator")
+  sruDocumentsCreated SruDocument[] @relation("SruDocumentCreator")
+  sruDocumentsUpdated SruDocument[] @relation("SruDocumentUpdater")
   probationsCreated  Probation[]     @relation("ProbationCreator")
   probationsDecided  Probation[]     @relation("ProbationDecider")
   patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
@@ -203,6 +208,7 @@ model Officer {
 
 model CalendarEvent {
   id                  String            @id @default(cuid())
+  module              TaskModule?
   title               String
   description         String?           @db.Text
   type                CalendarEventType @default(OTHER)
@@ -220,8 +226,42 @@ model CalendarEvent {
   updatedAt           DateTime          @updatedAt
 
   @@index([startsAt])
+  @@index([module, startsAt])
   @@index([type, startsAt])
   @@index([officerId, startsAt])
+}
+
+model SruFolder {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  createdById String?
+  createdBy   User?    @relation("SruFolderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents   SruDocument[]
+
+  @@index([sortOrder, createdAt])
+}
+
+model SruDocument {
+  id          String    @id @default(cuid())
+  folderId    String?
+  folder      SruFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  title       String
+  content     String    @db.Text
+  sortOrder   Int       @default(0)
+  createdById String?
+  createdBy   User?     @relation("SruDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?     @relation("SruDocumentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([folderId, sortOrder])
+  @@index([updatedAt])
 }
 
 model Probation {

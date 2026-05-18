@@ -31,6 +31,10 @@ type PrismaClientCompat = PrismaClient & {
   patrolunit: CompatDelegate
   patrolAssignment: CompatDelegate
   patrolassignment: CompatDelegate
+  sruFolder: CompatDelegate
+  srufolder: CompatDelegate
+  sruDocument: CompatDelegate
+  srudocument: CompatDelegate
 }
 
 const delegateAliases: Record<string, string> = {
@@ -59,6 +63,10 @@ const delegateAliases: Record<string, string> = {
   patrolunit: 'patrolUnit',
   patrolAssignment: 'patrolassignment',
   patrolassignment: 'patrolAssignment',
+  sruFolder: 'srufolder',
+  srufolder: 'sruFolder',
+  sruDocument: 'srudocument',
+  srudocument: 'sruDocument',
 }
 
 const globalForPrisma = globalThis as unknown as {

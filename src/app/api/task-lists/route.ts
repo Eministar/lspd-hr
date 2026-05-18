@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, requirePermission } from '@/lib/auth'
+import { requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
 import { success, error, unauthorized } from '@/lib/api-response'
 
 const VALID_MODULES = ['ACADEMY', 'HR', 'SRU'] as const
@@ -34,18 +34,18 @@ const taskListInclude = {
 }
 
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const moduleParam = searchParams.get('module')
+  const includeArchived = searchParams.get('archived') === 'true'
+
   try {
-    await requirePermission('tasks:view')
+    await requireTaskModuleView(moduleParam)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
     return error(msg, 500)
   }
-
-  const { searchParams } = new URL(req.url)
-  const moduleParam = searchParams.get('module')
-  const includeArchived = searchParams.get('archived') === 'true'
 
   const where: Record<string, unknown> = {}
   if (isModule(moduleParam)) where.module = moduleParam
@@ -62,10 +62,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
     const body = await req.json()
 
     if (!isModule(body.module)) return error('Ungültiges Modul')
+    const user = await requireTaskModuleManage(body.module)
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     if (!title) return error('Titel ist erforderlich')
 

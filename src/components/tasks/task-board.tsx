@@ -39,7 +39,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { cn, formatDate } from '@/lib/utils'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, type Permission } from '@/lib/permissions'
 
 type TaskModule = 'ACADEMY' | 'HR' | 'SRU'
 type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
@@ -102,6 +102,8 @@ interface TaskBoardProps {
   title: string
   description: string
   accentLabel: string
+  viewPermission?: Permission
+  managePermission?: Permission
   headerAction?: ReactNode
 }
 
@@ -316,10 +318,18 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
   )
 }
 
-export function TaskBoard({ module, title, description, accentLabel, headerAction }: TaskBoardProps) {
+export function TaskBoard({
+  module,
+  title,
+  description,
+  accentLabel,
+  viewPermission = 'tasks:view',
+  managePermission = 'tasks:manage',
+  headerAction,
+}: TaskBoardProps) {
   const { user } = useAuth()
-  const canView = hasPermission(user, 'tasks:view')
-  const canEdit = hasPermission(user, 'tasks:manage')
+  const canView = hasPermission(user, viewPermission)
+  const canEdit = hasPermission(user, managePermission)
 
   const [showArchived, setShowArchived] = useState(false)
   const queryUrl = canView ? `/api/task-lists?module=${module}${showArchived ? '&archived=true' : ''}` : null
