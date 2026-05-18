@@ -8,6 +8,7 @@ interface User {
   username: string
   displayName: string
   discordId: string | null
+  avatarUrl: string | null
   groups: { id: string; name: string }[]
   permissions: string[]
 }
@@ -16,21 +17,9 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   authError: string | null
-  login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   clearClientCache: () => Promise<void>
-}
-
-async function readApiResponse(res: Response) {
-  const text = await res.text().catch(() => '')
-  if (!text) return null
-
-  try {
-    return JSON.parse(text) as { success?: boolean; error?: string; data?: { user: User } }
-  } catch {
-    return null
-  }
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -75,21 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timeoutId)
   }, [refreshUser])
 
-  const login = async (username: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-    const data = await readApiResponse(res)
-    if (!res.ok || !data?.success || !data.data?.user) {
-      throw new Error(data?.error || 'Login fehlgeschlagen')
-    }
-    setUser(data.data.user)
-    setAuthError(null)
-    router.push('/')
-  }
-
   const logout = async () => {
     await fetch('/api/auth/login', { method: 'DELETE' })
     setUser(null)
@@ -117,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, authError, login, logout, refreshUser, clearClientCache }}>
+    <AuthContext.Provider value={{ user, loading, authError, logout, refreshUser, clearClientCache }}>
       {children}
     </AuthContext.Provider>
   )

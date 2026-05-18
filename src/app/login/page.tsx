@@ -1,34 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import { useAuth } from '@/context/auth-context'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useToast } from '@/components/ui/toast'
 import Image from 'next/image'
-import { Lock, User } from 'lucide-react'
+import { MessageCircle, ShieldCheck } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+
+const REMEMBER_KEY = 'lspd-discord-remember-login'
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const { addToast } = useToast()
+  const [remember, setRemember] = useState(true)
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await login(username, password)
-      addToast({ type: 'success', title: 'Willkommen zurück!' })
-    } catch (err) {
-      addToast({ type: 'error', title: 'Login fehlgeschlagen', message: err instanceof Error ? err.message : 'Unbekannter Fehler' })
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    const saved = window.localStorage.getItem(REMEMBER_KEY)
+    if (saved !== null) setRemember(saved === '1')
+
+    const params = new URLSearchParams(window.location.search)
+    setError(params.get('error') ?? '')
+  }, [])
+
+  const startDiscordLogin = () => {
+    window.localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0')
+    window.location.href = `/api/auth/discord/login?remember=${remember ? '1' : '0'}`
   }
-
-  const inputClass = 'w-full h-[42px] pl-10 pr-3.5 rounded-[10px] text-[14px] bg-[#0a1a33]/60 text-[#edf4fb] placeholder:text-[#4a6585] border border-[#18385f]/60 focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.1)] transition-all'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#061426] bg-pattern p-4 relative overflow-hidden">
@@ -41,7 +37,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[320px] relative z-10"
+        className="w-full max-w-[360px] relative z-10"
       >
         <div className="text-center mb-8">
           <motion.div
@@ -53,45 +49,42 @@ export default function LoginPage() {
             <Image src="/shield.webp" alt="LSPD" width={72} height={72} className="rounded-full" priority />
           </motion.div>
           <h1 className="text-[18px] font-semibold text-white tracking-[-0.01em]">LSPD HR</h1>
-          <p className="text-[12px] font-medium text-[#d4af37]/80 mt-1 tracking-[0.04em]">Personalverwaltung</p>
+          <p className="text-[12px] font-medium text-[#d4af37]/80 mt-1 tracking-[0.04em]">Discord Authentifizierung</p>
         </div>
 
         <div className="glass-panel-elevated rounded-[16px] p-6">
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            <div>
-              <label className="block text-[11.5px] font-semibold text-[#8ea4bd] mb-1.5 ml-0.5 uppercase tracking-[0.06em]">Benutzername</label>
-              <div className="relative">
-                <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
-                  autoComplete="username"
-                  autoFocus
-                  className={inputClass}
-                />
-              </div>
+          <div className="flex items-start gap-3 mb-5">
+            <div className="h-10 w-10 rounded-[10px] bg-[#5865f2]/15 flex items-center justify-center text-[#8ea1ff]">
+              <MessageCircle size={18} strokeWidth={1.9} />
             </div>
             <div>
-              <label className="block text-[11.5px] font-semibold text-[#8ea4bd] mb-1.5 ml-0.5 uppercase tracking-[0.06em]">Passwort</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className={inputClass}
-                />
-              </div>
+              <h2 className="text-[14px] font-semibold text-white">Mit Discord anmelden</h2>
+              <p className="text-[12px] leading-5 text-[#8ea4bd] mt-1">
+                Zugriff wird über deine Discord-Rollen und die zugeordneten Dashboard-Gruppen vergeben.
+              </p>
             </div>
-            <div className="pt-1">
-              <Button type="submit" className="w-full h-[42px] text-[13.5px]" loading={loading}>
-                Anmelden
-              </Button>
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+              {error}
             </div>
-          </form>
+          )}
+
+          <label className="mb-4 flex items-center gap-2 rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/55 px-3 py-2.5 text-[12.5px] text-[#dbe6f3]">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="accent-[#d4af37]"
+            />
+            Eingeloggt bleiben
+          </label>
+
+          <Button type="button" className="w-full h-[42px] text-[13.5px]" onClick={startDiscordLogin}>
+            <ShieldCheck size={15} strokeWidth={2} />
+            Discord Login
+          </Button>
         </div>
 
         <p className="text-center text-[10.5px] text-[#4a6585] mt-8 tracking-[0.06em] uppercase font-medium">

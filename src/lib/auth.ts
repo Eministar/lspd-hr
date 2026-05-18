@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import { hasAnyPermission, resolveEffectivePermissions, type Permission } from './permissions'
+import { storedDiscordAvatarUrl } from './discord-auth'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -16,6 +17,7 @@ export interface CurrentUser {
   username: string
   displayName: string
   discordId: string | null
+  avatarUrl: string | null
   groups: { id: string; name: string }[]
   permissions: Permission[]
 }
@@ -55,6 +57,8 @@ export async function getCurrentUser() {
       username: true,
       displayName: true,
       discordId: true,
+      discordAvatar: true,
+      discordDiscriminator: true,
       permissions: true,
       group: { select: { id: true, name: true, permissions: true } },
       groupMemberships: {
@@ -76,6 +80,7 @@ export async function getCurrentUser() {
     username: user.username,
     displayName: user.displayName,
     discordId: user.discordId,
+    avatarUrl: storedDiscordAvatarUrl(user),
     groups: groups.map((group) => ({ id: group.id, name: group.name })),
     permissions: resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions)),
   } satisfies CurrentUser

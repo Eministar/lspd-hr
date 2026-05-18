@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
 
     const config = await getDiscordConfig()
-    const [rolesResult, channelsResult, ranks, trainings, units] = await Promise.all([
+    const [rolesResult, channelsResult, ranks, trainings, units, userGroups] = await Promise.all([
       getDiscordGuildRoles(config.guildId).then((roles) => ({ data: roles, error: null as string | null })).catch((e: unknown) => ({
         data: [],
         error: e instanceof Error ? e.message : 'Discord-Rollen konnten nicht geladen werden',
@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
       prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } }),
       prisma.training.findMany({ orderBy: { sortOrder: 'asc' } }),
       prisma.unit.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+      prisma.userGroup.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     ])
 
     return success({
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
       ranks,
       trainings,
       units,
+      userGroups,
       diagnostics: {
         guildConfigured: !!config.guildId,
         applicationConfigured: !!config.applicationId,
@@ -95,6 +97,8 @@ export async function POST(req: NextRequest) {
       humanResourcesRoleId: canManageSettings && typeof body.humanResourcesRoleId === 'string' ? body.humanResourcesRoleId : undefined,
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
+      authLoginRoleIds: canManageSettings && Array.isArray(body.authLoginRoleIds) ? body.authLoginRoleIds : undefined,
+      authRoleGroupMap: canManageSettings && body.authRoleGroupMap && typeof body.authRoleGroupMap === 'object' ? body.authRoleGroupMap : undefined,
       rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
       trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
       unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,

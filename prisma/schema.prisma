@@ -86,9 +86,14 @@ model UserGroup {
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
-  passwordHash String
+  passwordHash String?
   displayName  String
   discordId    String?
+  discordUsername String?
+  discordGlobalName String?
+  discordAvatar String?
+  discordDiscriminator String?
+  lastLoginAt  DateTime?
   role         UserRole @default(READONLY)
   groupId      String?
   group        UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)

@@ -19,6 +19,14 @@ type DiscordChannel = {
   type: number
 }
 
+export type DiscordApiUser = {
+  id: string
+  username: string
+  discriminator?: string
+  global_name?: string | null
+  avatar?: string | null
+}
+
 export type DiscordField = {
   name: string
   value: string
@@ -33,8 +41,10 @@ type DiscordTrainingChange = {
 }
 
 type DiscordGuildMember = {
+  user?: DiscordApiUser
   roles?: string[]
   nick?: string | null
+  avatar?: string | null
 }
 
 type DiscordConfig = {
@@ -51,6 +61,8 @@ type DiscordConfig = {
   humanResourcesRoleId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
+  authLoginRoleIds: string[]
+  authRoleGroupMap: Record<string, string>
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
   unitRoleMap: Record<string, string>
@@ -124,6 +136,8 @@ export const DISCORD_SETTING_KEYS = {
   humanResourcesRoleId: 'discord.humanResourcesRoleId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
+  authLoginRoleIds: 'discord.authLoginRoleIds',
+  authRoleGroupMap: 'discord.authRoleGroupMap',
   rankRoleMap: 'discord.rankRoleMap',
   trainingRoleMap: 'discord.trainingRoleMap',
   unitRoleMap: 'discord.unitRoleMap',
@@ -300,6 +314,20 @@ function cleanRoleMap(value: unknown): Record<string, string> {
   )
 }
 
+function cleanRoleGroupMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, string] => (
+        typeof entry[0] === 'string' &&
+        /^\d{17,22}$/.test(entry[0]) &&
+        typeof entry[1] === 'string' &&
+        entry[1].trim().length > 0
+      ))
+      .map(([roleId, groupId]) => [roleId, groupId.trim()]),
+  )
+}
+
 function snowflake(value: string | null | undefined) {
   const id = value?.trim()
   return id && /^\d{17,22}$/.test(id) ? id : ''
@@ -402,6 +430,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     humanResourcesRoleId: map[DISCORD_SETTING_KEYS.humanResourcesRoleId] || envHumanResourcesRoleId(),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
+    authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], [])),
+    authRoleGroupMap: cleanRoleGroupMap(parseJson(map[DISCORD_SETTING_KEYS.authRoleGroupMap], {})),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
     trainingRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.trainingRoleMap], {})),
     unitRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {})),
@@ -424,6 +454,8 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.humanResourcesRoleId !== undefined) data[DISCORD_SETTING_KEYS.humanResourcesRoleId] = input.humanResourcesRoleId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
+  if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
+  if (input.authRoleGroupMap !== undefined) data[DISCORD_SETTING_KEYS.authRoleGroupMap] = JSON.stringify(cleanRoleGroupMap(input.authRoleGroupMap))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
   if (input.trainingRoleMap !== undefined) data[DISCORD_SETTING_KEYS.trainingRoleMap] = JSON.stringify(cleanRoleMap(input.trainingRoleMap))
   if (input.unitRoleMap !== undefined) data[DISCORD_SETTING_KEYS.unitRoleMap] = JSON.stringify(cleanRoleMap(input.unitRoleMap))
@@ -481,6 +513,23 @@ export async function getDiscordGuildChannels(guildId?: string) {
 
   setCache(guildChannelsCache, id, result)
   return result
+}
+
+export async function getDiscordGuildMember(discordId: string, guildId?: string) {
+  const config = await getDiscordConfig()
+  const id = guildId || config.guildId
+  const memberId = snowflake(discordId)
+  if (!id || !memberId || !botToken()) return null
+
+  return discordFetch<DiscordGuildMember>(`/guilds/${id}/members/${memberId}`).catch(() => null)
+}
+
+export async function getDiscordGuildMembers(guildId?: string) {
+  const config = await getDiscordConfig()
+  const id = guildId || config.guildId
+  if (!id || !botToken()) return []
+
+  return discordFetch<DiscordGuildMember[]>(`/guilds/${id}/members?limit=1000`).catch(() => [])
 }
 
 async function getOfficerForDiscord(officerId: string) {

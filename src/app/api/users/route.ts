@@ -1,34 +1,19 @@
-import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, hashPassword } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
-import { createUserSchema } from '@/lib/validations/auth'
 import { userGroupDelegate } from '@/lib/prisma-delegates'
-import { sanitizePermissions } from '@/lib/permissions'
-
-function sanitizeGroupIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return Array.from(new Set(
-    value.filter((id): id is string => typeof id === 'string' && id.trim().length > 0).map((id) => id.trim()),
-  ))
-}
+import { listDiscordAuthMembers, serializeDiscordBackedUser } from '@/lib/discord-auth'
 
 function serializeUser<T extends {
   permissions: unknown
   groupId: string | null
   group: { id: string; name: string } | null
   groupMemberships: { group: { id: string; name: string } }[]
+  discordId: string | null
+  discordAvatar?: string | null
+  discordDiscriminator?: string | null
 }>(user: T) {
-  const groupsById = new Map(user.groupMemberships.map((membership) => [membership.group.id, membership.group]))
-  if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
-  const groups = Array.from(groupsById.values())
-  const { groupMemberships, ...rest } = user
-  return {
-    ...rest,
-    groupIds: groups.map((group) => group.id),
-    groups,
-    permissions: sanitizePermissions(user.permissions),
-  }
+  return serializeDiscordBackedUser(user)
 }
 
 export async function GET() {
@@ -40,6 +25,11 @@ export async function GET() {
         username: true,
         displayName: true,
         discordId: true,
+        discordUsername: true,
+        discordGlobalName: true,
+        discordAvatar: true,
+        discordDiscriminator: true,
+        lastLoginAt: true,
         groupId: true,
         group: { select: { id: true, name: true } },
         permissions: true,
@@ -50,7 +40,36 @@ export async function GET() {
       },
       orderBy: { createdAt: 'asc' },
     })
-    return success(users.map(serializeUser))
+    const localUsers = users.map(serializeUser)
+    const localDiscordIds = new Set(localUsers.map((user) => user.discordId).filter(Boolean))
+    const groups = await userGroupDelegate(prisma).findMany({ select: { id: true, name: true } })
+    const groupsById = new Map(groups.map((group) => [group.id, group]))
+    const discordMembers = await listDiscordAuthMembers().catch(() => [])
+    const discordOnlyUsers = discordMembers
+      .filter((member) => !localDiscordIds.has(member.profile.user.id))
+      .map((member) => {
+        const groupIds = member.groupIds.filter((groupId) => groupsById.has(groupId))
+        return {
+          id: `discord:${member.profile.user.id}`,
+          username: member.profile.user.username,
+          displayName: member.displayName,
+          discordId: member.profile.user.id,
+          discordUsername: member.profile.user.username,
+          discordGlobalName: member.profile.user.global_name ?? null,
+          discordAvatar: member.profile.user.avatar ?? null,
+          discordDiscriminator: member.profile.user.discriminator ?? null,
+          avatarUrl: member.avatarUrl,
+          groupId: groupIds[0] ?? null,
+          groupIds,
+          groups: groupIds.map((groupId) => groupsById.get(groupId)).filter(Boolean),
+          permissions: [],
+          createdAt: null,
+          lastLoginAt: null,
+          discordOnly: true,
+        }
+      })
+
+    return success([...localUsers, ...discordOnlyUsers])
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -58,56 +77,10 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     await requireAuth(['ADMIN'], ['users:manage'])
-    const body = await req.json()
-    const parsed = createUserSchema.safeParse(body)
-    if (!parsed.success) return error(parsed.error.issues.map(e => e.message).join(', '))
-
-    const existing = await prisma.user.findUnique({ where: { username: parsed.data.username } })
-    if (existing) return error('Benutzername bereits vergeben')
-
-    if (parsed.data.discordId) {
-      const existingDiscord = await prisma.user.findFirst({ where: { discordId: parsed.data.discordId } })
-      if (existingDiscord) return error('Discord-ID bereits einem Benutzer zugeordnet')
-    }
-
-    const groupIds = sanitizeGroupIds(parsed.data.groupIds ?? (parsed.data.groupId ? [parsed.data.groupId] : []))
-    if (groupIds.length > 0) {
-      const groups = await userGroupDelegate(prisma).findMany({ where: { id: { in: groupIds } } })
-      if (groups.length !== groupIds.length) return error('Benutzergruppe nicht gefunden')
-    }
-
-    const passwordHash = await hashPassword(parsed.data.password)
-    const user = await prisma.user.create({
-      data: {
-        username: parsed.data.username,
-        passwordHash,
-        displayName: parsed.data.displayName,
-        discordId: parsed.data.discordId ?? null,
-        groupId: groupIds[0] ?? null,
-        permissions: sanitizePermissions(parsed.data.permissions),
-        groupMemberships: {
-          create: groupIds.map((groupId) => ({ groupId })),
-        },
-      },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        discordId: true,
-        groupId: true,
-        group: { select: { id: true, name: true } },
-        permissions: true,
-        groupMemberships: {
-          select: { group: { select: { id: true, name: true } } },
-        },
-        createdAt: true,
-      },
-    })
-
-    return success(serializeUser(user), 201)
+    return error('Benutzer werden ausschließlich über Discord angelegt.', 410)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

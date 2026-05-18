@@ -1,69 +1,46 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, hashPassword } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { userGroupDelegate } from '@/lib/prisma-delegates'
 import { sanitizePermissions } from '@/lib/permissions'
-import { discordIdSchema } from '@/lib/validations/officer'
-
-function sanitizeGroupIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return Array.from(new Set(
-    value.filter((id): id is string => typeof id === 'string' && id.trim().length > 0).map((id) => id.trim()),
-  ))
-}
+import { getDiscordGuildMember } from '@/lib/discord-integration'
+import { serializeDiscordBackedUser, upsertDiscordUser } from '@/lib/discord-auth'
 
 function serializeUser<T extends {
   permissions: unknown
   groupId: string | null
   group: { id: string; name: string } | null
   groupMemberships: { group: { id: string; name: string } }[]
+  discordId: string | null
+  discordAvatar?: string | null
+  discordDiscriminator?: string | null
 }>(user: T) {
-  const groupsById = new Map(user.groupMemberships.map((membership) => [membership.group.id, membership.group]))
-  if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
-  const groups = Array.from(groupsById.values())
-  const { groupMemberships, ...rest } = user
-  return {
-    ...rest,
-    groupIds: groups.map((group) => group.id),
-    groups,
-    permissions: sanitizePermissions(user.permissions),
-  }
+  return serializeDiscordBackedUser(user)
+}
+
+async function ensureUserId(id: string) {
+  if (!id.startsWith('discord:')) return id
+  const discordId = id.slice('discord:'.length)
+  const member = await getDiscordGuildMember(discordId)
+  if (!member?.user) throw new Error('Discord-Benutzer nicht gefunden')
+  const user = await upsertDiscordUser({
+    user: member.user,
+    roles: member.roles ?? [],
+    nick: member.nick,
+    avatar: member.avatar,
+  })
+  return user.id
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth(['ADMIN'], ['users:manage'])
-    const { id } = await params
+    const { id: rawId } = await params
+    const id = await ensureUserId(rawId)
     const body = await req.json()
 
     const data: Record<string, unknown> = {}
-    if (body.displayName) data.displayName = body.displayName
-    if ('discordId' in body) {
-      const parsedDiscordId = discordIdSchema.safeParse(body.discordId)
-      if (!parsedDiscordId.success) return error(parsedDiscordId.error.issues.map((issue) => issue.message).join(', '))
-      if (parsedDiscordId.data) {
-        const existingDiscord = await prisma.user.findFirst({
-          where: { discordId: parsedDiscordId.data, NOT: { id } },
-        })
-        if (existingDiscord) return error('Discord-ID bereits einem Benutzer zugeordnet')
-      }
-      data.discordId = parsedDiscordId.data ?? null
-    }
     if ('permissions' in body) data.permissions = sanitizePermissions(body.permissions)
-    if ('groupIds' in body || 'groupId' in body) {
-      const groupIds = sanitizeGroupIds(body.groupIds ?? (body.groupId ? [body.groupId] : []))
-      if (groupIds.length > 0) {
-        const groups = await userGroupDelegate(prisma).findMany({ where: { id: { in: groupIds } } })
-        if (groups.length !== groupIds.length) return error('Benutzergruppe nicht gefunden')
-      }
-      data.groupMemberships = {
-        deleteMany: {},
-        create: groupIds.map((groupId) => ({ groupId })),
-      }
-      data.groupId = groupIds[0] ?? null
-    }
-    if (body.password) data.passwordHash = await hashPassword(body.password)
 
     const user = await prisma.user.update({
       where: { id },
@@ -73,6 +50,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         username: true,
         displayName: true,
         discordId: true,
+        discordUsername: true,
+        discordGlobalName: true,
+        discordAvatar: true,
+        discordDiscriminator: true,
+        lastLoginAt: true,
         groupId: true,
         group: { select: { id: true, name: true } },
         permissions: true,
@@ -95,6 +77,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const currentUser = await requireAuth(['ADMIN'], ['users:manage'])
     const { id } = await params
+    if (id.startsWith('discord:')) return success({ message: 'Discord-Benutzer bleibt sichtbar' })
 
     if (currentUser.id === id) return error('Du kannst dich nicht selbst löschen')
 

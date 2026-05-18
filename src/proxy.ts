@@ -6,6 +6,8 @@ export function proxy(request: NextRequest) {
 
   if (
     pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/discord/login') ||
+    pathname.startsWith('/api/auth/discord/callback') ||
     pathname.startsWith('/api/auth/me') ||
     pathname.startsWith('/api/uploads') ||
     pathname.startsWith('/api/runtime-events') ||

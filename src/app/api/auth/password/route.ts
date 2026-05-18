@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest) {
     select: { passwordHash: true },
   })
   if (!user) return unauthorized()
+  if (!user.passwordHash) return error('Dieser Account nutzt Discord-Login', 400)
 
   const valid = await verifyPassword(currentPassword, user.passwordHash)
   if (!valid) return error('Aktuelles Passwort ist falsch', 403)

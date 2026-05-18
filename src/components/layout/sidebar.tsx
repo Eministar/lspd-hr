@@ -28,7 +28,7 @@ interface NavItem {
 interface NavContentProps {
   pathname: string
   onNavigate: () => void
-  user: { displayName: string; permissions?: string[] | null } | null
+  user: { displayName: string; avatarUrl?: string | null; permissions?: string[] | null } | null
   logout: () => Promise<void>
 }
 
@@ -192,9 +192,17 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
         <div className="gold-line mb-2 mx-2" />
         {user && (
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0a1e38]/50 border border-white/[0.04]">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b89930] flex items-center justify-center text-[10px] font-bold text-[#071b33] shadow-[0_1px_3px_rgba(212,175,55,0.25)]">
-              {user.displayName.charAt(0).toUpperCase()}
-            </div>
+            {user.avatarUrl ? (
+              <span
+                className="h-7 w-7 shrink-0 rounded-full bg-cover bg-center shadow-[0_1px_3px_rgba(212,175,55,0.25)] ring-1 ring-[#d4af37]/25"
+                style={{ backgroundImage: `url(${user.avatarUrl})` }}
+                aria-label={user.displayName}
+              />
+            ) : (
+              <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b89930] flex items-center justify-center text-[10px] font-bold text-[#071b33] shadow-[0_1px_3px_rgba(212,175,55,0.25)]">
+                {user.displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-[11.5px] font-medium text-white/90 truncate leading-tight">{user.displayName}</p>
             </div>
