@@ -109,8 +109,27 @@ let prismaClient = null
 let prismaCompat = null
 let discordApiQueue = Promise.resolve()
 
+const prismaClientEntryCandidates = [
+  path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'),
+  path.join(projectDir, 'src', 'generated', 'prisma', 'index.js'),
+  path.join(projectDir, 'src', 'generated', 'prisma', 'default.js'),
+]
+
+function prismaClientEntryPath() {
+  return prismaClientEntryCandidates.find((entry) => fs.existsSync(entry)) || ''
+}
+
 function prismaClientEntryExists() {
-  return fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'))
+  return !!prismaClientEntryPath()
+}
+
+function generatedPrismaFiles() {
+  const generatedDir = path.join(projectDir, 'src', 'generated', 'prisma')
+  try {
+    return fs.readdirSync(generatedDir).slice(0, 40).join(', ')
+  } catch {
+    return 'Ordner nicht lesbar oder nicht vorhanden'
+  }
 }
 
 function ensureGeneratedPrismaClient() {
@@ -131,10 +150,26 @@ function ensureGeneratedPrismaClient() {
     windowsHide: true,
   })
 
-  if (result.status !== 0 || !prismaClientEntryExists()) {
+  if (!prismaClientEntryExists()) {
     const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
-    throw new Error(`[Prisma] prisma generate fehlgeschlagen.${output ? `\n${output}` : ''}`)
+    throw new Error(`[Prisma] prisma generate hat keinen ladbaren JS-Client erzeugt. Dateien: ${generatedPrismaFiles()}${output ? `\n${output}` : ''}`)
   }
+
+  if (result.status !== 0) {
+    const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+    console.warn(`[Prisma] prisma generate meldete Exit ${result.status}, ein ladbarer Client wurde aber gefunden. Starte weiter.${output ? `\n${output}` : ''}`)
+  }
+}
+
+function requireGeneratedPrismaClient() {
+  const entry = prismaClientEntryPath()
+  if (!entry) throw new Error(`[Prisma] Generierter JS-Client fehlt. Dateien: ${generatedPrismaFiles()}`)
+
+  const generated = require(entry)
+  if (!generated?.PrismaClient) {
+    throw new Error(`[Prisma] ${path.relative(projectDir, entry)} exportiert keinen PrismaClient.`)
+  }
+  return generated.PrismaClient
 }
 
 function getPrismaClient() {
@@ -143,7 +178,7 @@ function getPrismaClient() {
   if (!url) throw new Error('[Prisma] DATABASE_URL fehlt oder ist leer.')
 
   ensureGeneratedPrismaClient()
-  const { PrismaClient } = require('./src/generated/prisma/client.js')
+  const PrismaClient = requireGeneratedPrismaClient()
   const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
   const adapter = new PrismaMariaDb(url)
   prismaClient = prismaClient || new PrismaClient({ adapter })
