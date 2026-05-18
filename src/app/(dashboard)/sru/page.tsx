@@ -113,15 +113,15 @@ const tabs: { id: Tab; label: string; icon: typeof FileText }[] = [
 ]
 
 const sruEventTypes = [
-  { value: 'SRU_TRAINING', label: 'SRU-Training' },
-  { value: 'SRU_OPERATION', label: 'SRU-Einsatz' },
+  { value: 'SRU_TRAINING', label: 'S.R.U.-Training' },
+  { value: 'SRU_OPERATION', label: 'S.R.U.-Einsatz' },
   { value: 'MEETING', label: 'Besprechung' },
   { value: 'OTHER', label: 'Sonstiges' },
 ]
 
 const FOLDER_COLOR_PRESETS = ['#d4af37', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fbbf24', '#06b6d4', '#f97316']
 
-const EMPTY_DOCUMENT = `# Neues SRU-Dokument
+const EMPTY_DOCUMENT = `# Neues S.R.U.-Dokument
 
 ## Überblick
 
@@ -147,15 +147,27 @@ function documentPreview(content: string) {
   return firstLine?.trim() || 'Kein Inhalt'
 }
 
+function calendarTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    SRU_TRAINING: 'S.R.U.-Training',
+    SRU_OPERATION: 'S.R.U.-Einsatz',
+    MEETING: 'Besprechung',
+    OTHER: 'Sonstiges',
+  }
+  return labels[type] ?? type
+}
+
 function SruDocuments({ canManage }: { canManage: boolean }) {
   const { data, loading, refetch } = useFetch<SruDocumentsPayload>('/api/sru/folders')
   const { execute } = useApi()
   const { addToast } = useToast()
   const editorRef = useRef<HTMLTextAreaElement | null>(null)
+  const loadedDocumentIdRef = useRef<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [folderId, setFolderId] = useState('')
+  const [documentDirty, setDocumentDirty] = useState(false)
   const [writerMode, setWriterMode] = useState<'split' | 'preview'>('split')
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [docModalOpen, setDocModalOpen] = useState(false)
@@ -179,15 +191,22 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
 
   useEffect(() => {
     if (!selectedDocument) {
+      loadedDocumentIdRef.current = null
       setTitle('')
       setContent('')
       setFolderId('')
+      setDocumentDirty(false)
       return
     }
+
+    if (loadedDocumentIdRef.current === selectedDocument.id && documentDirty) return
+
+    loadedDocumentIdRef.current = selectedDocument.id
     setTitle(selectedDocument.title)
     setContent(selectedDocument.content)
     setFolderId(selectedDocument.folderId ?? '')
-  }, [selectedDocument])
+    setDocumentDirty(false)
+  }, [documentDirty, selectedDocument])
 
   const folderOptions = useMemo(() => [
     { value: '', label: 'Ohne Ordner' },
@@ -200,6 +219,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
     if (!canManage) return
     const editor = editorRef.current
     if (!editor) {
+      setDocumentDirty(true)
       setContent((current) => `${current}${before}${placeholder}${after}`)
       return
     }
@@ -207,6 +227,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
     const end = editor.selectionEnd
     const selected = content.slice(start, end) || placeholder
     const next = `${content.slice(0, start)}${before}${selected}${after}${content.slice(end)}`
+    setDocumentDirty(true)
     setContent(next)
     window.requestAnimationFrame(() => {
       editor.focus()
@@ -219,12 +240,14 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
     const editor = editorRef.current
     const insert = content && !content.endsWith('\n') ? `\n${block}` : block
     if (!editor) {
+      setDocumentDirty(true)
       setContent((current) => `${current}${insert}`)
       return
     }
     const start = editor.selectionStart
     const end = editor.selectionEnd
     const next = `${content.slice(0, start)}${insert}${content.slice(end)}`
+    setDocumentDirty(true)
     setContent(next)
     window.requestAnimationFrame(() => {
       const cursor = start + insert.length
@@ -316,6 +339,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
       addToast({ type: 'success', title: 'Dokument erstellt' })
       setDocModalOpen(false)
       setDocForm({ title: '', folderId: '' })
+      setDocumentDirty(false)
       await refetch()
       if (created?.id) setSelectedId(created.id)
     } catch (err) {
@@ -336,6 +360,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
       })
       addToast({ type: 'success', title: 'Dokument gespeichert' })
       await refetch()
+      setDocumentDirty(false)
     } catch (err) {
       addToast({ type: 'error', title: 'Dokument konnte nicht gespeichert werden', message: err instanceof Error ? err.message : '' })
     }
@@ -347,6 +372,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
       await execute(`/api/sru/documents/${selectedDocument.id}`, { method: 'DELETE' })
       addToast({ type: 'success', title: 'Dokument gelöscht' })
       setSelectedId(null)
+      setDocumentDirty(false)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Dokument konnte nicht gelöscht werden', message: err instanceof Error ? err.message : '' })
@@ -368,7 +394,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="SRU Dokumente"
+        title="S.R.U. Dokumente"
         description="Interne Dokumente, Ordner und Einsatznotizen der Special Response Unit"
         action={canManage ? (
           <div className="flex flex-wrap gap-2">
@@ -434,9 +460,27 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
             <div className="flex min-h-[680px] flex-col">
               <div className="border-b border-[#18385f]/45 p-4 space-y-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-end">
-                  <Input label="Titel" value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canManage} required />
+                  <Input
+                    label="Titel"
+                    value={title}
+                    onChange={(e) => {
+                      setDocumentDirty(true)
+                      setTitle(e.target.value)
+                    }}
+                    disabled={!canManage}
+                    required
+                  />
                   <div className="md:w-[240px]">
-                    <Select label="Ordner" value={folderId} onValueChange={setFolderId} options={folderOptions} disabled={!canManage} />
+                    <Select
+                      label="Ordner"
+                      value={folderId}
+                      onValueChange={(nextFolderId) => {
+                        setDocumentDirty(true)
+                        setFolderId(nextFolderId)
+                      }}
+                      options={folderOptions}
+                      disabled={!canManage}
+                    />
                   </div>
                   {canManage && (
                     <div className="flex gap-2">
@@ -448,6 +492,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
                 <p className="text-[11.5px] text-[#6b8299]">
                   Zuletzt bearbeitet {formatDateTime(selectedDocument.updatedAt)}
                   {selectedDocument.updatedBy ? ` von ${selectedDocument.updatedBy.displayName}` : ''}
+                  {documentDirty ? ' · ungespeicherte Änderungen' : ''}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 border-b border-[#18385f]/45 bg-[#071a30]/70 px-3 py-2">
@@ -484,7 +529,10 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
                   <textarea
                     ref={editorRef}
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={(e) => {
+                      setDocumentDirty(true)
+                      setContent(e.target.value)
+                    }}
                     readOnly={!canManage}
                     className="min-h-[560px] resize-none border-r border-[#18385f]/45 bg-[#061426]/45 p-5 font-mono text-[13.5px] leading-7 text-[#edf4fb] outline-none placeholder:text-[#536b86]"
                     placeholder="Markdown schreiben..."
@@ -513,7 +561,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
           setFolderModalOpen(false)
           setEditingFolder(null)
         }}
-        title={editingFolder ? 'SRU-Ordner bearbeiten' : 'SRU-Ordner erstellen'}
+        title={editingFolder ? 'S.R.U.-Ordner bearbeiten' : 'S.R.U.-Ordner erstellen'}
       >
         <div className="space-y-4">
           <Input label="Name" value={folderForm.name} onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })} required />
@@ -542,7 +590,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
         </div>
       </Modal>
 
-      <Modal open={docModalOpen} onClose={() => setDocModalOpen(false)} title="SRU-Dokument erstellen">
+      <Modal open={docModalOpen} onClose={() => setDocModalOpen(false)} title="S.R.U.-Dokument erstellen">
         <div className="space-y-4">
           <Input label="Titel" value={docForm.title} onChange={(e) => setDocForm({ ...docForm, title: e.target.value })} required />
           <Select label="Ordner" value={docForm.folderId} onValueChange={(nextFolderId) => setDocForm({ ...docForm, folderId: nextFolderId })} options={folderOptions} />
@@ -682,7 +730,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
           officerId: form.officerId || null,
         }),
       })
-      addToast({ type: 'success', title: 'SRU-Termin erstellt' })
+      addToast({ type: 'success', title: 'S.R.U.-Termin erstellt' })
       setModalOpen(false)
       setForm({ title: '', description: '', type: 'SRU_TRAINING', startsAt: localDateTimeValue(), endsAt: '', location: '', officerId: '', discordAnnouncement: false })
       await refetch()
@@ -694,7 +742,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
   const deleteEvent = async (id: string) => {
     try {
       await execute(`/api/calendar-events/${id}`, { method: 'DELETE' })
-      addToast({ type: 'success', title: 'SRU-Termin gelöscht' })
+      addToast({ type: 'success', title: 'S.R.U.-Termin gelöscht' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Termin konnte nicht gelöscht werden', message: err instanceof Error ? err.message : '' })
@@ -703,8 +751,8 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
 
   const requestDeleteEvent = (event: CalendarEvent) => {
     setConfirmDialog({
-      title: 'SRU-Termin löschen',
-      message: `Der Termin "${event.title}" wird dauerhaft aus dem SRU-Kalender entfernt.`,
+      title: 'S.R.U.-Termin löschen',
+      message: `Der Termin "${event.title}" wird dauerhaft aus dem S.R.U.-Kalender entfernt.`,
       confirmLabel: 'Termin löschen',
       onConfirm: () => deleteEvent(event.id),
     })
@@ -715,7 +763,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="SRU Kalender"
+        title="S.R.U. Kalender"
         description="Termine, Trainings und Einsätze nur für die Special Response Unit"
         action={(
           <div className="flex gap-2">
@@ -731,7 +779,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-[6px] border border-[#d4af37]/20 bg-[#d4af37]/8 px-2 py-0.5 text-[11px] font-semibold text-[#d4af37]">{event.type}</span>
+                  <span className="rounded-[6px] border border-[#d4af37]/20 bg-[#d4af37]/8 px-2 py-0.5 text-[11px] font-semibold text-[#d4af37]">{calendarTypeLabel(event.type)}</span>
                   {event.discordAnnouncement && <Megaphone size={13} className="text-[#38bdf8]" />}
                 </div>
                 <h3 className="mt-2 text-[14px] font-semibold text-white">{event.title}</h3>
@@ -757,11 +805,11 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
       {(events ?? []).length === 0 && (
         <div className="glass-panel-elevated rounded-[14px] p-12 text-center">
           <CalendarDays size={28} className="mx-auto mb-3 text-[#d4af37]/35" />
-          <p className="text-[13px] text-[#8ea4bd]">Keine SRU-Termine vorhanden</p>
+          <p className="text-[13px] text-[#8ea4bd]">Keine S.R.U.-Termine vorhanden</p>
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="SRU-Termin erstellen">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="S.R.U.-Termin erstellen">
         <div className="space-y-4">
           <Input label="Titel" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <Select label="Art" value={form.type} onValueChange={(type) => setForm({ ...form, type })} options={sruEventTypes} />
@@ -825,8 +873,8 @@ export default function SruPage() {
       {activeTab === 'tasks' && (
         <TaskBoard
           module="SRU"
-          title="SRU Aufgaben"
-          description="Aufgabenlisten für SRU-Einsätze, Vorbereitung, Nachbereitung und interne Abläufe."
+          title="S.R.U. Aufgaben"
+          description="Aufgabenlisten für S.R.U.-Einsätze, Vorbereitung, Nachbereitung und interne Abläufe."
           accentLabel="Special Response Unit"
           viewPermission="sru:view"
           managePermission="sru:manage"

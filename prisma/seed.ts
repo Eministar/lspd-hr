@@ -100,7 +100,7 @@ async function main() {
     { key: 'HR_TRAINEE', name: 'HR Trainee', sortOrder: 2, color: '#3b82f6' },
     { key: 'HR_OFFICER', name: 'HR Officer', sortOrder: 3, color: '#06b6d4' },
     { key: 'ACADEMY', name: 'Academy', sortOrder: 4, color: '#d4af37' },
-    { key: 'SRU', name: 'SRU', sortOrder: 5, color: '#dc2626' },
+    { key: 'SRU', name: 'S.R.U.', sortOrder: 5, color: '#dc2626' },
   ]
 
   for (const unit of units) {

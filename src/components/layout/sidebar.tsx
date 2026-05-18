@@ -50,7 +50,7 @@ const mainNav: NavItem[] = [
 const tasksNav: NavItem[] = [
   { name: 'Academy', href: '/academy', icon: ListChecks, permission: 'tasks:view' },
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'tasks:view' },
-  { name: 'SRU', href: '/sru', icon: Shield, permission: 'sru:view' },
+  { name: 'S.R.U.', href: '/sru', icon: Shield, permission: 'sru:view' },
 ]
 
 const adminNav: NavItem[] = [
