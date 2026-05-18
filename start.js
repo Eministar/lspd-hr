@@ -110,10 +110,7 @@ let prismaCompat = null
 let discordApiQueue = Promise.resolve()
 
 function prismaClientEntryExists() {
-  return (
-    fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.ts')) ||
-    fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'))
-  )
+  return fs.existsSync(path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'))
 }
 
 function ensureGeneratedPrismaClient() {
@@ -146,7 +143,7 @@ function getPrismaClient() {
   if (!url) throw new Error('[Prisma] DATABASE_URL fehlt oder ist leer.')
 
   ensureGeneratedPrismaClient()
-  const { PrismaClient } = require('./src/generated/prisma/client')
+  const { PrismaClient } = require('./src/generated/prisma/client.js')
   const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
   const adapter = new PrismaMariaDb(url)
   prismaClient = prismaClient || new PrismaClient({ adapter })

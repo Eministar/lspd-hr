@@ -41,6 +41,7 @@ type DiscordConfig = {
   guildId: string
   applicationId: string
   announcementsChannelId: string
+  updateChannelId: string
   sanctionsChannelId: string
   dutyStatusChannelId: string
   dutyAdminLogChannelId: string
@@ -92,6 +93,16 @@ type DiscordHrEventInput = {
   trainingChanges?: DiscordTrainingChange[]
 }
 
+type DiscordUpdateAnnouncementInput = {
+  title: string
+  version?: string
+  added?: string[]
+  changed?: string[]
+  removed?: string[]
+  note?: string
+  actor?: UserForDiscord
+}
+
 export type DiscordHrEventMessage = {
   channelId: string
   messageId: string
@@ -103,6 +114,7 @@ export const DISCORD_SETTING_KEYS = {
   guildId: 'discord.guildId',
   applicationId: 'discord.applicationId',
   announcementsChannelId: 'discord.announcementsChannelId',
+  updateChannelId: 'discord.updateChannelId',
   sanctionsChannelId: 'discord.sanctionsChannelId',
   dutyStatusChannelId: 'discord.dutyStatusChannelId',
   dutyAdminLogChannelId: 'discord.dutyAdminLogChannelId',
@@ -216,6 +228,14 @@ function envSanctionsChannelId() {
   return (
     process.env.DISCORD_SANCTIONS_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_SANCTIONS_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
+function envUpdateChannelId() {
+  return (
+    process.env.DISCORD_UPDATE_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_UPDATE_CHANNEL_ID?.trim() ||
     ''
   )
 }
@@ -372,6 +392,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     guildId: map[DISCORD_SETTING_KEYS.guildId] || envGuildId(),
     applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
     announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
+    updateChannelId: map[DISCORD_SETTING_KEYS.updateChannelId] || envUpdateChannelId(),
     sanctionsChannelId: map[DISCORD_SETTING_KEYS.sanctionsChannelId] || envSanctionsChannelId(),
     dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
     dutyAdminLogChannelId: map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] || envDutyAdminLogChannelId(),
@@ -393,6 +414,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.guildId !== undefined) data[DISCORD_SETTING_KEYS.guildId] = input.guildId.trim()
   if (input.applicationId !== undefined) data[DISCORD_SETTING_KEYS.applicationId] = input.applicationId.trim()
   if (input.announcementsChannelId !== undefined) data[DISCORD_SETTING_KEYS.announcementsChannelId] = input.announcementsChannelId.trim()
+  if (input.updateChannelId !== undefined) data[DISCORD_SETTING_KEYS.updateChannelId] = input.updateChannelId.trim()
   if (input.sanctionsChannelId !== undefined) data[DISCORD_SETTING_KEYS.sanctionsChannelId] = input.sanctionsChannelId.trim()
   if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
   if (input.dutyAdminLogChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] = input.dutyAdminLogChannelId.trim()
@@ -626,6 +648,74 @@ async function postChannelMessage(channelId: string, payload: Record<string, unk
   return discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+function cleanUpdateLines(lines: string[] | undefined) {
+  return (lines ?? [])
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+}
+
+function updateDiffField(name: string, prefix: '+' | '!' | '-', lines: string[]): DiscordField | null {
+  const cleaned = cleanUpdateLines(lines)
+  if (cleaned.length === 0) return null
+  const value = cleaned.map((line) => `${prefix} ${line}`).join('\n')
+  const maxContentLength = 1024 - '```diff\n\n```'.length
+  const content = truncate(value, maxContentLength)
+  return {
+    name,
+    value: `\`\`\`diff\n${content}\n\`\`\``,
+    inline: false,
+  }
+}
+
+export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnouncementInput) {
+  const config = await getDiscordConfig()
+  const channelId = config.updateChannelId || config.announcementsChannelId
+  if (!channelId) throw new Error('Update-Channel ist nicht konfiguriert')
+  if (!botToken()) throw new Error('Discord Bot-Token fehlt')
+
+  const title = input.title.trim()
+  if (!title) throw new Error('Titel ist erforderlich')
+
+  const fields = [
+    updateDiffField('✨ Neu', '+', input.added ?? []),
+    updateDiffField('🔧 Geändert', '!', input.changed ?? []),
+    updateDiffField('🗑️ Entfernt', '-', input.removed ?? []),
+  ].filter((field): field is DiscordField => Boolean(field))
+
+  if (fields.length === 0) {
+    throw new Error('Mindestens ein Changelog-Eintrag ist erforderlich')
+  }
+
+  const orgName = await getOrgName()
+  const now = new Date()
+  const version = input.version?.trim()
+  const note = input.note?.trim()
+  const actorLabel = input.actor ? discordUserLabel(input.actor) : 'System'
+  const description = [
+    version ? `> \`v${version.replace(/^v/i, '')}\`` : null,
+    note ? note.split('\n').map((line) => `> ${line}`).join('\n') : null,
+  ].filter(Boolean).join('\n')
+
+  return postChannelMessage(channelId, {
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        author: { name: `${orgName} · Update` },
+        title: `📢 ${truncate(title, 240)}`,
+        description: description ? truncate(description, 2000) : undefined,
+        color: 0xd4af37,
+        fields: [
+          ...fields,
+          { name: 'Gesendet von', value: actorLabel, inline: true },
+          { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
+        ].slice(0, 25).map(cleanEmbedField),
+        timestamp: now.toISOString(),
+        footer: { text: `${orgName} HR · Changelog` },
+      },
+    ],
   })
 }
 
