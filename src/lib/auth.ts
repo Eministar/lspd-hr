@@ -2,8 +2,9 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
-import { hasAnyPermission, resolveEffectivePermissions, type Permission } from './permissions'
+import { hasAnyPermission, resolveEffectivePermissions, PERMISSIONS, type Permission } from './permissions'
 import { storedDiscordAvatarUrl } from './discord-auth'
+import { getDiscordGuildMember } from './discord-integration'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -74,7 +75,28 @@ export async function getCurrentUser() {
   const groupsById = new Map(user.groupMemberships.map((membership) => [membership.group.id, membership.group]))
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
   const groups = Array.from(groupsById.values())
-  
+
+  let effectivePermissions = resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions))
+
+  // Bootstrap: if user has no permissions yet, check if they have a bootstrap Discord role
+  if (effectivePermissions.length === 0 && user.discordId) {
+    const bootstrapRoles = new Set(
+      (process.env.DISCORD_AUTH_LOGIN_ROLE_IDS || '')
+        .split(',').map((s) => s.trim()).filter(Boolean)
+    )
+    if (bootstrapRoles.size > 0) {
+      try {
+        const member = await getDiscordGuildMember(user.discordId)
+        if (member && (member.roles ?? []).some((r: string) => bootstrapRoles.has(r))) {
+          await prisma.user.update({ where: { id: user.id }, data: { permissions: [...PERMISSIONS] } })
+          effectivePermissions = [...PERMISSIONS]
+        }
+      } catch {
+        // Discord API unavailable — skip bootstrap check silently
+      }
+    }
+  }
+
   return {
     id: user.id,
     username: user.username,
@@ -82,7 +104,7 @@ export async function getCurrentUser() {
     discordId: user.discordId,
     avatarUrl: storedDiscordAvatarUrl(user),
     groups: groups.map((group) => ({ id: group.id, name: group.name })),
-    permissions: resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions)),
+    permissions: effectivePermissions,
   } satisfies CurrentUser
 }
 
