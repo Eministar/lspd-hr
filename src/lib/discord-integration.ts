@@ -286,6 +286,14 @@ function envHumanResourcesRoleId() {
   )
 }
 
+function envAuthLoginRoleIds(): string[] {
+  const raw =
+    process.env.DISCORD_AUTH_LOGIN_ROLE_IDS?.trim() ||
+    process.env.LSPD_DISCORD_AUTH_LOGIN_ROLE_IDS?.trim() ||
+    ''
+  return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+}
+
 function parseJson<T>(value: string | undefined, fallback: T): T {
   if (!value) return fallback
   try {
@@ -430,7 +438,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     humanResourcesRoleId: map[DISCORD_SETTING_KEYS.humanResourcesRoleId] || envHumanResourcesRoleId(),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
-    authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], [])),
+    authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], envAuthLoginRoleIds())),
     authRoleGroupMap: cleanRoleGroupMap(parseJson(map[DISCORD_SETTING_KEYS.authRoleGroupMap], {})),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
     trainingRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.trainingRoleMap], {})),
