@@ -18,6 +18,11 @@ function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+function cleanColor(value: unknown) {
+  if (typeof value !== 'string') return '#d4af37'
+  return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : '#d4af37'
+}
+
 export async function GET() {
   try {
     await requirePermission('sru:view')
@@ -60,6 +65,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         description: cleanText(body.description) || null,
+        color: cleanColor(body.color),
         sortOrder: (last?.sortOrder ?? -1) + 1,
         createdById: user.id,
       },
@@ -92,6 +98,7 @@ export async function PATCH(req: NextRequest) {
       data.name = name
     }
     if ('description' in body) data.description = cleanText(body.description) || null
+    if ('color' in body) data.color = cleanColor(body.color)
     if (typeof body.sortOrder === 'number') data.sortOrder = body.sortOrder
 
     const folder = await prisma.sruFolder.update({

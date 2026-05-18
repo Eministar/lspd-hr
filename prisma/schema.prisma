@@ -235,6 +235,7 @@ model SruFolder {
   id          String   @id @default(cuid())
   name        String
   description String?  @db.Text
+  color       String   @default("#d4af37")
   sortOrder   Int      @default(0)
   createdById String?
   createdBy   User?    @relation("SruFolderCreator", fields: [createdById], references: [id], onDelete: SetNull)

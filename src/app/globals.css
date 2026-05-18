@@ -295,6 +295,24 @@ select option:hover {
   margin-top: 0.35rem;
 }
 
+.markdown-document .markdown-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-document .markdown-task-list li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.markdown-document .markdown-task-list input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-top: 0.28rem;
+  accent-color: #d4af37;
+}
+
 .markdown-document strong {
   color: #edf4fb;
   font-weight: 650;

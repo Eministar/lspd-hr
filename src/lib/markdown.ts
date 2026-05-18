@@ -129,12 +129,19 @@ export function renderMarkdown(markdown: string) {
     }
 
     if (/^[-*]\s+/.test(trimmed)) {
-      const items: string[] = []
+      const items: { text: string; checked: boolean | null }[] = []
       while (index < lines.length && /^[-*]\s+/.test(lines[index].trim())) {
-        items.push(lines[index].trim().replace(/^[-*]\s+/, ''))
+        const item = lines[index].trim().replace(/^[-*]\s+/, '')
+        const task = /^\[( |x|X)]\s+(.+)$/.exec(item)
+        items.push(task ? { text: task[2], checked: task[1].toLowerCase() === 'x' } : { text: item, checked: null })
         index += 1
       }
-      html.push(`<ul>${items.map((item) => `<li>${renderInline(item)}</li>`).join('')}</ul>`)
+      const taskList = items.some((item) => item.checked !== null)
+      html.push(`<ul${taskList ? ' class="markdown-task-list"' : ''}>${items.map((item) => (
+        item.checked === null
+          ? `<li>${renderInline(item.text)}</li>`
+          : `<li><input type="checkbox" disabled${item.checked ? ' checked' : ''} />${renderInline(item.text)}</li>`
+      )).join('')}</ul>`)
       continue
     }
 
