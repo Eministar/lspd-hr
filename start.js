@@ -113,6 +113,7 @@ const prismaClientEntryCandidates = [
   path.join(projectDir, 'src', 'generated', 'prisma', 'client.js'),
   path.join(projectDir, 'src', 'generated', 'prisma', 'index.js'),
   path.join(projectDir, 'src', 'generated', 'prisma', 'default.js'),
+  path.join(projectDir, 'src', 'generated', 'prisma', 'client.ts'),
 ]
 
 function prismaClientEntryPath() {
@@ -152,7 +153,7 @@ function ensureGeneratedPrismaClient() {
 
   if (!prismaClientEntryExists()) {
     const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
-    throw new Error(`[Prisma] prisma generate hat keinen ladbaren JS-Client erzeugt. Dateien: ${generatedPrismaFiles()}${output ? `\n${output}` : ''}`)
+    throw new Error(`[Prisma] prisma generate hat keinen ladbaren Client erzeugt. Dateien: ${generatedPrismaFiles()}${output ? `\n${output}` : ''}`)
   }
 
   if (result.status !== 0) {
@@ -163,7 +164,15 @@ function ensureGeneratedPrismaClient() {
 
 function requireGeneratedPrismaClient() {
   const entry = prismaClientEntryPath()
-  if (!entry) throw new Error(`[Prisma] Generierter JS-Client fehlt. Dateien: ${generatedPrismaFiles()}`)
+  if (!entry) throw new Error(`[Prisma] Generierter Client fehlt. Dateien: ${generatedPrismaFiles()}`)
+
+  if (entry.endsWith('.ts')) {
+    try {
+      require('tsx/cjs')
+    } catch (error) {
+      throw new Error(`[Prisma] Generierter Client ist TypeScript (${path.relative(projectDir, entry)}), aber tsx/cjs konnte nicht geladen werden. Auf dem Server npm install ausführen. ${formatError(error)}`)
+    }
+  }
 
   const generated = require(entry)
   if (!generated?.PrismaClient) {

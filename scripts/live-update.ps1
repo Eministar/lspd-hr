@@ -229,10 +229,11 @@ function Test-PrismaClientGenerated {
         Join-Path $AppDir 'src\generated\prisma\client.js'
         Join-Path $AppDir 'src\generated\prisma\index.js'
         Join-Path $AppDir 'src\generated\prisma\default.js'
+        Join-Path $AppDir 'src\generated\prisma\client.ts'
     )
     $entry = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
     if (-not $entry) {
-        throw 'Prisma Client fehlt: client.js, index.js oder default.js wurde nicht erzeugt.'
+        throw 'Prisma Client fehlt: client.js, index.js, default.js oder client.ts wurde nicht erzeugt.'
     }
     $relative = $entry
     if ($entry.StartsWith($AppDir, [System.StringComparison]::OrdinalIgnoreCase)) {
