@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getDiscordConfig, getDiscordGuildMember, getDiscordGuildMembers, type DiscordApiUser } from '@/lib/discord-integration'
-import { sanitizePermissions } from '@/lib/permissions'
+import { sanitizePermissions, PERMISSIONS } from '@/lib/permissions'
 
 const API_BASE = 'https://discord.com/api/v10'
 
@@ -180,6 +180,13 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
   const validGroupIds = new Set(existingGroups.map((group) => group.id))
   const safeGroupIds = groupIds.filter((groupId) => validGroupIds.has(groupId))
 
+  const bootstrapRoles = new Set(
+    (process.env.DISCORD_AUTH_LOGIN_ROLE_IDS || '')
+      .split(',').map((s) => s.trim()).filter(Boolean)
+  )
+  const hasBootstrapRole = profile.roles.some((r) => bootstrapRoles.has(r))
+  const seedPermissions = hasBootstrapRole ? [...PERMISSIONS] : undefined
+
   const existing = await prisma.user.findFirst({ where: { discordId: profile.user.id }, select: { id: true } })
   const username = await uniqueUsername(profile, existing?.id)
   const displayName = profileDisplayName(profile)
@@ -197,6 +204,7 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
       deleteMany: {},
       create: safeGroupIds.map((groupId) => ({ groupId })),
     },
+    ...(seedPermissions !== undefined ? { permissions: seedPermissions } : {}),
     lastLoginAt: new Date(),
   }
 
