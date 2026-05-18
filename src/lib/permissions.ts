@@ -34,6 +34,7 @@ export const PERMISSIONS = [
   'users:manage',
   'groups:manage',
   'settings:manage',
+  'updates:send',
   'password:change',
   //'rank-change-lists:execute', (removed duplicate)
 ] as const
@@ -76,6 +77,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'users:manage': 'Benutzer verwalten',
   'groups:manage': 'Benutzergruppen verwalten',
   'settings:manage': 'Einstellungen verwalten',
+  'updates:send': 'Updates senden',
   'password:change': 'Eigenes Passwort ändern',
 }
 
@@ -103,7 +105,7 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'units:manage': ['units:view'],
   'users:manage': ['groups:manage'],
   'groups:manage': ['users:manage'],
-  'settings:manage': ['dashboard:view', 'duty-times:manage', 'patrol-board:manage'],
+  'settings:manage': ['dashboard:view', 'duty-times:manage', 'patrol-board:manage', 'updates:send'],
 }
 
 // Filter to known permissions WITHOUT expanding implied permissions.

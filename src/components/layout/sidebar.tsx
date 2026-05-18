@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, Archive, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
-  ClipboardList,
+  ClipboardList, Megaphone,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -60,6 +60,7 @@ const adminNav: NavItem[] = [
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
   { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
+  { name: 'Update senden', href: '/admin/update-announcer', icon: Megaphone, permission: 'updates:send' },
   { name: 'Uploads', href: '/admin/uploads', icon: Upload, permission: 'settings:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
 ]
@@ -117,6 +118,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
     'users:manage',
     'groups:manage',
     'exports:view',
+    'updates:send',
     'settings:manage',
   ])
 

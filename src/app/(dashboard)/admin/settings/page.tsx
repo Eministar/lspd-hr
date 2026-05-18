@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CalendarDays, Clock, Megaphone, RefreshCw, Save, Send, ShieldCheck, Users } from 'lucide-react'
+import { CalendarDays, Clock, RefreshCw, Save, ShieldCheck, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -176,15 +175,6 @@ export default function SettingsPage() {
   }
 
   const [fullSyncLoading, setFullSyncLoading] = useState(false)
-  const [updateSendLoading, setUpdateSendLoading] = useState(false)
-  const [updateForm, setUpdateForm] = useState({
-    title: '',
-    version: '',
-    added: '',
-    changed: '',
-    removed: '',
-    note: '',
-  })
 
   const fullSync = async () => {
     setFullSyncLoading(true)
@@ -199,22 +189,6 @@ export default function SettingsPage() {
       addToast({ type: 'error', title: 'Full-Sync fehlgeschlagen', message: err instanceof Error ? err.message : '' })
     } finally {
       setFullSyncLoading(false)
-    }
-  }
-
-  const sendUpdateAnnouncement = async () => {
-    setUpdateSendLoading(true)
-    try {
-      await execute('/api/discord/update-announcement', {
-        method: 'POST',
-        body: JSON.stringify(updateForm),
-      })
-      addToast({ type: 'success', title: 'Update gesendet' })
-      setUpdateForm({ title: '', version: '', added: '', changed: '', removed: '', note: '' })
-    } catch (err) {
-      addToast({ type: 'error', title: 'Update konnte nicht gesendet werden', message: err instanceof Error ? err.message : '' })
-    } finally {
-      setUpdateSendLoading(false)
     }
   }
 
@@ -519,72 +493,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="glass-panel-elevated rounded-[14px] p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div>
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Update-Channel</h3>
-              <p className="text-[11.5px] text-[#6b8299] mt-1">
-                Sendet ein Discord-Embed mit Changelog-Blöcken für neue, geänderte und entfernte Inhalte.
-              </p>
-            </div>
-            <Megaphone size={18} className="text-[#d4af37] shrink-0" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3">
-            <Input
-              label="Titel"
-              value={updateForm.title}
-              onChange={(e) => setUpdateForm({ ...updateForm, title: e.target.value })}
-              placeholder="z.B. HR Tools Update"
-            />
-            <Input
-              label="Version"
-              value={updateForm.version}
-              onChange={(e) => setUpdateForm({ ...updateForm, version: e.target.value })}
-              placeholder="z.B. 1.4.0"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
-            <Textarea
-              label="Neu"
-              value={updateForm.added}
-              onChange={(e) => setUpdateForm({ ...updateForm, added: e.target.value })}
-              placeholder="Eine Änderung pro Zeile"
-              rows={7}
-            />
-            <Textarea
-              label="Geändert"
-              value={updateForm.changed}
-              onChange={(e) => setUpdateForm({ ...updateForm, changed: e.target.value })}
-              placeholder="Eine Änderung pro Zeile"
-              rows={7}
-            />
-            <Textarea
-              label="Entfernt"
-              value={updateForm.removed}
-              onChange={(e) => setUpdateForm({ ...updateForm, removed: e.target.value })}
-              placeholder="Eine Änderung pro Zeile"
-              rows={7}
-            />
-          </div>
-
-          <div className="mt-3">
-            <Textarea
-              label="Notiz"
-              value={updateForm.note}
-              onChange={(e) => setUpdateForm({ ...updateForm, note: e.target.value })}
-              placeholder="Optionaler Text über dem Changelog"
-              rows={3}
-            />
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button size="sm" onClick={sendUpdateAnnouncement} disabled={updateSendLoading}>
-              {updateSendLoading ? <><RefreshCw size={13} className="animate-spin" /> Sende…</> : <><Send size={13} /> Update senden</>}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   )

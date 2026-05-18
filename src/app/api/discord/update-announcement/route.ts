@@ -14,7 +14,7 @@ function parseLines(value: unknown) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN'], ['settings:manage'])
+    const user = await requireAuth(['ADMIN'], ['updates:send'])
     const body = await req.json()
 
     if (typeof body.title !== 'string' || !body.title.trim()) {
