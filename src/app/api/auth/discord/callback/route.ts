@@ -18,7 +18,7 @@ function baseUrl(req: NextRequest) {
 }
 
 function loginError(req: NextRequest, message: string) {
-  const url = new URL('/login', req.url)
+  const url = new URL('/login', baseUrl(req))
   url.searchParams.set('error', message)
   return NextResponse.redirect(url)
 }
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const discordUser = await fetchDiscordCurrentUser(token.access_token)
     const user = await syncDiscordUserProfile(discordUser)
     const jwt = signToken({ userId: user.id, username: user.username })
-    const response = NextResponse.redirect(new URL('/', req.url))
+    const response = NextResponse.redirect(new URL('/', baseUrl(req)))
 
     response.cookies.set('auth-token', jwt, {
       httpOnly: true,

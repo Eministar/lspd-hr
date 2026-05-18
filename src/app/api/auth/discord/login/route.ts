@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const redirectUri = `${baseUrl(req)}/api/auth/discord/callback`
 
   if (!clientId) {
-    const url = new URL('/login', req.url)
+    const url = new URL('/login', baseUrl(req))
     url.searchParams.set('error', 'Discord Application-ID ist nicht konfiguriert')
     return NextResponse.redirect(url)
   }
