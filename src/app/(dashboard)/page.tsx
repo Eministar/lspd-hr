@@ -845,7 +845,7 @@ export default function DashboardPage() {
                             <span className="text-[#d4af37] font-mono ml-1.5 font-medium">#{displayBadgeNumber(officer.badgeNumber)}</span>
                           </p>
                           <p className="text-[11.5px] text-[#8ea4bd] truncate mt-0.5">
-                            {officer.rank.name} · {officer.lastOnline ? `online ${formatRelativeTime(officer.lastOnline)}` : `aktualisiert ${formatDate(officer.updatedAt)}`}
+                            {officer.rank.name} · {officer.lastOnline ? `zuletzt online ${formatRelativeTime(officer.lastOnline)}` : `aktualisiert ${formatDate(officer.updatedAt)}`}
                           </p>
                         </div>
                         {officer.status && (

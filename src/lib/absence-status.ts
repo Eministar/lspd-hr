@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
-export const INACTIVITY_DAYS = 5
+export const INACTIVITY_DAYS = 7
 const AUTOMATION_INTERVAL_MS = 60_000
 const SYSTEM_USERNAME = 'lspd-system'
 const SYSTEM_DISPLAY_NAME = 'LSPD System'

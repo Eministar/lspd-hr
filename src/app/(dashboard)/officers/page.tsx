@@ -396,7 +396,7 @@ function MobileOfficerCard({
         </span>
         <div className="col-span-2 flex items-center gap-2">
           <span className="text-[11.5px] text-[#8ea4bd]">
-            Online: {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
+            Zuletzt online: {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
           </span>
           <span className="text-[11.5px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
           {officer.notes && <StickyNote size={11} className="text-[#4a6585]" strokeWidth={1.75} />}
@@ -835,7 +835,7 @@ export default function OfficersPage() {
                                 ))}
                                 <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Unit</th>
                                 <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Status</th>
-                                <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Online</th>
+                                <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Zuletzt Online</th>
                                 <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Einstellung</th>
                                 <th className="w-[44px] px-1.5 py-2.5 text-center text-[11px] font-medium text-[#6b8299]">
                                   <Flag size={11} className="inline" strokeWidth={1.75} />
