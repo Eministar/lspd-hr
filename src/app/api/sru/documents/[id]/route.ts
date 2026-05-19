@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireTaskModuleManage } from '@/lib/module-permissions'
 
 const documentInclude = {
   folder: { select: { id: true, name: true } },
@@ -15,12 +15,12 @@ function cleanText(value: unknown) {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('sru:manage')
     const { id } = await params
     const body = await req.json()
 
     const existing = await prisma.sruDocument.findUnique({ where: { id } })
     if (!existing) return notFound('Dokument')
+    const user = await requireTaskModuleManage(existing.module)
 
     const data: Record<string, unknown> = { updatedById: user.id }
     if ('title' in body) {
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if ('folderId' in body) {
       const folderId = cleanText(body.folderId)
       if (folderId) {
-        const folder = await prisma.sruFolder.findUnique({ where: { id: folderId }, select: { id: true } })
+        const folder = await prisma.sruFolder.findFirst({ where: { id: folderId, module: existing.module }, select: { id: true } })
         if (!folder) return error('Ordner nicht gefunden', 404)
       }
       data.folderId = folderId || null
@@ -56,10 +56,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requirePermission('sru:manage')
     const { id } = await params
     const document = await prisma.sruDocument.findUnique({ where: { id } })
     if (!document) return notFound('Dokument')
+    await requireTaskModuleManage(document.module)
 
     await prisma.sruDocument.delete({ where: { id } })
     return success({ message: 'Dokument gelöscht' })

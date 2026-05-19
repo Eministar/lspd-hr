@@ -263,12 +263,7 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
   for (const officer of officers) {
     const hasActiveAbsence = officer.absenceNotices.length > 0
     const latestPlaytime = officer.playtimeSessions[0]
-    const lastActivity = latestDate(
-      officer.lastOnline,
-      latestPlaytime?.lastSeenAt,
-      officer.hireDate,
-      officer.createdAt,
-    ) ?? officer.createdAt
+    const lastActivity = latestPlaytime?.lastSeenAt ?? officer.lastOnline ?? latestDate(officer.hireDate, officer.createdAt) ?? officer.createdAt
     const isInactive = lastActivity < inactiveCutoff
     const nextStatus = hasActiveAbsence ? 'AWAY' : isInactive ? 'INACTIVE' : 'ACTIVE'
     const nextFlag = hasActiveAbsence

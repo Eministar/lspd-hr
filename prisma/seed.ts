@@ -45,8 +45,10 @@ async function main() {
         'probations:view',
         'rank-changes:manage',
         'rank-changes:view',
-        'tasks:manage',
-        'tasks:view',
+        'academy:manage',
+        'academy:view',
+        'hr:manage',
+        'hr:view',
         'notes:manage',
         'notes:view',
         'logs:view',
@@ -60,7 +62,7 @@ async function main() {
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'tasks:manage', 'tasks:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
+      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'academy:manage', 'academy:view', 'hr:manage', 'hr:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
     },
   ]
 
@@ -101,6 +103,7 @@ async function main() {
     { key: 'HR_OFFICER', name: 'HR Officer', sortOrder: 3, color: '#06b6d4' },
     { key: 'ACADEMY', name: 'Academy', sortOrder: 4, color: '#d4af37' },
     { key: 'SRU', name: 'S.R.U.', sortOrder: 5, color: '#dc2626' },
+    { key: 'DETECTIVE', name: 'Detective Unit', sortOrder: 6, color: '#0ea5e9' },
   ]
 
   for (const unit of units) {

@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent } from '@/lib/discord-integration'
-import { requireCalendarModuleManage, requireCalendarModuleView } from '@/lib/module-permissions'
+import { isTaskModule, taskModuleOrNull, requireCalendarModuleManage, requireCalendarModuleView } from '@/lib/module-permissions'
 
-const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'OTHER'])
-type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'OTHER'
+const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'DETECTIVE_BRIEFING', 'DETECTIVE_CASE', 'OTHER'])
+type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'DETECTIVE_BRIEFING' | 'DETECTIVE_CASE' | 'OTHER'
 
 function eventType(value: string): CalendarEventTypeValue | null {
   return EVENT_TYPES.has(value) ? value as CalendarEventTypeValue : null
@@ -23,7 +23,7 @@ function cleanText(value: unknown) {
 }
 
 export async function GET(req: NextRequest) {
-  const eventModule = req.nextUrl.searchParams.get('module') === 'SRU' ? 'SRU' : null
+  const eventModule = taskModuleOrNull(req.nextUrl.searchParams.get('module'))
 
   try {
     await requireCalendarModuleView(eventModule)
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const events = await prisma.calendarEvent.findMany({
     where: {
-      module: eventModule,
+      ...(eventModule ? { module: eventModule } : {}),
       ...(type ? { type } : {}),
       ...(from || to ? {
         startsAt: {
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const eventModule = body.module === 'SRU' ? 'SRU' : null
+    const eventModule = isTaskModule(body.module) ? body.module : null
     const user = await requireCalendarModuleManage(eventModule)
     const title = cleanText(body.title)
     const description = cleanText(body.description)

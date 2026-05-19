@@ -1,14 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
+import { isTaskModule, requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
 import { success, error, unauthorized } from '@/lib/api-response'
-
-const VALID_MODULES = ['ACADEMY', 'HR', 'SRU'] as const
-type ModuleKey = (typeof VALID_MODULES)[number]
-
-function isModule(value: string | null): value is ModuleKey {
-  return !!value && (VALID_MODULES as readonly string[]).includes(value)
-}
 
 const taskListInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -48,7 +41,7 @@ export async function GET(req: NextRequest) {
   }
 
   const where: Record<string, unknown> = {}
-  if (isModule(moduleParam)) where.module = moduleParam
+  if (isTaskModule(moduleParam)) where.module = moduleParam
   if (!includeArchived) where.archived = false
 
   const lists = await prisma.taskList.findMany({
@@ -64,7 +57,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    if (!isModule(body.module)) return error('Ungültiges Modul')
+    if (!isTaskModule(body.module)) return error('Ungültiges Modul')
     const user = await requireTaskModuleManage(body.module)
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     if (!title) return error('Titel ist erforderlich')

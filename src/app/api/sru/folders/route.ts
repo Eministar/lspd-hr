@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { taskModuleOrNull, requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
 
 const folderInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -23,16 +23,19 @@ function cleanColor(value: unknown) {
   return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : '#d4af37'
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const module = taskModuleOrNull(req.nextUrl.searchParams.get('module')) ?? 'SRU'
+
   try {
-    await requirePermission('sru:view')
+    await requireTaskModuleView(module)
     const folders = await prisma.sruFolder.findMany({
+      where: { module },
       include: folderInclude,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     })
 
     const looseDocuments = await prisma.sruDocument.findMany({
-      where: { folderId: null },
+      where: { module, folderId: null },
       orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
       include: {
         createdBy: { select: { id: true, displayName: true } },
@@ -51,18 +54,21 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requirePermission('sru:manage')
     const body = await req.json()
+    const module = taskModuleOrNull(body.module) ?? 'SRU'
+    const user = await requireTaskModuleManage(module)
     const name = cleanText(body.name)
     if (!name) return error('Name ist erforderlich')
 
     const last = await prisma.sruFolder.findFirst({
+      where: { module },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
     })
 
     const folder = await prisma.sruFolder.create({
       data: {
+        module,
         name,
         description: cleanText(body.description) || null,
         color: cleanColor(body.color),
@@ -83,13 +89,13 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    await requirePermission('sru:manage')
     const body = await req.json()
     const id = cleanText(body.id)
     if (!id) return error('Ordner-ID ist erforderlich')
 
     const existing = await prisma.sruFolder.findUnique({ where: { id } })
     if (!existing) return notFound('Ordner')
+    await requireTaskModuleManage(existing.module)
 
     const data: Record<string, unknown> = {}
     if ('name' in body) {

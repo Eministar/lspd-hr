@@ -41,7 +41,7 @@ import { useAuth } from '@/context/auth-context'
 import { cn, formatDate } from '@/lib/utils'
 import { hasPermission, type Permission } from '@/lib/permissions'
 
-type TaskModule = 'ACADEMY' | 'HR' | 'SRU'
+type TaskModule = 'ACADEMY' | 'HR' | 'SRU' | 'DETECTIVE'
 type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
 type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
@@ -323,13 +323,13 @@ export function TaskBoard({
   title,
   description,
   accentLabel,
-  viewPermission = 'tasks:view',
-  managePermission = 'tasks:manage',
+  viewPermission,
+  managePermission,
   headerAction,
 }: TaskBoardProps) {
   const { user } = useAuth()
-  const canView = hasPermission(user, viewPermission)
-  const canEdit = hasPermission(user, managePermission)
+  const canView = viewPermission ? hasPermission(user, viewPermission) : false
+  const canEdit = managePermission ? hasPermission(user, managePermission) : false
 
   const [showArchived, setShowArchived] = useState(false)
   const queryUrl = canView ? `/api/task-lists?module=${module}${showArchived ? '&archived=true' : ''}` : null

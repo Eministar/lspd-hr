@@ -205,7 +205,9 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       sessionCount: stats.sessionCount,
       averageSessionMs: stats.averageSessionMs,
       longestSessionMs: stats.longestSessionMs,
-      lastSeenAt: latestDate([live?.lastHeartbeat, activePlaySession?.lastSeenAt, officer.lastOnline, stats.lastSeenAt]),
+      lastSeenAt: live?.status === 'online'
+        ? latestDate([live.lastHeartbeat, activePlaySession?.lastSeenAt, stats.lastSeenAt, officer.lastOnline])
+        : latestDate([activePlaySession?.lastSeenAt, stats.lastSeenAt, officer.lastOnline]),
       daily: stats.daily,
     }
   })

@@ -25,6 +25,7 @@ enum TaskModule {
   ACADEMY
   HR
   SRU
+  DETECTIVE
 }
 
 enum TaskStatus {
@@ -61,6 +62,8 @@ enum CalendarEventType {
   HR_DEADLINE
   SRU_TRAINING
   SRU_OPERATION
+  DETECTIVE_BRIEFING
+  DETECTIVE_CASE
   OTHER
 }
 
@@ -238,6 +241,7 @@ model CalendarEvent {
 
 model SruFolder {
   id          String   @id @default(cuid())
+  module      TaskModule @default(SRU)
   name        String
   description String?  @db.Text
   color       String   @default("#d4af37")
@@ -249,11 +253,12 @@ model SruFolder {
 
   documents   SruDocument[]
 
-  @@index([sortOrder, createdAt])
+  @@index([module, sortOrder, createdAt])
 }
 
 model SruDocument {
   id          String    @id @default(cuid())
+  module      TaskModule @default(SRU)
   folderId    String?
   folder      SruFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title       String
@@ -267,6 +272,7 @@ model SruDocument {
   updatedAt   DateTime  @updatedAt
 
   @@index([folderId, sortOrder])
+  @@index([module, updatedAt])
   @@index([updatedAt])
 }
 

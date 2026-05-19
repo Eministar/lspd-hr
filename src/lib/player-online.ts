@@ -291,9 +291,6 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
 
     if (!activePolice || !status.player) {
       await endActivePlaytime(officer, sessionEndFromStatus(status, now))
-      if (status.lastHeartbeat) {
-        await prisma.officer.update({ where: { id: officer.id }, data: { lastOnline: status.lastHeartbeat } })
-      }
       return {
         officerId: officer.id,
         discordId: officer.discordId,

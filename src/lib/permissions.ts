@@ -19,10 +19,14 @@ export const PERMISSIONS = [
   'rank-changes:manage',
   'rank-change-lists:execute',
   'rank-change-lists:delete',
-  'tasks:view',
-  'tasks:manage',
+  'academy:view',
+  'academy:manage',
+  'hr:view',
+  'hr:manage',
   'sru:view',
   'sru:manage',
+  'detective:view',
+  'detective:manage',
   'notes:view',
   'notes:manage',
   'logs:view',
@@ -64,10 +68,14 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'rank-changes:manage': 'Beförderungen/Degradierungen',
   'rank-change-lists:delete': 'Beförderungs-/Degradierungslisten löschen',
   'rank-change-lists:execute': 'Beförderungen/Degradierungen durchführen',
-  'tasks:view': 'Aufgaben ansehen',
-  'tasks:manage': 'Aufgaben verwalten',
+  'academy:view': 'Academy ansehen',
+  'academy:manage': 'Academy verwalten',
+  'hr:view': 'HR ansehen',
+  'hr:manage': 'HR verwalten',
   'sru:view': 'S.R.U. ansehen',
   'sru:manage': 'S.R.U. verwalten',
+  'detective:view': 'Detective Unit ansehen',
+  'detective:manage': 'Detective Unit verwalten',
   'notes:view': 'Notizen ansehen',
   'notes:manage': 'Notizen verwalten',
   'logs:view': 'Protokoll ansehen',
@@ -86,6 +94,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 }
 
 const PERMISSION_SET = new Set<string>(PERMISSIONS)
+const LEGACY_PERMISSION_MAP: Record<string, Permission[]> = {
+  'tasks:view': ['academy:view', 'hr:view'],
+  'tasks:manage': ['academy:manage', 'hr:manage'],
+}
 
 const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'dashboard:view': ['duty-times:view'],
@@ -102,8 +114,10 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   // Backward-compatibility: managing rank changes should include ability to execute rank-change-lists
   'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],
   'rank-change-lists:execute': ['rank-changes:view', 'officers:view', 'ranks:view'],
-  'tasks:manage': ['tasks:view', 'officers:view'],
+  'academy:manage': ['academy:view', 'officers:view'],
+  'hr:manage': ['hr:view', 'officers:view'],
   'sru:manage': ['sru:view', 'officers:view'],
+  'detective:manage': ['detective:view', 'officers:view'],
   'notes:manage': ['notes:view', 'officers:view'],
   'ranks:manage': ['ranks:view'],
   'trainings:manage': ['trainings:view', 'ranks:view'],
@@ -123,6 +137,8 @@ export function sanitizePermissions(value: unknown): Permission[] {
   for (const item of value) {
     if (typeof item === 'string' && PERMISSION_SET.has(item)) {
       seen.add(item as Permission)
+    } else if (typeof item === 'string' && item in LEGACY_PERMISSION_MAP) {
+      for (const mapped of LEGACY_PERMISSION_MAP[item]) seen.add(mapped)
     }
   }
   return Array.from(seen)

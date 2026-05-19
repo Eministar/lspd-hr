@@ -1,22 +1,37 @@
-import { requireAuth, requirePermission } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth'
+import type { Permission } from '@/lib/permissions'
 
-export function isSruModule(module: unknown) {
-  return module === 'SRU'
+export const TASK_MODULES = ['ACADEMY', 'HR', 'SRU', 'DETECTIVE'] as const
+export type TaskModuleKey = (typeof TASK_MODULES)[number]
+
+const MODULE_PERMISSION: Record<TaskModuleKey, { view: Permission; manage: Permission }> = {
+  ACADEMY: { view: 'academy:view', manage: 'academy:manage' },
+  HR: { view: 'hr:view', manage: 'hr:manage' },
+  SRU: { view: 'sru:view', manage: 'sru:manage' },
+  DETECTIVE: { view: 'detective:view', manage: 'detective:manage' },
+}
+
+export function isTaskModule(value: unknown): value is TaskModuleKey {
+  return typeof value === 'string' && (TASK_MODULES as readonly string[]).includes(value)
+}
+
+export function taskModuleOrNull(value: unknown) {
+  return isTaskModule(value) ? value : null
 }
 
 export async function requireTaskModuleView(module: unknown) {
-  return requirePermission(isSruModule(module) ? 'sru:view' : 'tasks:view')
+  return requirePermission(isTaskModule(module) ? MODULE_PERMISSION[module].view : 'calendar:view')
 }
 
 export async function requireTaskModuleManage(module: unknown) {
-  if (isSruModule(module)) return requirePermission('sru:manage')
-  return requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['tasks:manage'])
+  if (!isTaskModule(module)) throw new Error('Forbidden')
+  return requirePermission(MODULE_PERMISSION[module].manage)
 }
 
 export async function requireCalendarModuleView(module: unknown) {
-  return requirePermission(isSruModule(module) ? 'sru:view' : 'calendar:view')
+  return requirePermission(isTaskModule(module) ? MODULE_PERMISSION[module].view : 'calendar:view')
 }
 
 export async function requireCalendarModuleManage(module: unknown) {
-  return requirePermission(isSruModule(module) ? 'sru:manage' : 'calendar:manage')
+  return requirePermission(isTaskModule(module) ? MODULE_PERMISSION[module].manage : 'calendar:manage')
 }
