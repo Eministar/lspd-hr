@@ -1,6 +1,15 @@
 {
   "ordnungen": [
     {
+      "id": "dienstordnung",
+      "title": "Dienstordnung",
+      "description": "Allgemeine Dienstordnung des Las Santos Police Department",
+      "category": "Allgemein",
+      "buttonLabel": "Dienstordnung",
+      "file": "dienstordnung.md",
+      "icon": "FileText"
+    },
+    {
       "id": "sanktionskatalog",
       "title": "Sanktionskatalog",
       "description": "Interner Sanktionskatalog der HR Abteilung mit Penal Grades und Richtlinien",

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, Archive, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
-  ClipboardList, Megaphone,
+  ClipboardList, Megaphone, FileText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,7 @@ interface NavContentProps {
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard:view' },
+  { name: 'Dienstordnung', href: '/dienstordnung', icon: FileText },
   { name: 'Kalender', href: '/calendar', icon: CalendarDays, permission: 'calendar:view' },
   { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
   { name: 'Streifenboard', href: '/patrol-board', icon: ClipboardList, permission: 'patrol-board:view' },
