@@ -62,7 +62,7 @@ type DiscordConfig = {
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
-  authRoleGroupMap: Record<string, string>
+  authGroupRoleMap: Record<string, string>
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
   unitRoleMap: Record<string, string>
@@ -137,7 +137,8 @@ export const DISCORD_SETTING_KEYS = {
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   authLoginRoleIds: 'discord.authLoginRoleIds',
-  authRoleGroupMap: 'discord.authRoleGroupMap',
+  authGroupRoleMap: 'discord.authGroupRoleMap',
+  legacyAuthRoleGroupMap: 'discord.authRoleGroupMap',
   rankRoleMap: 'discord.rankRoleMap',
   trainingRoleMap: 'discord.trainingRoleMap',
   unitRoleMap: 'discord.unitRoleMap',
@@ -322,7 +323,21 @@ function cleanRoleMap(value: unknown): Record<string, string> {
   )
 }
 
-function cleanRoleGroupMap(value: unknown): Record<string, string> {
+function cleanGroupRoleMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, string] => (
+        typeof entry[0] === 'string' &&
+        entry[0].trim().length > 0 &&
+        typeof entry[1] === 'string' &&
+        /^\d{17,22}$/.test(entry[1])
+      ))
+      .map(([groupId, roleId]) => [groupId.trim(), roleId]),
+  )
+}
+
+function cleanLegacyRoleGroupMap(value: unknown): Record<string, string> {
   if (!value || typeof value !== 'object') return {}
   return Object.fromEntries(
     Object.entries(value)
@@ -334,6 +349,14 @@ function cleanRoleGroupMap(value: unknown): Record<string, string> {
       ))
       .map(([roleId, groupId]) => [roleId, groupId.trim()]),
   )
+}
+
+function normalizeAuthGroupRoleMap(primary: unknown, legacy: unknown): Record<string, string> {
+  const groupRoleMap = cleanGroupRoleMap(primary)
+  if (Object.keys(groupRoleMap).length > 0) return groupRoleMap
+
+  const legacyRoleGroupMap = cleanLegacyRoleGroupMap(legacy)
+  return Object.fromEntries(Object.entries(legacyRoleGroupMap).map(([roleId, groupId]) => [groupId, roleId]))
 }
 
 function snowflake(value: string | null | undefined) {
@@ -439,7 +462,10 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], envAuthLoginRoleIds())),
-    authRoleGroupMap: cleanRoleGroupMap(parseJson(map[DISCORD_SETTING_KEYS.authRoleGroupMap], {})),
+    authGroupRoleMap: normalizeAuthGroupRoleMap(
+      parseJson(map[DISCORD_SETTING_KEYS.authGroupRoleMap], {}),
+      parseJson(map[DISCORD_SETTING_KEYS.legacyAuthRoleGroupMap], {}),
+    ),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
     trainingRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.trainingRoleMap], {})),
     unitRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {})),
@@ -463,7 +489,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
-  if (input.authRoleGroupMap !== undefined) data[DISCORD_SETTING_KEYS.authRoleGroupMap] = JSON.stringify(cleanRoleGroupMap(input.authRoleGroupMap))
+  if (input.authGroupRoleMap !== undefined) data[DISCORD_SETTING_KEYS.authGroupRoleMap] = JSON.stringify(cleanGroupRoleMap(input.authGroupRoleMap))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
   if (input.trainingRoleMap !== undefined) data[DISCORD_SETTING_KEYS.trainingRoleMap] = JSON.stringify(cleanRoleMap(input.trainingRoleMap))
   if (input.unitRoleMap !== undefined) data[DISCORD_SETTING_KEYS.unitRoleMap] = JSON.stringify(cleanRoleMap(input.unitRoleMap))

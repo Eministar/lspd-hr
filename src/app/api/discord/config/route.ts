@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
       authLoginRoleIds: canManageSettings && Array.isArray(body.authLoginRoleIds) ? body.authLoginRoleIds : undefined,
-      authRoleGroupMap: canManageSettings && body.authRoleGroupMap && typeof body.authRoleGroupMap === 'object' ? body.authRoleGroupMap : undefined,
+      authGroupRoleMap: canManageSettings && body.authGroupRoleMap && typeof body.authGroupRoleMap === 'object' ? body.authGroupRoleMap : undefined,
       rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
       trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
       unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,

@@ -58,7 +58,7 @@ interface DiscordConfigResponse {
     employeeRoleIds: string[]
     commandRoleIds: string[]
     authLoginRoleIds: string[]
-    authRoleGroupMap: Record<string, string>
+    authGroupRoleMap: Record<string, string>
     rankRoleMap: Record<string, string>
     trainingRoleMap: Record<string, string>
     unitRoleMap: Record<string, string>
@@ -107,7 +107,7 @@ export default function SettingsPage() {
     employeeRoleIds: [],
     commandRoleIds: [],
     authLoginRoleIds: [],
-    authRoleGroupMap: {},
+    authGroupRoleMap: {},
     rankRoleMap: {},
     trainingRoleMap: {},
     unitRoleMap: {},
@@ -226,12 +226,12 @@ export default function SettingsPage() {
     })
   }
 
-  const setAuthRoleGroup = (roleId: string, groupId: string) => {
+  const setAuthGroupRole = (groupId: string, roleId: string) => {
     setDiscordForm((prev) => {
-      const next = { ...prev.authRoleGroupMap }
-      if (groupId) next[roleId] = groupId
-      else delete next[roleId]
-      return { ...prev, authRoleGroupMap: next }
+      const next = { ...prev.authGroupRoleMap }
+      if (roleId) next[groupId] = roleId
+      else delete next[groupId]
+      return { ...prev, authGroupRoleMap: next }
     })
   }
 
@@ -244,10 +244,6 @@ export default function SettingsPage() {
   const channelOptions = [
     { value: '', label: 'Kein Channel' },
     ...(discordData?.channels.map((channel) => ({ value: channel.id, label: `#${channel.name || channel.id}` })) || []),
-  ]
-  const groupOptions = [
-    { value: '', label: 'Keine Benutzergruppe' },
-    ...(discordData?.userGroups.map((group) => ({ value: group.id, label: group.name })) || []),
   ]
   const roleName = (roleId: string) => discordData?.roles.find((role) => role.id === roleId)?.name || roleId
 
@@ -461,7 +457,7 @@ export default function SettingsPage() {
               <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Dashboard Login-Rollen</p>
               {renderRolePicker('authLoginRoleIds')}
               <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Nur Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Wenn keine Login-Rolle gesetzt ist, zählen die Rollen aus der Gruppen-Zuordnung.
+                Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Rollen, die bei Benutzergruppen hinterlegt sind, zählen ebenfalls als Login-Rollen.
               </p>
             </div>
             <div>
@@ -476,18 +472,18 @@ export default function SettingsPage() {
 
           <div className="mt-5 space-y-5">
             <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Discord-Rollen zu Benutzergruppen</p>
+              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen zu Discord-Rollen</p>
               <p className="text-[11px] text-[#5c728a] mb-3">
-                Beim Login werden alle passenden Benutzergruppen gestapelt. Hat ein Mitglied mehrere zugeordnete Rollen, erhält es alle zugehörigen Gruppenrechte.
+                Beim Login werden alle passenden Benutzergruppen gestapelt. Hat ein Mitglied mehrere Rollen, erhält es alle Benutzergruppen, deren Rolle passt.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.roles.map((role) => (
+                {discordData?.userGroups.map((group) => (
                   <Select
-                    key={role.id}
-                    label={role.name}
-                    value={discordForm.authRoleGroupMap[role.id] || ''}
-                    onValueChange={(groupId) => setAuthRoleGroup(role.id, groupId)}
-                    options={groupOptions}
+                    key={group.id}
+                    label={group.name}
+                    value={discordForm.authGroupRoleMap[group.id] || ''}
+                    onValueChange={(roleId) => setAuthGroupRole(group.id, roleId)}
+                    options={roleOptions}
                     size="sm"
                   />
                 ))}

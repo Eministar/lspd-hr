@@ -102,19 +102,20 @@ export function storedDiscordAvatarUrl(user: {
   })
 }
 
-function matchingGroupIds(roleIds: string[], roleGroupMap: Record<string, string>) {
+function matchingGroupIds(roleIds: string[], groupRoleMap: Record<string, string>) {
   const roles = new Set(roleIds)
   return Array.from(new Set(
-    Object.entries(roleGroupMap)
-      .filter(([roleId]) => roles.has(roleId))
-      .map(([, groupId]) => groupId)
+    Object.entries(groupRoleMap)
+      .filter(([, roleId]) => roles.has(roleId))
+      .map(([groupId]) => groupId)
       .filter(Boolean),
   ))
 }
 
-function hasLoginRole(roleIds: string[], loginRoleIds: string[], roleGroupMap: Record<string, string>) {
+function hasLoginRole(roleIds: string[], loginRoleIds: string[], groupRoleMap: Record<string, string>) {
   const roles = new Set(roleIds)
-  const allowedRoles = loginRoleIds.length > 0 ? loginRoleIds : Object.keys(roleGroupMap)
+  const groupRoleIds = Object.values(groupRoleMap)
+  const allowedRoles = Array.from(new Set([...loginRoleIds, ...groupRoleIds]))
   if (allowedRoles.length === 0) throw new DiscordAuthError('Discord-Login ist nicht konfiguriert')
   return allowedRoles.some((roleId) => roles.has(roleId))
 }
@@ -169,11 +170,11 @@ export async function syncDiscordUserProfile(user: DiscordApiUser) {
 
 export async function upsertDiscordUser(profile: DiscordMemberProfile) {
   const config = await getDiscordConfig()
-  if (!hasLoginRole(profile.roles, config.authLoginRoleIds, config.authRoleGroupMap)) {
+  if (!hasLoginRole(profile.roles, config.authLoginRoleIds, config.authGroupRoleMap)) {
     throw new DiscordAuthError('Dir fehlt die benötigte Discord-Rolle für dieses Dashboard')
   }
 
-  const groupIds = matchingGroupIds(profile.roles, config.authRoleGroupMap)
+  const groupIds = matchingGroupIds(profile.roles, config.authGroupRoleMap)
   const existingGroups = groupIds.length
     ? await prisma.userGroup.findMany({ where: { id: { in: groupIds } }, select: { id: true } })
     : []
@@ -267,7 +268,7 @@ export async function listDiscordAuthMembers() {
     .filter((member): member is DiscordMemberProfile => Boolean(member.user?.id))
     .filter((member) => {
       try {
-        return hasLoginRole(member.roles ?? [], config.authLoginRoleIds, config.authRoleGroupMap)
+        return hasLoginRole(member.roles ?? [], config.authLoginRoleIds, config.authGroupRoleMap)
       } catch {
         return false
       }
@@ -279,7 +280,7 @@ export async function listDiscordAuthMembers() {
         nick: member.nick,
         avatar: member.avatar,
       },
-      groupIds: matchingGroupIds(member.roles ?? [], config.authRoleGroupMap),
+      groupIds: matchingGroupIds(member.roles ?? [], config.authGroupRoleMap),
       avatarUrl: discordAvatarUrl(member.user),
       displayName: profileDisplayName({
         user: member.user,
