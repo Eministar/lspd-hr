@@ -62,7 +62,7 @@ type DiscordConfig = {
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
-  authGroupRoleMap: Record<string, string>
+  authGroupRoleMap: Record<string, string[]>
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
   unitRoleMap: Record<string, string>
@@ -323,17 +323,23 @@ function cleanRoleMap(value: unknown): Record<string, string> {
   )
 }
 
-function cleanGroupRoleMap(value: unknown): Record<string, string> {
+function cleanGroupRoleMap(value: unknown): Record<string, string[]> {
   if (!value || typeof value !== 'object') return {}
   return Object.fromEntries(
     Object.entries(value)
-      .filter((entry): entry is [string, string] => (
-        typeof entry[0] === 'string' &&
-        entry[0].trim().length > 0 &&
-        typeof entry[1] === 'string' &&
-        /^\d{17,22}$/.test(entry[1])
-      ))
-      .map(([groupId, roleId]) => [groupId.trim(), roleId]),
+      .map(([groupId, roleIds]) => {
+        const cleanGroupId = typeof groupId === 'string' ? groupId.trim() : ''
+        if (!cleanGroupId) return null
+
+        const rawRoleIds = Array.isArray(roleIds) ? roleIds : [roleIds]
+        const cleanRoleIds = Array.from(new Set(
+          rawRoleIds.filter((roleId): roleId is string => (
+            typeof roleId === 'string' && /^\d{17,22}$/.test(roleId)
+          )),
+        ))
+        return cleanRoleIds.length > 0 ? [cleanGroupId, cleanRoleIds] as const : null
+      })
+      .filter((entry): entry is readonly [string, string[]] => Boolean(entry)),
   )
 }
 
@@ -351,12 +357,19 @@ function cleanLegacyRoleGroupMap(value: unknown): Record<string, string> {
   )
 }
 
-function normalizeAuthGroupRoleMap(primary: unknown, legacy: unknown): Record<string, string> {
+function normalizeAuthGroupRoleMap(primary: unknown, legacy: unknown): Record<string, string[]> {
   const groupRoleMap = cleanGroupRoleMap(primary)
   if (Object.keys(groupRoleMap).length > 0) return groupRoleMap
 
   const legacyRoleGroupMap = cleanLegacyRoleGroupMap(legacy)
-  return Object.fromEntries(Object.entries(legacyRoleGroupMap).map(([roleId, groupId]) => [groupId, roleId]))
+  if (Object.keys(legacyRoleGroupMap).length > 0) {
+    const grouped = new Map<string, string[]>()
+    for (const [roleId, groupId] of Object.entries(legacyRoleGroupMap)) {
+      grouped.set(groupId, [...(grouped.get(groupId) ?? []), roleId])
+    }
+    return Object.fromEntries(grouped)
+  }
+  return {}
 }
 
 function snowflake(value: string | null | undefined) {

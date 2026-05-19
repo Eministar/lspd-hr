@@ -89,7 +89,7 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        username: 'LSPD HR Monitor',
+        username: 'LSPD Department Monitor',
         embeds: [
           {
             author: { name: SEVERITY_LABEL[severity] },
@@ -98,7 +98,7 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
             color: COLORS[severity],
             fields: fields.slice(0, 25).map(cleanField),
             timestamp: now.toISOString(),
-            footer: { text: `LSPD HR Dashboard · System-Monitor · ${timeStr} Uhr` },
+            footer: { text: `LSPD Department Dashboard · System-Monitor · ${timeStr} Uhr` },
           },
         ],
       }),

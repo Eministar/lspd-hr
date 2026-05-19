@@ -4,7 +4,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'nodejs'
 
-export const alt = 'LSPD HR Dashboard mit Los Santos Police Department Logo'
+export const alt = 'LSPD Department Dashboard mit Los Santos Police Department Logo'
 
 export const size = {
   width: 1200,
@@ -97,7 +97,7 @@ export default async function Image() {
                 letterSpacing: 0,
               }}
             >
-              <span>LSPD HR</span>
+              <span>LSPD Department</span>
               <span>Dashboard</span>
             </div>
             <div
@@ -109,7 +109,7 @@ export default async function Image() {
                 lineHeight: 1.3,
               }}
             >
-              Personalverwaltung, Dienstzeiten und Human-Resources-Tools für NeroV.
+              Department-Verwaltung, Dienstzeiten und operative Tools für NeroV.
             </div>
           </div>
           <div

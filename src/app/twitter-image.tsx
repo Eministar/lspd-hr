@@ -2,7 +2,7 @@ import Image from './opengraph-image'
 
 export const runtime = 'nodejs'
 
-export const alt = 'LSPD HR Dashboard mit Los Santos Police Department Logo'
+export const alt = 'LSPD Department Dashboard mit Los Santos Police Department Logo'
 
 export const size = {
   width: 1200,

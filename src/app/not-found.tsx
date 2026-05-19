@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { NotFoundContent } from '@/components/layout/not-found-content'
 
 export const metadata: Metadata = {
-  title: 'Seite nicht gefunden | LSPD HR',
+  title: 'Seite nicht gefunden',
   description: 'Die angeforderte Seite existiert nicht.',
 }
 

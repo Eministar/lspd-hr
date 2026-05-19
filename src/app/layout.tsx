@@ -12,16 +12,16 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  applicationName: 'LSPD HR Dashboard',
+  applicationName: 'LSPD Department Dashboard',
   title: {
-    default: 'LSPD HR Dashboard',
-    template: '%s | LSPD HR Dashboard',
+    default: 'LSPD Department Dashboard',
+    template: '%s · LSPD Department',
   },
-  description: 'Personalverwaltung, Dienstzeiten und Human-Resources-Tools des Los Santos Police Department.',
+  description: 'Department-Verwaltung, Dienstzeiten, Aufgaben und operative Tools des Los Santos Police Department.',
   keywords: [
     'LSPD',
     'Los Santos Police Department',
-    'HR Dashboard',
+    'Department Dashboard',
     'Personalverwaltung',
     'Dienstzeiten',
     'NeroV',
@@ -35,14 +35,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'de_DE',
     url: '/',
-    siteName: 'LSPD HR Dashboard',
-    title: 'LSPD HR Dashboard',
-    description: 'Personalverwaltung, Dienstzeiten und Human-Resources-Tools des Los Santos Police Department.',
+    siteName: 'LSPD Department Dashboard',
+    title: 'LSPD Department Dashboard',
+    description: 'Department-Verwaltung, Dienstzeiten, Aufgaben und operative Tools des Los Santos Police Department.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LSPD HR Dashboard',
-    description: 'Personalverwaltung, Dienstzeiten und Human-Resources-Tools des Los Santos Police Department.',
+    title: 'LSPD Department Dashboard',
+    description: 'Department-Verwaltung, Dienstzeiten, Aufgaben und operative Tools des Los Santos Police Department.',
   },
 }
 

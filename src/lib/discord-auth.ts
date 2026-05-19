@@ -102,19 +102,19 @@ export function storedDiscordAvatarUrl(user: {
   })
 }
 
-function matchingGroupIds(roleIds: string[], groupRoleMap: Record<string, string>) {
+function matchingGroupIds(roleIds: string[], groupRoleMap: Record<string, string[]>) {
   const roles = new Set(roleIds)
   return Array.from(new Set(
     Object.entries(groupRoleMap)
-      .filter(([, roleId]) => roles.has(roleId))
+      .filter(([, groupRoleIds]) => groupRoleIds.some((roleId) => roles.has(roleId)))
       .map(([groupId]) => groupId)
       .filter(Boolean),
   ))
 }
 
-function hasLoginRole(roleIds: string[], loginRoleIds: string[], groupRoleMap: Record<string, string>) {
+function hasLoginRole(roleIds: string[], loginRoleIds: string[], groupRoleMap: Record<string, string[]>) {
   const roles = new Set(roleIds)
-  const groupRoleIds = Object.values(groupRoleMap)
+  const groupRoleIds = Object.values(groupRoleMap).flat()
   const allowedRoles = Array.from(new Set([...loginRoleIds, ...groupRoleIds]))
   if (allowedRoles.length === 0) throw new DiscordAuthError('Discord-Login ist nicht konfiguriert')
   return allowedRoles.some((roleId) => roles.has(roleId))

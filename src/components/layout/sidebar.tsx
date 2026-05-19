@@ -130,7 +130,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
             <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full" priority />
           </div>
           <div>
-            <span className="block text-[15px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD HR</span>
+            <span className="block text-[15px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD</span>
             <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.1em] uppercase mt-0.5">Department</span>
           </div>
         </div>
@@ -241,7 +241,7 @@ export function Sidebar() {
         </button>
         <div className="flex items-center gap-2">
           <Image src="/shield.webp" alt="LSPD" width={22} height={22} className="rounded-full" priority />
-          <span className="text-[13px] font-semibold text-white tracking-[-0.01em]">LSPD HR</span>
+          <span className="text-[13px] font-semibold text-white tracking-[-0.01em]">LSPD Department</span>
         </div>
         <div className="w-9" aria-hidden />
       </div>

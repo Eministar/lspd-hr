@@ -9,6 +9,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith('/api/auth/discord/login') ||
     pathname.startsWith('/api/auth/discord/callback') ||
     pathname.startsWith('/api/auth/me') ||
+    pathname.startsWith('/api/health') ||
     pathname.startsWith('/api/uploads') ||
     pathname.startsWith('/api/runtime-events') ||
     pathname.startsWith('/api/discord/interactions')

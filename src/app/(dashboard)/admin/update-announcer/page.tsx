@@ -67,7 +67,7 @@ export default function UpdateAnnouncerPage() {
               label="Titel"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="z.B. LSPD HR Tools Update"
+              placeholder="z.B. LSPD Department Update"
             />
             <Input
               label="Version"

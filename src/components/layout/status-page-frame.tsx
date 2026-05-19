@@ -76,7 +76,7 @@ export function StatusPageFrame({
         <h1 className="text-[20px] font-semibold text-white">{title}</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-[#9fb0c4]">{description}</p>
         {children}
-        <p className="mt-5 text-[11px] text-[#4a6585]">LSPD HR · Los Santos Police Department</p>
+        <p className="mt-5 text-[11px] text-[#4a6585]">LSPD Department · Los Santos Police Department</p>
       </div>
     </div>
   )

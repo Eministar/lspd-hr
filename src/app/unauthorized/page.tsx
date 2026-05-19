@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 
 export const metadata: Metadata = {
-  title: 'Kein Zugriff | LSPD HR',
+  title: 'Kein Zugriff',
   description: 'Für diesen Bereich fehlt die Berechtigung.',
 }
 

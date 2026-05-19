@@ -48,7 +48,7 @@ export default function LoginPage() {
           >
             <Image src="/shield.webp" alt="LSPD" width={72} height={72} className="rounded-full" priority />
           </motion.div>
-          <h1 className="text-[18px] font-semibold text-white tracking-[-0.01em]">LSPD HR</h1>
+          <h1 className="text-[18px] font-semibold text-white tracking-[-0.01em]">LSPD Department</h1>
           <p className="text-[12px] font-medium text-[#d4af37]/80 mt-1 tracking-[0.04em]">Discord Authentifizierung</p>
         </div>
 

@@ -58,7 +58,7 @@ interface DiscordConfigResponse {
     employeeRoleIds: string[]
     commandRoleIds: string[]
     authLoginRoleIds: string[]
-    authGroupRoleMap: Record<string, string>
+    authGroupRoleMap: Record<string, string[]>
     rankRoleMap: Record<string, string>
     trainingRoleMap: Record<string, string>
     unitRoleMap: Record<string, string>
@@ -226,10 +226,20 @@ export default function SettingsPage() {
     })
   }
 
-  const setAuthGroupRole = (groupId: string, roleId: string) => {
+  const addAuthGroupRole = (groupId: string, roleId: string) => {
+    if (!roleId) return
     setDiscordForm((prev) => {
       const next = { ...prev.authGroupRoleMap }
-      if (roleId) next[groupId] = roleId
+      next[groupId] = Array.from(new Set([...(next[groupId] ?? []), roleId]))
+      return { ...prev, authGroupRoleMap: next }
+    })
+  }
+
+  const removeAuthGroupRole = (groupId: string, roleId: string) => {
+    setDiscordForm((prev) => {
+      const next = { ...prev.authGroupRoleMap }
+      const remaining = (next[groupId] ?? []).filter((id) => id !== roleId)
+      if (remaining.length > 0) next[groupId] = remaining
       else delete next[groupId]
       return { ...prev, authGroupRoleMap: next }
     })
@@ -474,19 +484,47 @@ export default function SettingsPage() {
             <div>
               <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen zu Discord-Rollen</p>
               <p className="text-[11px] text-[#5c728a] mb-3">
-                Beim Login werden alle passenden Benutzergruppen gestapelt. Hat ein Mitglied mehrere Rollen, erhält es alle Benutzergruppen, deren Rolle passt.
+                Beim Login werden alle passenden Benutzergruppen gestapelt. Eine Benutzergruppe passt, sobald ein Mitglied mindestens eine der hinterlegten Rollen hat.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.userGroups.map((group) => (
-                  <Select
-                    key={group.id}
-                    label={group.name}
-                    value={discordForm.authGroupRoleMap[group.id] || ''}
-                    onValueChange={(roleId) => setAuthGroupRole(group.id, roleId)}
-                    options={roleOptions}
-                    size="sm"
-                  />
-                ))}
+                {discordData?.userGroups.map((group) => {
+                  const selectedRoleIds = discordForm.authGroupRoleMap[group.id] ?? []
+                  const addOptions = [
+                    { value: '', label: 'Rolle hinzufügen' },
+                    ...(discordData?.roles
+                      .filter((role) => !selectedRoleIds.includes(role.id))
+                      .map((role) => ({ value: role.id, label: role.name })) || []),
+                  ]
+
+                  return (
+                    <div key={group.id} className="space-y-2">
+                      <Select
+                        label={group.name}
+                        value=""
+                        onValueChange={(roleId) => addAuthGroupRole(group.id, roleId)}
+                        options={addOptions}
+                        size="sm"
+                      />
+                      <div className="flex flex-wrap gap-2 min-h-[34px]">
+                        {selectedRoleIds.map((roleId) => (
+                          <button
+                            key={roleId}
+                            type="button"
+                            onClick={() => removeAuthGroupRole(group.id, roleId)}
+                            className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+                            title="Rolle entfernen"
+                          >
+                            {roleName(roleId)}
+                            <span className="text-[#6b8299]">×</span>
+                          </button>
+                        ))}
+                        {selectedRoleIds.length === 0 && (
+                          <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
             <div>
