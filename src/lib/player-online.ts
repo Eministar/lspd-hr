@@ -3,9 +3,11 @@ import { endActiveAbsencesForOfficer, runOfficerStatusAutomation } from '@/lib/a
 
 const DEFAULT_PLAYER_ONLINE_API_URL = 'https://dash.nero-v.cc/api/external/player-online'
 const DEFAULT_POLICE_JOB = 'police'
-const DEFAULT_TIMEOUT_MS = 8_000
-const DEFAULT_SYNC_TTL_MS = 5_000
+const DEFAULT_TIMEOUT_MS = 12_000
+const DEFAULT_SYNC_TTL_MS = 30_000
 const DEFAULT_CONCURRENCY = 8
+const SCRIPT_GRACE_MS = 3 * 60_000   // 3 min: script-disconnect grace period
+const ERROR_FALLBACK_MS = 5 * 60_000 // 5 min: reuse last-good result on transient errors
 
 export type PlayerOnlineStatusName = 'online' | 'offline' | 'ignored-job' | 'not-linked' | 'not-configured' | 'error'
 
@@ -65,6 +67,9 @@ type RawPlayer = {
 let lastAllSyncAt = 0
 let lastAllSync: PlayerOnlineSyncSummary | null = null
 let activeAllSync: Promise<PlayerOnlineSyncSummary> | null = null
+
+// Per-officer cache: keeps last successful fetch result for error fallback and grace period
+const officerResultCache = new Map<string, { result: PlayerOnlineSyncResult; at: number }>()
 
 function envValue(...names: string[]) {
   for (const name of names) {
@@ -216,7 +221,9 @@ async function fetchPlayerOnline(discordId: string): Promise<{
 }
 
 async function endActivePlaytime(officer: OfficerForPlayerSync, endedAt: Date) {
-  const result = await prisma.playtimeSession.updateMany({
+  // Capture lastSeenAt BEFORE updating so we store the real last-seen timestamp,
+  // not "now" (endedAt may just be the current sync time).
+  const activeSessions = await prisma.playtimeSession.findMany({
     where: {
       endedAt: null,
       OR: [
@@ -224,18 +231,22 @@ async function endActivePlaytime(officer: OfficerForPlayerSync, endedAt: Date) {
         ...(officer.discordId ? [{ discordId: officer.discordId }] : []),
       ],
     },
-    data: {
-      endedAt,
-      lastSeenAt: endedAt,
-    },
+    select: { id: true, lastSeenAt: true },
+    orderBy: { lastSeenAt: 'desc' },
   })
 
-  if (result.count > 0) {
-    await prisma.officer.update({
-      where: { id: officer.id },
-      data: { lastOnline: endedAt },
-    })
-  }
+  if (activeSessions.length === 0) return
+
+  await prisma.playtimeSession.updateMany({
+    where: { id: { in: activeSessions.map((s) => s.id) } },
+    data: { endedAt, lastSeenAt: endedAt },
+  })
+
+  // Use the session's pre-update lastSeenAt as the officer's last online time
+  await prisma.officer.update({
+    where: { id: officer.id },
+    data: { lastOnline: activeSessions[0].lastSeenAt },
+  })
 }
 
 async function upsertActivePlaytime(officer: OfficerForPlayerSync, player: PlayerOnlinePlayer, lastSeenAt: Date, now: Date) {
@@ -294,12 +305,37 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
 
   try {
     const status = await fetchPlayerOnline(officer.discordId)
+
+    // Script temporarily disconnected but player is still online with a recent heartbeat:
+    // hold the grace period to avoid ending the session for a momentary hiccup.
+    const scriptDisconnectedGrace = status.online && !status.scriptConnected &&
+      status.lastHeartbeat !== null &&
+      now.getTime() - status.lastHeartbeat.getTime() < SCRIPT_GRACE_MS
+
     const activePolice = status.online && status.scriptConnected && isPolicePlayer(status.player)
 
     if (!activePolice || !status.player) {
+      if (scriptDisconnectedGrace) {
+        // Don't end the session yet — surface as offline so the UI reflects reality
+        // but keep the playtime session alive until the grace period expires.
+        const cached = officerResultCache.get(officer.id)
+        const result: PlayerOnlineSyncResult = {
+          officerId: officer.id,
+          discordId: officer.discordId,
+          status: 'offline',
+          online: status.online,
+          scriptConnected: false,
+          lastHeartbeat: status.lastHeartbeat,
+          player: cached?.result.player ?? null,
+          endedAbsences: 0,
+        }
+        officerResultCache.set(officer.id, { result, at: now.getTime() })
+        return result
+      }
+
       const sessionEnd = sessionEndFromStatus(status, now)
       await endActivePlaytime(officer, sessionEnd)
-      return {
+      const result: PlayerOnlineSyncResult = {
         officerId: officer.id,
         discordId: officer.discordId,
         status: status.online && status.scriptConnected ? 'ignored-job' : 'offline',
@@ -309,14 +345,17 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
         player: status.player,
         endedAbsences: 0,
       }
+      officerResultCache.set(officer.id, { result, at: now.getTime() })
+      return result
     }
 
     const lastSeenAt = status.lastHeartbeat ?? now
     await upsertActivePlaytime(officer, status.player, lastSeenAt, now)
-    await prisma.officer.update({ where: { id: officer.id }, data: { lastOnline: lastSeenAt } })
+    // Don't touch lastOnline while the officer is actively playing — the session
+    // tracks the current activity. lastOnline is only written when the session ends.
     const endedAbsences = await endActiveAbsencesForOfficer(officer.id, now)
 
-    return {
+    const result: PlayerOnlineSyncResult = {
       officerId: officer.id,
       discordId: officer.discordId,
       status: 'online',
@@ -326,7 +365,15 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
       player: status.player,
       endedAbsences,
     }
-  } catch (error) {
+    officerResultCache.set(officer.id, { result, at: now.getTime() })
+    return result
+  } catch (fetchError) {
+    // On transient API errors, reuse the last known result if it's fresh enough
+    const cached = officerResultCache.get(officer.id)
+    if (cached && now.getTime() - cached.at < ERROR_FALLBACK_MS) {
+      return cached.result
+    }
+
     return {
       officerId: officer.id,
       discordId: officer.discordId,
@@ -336,7 +383,7 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
       lastHeartbeat: null,
       player: null,
       endedAbsences: 0,
-      error: error instanceof Error ? error.message : 'Player-Online API nicht erreichbar',
+      error: fetchError instanceof Error ? fetchError.message : 'Player-Online API nicht erreichbar',
     }
   }
 }
