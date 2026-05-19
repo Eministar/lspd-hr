@@ -216,7 +216,7 @@ async function fetchPlayerOnline(discordId: string): Promise<{
 }
 
 async function endActivePlaytime(officer: OfficerForPlayerSync, endedAt: Date) {
-  const result = await prisma.playtimeSession.updateMany({
+  await prisma.playtimeSession.updateMany({
     where: {
       endedAt: null,
       OR: [
@@ -229,13 +229,6 @@ async function endActivePlaytime(officer: OfficerForPlayerSync, endedAt: Date) {
       lastSeenAt: endedAt,
     },
   })
-
-  if (result.count > 0) {
-    await prisma.officer.update({
-      where: { id: officer.id },
-      data: { lastOnline: endedAt },
-    })
-  }
 }
 
 async function upsertActivePlaytime(officer: OfficerForPlayerSync, player: PlayerOnlinePlayer, lastSeenAt: Date, now: Date) {
@@ -297,7 +290,11 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
     const activePolice = status.online && status.scriptConnected && isPolicePlayer(status.player)
 
     if (!activePolice || !status.player) {
-      await endActivePlaytime(officer, sessionEndFromStatus(status, now))
+      const sessionEnd = sessionEndFromStatus(status, now)
+      await endActivePlaytime(officer, sessionEnd)
+      if (status.lastHeartbeat) {
+        await prisma.officer.update({ where: { id: officer.id }, data: { lastOnline: status.lastHeartbeat } })
+      }
       return {
         officerId: officer.id,
         discordId: officer.discordId,
