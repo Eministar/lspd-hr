@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'ALLOWALL' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors *" },
+        ],
+      },
+      {
         source: '/((?!_next/static|favicon.ico|shield.webp|logo.webp|logo-og.png|opengraph-image|twitter-image|uploads).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-store, max-age=0' },
