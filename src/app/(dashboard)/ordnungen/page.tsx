@@ -25,6 +25,7 @@ export default function OrdnungenPage() {
   const { data: configs } = useFetch<OrdnungConfig[]>('/api/ordnungen/config')
 
   const categories = [
+    { key: 'Allgemein', label: 'Allgemein', description: 'Allgemeine Dienstordnungen und verbindliche Richtlinien' },
     { key: 'HR', label: 'Human Resources', description: 'Richtlinien und Verfahren für die HR-Abteilung' },
   ]
 
