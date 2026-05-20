@@ -9,12 +9,17 @@ import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
+import { canCheckDiscordGuildMembers, getDiscordGuildMember, queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
 import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
+
+function validDiscordId(value: string | null | undefined) {
+  const id = value?.trim()
+  return id && /^\d{17,22}$/.test(id) ? id : ''
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -75,12 +80,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!officer) return notFound('Officer')
   const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
   await syncOfficerPlayerPlaytime(id)
-  const [dutyTime, playtime, absences] = await Promise.all([
+  const discordId = validDiscordId(officer.discordId)
+  const canCheckDiscordMembers = await canCheckDiscordGuildMembers()
+  const [dutyTime, playtime, absences, discordGuildMember] = await Promise.all([
     getOfficerDutyTime(id, { sync: false }),
     getOfficerPlaytimeReport(id, { sync: false }),
     getOfficerAbsenceReport(id),
+    canCheckDiscordMembers && discordId ? getDiscordGuildMember(discordId) : Promise.resolve(null),
   ])
-  return success({ ...officerWithTrainingRows, dutyTime, playtime, absences })
+  return success({
+    ...officerWithTrainingRows,
+    dutyTime,
+    playtime,
+    absences,
+    discordMember: {
+      checked: canCheckDiscordMembers && !!discordId,
+      inGuild: !!discordGuildMember,
+    },
+  })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -17,7 +17,7 @@ import {
   rectIntersection,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag } from 'lucide-react'
+import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag, MessageCircle, CircleSlash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -94,6 +94,10 @@ interface Officer {
   hireDate: string
   lastOnline: string | null
   discordId: string | null
+  discordMember?: {
+    checked: boolean
+    inGuild: boolean
+  }
   trainings: OfficerTraining[]
 }
 
@@ -130,6 +134,37 @@ const FLAG_OPTIONS: Array<{ id: string | null; label: string; color: string }> =
 
 function trainingAvailableForOfficer(training: Training, officer: Officer) {
   return !training.minRank || officer.rank.sortOrder <= training.minRank.sortOrder
+}
+
+function DiscordMemberBadge({ officer, compact = false }: { officer: Pick<Officer, 'discordId' | 'discordMember'>; compact?: boolean }) {
+  const hasDiscordId = !!officer.discordId
+  const checked = !!officer.discordMember?.checked
+  const inGuild = !!officer.discordMember?.inGuild
+  const label = !hasDiscordId
+    ? 'Nicht verknüpft'
+    : checked
+      ? inGuild ? 'Auf Discord' : 'Nicht auf Discord'
+      : 'Discord ungeprüft'
+  const className = !hasDiscordId || !checked
+    ? 'border-[#234568]/50 bg-[#0b1f3a]/70 text-[#6b8299]'
+    : inGuild
+      ? 'border-[#166534]/50 bg-[#052e1a]/70 text-[#86efac]'
+      : 'border-[#7f1d1d]/55 bg-[#2a1212]/70 text-[#fca5a5]'
+  const Icon = hasDiscordId && checked && inGuild ? MessageCircle : CircleSlash
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-[6px] border font-medium whitespace-nowrap',
+        compact ? 'px-1.5 py-[2px] text-[10.5px]' : 'px-2 py-[3px] text-[11.5px]',
+        className
+      )}
+      title={hasDiscordId ? `Discord-ID: ${officer.discordId}` : 'Keine Discord-ID am Officer hinterlegt'}
+    >
+      <Icon size={compact ? 10 : 11} strokeWidth={2} />
+      {label}
+    </span>
+  )
 }
 
 function FlagButton({
@@ -311,6 +346,9 @@ function DraggableOfficerRow({
           <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
         </span>
       </td>
+      <td className="px-2 py-2.5 whitespace-nowrap">
+        <DiscordMemberBadge officer={officer} compact />
+      </td>
       <td className="px-2 py-2.5 text-[12px] text-[#8ea4bd]" title={officer.lastOnline ? formatDateTime(officer.lastOnline) : 'Nie online gewesen'}>
         {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
       </td>
@@ -395,6 +433,7 @@ function MobileOfficerCard({
           <span className="text-[11.5px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
         </span>
         <div className="col-span-2 flex items-center gap-2">
+          <DiscordMemberBadge officer={officer} compact />
           <span className="text-[11.5px] text-[#8ea4bd]">
             Zuletzt online: {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
           </span>
@@ -480,7 +519,8 @@ export default function OfficersPage() {
         if (
           !o.firstName.toLowerCase().includes(s) &&
           !o.lastName.toLowerCase().includes(s) &&
-          !o.badgeNumber.toLowerCase().includes(s)
+          !o.badgeNumber.toLowerCase().includes(s) &&
+          !o.discordId?.toLowerCase().includes(s)
         )
           return false
       }
@@ -714,7 +754,7 @@ export default function OfficersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suche nach Name oder Dienstnummer..."
+            placeholder="Suche nach Name, Dienstnummer oder Discord-ID..."
             className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
           />
         </div>
@@ -835,6 +875,7 @@ export default function OfficersPage() {
                                 ))}
                                 <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Unit</th>
                                 <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Status</th>
+                                <th className="w-[112px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Discord</th>
                                 <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Zuletzt Online</th>
                                 <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Einstellung</th>
                                 <th className="w-[44px] px-1.5 py-2.5 text-center text-[11px] font-medium text-[#6b8299]">
@@ -860,7 +901,7 @@ export default function OfficersPage() {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={9 + allTrainings.length} className="px-4 py-4 text-center text-[12.5px] text-[#6b8299]">
+                                  <td colSpan={10 + allTrainings.length} className="px-4 py-4 text-center text-[12.5px] text-[#6b8299]">
                                     — Kein Officer hat diesen Rang
                                   </td>
                                 </tr>

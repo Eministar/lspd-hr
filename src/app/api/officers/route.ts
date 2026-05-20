@@ -10,8 +10,13 @@ import { nextBadgeForRank } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { eligibleTrainingsForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
-import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { canCheckDiscordGuildMembers, getDiscordGuildMembers, queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
+
+function validDiscordId(value: string | null | undefined) {
+  const id = value?.trim()
+  return id && /^\d{17,22}$/.test(id) ? id : ''
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
   else where.status = { not: 'TERMINATED' }
   if (rankId) where.rankId = rankId
 
-  const [officers, trainings] = await Promise.all([
+  const [officers, trainings, canCheckDiscordMembers] = await Promise.all([
     prisma.officer.findMany({
       where,
       include: {
@@ -55,9 +60,21 @@ export async function GET(req: NextRequest) {
       include: { minRank: true },
       orderBy: { sortOrder: 'asc' },
     }),
+    canCheckDiscordGuildMembers(),
   ])
+  const discordMembers = canCheckDiscordMembers ? await getDiscordGuildMembers() : []
+  const discordMemberIds = new Set(discordMembers.map((member) => member.user?.id).filter(Boolean))
 
-  return success(officers.map((officer) => withOfficerTrainingRows(officer, trainings)))
+  return success(officers.map((officer) => {
+    const discordId = validDiscordId(officer.discordId)
+    return {
+      ...withOfficerTrainingRows(officer, trainings),
+      discordMember: {
+        checked: canCheckDiscordMembers && !!discordId,
+        inGuild: !!discordId && discordMemberIds.has(discordId),
+      },
+    }
+  }))
 }
 
 export async function POST(req: NextRequest) {

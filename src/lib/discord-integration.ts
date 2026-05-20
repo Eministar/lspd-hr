@@ -242,6 +242,12 @@ export function getDiscordApplicationId() {
   return envApplicationId()
 }
 
+export async function canCheckDiscordGuildMembers(guildId?: string) {
+  const config = await getDiscordConfig()
+  const id = guildId || config.guildId
+  return !!id && !!botToken()
+}
+
 function envAnnouncementsChannelId() {
   return (
     process.env.DISCORD_ANNOUNCEMENTS_CHANNEL_ID?.trim() ||
@@ -589,7 +595,19 @@ export async function getDiscordGuildMembers(guildId?: string) {
   const id = guildId || config.guildId
   if (!id || !botToken()) return []
 
-  return discordFetch<DiscordGuildMember[]>(`/guilds/${id}/members?limit=1000`).catch(() => [])
+  const members: DiscordGuildMember[] = []
+  let after = '0'
+
+  while (true) {
+    const page = await discordFetch<DiscordGuildMember[]>(`/guilds/${id}/members?limit=1000&after=${after}`).catch(() => [])
+    if (page.length === 0) break
+    members.push(...page)
+    const lastId = page[page.length - 1]?.user?.id
+    if (!lastId || page.length < 1000) break
+    after = lastId
+  }
+
+  return members
 }
 
 async function getOfficerForDiscord(officerId: string) {

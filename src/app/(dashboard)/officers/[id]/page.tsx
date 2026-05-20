@@ -4,7 +4,7 @@ import { useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus, ChevronDown, ChevronUp, History, Download } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Edit, Trash2, UserX, UserCheck, Save, X, Check, TrendingUp, TrendingDown, Plus, StickyNote, Timer, Send, Gavel, ListPlus, ChevronDown, ChevronUp, History, Download, MessageCircle, CircleSlash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DateField } from '@/components/ui/date-field'
@@ -97,6 +97,10 @@ interface OfficerDetail {
   hireDate: string
   lastOnline: string | null
   discordId: string | null
+  discordMember?: {
+    checked: boolean
+    inGuild: boolean
+  }
   trainings: OfficerTraining[]
   promotionLogs: PromotionLog[]
   sanctions: SanctionRecord[]
@@ -190,6 +194,30 @@ const PLAYTIME_HISTORY_COLLAPSE_LIMIT = 5
 
 function trainingAvailableForOfficer(training: Training, officer: OfficerDetail) {
   return !training.minRank || officer.rank.sortOrder <= training.minRank.sortOrder
+}
+
+function DiscordMemberStatus({ officer }: { officer: Pick<OfficerDetail, 'discordId' | 'discordMember'> }) {
+  const hasDiscordId = !!officer.discordId
+  const checked = !!officer.discordMember?.checked
+  const inGuild = !!officer.discordMember?.inGuild
+  const label = !hasDiscordId
+    ? 'Nicht verknüpft'
+    : checked
+      ? inGuild ? 'Auf Discord-Server' : 'Nicht auf Discord-Server'
+      : 'Discord-Server ungeprüft'
+  const className = !hasDiscordId || !checked
+    ? 'border-[#234568]/50 bg-[#0b1f3a]/70 text-[#6b8299]'
+    : inGuild
+      ? 'border-[#166534]/50 bg-[#052e1a]/70 text-[#86efac]'
+      : 'border-[#7f1d1d]/55 bg-[#2a1212]/70 text-[#fca5a5]'
+  const Icon = hasDiscordId && checked && inGuild ? MessageCircle : CircleSlash
+
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-[6px] border px-2 py-[3px] text-[11.5px] font-medium', className)}>
+      <Icon size={11} strokeWidth={2} />
+      {label}
+    </span>
+  )
 }
 
 function formatDuration(ms: number) {
@@ -689,6 +717,9 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-6">
                 <InfoRow label="Dienstnummer" value={displayBadgeNumber(officer.badgeNumber)} mono />
                 <InfoRow label="Discord-ID" value={officer.discordId ?? undefined} mono />
+                <InfoRow label="Discord-Server">
+                  <DiscordMemberStatus officer={officer} />
+                </InfoRow>
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />
