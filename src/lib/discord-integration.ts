@@ -637,25 +637,21 @@ async function syncOfficerDashboardGroupsForOfficer(
   })
   if (!user) return
 
-  const managedRoleIds = new Set(configuredRoleIds(config))
-  const managedGroupIds = new Set(
-    Object.entries(config.authGroupRoleMap)
-      .filter(([, roleIds]) => roleIds.some((roleId) => managedRoleIds.has(roleId)))
-      .map(([groupId]) => groupId),
-  )
+  const roleBackedGroupIds = new Set(Object.keys(config.authGroupRoleMap))
   const desiredGroupIds = mode === 'remove-all'
     ? []
     : dashboardGroupIdsForRoles(desiredRoleIds(officer, config), config)
 
   const preservedGroupIds = user.groupMemberships
     .map((membership) => membership.groupId)
-    .filter((groupId) => !managedGroupIds.has(groupId))
+    .filter((groupId) => !roleBackedGroupIds.has(groupId))
 
   const nextGroupIds = Array.from(new Set([...preservedGroupIds, ...desiredGroupIds]))
   const existingGroups = nextGroupIds.length > 0
     ? await prisma.userGroup.findMany({ where: { id: { in: nextGroupIds } }, select: { id: true } })
     : []
-  const validGroupIds = nextGroupIds.filter((groupId) => existingGroups.some((group) => group.id === groupId))
+  const existingGroupIds = new Set(existingGroups.map((group) => group.id))
+  const validGroupIds = nextGroupIds.filter((groupId) => existingGroupIds.has(groupId))
 
   await prisma.$transaction([
     prisma.userGroupMembership.deleteMany({ where: { userId: user.id } }),
@@ -759,7 +755,6 @@ export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord)
 
 export async function syncAllOfficerDiscordRoles() {
   const config = await getDiscordConfig()
-  if (!config.guildId || !botToken()) return { synced: 0, skipped: 0, failed: 0, total: 0 }
 
   const officers = await prisma.officer.findMany({
     include: {
@@ -772,6 +767,7 @@ export async function syncAllOfficerDiscordRoles() {
   let synced = 0
   let skipped = 0
   let failed = 0
+  const canSyncDiscord = !!config.guildId && !!botToken()
   // Officers sequentiell verarbeiten (1 pro Batch) um Rate-Limits zu vermeiden
   for (const officer of officers) {
     if (!officer.discordId) {
@@ -779,7 +775,9 @@ export async function syncAllOfficerDiscordRoles() {
       continue
     }
     try {
-      await syncOfficerDiscordMember(officer, config, officer.status === 'TERMINATED' ? 'remove-all' : 'sync')
+      const mode = officer.status === 'TERMINATED' ? 'remove-all' : 'sync'
+      await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
+      if (canSyncDiscord) await syncOfficerDiscordMember(officer, config, mode)
       synced++
     } catch (err) {
       failed++
