@@ -663,7 +663,10 @@ async function syncOfficerDashboardGroupsForOfficer(
       : []),
     prisma.user.update({
       where: { id: user.id },
-      data: { groupId: validGroupIds[0] ?? null },
+      data: {
+        groupId: validGroupIds[0] ?? null,
+        permissions: [],
+      },
     }),
   ])
 }
