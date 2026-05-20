@@ -2,20 +2,36 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CalendarDays, ListChecks, ScrollText } from 'lucide-react'
+import { BookOpen, CalendarDays, FileText, ListChecks, ScrollText } from 'lucide-react'
 import { TaskBoard } from '@/components/tasks/task-board'
+import { ModuleDocuments } from '@/components/modules/module-documents'
 import { ModuleCalendar } from '@/components/modules/module-calendar'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
-type Tab = 'tasks' | 'calendar'
+type Tab = 'documents' | 'tasks' | 'calendar'
 
 const tabs = [
+  { id: 'documents' as const, label: 'Dokumente', icon: FileText },
   { id: 'tasks' as const, label: 'Aufgaben', icon: ListChecks },
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
 ]
+
+const EMPTY_HR_DOCUMENT = `# Neues HR-Dokument
+
+## Überblick
+
+- Punkt 1
+- Punkt 2
+
+## Maßnahmen
+
+| Thema | Status | Notiz |
+| --- | --- | --- |
+|  | Offen |  |
+`
 
 function HrLinks() {
   return (
@@ -42,7 +58,7 @@ export default function HrDepartmentPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'hr:view')
   const canManage = hasPermission(user, 'hr:manage')
-  const [activeTab, setActiveTab] = useState<Tab>('tasks')
+  const [activeTab, setActiveTab] = useState<Tab>('documents')
 
   if (!canView) return <UnauthorizedContent />
 
@@ -71,6 +87,15 @@ export default function HrDepartmentPage() {
         })}
       </div>
 
+      {activeTab === 'documents' && (
+        <ModuleDocuments
+          module="HR"
+          title="HR Dokumente"
+          description="Interne Dokumente, Gesprächsnotizen und Vorlagen der Personalabteilung"
+          emptyDocument={EMPTY_HR_DOCUMENT}
+          canManage={canManage}
+        />
+      )}
       {activeTab === 'tasks' && (
         <TaskBoard
           module="HR"
