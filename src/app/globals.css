@@ -326,6 +326,7 @@ select option:hover {
 .markdown-document h4,
 .markdown-document h5,
 .markdown-document h6 {
+  scroll-margin-top: 96px;
   color: #ffffff;
   font-weight: 650;
   letter-spacing: 0;

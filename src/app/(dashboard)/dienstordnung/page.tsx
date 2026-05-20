@@ -5,35 +5,65 @@ import { AlertCircle, BookOpen, ScrollText } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { renderMarkdown } from '@/lib/markdown'
 
-const quickLinks = [
-  { href: '#1-grundpflichten', label: '§1 Grundpflichten' },
-  { href: '#2-dienstverhalten', label: '§2 Dienstverhalten' },
-  { href: '#3-kommunikation-und-funkdisziplin', label: '§3 Kommunikation' },
-  { href: '#4-befehlskette-und-weisungen', label: '§4 Befehlskette' },
-  { href: '#5-ausrüstung-und-fahrzeuge', label: '§5 Ausrüstung' },
-  { href: '#6-einsatzverhalten', label: '§6 Einsatzverhalten' },
-  { href: '#7-dokumentation-und-meldepflichten', label: '§7 Dokumentation' },
-  { href: '#8-nebentätigkeiten-und-interessenkonflikte', label: '§8 Interessenkonflikte' },
-  { href: '#9-disziplinarmaßnahmen', label: '§9 Disziplinarmaßnahmen' },
-  { href: '#10-schlussbestimmungen', label: '§10 Schlussbestimmungen' },
-]
+type QuickLink = {
+  href: string
+  label: string
+  section: string
+}
+
+function slugifyHeading(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+}
+
+function cleanHeadingText(value: string) {
+  return value
+    .replace(/\s+\{#([A-Za-z0-9_-]+)}\s*$/, '')
+    .replace(/\s+#+\s*$/, '')
+    .trim()
+}
+
+function getHeadingId(value: string) {
+  return /\s+\{#([A-Za-z0-9_-]+)}\s*$/.exec(value)?.[1] ?? slugifyHeading(cleanHeadingText(value))
+}
+
+function getQuickLinks(markdown: string): QuickLink[] {
+  return markdown
+    .split(/\r?\n/)
+    .map((line) => /^##\s+(.+)$/.exec(line.trim())?.[1])
+    .filter((heading): heading is string => Boolean(heading))
+    .map((heading) => {
+      const label = cleanHeadingText(heading)
+      const section = /^§\s*(\d+)/.exec(label)?.[1] ?? ''
+
+      return {
+        href: `#${getHeadingId(heading)}`,
+        label,
+        section,
+      }
+    })
+}
 
 async function loadDienstordnung() {
   try {
     const markdownPath = path.join(process.cwd(), 'ordnungen', 'dienstordnung.md')
     const markdown = await fs.readFile(markdownPath, 'utf8')
 
-    return { html: renderMarkdown(markdown), error: null }
+    return { html: renderMarkdown(markdown), quickLinks: getQuickLinks(markdown), error: null }
   } catch (error) {
     return {
       html: null,
+      quickLinks: [],
       error: error instanceof Error ? error.message : 'Dienstordnung konnte nicht geladen werden',
     }
   }
 }
 
 export default async function DienstordnungPage() {
-  const { html, error } = await loadDienstordnung()
+  const { html, quickLinks, error } = await loadDienstordnung()
 
   if (error || !html) {
     return (
@@ -78,7 +108,7 @@ export default async function DienstordnungPage() {
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <article
           className="markdown-document glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/40 p-5 sm:p-7"
           dangerouslySetInnerHTML={{ __html: html }}
@@ -86,19 +116,24 @@ export default async function DienstordnungPage() {
 
         <aside className="xl:sticky xl:top-6 xl:self-start">
           <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/40 p-4">
-            <div className="mb-3">
+            <div className="mb-3 border-b border-[#1e3a5c]/50 pb-3">
               <p className="text-[13px] font-semibold text-[#edf4fb]">Schnellzugriff</p>
-              <p className="mt-1 text-[12px] text-[#8ea4bd]">Direkte Links zu den Abschnitten.</p>
+              <p className="mt-1 text-[12px] text-[#8ea4bd]">
+                {quickLinks.length} Abschnitte aus der Dienstordnung
+              </p>
             </div>
 
-            <nav className="space-y-1">
+            <nav className="max-h-[calc(100vh-190px)] space-y-1 overflow-y-auto pr-1">
               {quickLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block rounded-[8px] px-2.5 py-2 text-[12px] text-[#bfd0e2] transition-colors hover:bg-[#102542]/70 hover:text-[#f0d060]"
+                  className="group flex min-h-[34px] items-start gap-2 rounded-[8px] px-2.5 py-2 text-[12px] text-[#bfd0e2] transition-colors hover:bg-[#102542]/70 hover:text-[#f0d060]"
                 >
-                  {link.label}
+                  <span className="mt-[1px] flex h-[18px] min-w-[30px] items-center justify-center rounded-[6px] border border-[#234568]/75 bg-[#071426]/55 text-[10.5px] font-semibold text-[#8ea4bd] transition-colors group-hover:border-[#d4af37]/35 group-hover:text-[#f0d060]">
+                    {link.section ? `§${link.section}` : 'Info'}
+                  </span>
+                  <span className="min-w-0 leading-[1.35]">{link.label.replace(/^§\s*\d+\s*/, '')}</span>
                 </Link>
               ))}
             </nav>
