@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CalendarDays, Clock, RefreshCw, Save, ShieldCheck, Users } from 'lucide-react'
+import { Building2, CalendarDays, CheckCircle2, Clock, Hash, Link2, MessagesSquare, RefreshCw, Save, ShieldCheck, Tag, Terminal, Users, XCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -10,6 +11,7 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
+import { cn } from '@/lib/utils'
 
 interface DiscordRole {
   id: string
@@ -262,320 +264,394 @@ export default function SettingsPage() {
     const options = [
       { value: '', label: 'Rolle hinzufügen' },
       ...(discordData?.roles
-        .filter((role) => !selected.includes(role.id))
-        .map((role) => ({ value: role.id, label: role.name })) || []),
+          .filter((role) => !selected.includes(role.id))
+          .map((role) => ({ value: role.id, label: role.name })) || []),
     ]
 
     return (
-      <div className="space-y-2">
-        <Select
-          value=""
-          onValueChange={(roleId) => addRole(field, roleId)}
-          options={options}
-          size="sm"
-        />
-        <div className="flex flex-wrap gap-2 min-h-[34px]">
-          {selected.map((roleId) => (
-            <button
-              key={roleId}
-              type="button"
-              onClick={() => removeRole(field, roleId)}
-              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
-              title="Rolle entfernen"
-            >
-              {roleName(roleId)}
-              <span className="text-[#6b8299]">×</span>
-            </button>
-          ))}
-          {selected.length === 0 && (
-            <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
-          )}
+        <div className="space-y-2">
+          <Select
+              value=""
+              onValueChange={(roleId) => addRole(field, roleId)}
+              options={options}
+              size="sm"
+          />
+          <div className="flex flex-wrap gap-2 min-h-[34px]">
+            {selected.map((roleId) => (
+                <button
+                    key={roleId}
+                    type="button"
+                    onClick={() => removeRole(field, roleId)}
+                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+                    title="Rolle entfernen"
+                >
+                  {roleName(roleId)}
+                  <span className="text-[#6b8299]">×</span>
+                </button>
+            ))}
+            {selected.length === 0 && (
+                <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+            )}
+          </div>
         </div>
-      </div>
     )
   }
 
-  return (
-    <div>
-      <PageHeader title="Einstellungen" description="Systemweite Konfiguration" />
+  const diag = discordData?.diagnostics
+  const healthItems: { ok: boolean; label: string }[] = diag ? [
+    { ok: discordData?.botConfigured ?? false, label: 'Bot-Token' },
+    { ok: diag.guildConfigured, label: 'Guild-ID' },
+    { ok: diag.applicationConfigured, label: 'Application-ID' },
+    { ok: diag.publicKeyConfigured, label: 'Public-Key' },
+    { ok: diag.announcementsChannelConfigured, label: 'Announce-Channel' },
+    { ok: diag.sanctionsChannelConfigured, label: 'Sanktions-Channel' },
+    { ok: diag.absenceStatusChannelConfigured, label: 'Abmeldungs-Channel' },
+  ] : []
 
-      <div className="space-y-4 max-w-4xl">
-        <div className="glass-panel-elevated rounded-[14px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Allgemein</h3>
-          <div className="space-y-3">
+  return (
+      <div className="pb-20">
+        <PageHeader title="Einstellungen" description="Systemweite Konfiguration für Organisation und Discord-Bot" />
+
+        {/* Section nav */}
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-5 backdrop-blur-md bg-[#061426]/85 border-b border-[#18385f]/40">
+          <div className="flex items-center gap-1.5 overflow-x-auto max-w-4xl">
+            {[
+              { id: 'general', label: 'Allgemein', icon: Building2 },
+              { id: 'badges', label: 'Dienstnummern', icon: Hash },
+              { id: 'discord-basics', label: 'Discord', icon: MessagesSquare },
+              { id: 'channels', label: 'Channels', icon: Terminal },
+              { id: 'roles', label: 'Rollen', icon: ShieldCheck },
+              { id: 'mappings', label: 'Mappings', icon: Tag },
+            ].map((item) => (
+                <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[12px] font-medium text-[#9fb0c4] hover:text-white hover:bg-[#102542] transition-colors whitespace-nowrap"
+                >
+                  <item.icon size={13} /> {item.label}
+                </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4 max-w-4xl">
+          {/* Health card */}
+          {discordData && (
+              <div className="glass-panel-elevated rounded-[14px] p-5">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-[13.5px] font-semibold text-[#eee] flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-[#22c55e]" /> System-Status
+                  </h3>
+                  <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu prüfen</Button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {healthItems.map((h) => (
+                      <div key={h.label} className={cn('health-pill justify-start', h.ok ? 'ok' : 'warn')}>
+                        {h.ok ? <CheckCircle2 size={12} /> : <XCircle size={12} />} {h.label}
+                      </div>
+                  ))}
+                </div>
+                {diag?.interactionEndpointUrl && (
+                    <div className="mt-3 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[11.5px] text-[#9fb0c4] flex items-center gap-2">
+                      <Link2 size={13} className="text-[#d4af37] shrink-0" />
+                      <span className="truncate">Interactions Endpoint: <code className="text-[#edf4fb]">{diag.interactionEndpointUrl}</code></span>
+                    </div>
+                )}
+              </div>
+          )}
+
+          <div id="general" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4 flex items-center gap-2">
+              <Building2 size={15} className="text-[#d4af37]" /> Allgemein
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input label="Organisationsname" value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => saveSetting('orgName', orgName)}><Save size={13} /></Button>
+              </div>
+            </div>
+          </div>
+
+          <div id="badges" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
+            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4 flex items-center gap-2">
+              <Hash size={15} className="text-[#d4af37]" /> Dienstnummern
+            </h3>
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <Input label="Organisationsname" value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+                <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
               </div>
-              <Button variant="secondary" size="sm" onClick={() => saveSetting('orgName', orgName)}><Save size={13} /></Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-panel-elevated rounded-[14px] p-5">
-          <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Dienstnummern</h3>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
-          </div>
-        </div>
-
-        <div className="glass-panel-elevated rounded-[14px] p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div>
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Discord Integration</h3>
-              <p className="text-[11.5px] text-[#6b8299] mt-1">
-                Bot-Token wird über die Umgebung gesetzt. Rollen, Channel und Command-Rechte werden hier gepflegt.
-              </p>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button variant="secondary" size="sm" onClick={fullSync} disabled={fullSyncLoading}>
-                {fullSyncLoading ? <><RefreshCw size={13} className="animate-spin" /> Synchronisiere…</> : <><Users size={13} /> Alles synchronisieren</>}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu laden</Button>
-              <Button variant="secondary" size="sm" onClick={registerCommands}><ShieldCheck size={13} /> Commands</Button>
-              <Button variant="secondary" size="sm" onClick={publishDutyEmbed}><Clock size={13} /> Dienstzeiten</Button>
-              <Button variant="secondary" size="sm" onClick={publishAbsenceEmbed}><CalendarDays size={13} /> Abmeldungen</Button>
-              <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Speichern</Button>
+              <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
             </div>
           </div>
 
-          {!discordData?.botConfigured && (
-            <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
-              DISCORD_BOT_TOKEN ist nicht gesetzt. Die Oberfläche kann gespeichert werden, Discord-Rollen und Channel werden aber erst mit Bot-Token geladen.
+          <div id="discord-basics" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-[13.5px] font-semibold text-[#eee] flex items-center gap-2">
+                  <MessagesSquare size={15} className="text-[#d4af37]" /> Discord Integration
+                </h3>
+                <p className="text-[11.5px] text-[#6b8299] mt-1">
+                  Bot-Token wird über die Umgebung gesetzt. Rollen, Channel und Command-Rechte werden hier gepflegt.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="secondary" size="sm" onClick={fullSync} disabled={fullSyncLoading}>
+                  {fullSyncLoading ? <><RefreshCw size={13} className="animate-spin" /> Synchronisiere…</> : <><Users size={13} /> Alles synchronisieren</>}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu laden</Button>
+                <Button variant="secondary" size="sm" onClick={registerCommands}><ShieldCheck size={13} /> Commands</Button>
+                <Button variant="secondary" size="sm" onClick={publishDutyEmbed}><Clock size={13} /> Dienstzeiten</Button>
+                <Button variant="secondary" size="sm" onClick={publishAbsenceEmbed}><CalendarDays size={13} /> Abmeldungen</Button>
+                <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Speichern</Button>
+              </div>
             </div>
-          )}
-          {discordData && !discordData.diagnostics.guildConfigured && (
-            <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
-              Guild-ID fehlt. Setze sie hier oder über DISCORD_GUILD_ID, sonst können Rollen und Commands nicht geladen werden.
-            </div>
-          )}
-          {discordData && !discordData.diagnostics.publicKeyConfigured && (
-            <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
-              DISCORD_PUBLIC_KEY fehlt. Discord-Buttons und Modals werden ohne diesen Public Key von der App abgelehnt.
-            </div>
-          )}
-          {discordData?.diagnostics.interactionEndpointUrl && (
-            <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[12px] text-[#9fb0c4]">
-              Interactions Endpoint URL in Discord: <code className="text-[#edf4fb]">{discordData.diagnostics.interactionEndpointUrl}</code>
-            </div>
-          )}
-          {discordData?.diagnostics.rolesError && (
-            <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
-              Rollen konnten nicht geladen werden: {discordData.diagnostics.rolesError}
-            </div>
-          )}
-          {discordData?.diagnostics.channelsError && (
-            <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
-              Channel konnten nicht geladen werden: {discordData.diagnostics.channelsError}
-            </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Guild-ID"
-              value={discordForm.guildId}
-              onChange={(e) => setDiscordForm({ ...discordForm, guildId: e.target.value })}
-              placeholder="Discord Server-ID"
-            />
-            <Input
-              label="Application-ID"
-              value={discordForm.applicationId}
-              onChange={(e) => setDiscordForm({ ...discordForm, applicationId: e.target.value })}
-              placeholder="Discord App-ID"
-            />
-            <div className="sm:col-span-2">
-              <Select
-                label="Ankündigungs-Channel"
-                value={discordForm.announcementsChannelId}
-                onValueChange={(announcementsChannelId) => setDiscordForm({ ...discordForm, announcementsChannelId })}
-                options={channelOptions}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Update-Channel"
-                value={discordForm.updateChannelId}
-                onValueChange={(updateChannelId) => setDiscordForm({ ...discordForm, updateChannelId })}
-                options={channelOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Channel für manuelle Changelog-Embeds. Leer lassen, um den Ankündigungs-Channel zu nutzen.
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Sanktions-Channel"
-                value={discordForm.sanctionsChannelId}
-                onValueChange={(sanctionsChannelId) => setDiscordForm({ ...discordForm, sanctionsChannelId })}
-                options={channelOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Channel für neue Sanktionen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Dienstzeiten-Channel"
-                value={discordForm.dutyStatusChannelId}
-                onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
-                options={channelOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Öffentliches Panel ohne Stempelbuttons; zeigt automatisch, wer als Police online ist.
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Dienstzeit-Protokoll (Admin)"
-                value={discordForm.dutyAdminLogChannelId}
-                onValueChange={(dutyAdminLogChannelId) => setDiscordForm({ ...discordForm, dutyAdminLogChannelId })}
-                options={channelOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Optionaler Admin-Channel für Dienstzeit-Hinweise. Leer lassen, um den Ankündigungs-Channel zu nutzen.
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Abmeldungs-Channel"
-                value={discordForm.absenceStatusChannelId}
-                onValueChange={(absenceStatusChannelId) => setDiscordForm({ ...discordForm, absenceStatusChannelId })}
-                options={channelOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Öffentliches Panel mit allen aktuell abgemeldeten Officers. Leer lassen, um den Dienstzeiten- oder Ankündigungs-Channel zu nutzen.
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Select
-                label="Human-Resources-Rolle"
-                value={discordForm.humanResourcesRoleId}
-                onValueChange={(humanResourcesRoleId) => setDiscordForm({ ...discordForm, humanResourcesRoleId })}
-                options={roleOptions}
-              />
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Diese Rolle wird in Sanktions-Embeds als Human Resources erwähnt.
-              </p>
-            </div>
-          </div>
+            {!discordData?.botConfigured && (
+                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                  DISCORD_BOT_TOKEN ist nicht gesetzt. Die Oberfläche kann gespeichert werden, Discord-Rollen und Channel werden aber erst mit Bot-Token geladen.
+                </div>
+            )}
+            {discordData && !discordData.diagnostics.guildConfigured && (
+                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                  Guild-ID fehlt. Setze sie hier oder über DISCORD_GUILD_ID, sonst können Rollen und Commands nicht geladen werden.
+                </div>
+            )}
+            {discordData && !discordData.diagnostics.publicKeyConfigured && (
+                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                  DISCORD_PUBLIC_KEY fehlt. Discord-Buttons und Modals werden ohne diesen Public Key von der App abgelehnt.
+                </div>
+            )}
+            {discordData?.diagnostics.interactionEndpointUrl && (
+                <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[12px] text-[#9fb0c4]">
+                  Interactions Endpoint URL in Discord: <code className="text-[#edf4fb]">{discordData.diagnostics.interactionEndpointUrl}</code>
+                </div>
+            )}
+            {discordData?.diagnostics.rolesError && (
+                <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+                  Rollen konnten nicht geladen werden: {discordData.diagnostics.rolesError}
+                </div>
+            )}
+            {discordData?.diagnostics.channelsError && (
+                <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+                  Channel konnten nicht geladen werden: {discordData.diagnostics.channelsError}
+                </div>
+            )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Dashboard Login-Rollen</p>
-              {renderRolePicker('authLoginRoleIds')}
-              <p className="text-[11px] text-[#5c728a] mt-1.5">
-                Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Rollen, die bei Benutzergruppen hinterlegt sind, zählen ebenfalls als Login-Rollen.
-              </p>
+            <div id="channels" className="grid grid-cols-1 sm:grid-cols-2 gap-3 scroll-mt-section">
+              <Input
+                  label="Guild-ID"
+                  value={discordForm.guildId}
+                  onChange={(e) => setDiscordForm({ ...discordForm, guildId: e.target.value })}
+                  placeholder="Discord Server-ID"
+              />
+              <Input
+                  label="Application-ID"
+                  value={discordForm.applicationId}
+                  onChange={(e) => setDiscordForm({ ...discordForm, applicationId: e.target.value })}
+                  placeholder="Discord App-ID"
+              />
+              <div className="sm:col-span-2">
+                <Select
+                    label="Ankündigungs-Channel"
+                    value={discordForm.announcementsChannelId}
+                    onValueChange={(announcementsChannelId) => setDiscordForm({ ...discordForm, announcementsChannelId })}
+                    options={channelOptions}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Update-Channel"
+                    value={discordForm.updateChannelId}
+                    onValueChange={(updateChannelId) => setDiscordForm({ ...discordForm, updateChannelId })}
+                    options={channelOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Channel für manuelle Changelog-Embeds. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Sanktions-Channel"
+                    value={discordForm.sanctionsChannelId}
+                    onValueChange={(sanctionsChannelId) => setDiscordForm({ ...discordForm, sanctionsChannelId })}
+                    options={channelOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Channel für neue Sanktionen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Dienstzeiten-Channel"
+                    value={discordForm.dutyStatusChannelId}
+                    onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
+                    options={channelOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Öffentliches Panel ohne Stempelbuttons; zeigt automatisch, wer als Police online ist.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Dienstzeit-Protokoll (Admin)"
+                    value={discordForm.dutyAdminLogChannelId}
+                    onValueChange={(dutyAdminLogChannelId) => setDiscordForm({ ...discordForm, dutyAdminLogChannelId })}
+                    options={channelOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Optionaler Admin-Channel für Dienstzeit-Hinweise. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Abmeldungs-Channel"
+                    value={discordForm.absenceStatusChannelId}
+                    onValueChange={(absenceStatusChannelId) => setDiscordForm({ ...discordForm, absenceStatusChannelId })}
+                    options={channelOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Öffentliches Panel mit allen aktuell abgemeldeten Officers. Leer lassen, um den Dienstzeiten- oder Ankündigungs-Channel zu nutzen.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Human-Resources-Rolle"
+                    value={discordForm.humanResourcesRoleId}
+                    onValueChange={(humanResourcesRoleId) => setDiscordForm({ ...discordForm, humanResourcesRoleId })}
+                    options={roleOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Diese Rolle wird in Sanktions-Embeds als Human Resources erwähnt.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Feste Mitarbeiterrollen</p>
-              {renderRolePicker('employeeRoleIds')}
-            </div>
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rollen, die Discord-Commands ausführen dürfen</p>
-              {renderRolePicker('commandRoleIds')}
-            </div>
-          </div>
 
-          <div className="mt-5 space-y-5">
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen zu Discord-Rollen</p>
-              <p className="text-[11px] text-[#5c728a] mb-3">
-                Beim Login werden alle passenden Benutzergruppen gestapelt. Eine Benutzergruppe passt, sobald ein Mitglied mindestens eine der hinterlegten Rollen hat.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.userGroups.map((group) => {
-                  const selectedRoleIds = discordForm.authGroupRoleMap[group.id] ?? []
-                  const addOptions = [
-                    { value: '', label: 'Rolle hinzufügen' },
-                    ...(discordData?.roles
-                      .filter((role) => !selectedRoleIds.includes(role.id))
-                      .map((role) => ({ value: role.id, label: role.name })) || []),
-                  ]
+            <div id="roles" className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5 scroll-mt-section">
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Dashboard Login-Rollen</p>
+                {renderRolePicker('authLoginRoleIds')}
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Rollen, die bei Benutzergruppen hinterlegt sind, zählen ebenfalls als Login-Rollen.
+                </p>
+              </div>
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Feste Mitarbeiterrollen</p>
+                {renderRolePicker('employeeRoleIds')}
+              </div>
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rollen, die Discord-Commands ausführen dürfen</p>
+                {renderRolePicker('commandRoleIds')}
+              </div>
+            </div>
 
-                  return (
-                    <div key={group.id} className="space-y-2">
+            <div id="mappings" className="mt-5 space-y-5 scroll-mt-section">
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen zu Discord-Rollen</p>
+                <p className="text-[11px] text-[#5c728a] mb-3">
+                  Beim Login werden alle passenden Benutzergruppen gestapelt. Eine Benutzergruppe passt, sobald ein Mitglied mindestens eine der hinterlegten Rollen hat.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {discordData?.userGroups.map((group) => {
+                    const selectedRoleIds = discordForm.authGroupRoleMap[group.id] ?? []
+                    const addOptions = [
+                      { value: '', label: 'Rolle hinzufügen' },
+                      ...(discordData?.roles
+                          .filter((role) => !selectedRoleIds.includes(role.id))
+                          .map((role) => ({ value: role.id, label: role.name })) || []),
+                    ]
+
+                    return (
+                        <div key={group.id} className="space-y-2">
+                          <Select
+                              label={group.name}
+                              value=""
+                              onValueChange={(roleId) => addAuthGroupRole(group.id, roleId)}
+                              options={addOptions}
+                              size="sm"
+                          />
+                          <div className="flex flex-wrap gap-2 min-h-[34px]">
+                            {selectedRoleIds.map((roleId) => (
+                                <button
+                                    key={roleId}
+                                    type="button"
+                                    onClick={() => removeAuthGroupRole(group.id, roleId)}
+                                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+                                    title="Rolle entfernen"
+                                >
+                                  {roleName(roleId)}
+                                  <span className="text-[#6b8299]">×</span>
+                                </button>
+                            ))}
+                            {selectedRoleIds.length === 0 && (
+                                <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+                            )}
+                          </div>
+                        </div>
+                    )
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rangrollen</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {discordData?.ranks.map((rank) => (
                       <Select
-                        label={group.name}
-                        value=""
-                        onValueChange={(roleId) => addAuthGroupRole(group.id, roleId)}
-                        options={addOptions}
-                        size="sm"
+                          key={rank.id}
+                          label={rank.name}
+                          value={discordForm.rankRoleMap[rank.id] || ''}
+                          onValueChange={(roleId) => setRoleMap('rankRoleMap', rank.id, roleId)}
+                          options={roleOptions}
+                          size="sm"
                       />
-                      <div className="flex flex-wrap gap-2 min-h-[34px]">
-                        {selectedRoleIds.map((roleId) => (
-                          <button
-                            key={roleId}
-                            type="button"
-                            onClick={() => removeAuthGroupRole(group.id, roleId)}
-                            className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
-                            title="Rolle entfernen"
-                          >
-                            {roleName(roleId)}
-                            <span className="text-[#6b8299]">×</span>
-                          </button>
-                        ))}
-                        {selectedRoleIds.length === 0 && (
-                          <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rangrollen</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.ranks.map((rank) => (
-                  <Select
-                    key={rank.id}
-                    label={rank.name}
-                    value={discordForm.rankRoleMap[rank.id] || ''}
-                    onValueChange={(roleId) => setRoleMap('rankRoleMap', rank.id, roleId)}
-                    options={roleOptions}
-                    size="sm"
-                  />
-                ))}
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Ausbildungsrollen</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {discordData?.trainings.map((training) => (
+                      <Select
+                          key={training.id}
+                          label={training.label}
+                          value={discordForm.trainingRoleMap[training.id] || ''}
+                          onValueChange={(roleId) => setRoleMap('trainingRoleMap', training.id, roleId)}
+                          options={roleOptions}
+                          size="sm"
+                      />
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Ausbildungsrollen</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.trainings.map((training) => (
-                  <Select
-                    key={training.id}
-                    label={training.label}
-                    value={discordForm.trainingRoleMap[training.id] || ''}
-                    onValueChange={(roleId) => setRoleMap('trainingRoleMap', training.id, roleId)}
-                    options={roleOptions}
-                    size="sm"
-                  />
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Unit-Rollen</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {discordData?.units.map((unit) => (
-                  <Select
-                    key={unit.key}
-                    label={unit.name}
-                    value={discordForm.unitRoleMap[unit.key] || ''}
-                    onValueChange={(roleId) => setRoleMap('unitRoleMap', unit.key, roleId)}
-                    options={roleOptions}
-                    size="sm"
-                  />
-                ))}
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Unit-Rollen</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {discordData?.units.map((unit) => (
+                      <Select
+                          key={unit.key}
+                          label={unit.name}
+                          value={discordForm.unitRoleMap[unit.key] || ''}
+                          onValueChange={(roleId) => setRoleMap('unitRoleMap', unit.key, roleId)}
+                          options={roleOptions}
+                          size="sm"
+                      />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+
         </div>
 
+        {/* Sticky save bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-md bg-[#061426]/85 border-t border-[#18385f]/50 px-4 sm:px-6 py-3">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <p className="text-[12px] text-[#7089a5] truncate">
+              Discord-Konfiguration · Änderungen werden erst nach Speichern aktiv
+            </p>
+            <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Discord speichern</Button>
+          </div>
+        </div>
       </div>
-    </div>
   )
 }

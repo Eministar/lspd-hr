@@ -165,9 +165,9 @@ select option:hover {
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.12),
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(212, 175, 55, 0.04);
+          0 1px 2px rgba(0, 0, 0, 0.12),
+          0 4px 16px rgba(0, 0, 0, 0.08),
+          inset 0 1px 0 rgba(212, 175, 55, 0.04);
 }
 
 .glass-panel-elevated {
@@ -176,16 +176,16 @@ select option:hover {
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
   border: 1px solid rgba(212, 175, 55, 0.13);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.18),
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(212, 175, 55, 0.06);
+          0 1px 3px rgba(0, 0, 0, 0.18),
+          0 8px 32px rgba(0, 0, 0, 0.12),
+          inset 0 1px 0 rgba(212, 175, 55, 0.06);
 }
 
 /* ─── Background pattern ─── */
 .bg-pattern {
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 175, 55, 0.05), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(212, 175, 55, 0.02), transparent);
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 175, 55, 0.05), transparent),
+          radial-gradient(ellipse 60% 40% at 80% 100%, rgba(212, 175, 55, 0.02), transparent);
 }
 
 /* ─── Gold accent line ─── */
@@ -231,9 +231,83 @@ select option:hover {
   background: linear-gradient(135deg, #d4af37, #c29d32);
   color: #071b33;
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          0 1px 3px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
+
+/* ─── KPI / Stat card ─── */
+.stat-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 16px 18px;
+  background:
+          linear-gradient(135deg, rgba(212,175,55,0.06), rgba(11,31,58,0) 55%),
+          rgba(9, 28, 52, 0.72);
+  border: 1px solid rgba(212,175,55,0.10);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18), inset 0 1px 0 rgba(212,175,55,0.05);
+  overflow: hidden;
+}
+.stat-card::before {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(60% 80% at 100% 0%, rgba(212,175,55,0.10), transparent 60%);
+}
+.stat-card .stat-value {
+  font-size: 24px; font-weight: 650; color: #fff;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.stat-card .stat-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #7c93af;
+  margin-top: 4px;
+}
+.stat-card .stat-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(212,175,55,0.16), rgba(212,175,55,0.04));
+  color: #d4af37;
+  border: 1px solid rgba(212,175,55,0.18);
+}
+
+/* ─── Avatar (initials) ─── */
+.avatar-initials {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, #143560, #0b223f);
+  border: 1px solid rgba(212,175,55,0.18);
+  color: #d4af37;
+  font-size: 12px; font-weight: 650; letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+/* ─── Live pulse dot ─── */
+.live-pulse {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+
+/* ─── Capacity dots (patrol seats) ─── */
+.cap-dot { width: 8px; height: 8px; border-radius: 999px; background: rgba(212,175,55,0.18); }
+.cap-dot.is-on { background: #d4af37; box-shadow: 0 0 6px rgba(212,175,55,0.45); }
+
+/* ─── Section anchor scroll offset ─── */
+.scroll-mt-section { scroll-margin-top: 96px; }
+
+/* ─── Health pill ─── */
+.health-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 11.5px;
+  border: 1px solid rgba(35,69,104,0.6); background: rgba(10,26,51,0.6); color: #9fb0c4;
+}
+.health-pill.ok { color: #86efac; border-color: rgba(34,197,94,0.25); background: rgba(5,46,27,0.55); }
+.health-pill.warn { color: #e8c979; border-color: rgba(212,175,55,0.3); background: rgba(45,30,8,0.55); }
+.health-pill.err { color: #fca5a5; border-color: rgba(239,68,68,0.3); background: rgba(42,17,17,0.6); }
+
 
 /* ─── Markdown document ─── */
 .markdown-document {
@@ -329,8 +403,8 @@ select option:hover {
   font-weight: 400;
   line-height: 1;
   text-shadow:
-    0 0 12px rgba(212, 175, 55, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.08);
+          0 0 12px rgba(212, 175, 55, 0.2),
+          0 1px 0 rgba(255, 255, 255, 0.08);
   transform: rotate(-2deg) skewX(-6deg);
   transform-origin: left bottom;
 }
