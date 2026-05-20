@@ -598,6 +598,16 @@ function configuredRoleIds(config: DiscordConfig) {
   ].filter(Boolean)))
 }
 
+function dashboardGroupIdsForRoles(roleIds: string[], config: DiscordConfig) {
+  const roles = new Set(roleIds)
+  return Array.from(new Set(
+    Object.entries(config.authGroupRoleMap)
+      .filter(([, groupRoleIds]) => groupRoleIds.some((roleId) => roles.has(roleId)))
+      .map(([groupId]) => groupId)
+      .filter(Boolean),
+  ))
+}
+
 function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
   if (officer.status === 'TERMINATED') return []
 
@@ -609,6 +619,65 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
       .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),
   ].filter((roleId): roleId is string => !!roleId)))
+}
+
+async function syncOfficerDashboardGroupsForOfficer(
+  officer: OfficerForDiscord,
+  config: DiscordConfig,
+  mode: 'sync' | 'remove-all' = 'sync',
+) {
+  if (!officer?.discordId) return
+
+  const user = await prisma.user.findFirst({
+    where: { discordId: officer.discordId },
+    select: {
+      id: true,
+      groupMemberships: { select: { groupId: true } },
+    },
+  })
+  if (!user) return
+
+  const managedRoleIds = new Set(configuredRoleIds(config))
+  const managedGroupIds = new Set(
+    Object.entries(config.authGroupRoleMap)
+      .filter(([, roleIds]) => roleIds.some((roleId) => managedRoleIds.has(roleId)))
+      .map(([groupId]) => groupId),
+  )
+  const desiredGroupIds = mode === 'remove-all'
+    ? []
+    : dashboardGroupIdsForRoles(desiredRoleIds(officer, config), config)
+
+  const preservedGroupIds = user.groupMemberships
+    .map((membership) => membership.groupId)
+    .filter((groupId) => !managedGroupIds.has(groupId))
+
+  const nextGroupIds = Array.from(new Set([...preservedGroupIds, ...desiredGroupIds]))
+  const existingGroups = nextGroupIds.length > 0
+    ? await prisma.userGroup.findMany({ where: { id: { in: nextGroupIds } }, select: { id: true } })
+    : []
+  const validGroupIds = nextGroupIds.filter((groupId) => existingGroups.some((group) => group.id === groupId))
+
+  await prisma.$transaction([
+    prisma.userGroupMembership.deleteMany({ where: { userId: user.id } }),
+    ...(validGroupIds.length > 0
+      ? [prisma.userGroupMembership.createMany({
+          data: validGroupIds.map((groupId) => ({ userId: user.id, groupId })),
+          skipDuplicates: true,
+        })]
+      : []),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { groupId: validGroupIds[0] ?? null },
+    }),
+  ])
+}
+
+export async function syncOfficerDashboardGroups(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
+  const config = await getDiscordConfig()
+  const officer = await getOfficerForDiscord(officerId)
+  if (!officer) return
+
+  await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
 }
 
 async function syncOfficerDiscordMember(
@@ -669,16 +738,20 @@ async function syncOfficerDiscordMember(
 
 export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
   const config = await getDiscordConfig()
-  if (!config.guildId || !botToken()) return
-
   const officer = await getOfficerForDiscord(officerId)
   if (!officer) return
+
+  await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
+
+  if (!config.guildId || !botToken()) return
 
   await syncOfficerDiscordMember(officer, config, mode)
 }
 
 export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord) {
   const config = await getDiscordConfig()
+  await syncOfficerDashboardGroupsForOfficer(officer, config, 'remove-all')
+
   if (!config.guildId || !botToken()) return
 
   await syncOfficerDiscordMember(officer, config, 'remove-all')
