@@ -56,3 +56,5 @@ next-env.d.ts
 
 # lokale Uploads (in Produktion per UPLOAD_DIR persistent ablegen)
 /uploads/
+
+.claude/

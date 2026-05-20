@@ -86,6 +86,32 @@ interface DiscordConfigResponse {
   }
 }
 
+interface FullSyncProgress {
+  phase: 'starting' | 'checking' | 'syncing' | 'completed'
+  total: number
+  processed: number
+  synced: number
+  skipped: number
+  failed: number
+  current?: string
+  message: string
+  elapsedSeconds: number
+  etaSeconds: number | null
+}
+
+interface FullSyncResult {
+  synced: number
+  skipped: number
+  failed: number
+  total: number
+  message: string
+}
+
+type FullSyncStreamMessage =
+  | { type: 'progress'; progress: FullSyncProgress }
+  | { type: 'done'; data: FullSyncResult }
+  | { type: 'error'; error: string }
+
 export default function SettingsPage() {
   const { data: settings, loading, refetch } = useFetch<Record<string, string>>('/api/settings')
   const { data: discordData, loading: discordLoading, refetch: refetchDiscord } = useFetch<DiscordConfigResponse>('/api/discord/config')
@@ -187,16 +213,77 @@ export default function SettingsPage() {
   }
 
   const [fullSyncLoading, setFullSyncLoading] = useState(false)
+  const [fullSyncProgress, setFullSyncProgress] = useState<FullSyncProgress | null>(null)
+  const [fullSyncResult, setFullSyncResult] = useState<FullSyncResult | null>(null)
 
   const fullSync = async () => {
     setFullSyncLoading(true)
+    setFullSyncProgress(null)
+    setFullSyncResult(null)
     try {
-      const res = await execute('/api/discord/full-sync', { method: 'POST' }) as { synced: number; skipped: number; failed: number; total: number; message: string }
-      addToast({
-        type: res.failed > 0 ? 'warning' : 'success',
-        title: 'Discord Full-Sync abgeschlossen',
-        message: res.message,
+      const res = await fetch('/api/discord/full-sync', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'include',
       })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        let message = 'Full-Sync fehlgeschlagen'
+        try {
+          const parsed = JSON.parse(text) as { error?: string }
+          message = parsed.error || message
+        } catch {
+          if (text) message = text
+        }
+        throw new Error(message)
+      }
+
+      if (!res.body) throw new Error('Server hat keinen Sync-Stream gesendet')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let result: FullSyncResult | null = null
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+          const event = JSON.parse(line) as FullSyncStreamMessage
+          if (event.type === 'progress') {
+            setFullSyncProgress(event.progress)
+          } else if (event.type === 'done') {
+            result = event.data
+            setFullSyncResult(event.data)
+          } else if (event.type === 'error') {
+            throw new Error(event.error)
+          }
+        }
+      }
+
+      if (buffer.trim()) {
+        const event = JSON.parse(buffer) as FullSyncStreamMessage
+        if (event.type === 'progress') setFullSyncProgress(event.progress)
+        if (event.type === 'done') {
+          result = event.data
+          setFullSyncResult(event.data)
+        }
+        if (event.type === 'error') throw new Error(event.error)
+      }
+
+      if (!result) throw new Error('Full-Sync wurde ohne Ergebnis beendet')
+      addToast({
+        type: result.failed > 0 ? 'warning' : 'success',
+        title: 'Discord Full-Sync abgeschlossen',
+        message: result.message,
+      })
+      discordInitialized.current = false
+      await refetchDiscord()
     } catch (err) {
       addToast({ type: 'error', title: 'Full-Sync fehlgeschlagen', message: err instanceof Error ? err.message : '' })
     } finally {
@@ -258,6 +345,16 @@ export default function SettingsPage() {
     ...(discordData?.channels.map((channel) => ({ value: channel.id, label: `#${channel.name || channel.id}` })) || []),
   ]
   const roleName = (roleId: string) => discordData?.roles.find((role) => role.id === roleId)?.name || roleId
+  const syncPercent = fullSyncResult
+    ? 100
+    : fullSyncProgress?.total
+    ? Math.round((fullSyncProgress.processed / fullSyncProgress.total) * 100)
+    : 0
+  const formatSeconds = (seconds: number | null) => {
+    if (seconds === null) return 'Berechne…'
+    if (seconds < 60) return `${seconds}s`
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
+  }
 
   const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds') => {
     const selected = discordForm[field]
@@ -407,6 +504,38 @@ export default function SettingsPage() {
                 <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Speichern</Button>
               </div>
             </div>
+
+            {(fullSyncProgress || fullSyncResult) && (
+              <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-3">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-[12.5px] font-semibold text-[#edf4fb]">
+                      {fullSyncProgress?.message ?? fullSyncResult?.message ?? 'Full-Sync'}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">
+                      {fullSyncProgress?.current ? `Aktuell: ${fullSyncProgress.current}` : 'Kein Officer aktiv'}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2 text-[11px] text-[#9fb0c4]">
+                    <span>{fullSyncProgress?.processed ?? fullSyncResult?.total ?? 0}/{fullSyncProgress?.total ?? fullSyncResult?.total ?? 0}</span>
+                    <span>{syncPercent}%</span>
+                    <span>Rest: {formatSeconds(fullSyncProgress?.etaSeconds ?? null)}</span>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#102542]">
+                  <div
+                    className="h-full rounded-full bg-[#d4af37] transition-[width] duration-200"
+                    style={{ width: `${fullSyncResult ? 100 : syncPercent}%` }}
+                  />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-[#9fb0c4] sm:grid-cols-4">
+                  <span>Synchronisiert: <b className="text-[#edf4fb]">{fullSyncProgress?.synced ?? fullSyncResult?.synced ?? 0}</b></span>
+                  <span>Übersprungen: <b className="text-[#edf4fb]">{fullSyncProgress?.skipped ?? fullSyncResult?.skipped ?? 0}</b></span>
+                  <span>Fehler: <b className={cn((fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0) > 0 ? 'text-[#fca5a5]' : 'text-[#edf4fb]')}>{fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0}</b></span>
+                  <span>Laufzeit: <b className="text-[#edf4fb]">{formatSeconds(fullSyncProgress?.elapsedSeconds ?? null)}</b></span>
+                </div>
+              </div>
+            )}
 
             {!discordData?.botConfigured && (
                 <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">

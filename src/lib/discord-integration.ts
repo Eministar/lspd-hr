@@ -115,6 +115,19 @@ type DiscordUpdateAnnouncementInput = {
   actor?: UserForDiscord
 }
 
+export type DiscordFullSyncProgress = {
+  phase: 'starting' | 'checking' | 'syncing' | 'completed'
+  total: number
+  processed: number
+  synced: number
+  skipped: number
+  failed: number
+  current?: string
+  message: string
+  elapsedSeconds: number
+  etaSeconds: number | null
+}
+
 export type DiscordHrEventMessage = {
   channelId: string
   messageId: string
@@ -756,7 +769,9 @@ export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord)
   await syncOfficerDiscordMember(officer, config, 'remove-all')
 }
 
-export async function syncAllOfficerDiscordRoles() {
+export async function syncAllOfficerDiscordRoles(options?: {
+  onProgress?: (progress: DiscordFullSyncProgress) => void | Promise<void>
+}) {
   const config = await getDiscordConfig()
 
   const officers = await prisma.officer.findMany({
@@ -771,22 +786,60 @@ export async function syncAllOfficerDiscordRoles() {
   let skipped = 0
   let failed = 0
   const canSyncDiscord = !!config.guildId && !!botToken()
+  const startedAt = Date.now()
+
+  const emitProgress = async (
+    phase: DiscordFullSyncProgress['phase'],
+    current?: string,
+    message?: string,
+  ) => {
+    const processed = synced + skipped + failed
+    const elapsedSeconds = Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+    const etaSeconds = processed > 0 && processed < officers.length
+      ? Math.max(0, Math.round((elapsedSeconds / processed) * (officers.length - processed)))
+      : null
+
+    await options?.onProgress?.({
+      phase,
+      total: officers.length,
+      processed,
+      synced,
+      skipped,
+      failed,
+      current,
+      message: message ?? 'Synchronisiere Officers',
+      elapsedSeconds,
+      etaSeconds,
+    })
+  }
+
+  await emitProgress('starting', undefined, 'Lade Officers und Discord-Konfiguration')
+
   // Officers sequentiell verarbeiten (1 pro Batch) um Rate-Limits zu vermeiden
   for (const officer of officers) {
+    const officerLabel = `${officer.firstName} ${officer.lastName} #${officer.badgeNumber}`
+    await emitProgress('checking', officerLabel, `Prüfe ${officerLabel}`)
+
     if (!officer.discordId) {
       skipped++
+      await emitProgress('syncing', officerLabel, `Übersprungen: ${officerLabel} hat keine Discord-ID`)
       continue
     }
     try {
       const mode = officer.status === 'TERMINATED' ? 'remove-all' : 'sync'
+      await emitProgress('syncing', officerLabel, `Synchronisiere Gruppen und Rollen für ${officerLabel}`)
       await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
       if (canSyncDiscord) await syncOfficerDiscordMember(officer, config, mode)
       synced++
+      await emitProgress('syncing', officerLabel, `Fertig: ${officerLabel}`)
     } catch (err) {
       failed++
       console.error(`[DiscordIntegration] Sync fehlgeschlagen für Officer ${officer.badgeNumber}:`, err)
+      await emitProgress('syncing', officerLabel, `Fehlgeschlagen: ${officerLabel}`)
     }
   }
+
+  await emitProgress('completed', undefined, 'Full-Sync abgeschlossen')
 
   return { synced, skipped, failed, total: officers.length }
 }
