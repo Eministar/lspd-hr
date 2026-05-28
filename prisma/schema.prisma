@@ -126,6 +126,7 @@ model User {
 model UserGroupMembership {
   userId    String
   groupId   String
+  source    String   @default("discord") // 'discord' | 'manual'
   createdAt DateTime @default(now())
 
   user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -133,6 +134,7 @@ model UserGroupMembership {
 
   @@id([userId, groupId])
   @@index([groupId])
+  @@index([userId, source])
 }
 
 model Unit {

@@ -663,41 +663,42 @@ async function syncOfficerDashboardGroupsForOfficer(
     where: { discordId: officer.discordId },
     select: {
       id: true,
-      groupMemberships: { select: { groupId: true } },
+      groupMemberships: { select: { groupId: true, source: true } },
     },
   })
   if (!user) return
 
-  const roleBackedGroupIds = new Set(Object.keys(config.authGroupRoleMap))
-  const desiredGroupIds = mode === 'remove-all'
+  const desiredDiscordGroupIds = mode === 'remove-all'
     ? []
     : dashboardGroupIdsForRoles(desiredRoleIds(officer, config), config)
 
-  const preservedGroupIds = user.groupMemberships
-    .map((membership) => membership.groupId)
-    .filter((groupId) => !roleBackedGroupIds.has(groupId))
+  // Keep manual memberships, only replace Discord-sourced ones
+  const manualGroupIds = user.groupMemberships
+    .filter((m) => m.source === 'manual')
+    .map((m) => m.groupId)
 
-  const nextGroupIds = Array.from(new Set([...preservedGroupIds, ...desiredGroupIds]))
-  const existingGroups = nextGroupIds.length > 0
-    ? await prisma.userGroup.findMany({ where: { id: { in: nextGroupIds } }, select: { id: true } })
+  const allGroupIds = Array.from(new Set([...manualGroupIds, ...desiredDiscordGroupIds]))
+  const existingGroups = allGroupIds.length > 0
+    ? await prisma.userGroup.findMany({ where: { id: { in: allGroupIds } }, select: { id: true } })
     : []
   const existingGroupIds = new Set(existingGroups.map((group) => group.id))
-  const validGroupIds = nextGroupIds.filter((groupId) => existingGroupIds.has(groupId))
+  const validDiscordGroupIds = desiredDiscordGroupIds.filter((id) => existingGroupIds.has(id))
+  const validManualGroupIds = manualGroupIds.filter((id) => existingGroupIds.has(id))
+  const primaryGroupId = validManualGroupIds[0] ?? validDiscordGroupIds[0] ?? null
 
   await prisma.$transaction([
-    prisma.userGroupMembership.deleteMany({ where: { userId: user.id } }),
-    ...(validGroupIds.length > 0
+    // Only replace Discord-synced memberships, never touch manual assignments
+    prisma.userGroupMembership.deleteMany({ where: { userId: user.id, source: 'discord' } }),
+    ...(validDiscordGroupIds.length > 0
       ? [prisma.userGroupMembership.createMany({
-          data: validGroupIds.map((groupId) => ({ userId: user.id, groupId })),
+          data: validDiscordGroupIds.map((groupId) => ({ userId: user.id, groupId, source: 'discord' })),
           skipDuplicates: true,
         })]
       : []),
+    // Update primary group only — NEVER clear direct permissions here
     prisma.user.update({
       where: { id: user.id },
-      data: {
-        groupId: validGroupIds[0] ?? null,
-        permissions: [],
-      },
+      data: { groupId: primaryGroupId },
     }),
   ])
 }
@@ -764,6 +765,28 @@ async function syncOfficerDiscordMember(
       })
     }
   }
+}
+
+export async function addDiscordRoleToMember(discordId: string, roleId: string) {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return
+  const memberId = snowflake(discordId)
+  const rId = snowflake(roleId)
+  if (!memberId || !rId) return
+  await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${rId}`, { method: 'PUT' }).catch((err) => {
+    console.error('[DiscordIntegration] Rolle hinzufügen fehlgeschlagen:', err)
+  })
+}
+
+export async function removeDiscordRoleFromMember(discordId: string, roleId: string) {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return
+  const memberId = snowflake(discordId)
+  const rId = snowflake(roleId)
+  if (!memberId || !rId) return
+  await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${rId}`, { method: 'DELETE' }).catch((err) => {
+    console.error('[DiscordIntegration] Rolle entfernen fehlgeschlagen:', err)
+  })
 }
 
 export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {

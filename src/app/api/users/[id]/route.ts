@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized, notFound, forbidden } from '@/lib/api-response'
 import { sanitizePermissions } from '@/lib/permissions'
-import { getDiscordGuildMember } from '@/lib/discord-integration'
+import { getDiscordConfig, getDiscordGuildMember, addDiscordRoleToMember, removeDiscordRoleFromMember } from '@/lib/discord-integration'
 import { serializeDiscordBackedUser, upsertDiscordUser } from '@/lib/discord-auth'
 
 function serializeUser<T extends {
@@ -21,6 +21,10 @@ function serializeUser<T extends {
 async function ensureUserId(id: string) {
   if (!id.startsWith('discord:')) return id
   const discordId = id.slice('discord:'.length)
+  // If user already logged in and exists in DB, avoid an unnecessary Discord round-trip
+  const existing = await prisma.user.findFirst({ where: { discordId }, select: { id: true } })
+  if (existing) return existing.id
+  // User not yet in DB — create via Discord sync
   const member = await getDiscordGuildMember(discordId)
   if (!member?.user) throw new Error('Discord-Benutzer nicht gefunden')
   const user = await upsertDiscordUser({
@@ -42,6 +46,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const data: Record<string, unknown> = {}
     if ('permissions' in body) data.permissions = sanitizePermissions(body.permissions)
 
+    // Manual group assignment
+    if ('groupIds' in body && Array.isArray(body.groupIds)) {
+      const requestedGroupIds = body.groupIds.filter((gid: unknown): gid is string => typeof gid === 'string' && gid.length > 0)
+      const validGroups = requestedGroupIds.length > 0
+        ? await prisma.userGroup.findMany({ where: { id: { in: requestedGroupIds } }, select: { id: true } })
+        : []
+      const validGroupIds = validGroups.map((g) => g.id)
+      data.groupMemberships = {
+        deleteMany: { source: 'manual' },
+        create: validGroupIds.map((groupId) => ({ groupId, source: 'manual' })),
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data,
@@ -59,16 +76,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         group: { select: { id: true, name: true } },
         permissions: true,
         groupMemberships: {
-          select: { group: { select: { id: true, name: true } } },
+          select: { group: { select: { id: true, name: true } }, source: true },
         },
         createdAt: true,
       },
     })
 
+    // Sync selected Discord roles for manually assigned groups
+    if ('discordRoleIds' in body && Array.isArray(body.discordRoleIds) && user.discordId) {
+      const config = await getDiscordConfig()
+      const allGroupRoleIds = new Set(Object.values(config.authGroupRoleMap).flat())
+      const desiredRoleIds = new Set(
+        body.discordRoleIds.filter((rid: unknown): rid is string => typeof rid === 'string' && /^\d{17,22}$/.test(rid))
+      )
+      // Add desired roles, remove undesired auth-group roles
+      for (const roleId of allGroupRoleIds) {
+        if (desiredRoleIds.has(roleId)) {
+          await addDiscordRoleToMember(user.discordId, roleId)
+        } else {
+          await removeDiscordRoleFromMember(user.discordId, roleId)
+        }
+      }
+    }
+
     return success(serializeUser(user))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return forbidden()
     return error(msg, 500)
   }
 }
@@ -89,6 +124,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return forbidden()
     return error(msg, 500)
   }
 }

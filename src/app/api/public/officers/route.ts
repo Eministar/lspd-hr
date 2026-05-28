@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { success } from '@/lib/api-response'
+import { success , forbidden } from '@/lib/api-response'
 import { officerUnitKeys } from '@/lib/officer-units'
 
 export async function GET() {

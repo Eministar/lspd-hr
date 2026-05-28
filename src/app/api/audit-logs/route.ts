@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { success, error, unauthorized } from '@/lib/api-response'
+import { success, error, unauthorized , forbidden } from '@/lib/api-response'
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return forbidden()
     return error(msg, 500)
   }
 }

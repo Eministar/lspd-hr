@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { sendDiscordWebhookEvent } from '@/lib/discord-webhook'
-import { success, error } from '@/lib/api-response'
+import { success, error , forbidden } from '@/lib/api-response'
 
 const runtimeEventSchema = z.object({
   title: z.string().trim().min(1).max(120),

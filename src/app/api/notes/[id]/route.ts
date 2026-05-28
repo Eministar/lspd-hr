@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized, notFound , forbidden } from '@/lib/api-response'
 import { hasPermission } from '@/lib/permissions'
 import { INACTIVITY_NOTE_DISMISSED_ACTION, SYSTEM_NOTE_TITLE } from '@/lib/absence-status'
 

@@ -194,17 +194,20 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
     discordAvatar: profile.user.avatar ?? null,
     discordDiscriminator: profile.user.discriminator ?? null,
     groupId: safeGroupIds[0] ?? null,
-    groupMemberships: {
-      deleteMany: {},
-      create: safeGroupIds.map((groupId) => ({ groupId })),
-    },
     lastLoginAt: new Date(),
   }
 
   if (existing) {
     return prisma.user.update({
       where: { id: existing.id },
-      data,
+      data: {
+        ...data,
+        // Preserve manual memberships — only replace Discord-sourced ones
+        groupMemberships: {
+          deleteMany: { source: 'discord' },
+          create: safeGroupIds.map((groupId) => ({ groupId, source: 'discord' })),
+        },
+      },
       include: {
         group: { select: { id: true, name: true, permissions: true } },
         groupMemberships: {
@@ -219,6 +222,9 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
       ...data,
       passwordHash: null,
       permissions: [],
+      groupMemberships: {
+        create: safeGroupIds.map((groupId) => ({ groupId, source: 'discord' })),
+      },
     },
     include: {
       group: { select: { id: true, name: true, permissions: true } },

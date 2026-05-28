@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { success, error as apiError } from '@/lib/api-response'
+import { success, error as apiError , forbidden } from '@/lib/api-response'
 import { normalizeOrdnungConfigs } from '@/lib/ordnungen'
 
 export async function GET() {

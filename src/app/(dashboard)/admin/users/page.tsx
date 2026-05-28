@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Edit, ShieldCheck, UserCog } from 'lucide-react'
 
@@ -31,6 +31,12 @@ interface User {
   discordOnly?: boolean
 }
 
+interface GroupOption {
+  id: string
+  name: string
+  discordRoles: { id: string; name: string }[]
+}
+
 const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
 const MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
 
@@ -54,16 +60,35 @@ function UserAvatar({ user }: { user: User }) {
 
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
+  const { data: groupOptions } = useFetch<GroupOption[]>('/api/users/group-options')
   const { user: currentUser, refreshUser } = useAuth()
   const { execute } = useApi()
   const { addToast } = useToast()
   const [editUser, setEditUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [selectedDiscordRoleIds, setSelectedDiscordRoleIds] = useState<string[]>([])
+
+  // Determine which Discord roles are relevant for the currently selected groups
+  const relevantDiscordRoles = groupOptions
+    ? groupOptions
+        .filter((g) => selectedGroupIds.includes(g.id) && g.discordRoles.length > 0)
+        .flatMap((g) => g.discordRoles)
+        .filter((role, i, arr) => arr.findIndex((r) => r.id === role.id) === i)
+    : []
 
   const openEdit = (user: User) => {
     setEditUser(user)
     setPermissions(user.permissions ?? [])
+    setSelectedGroupIds(user.groups.map((g) => g.id))
+    setSelectedDiscordRoleIds([])
   }
+
+  // When selected groups change, reset Discord role selection to avoid stale state
+  const selectedGroupKey = selectedGroupIds.join(',')
+  useEffect(() => {
+    setSelectedDiscordRoleIds([])
+  }, [selectedGroupKey])
 
   const togglePermission = (permission: Permission, checked: boolean) => {
     setPermissions((prev) => (
@@ -73,14 +98,30 @@ export default function UsersPage() {
     ))
   }
 
+  const toggleGroup = (groupId: string, checked: boolean) => {
+    setSelectedGroupIds((prev) =>
+      checked ? Array.from(new Set([...prev, groupId])) : prev.filter((id) => id !== groupId)
+    )
+  }
+
+  const toggleDiscordRole = (roleId: string, checked: boolean) => {
+    setSelectedDiscordRoleIds((prev) =>
+      checked ? Array.from(new Set([...prev, roleId])) : prev.filter((id) => id !== roleId)
+    )
+  }
+
   const savePermissions = async () => {
     if (!editUser) return
     try {
       await execute(`/api/users/${editUser.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ permissions }),
+        body: JSON.stringify({
+          permissions,
+          groupIds: selectedGroupIds,
+          ...(selectedDiscordRoleIds.length > 0 ? { discordRoleIds: selectedDiscordRoleIds } : {}),
+        }),
       })
-      addToast({ type: 'success', title: 'Direkte Rechte gespeichert' })
+      addToast({ type: 'success', title: 'Benutzer aktualisiert' })
       setEditUser(null)
       if (editUser.id === currentUser?.id) await refreshUser()
       await refetch()
@@ -89,46 +130,13 @@ export default function UsersPage() {
     }
   }
 
-  const permissionSections = (
-    <>
-      <div>
-        <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Direkte Leserechte</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {READ_PERMISSIONS.map((permission) => (
-            <Checkbox
-              key={permission}
-              checked={permissions.includes(permission)}
-              onCheckedChange={(checked) => togglePermission(permission, checked)}
-              label={PERMISSION_LABELS[permission]}
-              className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
-            />
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Direkte Verwaltungsrechte</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {MANAGE_PERMISSIONS.map((permission) => (
-            <Checkbox
-              key={permission}
-              checked={permissions.includes(permission)}
-              onCheckedChange={(checked) => togglePermission(permission, checked)}
-              label={PERMISSION_LABELS[permission]}
-              className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
-            />
-          ))}
-        </div>
-      </div>
-    </>
-  )
-
   if (loading) return <PageLoader />
 
   return (
     <div>
       <PageHeader
         title="Discord-Benutzer"
-        description="Discord-User mit Dashboard-Zugriff ansehen und direkte Zusatzrechte vergeben"
+        description="Discord-User mit Dashboard-Zugriff ansehen, Gruppen und direkte Rechte verwalten"
       />
 
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
@@ -152,7 +160,7 @@ export default function UsersPage() {
                   )}
                 </div>
                 <p className="text-[11.5px] text-[#4a6585]">
-                  @{user.discordUsername || user.username} · Discord: {user.discordId || 'nicht verbunden'} · {user.groups.length ? user.groups.map((group) => group.name).join(', ') : 'Keine Gruppe'} · {user.permissions.length} direkte Rechte · Letzter Login: {formatDate(user.lastLoginAt)}
+                  @{user.discordUsername || user.username} · {user.groups.length ? user.groups.map((g) => g.name).join(', ') : 'Keine Gruppe'} · {user.permissions.length} direkte Rechte · Letzter Login: {formatDate(user.lastLoginAt)}
                 </p>
               </div>
               <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
@@ -172,23 +180,91 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Direkte Rechte bearbeiten" size="lg">
-        <div className="space-y-4">
+      <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Benutzer bearbeiten" size="lg">
+        <div className="space-y-5">
           {editUser && (
             <div className="flex items-center gap-3 rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/45 p-3">
               <UserAvatar user={editUser} />
               <div className="min-w-0">
                 <p className="truncate text-[13.5px] font-semibold text-white">{editUser.displayName}</p>
-                <p className="truncate text-[11.5px] text-[#6b8299]">
-                  Gruppen aus Discord-Rollen: {editUser.groups.length ? editUser.groups.map((group) => group.name).join(', ') : 'Keine'}
-                </p>
+                <p className="truncate text-[11.5px] text-[#6b8299]">@{editUser.discordUsername || editUser.username}</p>
               </div>
             </div>
           )}
-          <p className="text-[11.5px] text-[#6b8299]">
-            Direkte Rechte werden zusätzlich zu den Rechten aus Discord-Rollen und Benutzergruppen vergeben.
-          </p>
-          {permissionSections}
+
+          {/* Group Assignment */}
+          {groupOptions && groupOptions.length > 0 && (
+            <div>
+              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Gruppen (manuell zuweisen)</p>
+              <p className="text-[11px] text-[#4a6585] mb-2">
+                Discord-Gruppen werden automatisch über Rollen gesetzt. Hier kannst du Gruppen manuell hinzufügen.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {groupOptions.map((group) => (
+                  <Checkbox
+                    key={group.id}
+                    checked={selectedGroupIds.includes(group.id)}
+                    onCheckedChange={(checked) => toggleGroup(group.id, checked)}
+                    label={group.name}
+                    className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Discord Role Selection — shown when selected group has multiple roles */}
+          {relevantDiscordRoles.length > 0 && editUser?.discordId && (
+            <div>
+              <p className="block text-[12.5px] font-medium text-[#d4af37] mb-2">Discord-Rollen vergeben</p>
+              <p className="text-[11px] text-[#4a6585] mb-2">
+                Die ausgewählten Gruppen haben Discord-Rollen. Wähle, welche Rollen der Benutzer in Discord erhalten soll.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {relevantDiscordRoles.map((role) => (
+                  <Checkbox
+                    key={role.id}
+                    checked={selectedDiscordRoleIds.includes(role.id)}
+                    onCheckedChange={(checked) => toggleDiscordRole(role.id, checked)}
+                    label={role.name}
+                    className="rounded-[8px] bg-[#0a1a33]/40 border border-[#d4af37]/20 px-3 py-2"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Direct Permissions */}
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1">Direkte Leserechte</p>
+            <p className="text-[11px] text-[#4a6585] mb-2">Zusätzlich zu den Gruppenrechten.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {READ_PERMISSIONS.map((permission) => (
+                <Checkbox
+                  key={permission}
+                  checked={permissions.includes(permission)}
+                  onCheckedChange={(checked) => togglePermission(permission, checked)}
+                  label={PERMISSION_LABELS[permission]}
+                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Direkte Verwaltungsrechte</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {MANAGE_PERMISSIONS.map((permission) => (
+                <Checkbox
+                  key={permission}
+                  checked={permissions.includes(permission)}
+                  onCheckedChange={(checked) => togglePermission(permission, checked)}
+                  label={PERMISSION_LABELS[permission]}
+                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setEditUser(null)}>Abbrechen</Button>
             <Button size="sm" onClick={savePermissions}>Speichern</Button>
