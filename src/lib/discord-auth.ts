@@ -198,16 +198,11 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
   }
 
   if (existing) {
-    return prisma.user.update({
+    // Update profile separately from membership sync to avoid primary key conflicts.
+    // Manual memberships (source: 'manual') are preserved; Discord ones are replaced.
+    const updatedUser = await prisma.user.update({
       where: { id: existing.id },
-      data: {
-        ...data,
-        // Preserve manual memberships — only replace Discord-sourced ones
-        groupMemberships: {
-          deleteMany: { source: 'discord' },
-          create: safeGroupIds.map((groupId) => ({ groupId, source: 'discord' })),
-        },
-      },
+      data,
       include: {
         group: { select: { id: true, name: true, permissions: true } },
         groupMemberships: {
@@ -215,6 +210,18 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
         },
       },
     })
+
+    await prisma.$transaction([
+      prisma.userGroupMembership.deleteMany({
+        where: { userId: existing.id, source: 'discord' },
+      }),
+      prisma.userGroupMembership.createMany({
+        data: safeGroupIds.map((groupId) => ({ userId: existing.id, groupId, source: 'discord' })),
+        skipDuplicates: true, // skip if already manually assigned with same (userId, groupId)
+      }),
+    ])
+
+    return updatedUser
   }
 
   return prisma.user.create({

@@ -46,17 +46,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const data: Record<string, unknown> = {}
     if ('permissions' in body) data.permissions = sanitizePermissions(body.permissions)
 
-    // Manual group assignment
+    // Manual group assignment — done in separate transaction to avoid primary key conflicts
+    // (user may already have a Discord-synced membership for a group they're being manually added to)
     if ('groupIds' in body && Array.isArray(body.groupIds)) {
       const requestedGroupIds = body.groupIds.filter((gid: unknown): gid is string => typeof gid === 'string' && gid.length > 0)
       const validGroups = requestedGroupIds.length > 0
         ? await prisma.userGroup.findMany({ where: { id: { in: requestedGroupIds } }, select: { id: true } })
         : []
       const validGroupIds = validGroups.map((g) => g.id)
-      data.groupMemberships = {
-        deleteMany: { source: 'manual' },
-        create: validGroupIds.map((groupId) => ({ groupId, source: 'manual' })),
-      }
+
+      await prisma.$transaction(async (tx) => {
+        // Remove all current manual memberships
+        await tx.userGroupMembership.deleteMany({ where: { userId: id, source: 'manual' } })
+        // Upsert each desired group — if already Discord-assigned, upgrade to 'manual' so it survives login syncs
+        for (const groupId of validGroupIds) {
+          await tx.userGroupMembership.upsert({
+            where: { userId_groupId: { userId: id, groupId } },
+            update: { source: 'manual' },
+            create: { userId: id, groupId, source: 'manual' },
+          })
+        }
+      })
     }
 
     const user = await prisma.user.update({
