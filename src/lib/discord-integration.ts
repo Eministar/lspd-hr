@@ -652,10 +652,20 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
   ].filter((roleId): roleId is string => !!roleId)))
 }
 
+async function fetchGuildMember(
+  config: DiscordConfig,
+  discordId: string | null | undefined,
+): Promise<DiscordGuildMember | null> {
+  const memberId = snowflake(discordId)
+  if (!config.guildId || !memberId || !botToken()) return null
+  return discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+}
+
 async function syncOfficerDashboardGroupsForOfficer(
   officer: OfficerForDiscord,
   config: DiscordConfig,
   mode: 'sync' | 'remove-all' = 'sync',
+  memberRoles?: string[] | null,
 ) {
   if (!officer?.discordId) return
 
@@ -668,9 +678,26 @@ async function syncOfficerDashboardGroupsForOfficer(
   })
   if (!user) return
 
-  const desiredDiscordGroupIds = mode === 'remove-all'
-    ? []
-    : dashboardGroupIdsForRoles(desiredRoleIds(officer, config), config)
+  // Robustness: Discord-derived dashboard groups (incl. admin/login roles) MUST be
+  // computed from the member's ACTUAL Discord roles — exactly like the login flow
+  // (matchingGroupIds). Deriving them from the officer's rank/unit/training roles
+  // alone silently strips any group mapped to a non-rank role (e.g. an "Admin"
+  // role) on every periodic sync, so the user loses permissions over time.
+  let desiredDiscordGroupIds: string[]
+  if (mode === 'remove-all') {
+    desiredDiscordGroupIds = []
+  } else {
+    if (!memberRoles) {
+      // Actual Discord roles are unknown (no bot token or fetch failed). Do NOT
+      // touch Discord-sourced memberships — preserving them avoids revoking
+      // permissions on transient Discord API failures.
+      return
+    }
+    // Union of the member's real Discord roles and the officer's intended roles,
+    // so the dashboard reflects both auth roles (admin) and rank-based grants.
+    const effectiveRoles = Array.from(new Set([...memberRoles, ...desiredRoleIds(officer, config)]))
+    desiredDiscordGroupIds = dashboardGroupIdsForRoles(effectiveRoles, config)
+  }
 
   // Keep manual memberships, only replace Discord-sourced ones
   const manualGroupIds = user.groupMemberships
@@ -708,13 +735,15 @@ export async function syncOfficerDashboardGroups(officerId: string, mode: 'sync'
   const officer = await getOfficerForDiscord(officerId)
   if (!officer) return
 
-  await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
+  const member = mode === 'remove-all' ? null : await fetchGuildMember(config, officer.discordId)
+  await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
 }
 
 async function syncOfficerDiscordMember(
   officer: OfficerForDiscord,
   config: DiscordConfig,
   mode: 'sync' | 'remove-all' = 'sync',
+  preloadedMember?: DiscordGuildMember | null,
 ) {
   if (!officer?.discordId) return
 
@@ -723,7 +752,10 @@ async function syncOfficerDiscordMember(
 
   const allManaged = configuredRoleIds(config)
   const desired = mode === 'remove-all' ? [] : desiredRoleIds(officer, config)
-  const member = await discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+  // Reuse a member already fetched by the caller (undefined = not provided → fetch)
+  const member = preloadedMember !== undefined
+    ? preloadedMember
+    : await discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
   const currentRoles = new Set(member?.roles ?? [])
   const desiredSet = new Set(desired)
   const toAdd = desired.filter((roleId) => !currentRoles.has(roleId))
@@ -794,11 +826,15 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
   const officer = await getOfficerForDiscord(officerId)
   if (!officer) return
 
-  await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
+  // Fetch the member once and share it between group- and role-sync to avoid
+  // double Discord calls and to derive dashboard groups from actual roles.
+  const member = mode === 'remove-all' ? null : await fetchGuildMember(config, officer.discordId)
+
+  await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
 
   if (!config.guildId || !botToken()) return
 
-  await syncOfficerDiscordMember(officer, config, mode)
+  await syncOfficerDiscordMember(officer, config, mode, mode === 'remove-all' ? undefined : member)
 }
 
 export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord) {
@@ -869,8 +905,16 @@ export async function syncAllOfficerDiscordRoles(options?: {
     try {
       const mode = officer.status === 'TERMINATED' ? 'remove-all' : 'sync'
       await emitProgress('syncing', officerLabel, `Synchronisiere Gruppen und Rollen für ${officerLabel}`)
-      await syncOfficerDashboardGroupsForOfficer(officer, config, mode)
-      if (canSyncDiscord) await syncOfficerDiscordMember(officer, config, mode)
+
+      // Fetch the member once per officer; reuse for both group and role sync.
+      const member = canSyncDiscord && mode === 'sync'
+        ? await fetchGuildMember(config, officer.discordId)
+        : null
+
+      await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
+      if (canSyncDiscord) {
+        await syncOfficerDiscordMember(officer, config, mode, mode === 'remove-all' ? undefined : member)
+      }
       synced++
       await emitProgress('syncing', officerLabel, `Fertig: ${officerLabel}`)
     } catch (err) {
