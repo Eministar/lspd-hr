@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client"
+  // prisma-client-js emits a ready-to-require JavaScript client (client.js +
+  // client.d.ts). The newer "prisma-client" generator emits TypeScript only,
+  // which the production entry (start.js) cannot require without a TS loader.
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
