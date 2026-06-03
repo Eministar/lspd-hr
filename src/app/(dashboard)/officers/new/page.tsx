@@ -52,8 +52,25 @@ export default function NewOfficerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Client-side guard so missing required fields show a clear message instead
+    // of a cryptic 400 from the server validation.
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      addToast({ type: 'error', title: 'Fehlende Angaben', message: 'Vor- und Nachname sind erforderlich.' })
+      return
+    }
+    if (!form.rankId) {
+      addToast({ type: 'error', title: 'Rang fehlt', message: 'Bitte wähle einen Rang aus.' })
+      return
+    }
+    const did = form.discordId.trim()
+    if (did && !/^\d{17,22}$/.test(did)) {
+      addToast({ type: 'error', title: 'Ungültige Discord-ID', message: 'Die Discord-ID muss 17–22 Ziffern haben (Snowflake).' })
+      return
+    }
+
     try {
-      const payload = { ...form, discordId: form.discordId.trim() || null }
+      const payload = { ...form, discordId: did || null }
       await execute('/api/officers', {
         method: 'POST',
         body: JSON.stringify(payload),
