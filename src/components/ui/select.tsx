@@ -90,7 +90,10 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
   const hasEmptyOption = options.some((o) => o.value === '')
   const rootValue = React.useMemo(() => {
     if (value === undefined) return undefined
-    if (value === '' && !hasEmptyOption) return undefined
+    // Controlled empty selection: return '' (Radix's controlled "no value" state
+    // that shows the placeholder) — NOT undefined, which would flip the Root to
+    // uncontrolled and trigger React's controlled/uncontrolled warning.
+    if (value === '' && !hasEmptyOption) return ''
     return toInternal(value)
   }, [value, hasEmptyOption])
   const rootDefault = defaultValue === undefined ? undefined : toInternal(defaultValue)
