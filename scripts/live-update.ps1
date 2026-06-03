@@ -225,15 +225,17 @@ function Restore-NextStatic {
 }
 
 function Test-PrismaClientGenerated {
+    # Production (start.js) loads the client via a plain require() without a
+    # TypeScript loader, so a JavaScript entry MUST exist. A TS-only client would
+    # crash at runtime (tsx), so we deliberately do not accept client.ts here.
     $candidates = @(
         Join-Path $AppDir 'src\generated\prisma\client.js'
         Join-Path $AppDir 'src\generated\prisma\index.js'
         Join-Path $AppDir 'src\generated\prisma\default.js'
-        Join-Path $AppDir 'src\generated\prisma\client.ts'
     )
     $entry = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
     if (-not $entry) {
-        throw 'Prisma Client fehlt: client.js, index.js, default.js oder client.ts wurde nicht erzeugt.'
+        throw 'Prisma JavaScript-Client fehlt: client.js, index.js oder default.js wurde nicht erzeugt. Auf dem Server "npm install" und "npx prisma generate" ausführen.'
     }
     $relative = $entry
     if ($entry.StartsWith($AppDir, [System.StringComparison]::OrdinalIgnoreCase)) {
