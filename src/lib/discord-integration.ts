@@ -62,6 +62,7 @@ type DiscordConfig = {
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
+  adminRoleIds: string[]
   authGroupRoleMap: Record<string, string[]>
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
@@ -150,6 +151,7 @@ export const DISCORD_SETTING_KEYS = {
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   authLoginRoleIds: 'discord.authLoginRoleIds',
+  adminRoleIds: 'discord.adminRoleIds',
   authGroupRoleMap: 'discord.authGroupRoleMap',
   legacyAuthRoleGroupMap: 'discord.authRoleGroupMap',
   rankRoleMap: 'discord.rankRoleMap',
@@ -203,6 +205,7 @@ interface CacheEntry<T> {
 
 const guildRolesCache = new Map<string, CacheEntry<DiscordRole[]>>()
 const guildChannelsCache = new Map<string, CacheEntry<DiscordChannel[]>>()
+const memberRolesCache = new Map<string, CacheEntry<string[]>>()
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
   const entry = cache.get(key)
@@ -218,6 +221,48 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): v
 export function invalidateDiscordCache() {
   guildRolesCache.clear()
   guildChannelsCache.clear()
+  memberRolesCache.clear()
+}
+
+/**
+ * Returns a member's Discord role IDs with a short-lived cache. On a transient
+ * Discord API failure the last known (stale) roles are served instead of null,
+ * so an admin is never locked out by a temporary outage.
+ */
+async function getDiscordMemberRoleIds(discordId: string, guildId?: string): Promise<string[] | null> {
+  const gid = guildId || (await getDiscordConfig()).guildId
+  const id = snowflake(discordId)
+  if (!gid || !id || !botToken()) return null
+
+  const entry = memberRolesCache.get(id)
+  if (entry && Date.now() < entry.expiresAt) return entry.data
+
+  try {
+    const member = await discordFetch<DiscordGuildMember>(`/guilds/${gid}/members/${id}`)
+    const roles = member.roles ?? []
+    setCache(memberRolesCache, id, roles)
+    return roles
+  } catch (err) {
+    console.error('[DiscordIntegration] Mitglieds-Rollen konnten nicht geladen werden:', err)
+    // Serve stale cache during transient outages rather than dropping access.
+    return entry ? entry.data : null
+  }
+}
+
+/**
+ * Determines admin status LIVE from the user's actual Discord roles (cached).
+ * Independent of the dashboard group mapping, so it cannot be broken by group
+ * misconfiguration and is never persisted (the periodic sync cannot strip it).
+ */
+export async function isDiscordUserAdmin(discordId: string | null | undefined): Promise<boolean> {
+  const id = snowflake(discordId)
+  if (!id) return false
+  const config = await getDiscordConfig()
+  if (config.adminRoleIds.length === 0) return false
+  const roles = await getDiscordMemberRoleIds(id, config.guildId)
+  if (!roles) return false
+  const roleSet = new Set(roles)
+  return config.adminRoleIds.some((roleId) => roleSet.has(roleId))
 }
 
 function botToken() {
@@ -312,6 +357,18 @@ function envAuthLoginRoleIds(): string[] {
     process.env.LSPD_DISCORD_AUTH_LOGIN_ROLE_IDS?.trim() ||
     ''
   return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+}
+
+function envAdminRoleIds(): string[] {
+  const raw =
+    process.env.DISCORD_ADMIN_ROLE_IDS?.trim() ||
+    process.env.LSPD_DISCORD_ADMIN_ROLE_IDS?.trim() ||
+    ''
+  const explicit = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+  if (explicit.length > 0) return explicit
+  // Legacy fallback: the removed bootstrap logic used DISCORD_AUTH_LOGIN_ROLE_IDS
+  // as the admin/bootstrap roles, so honour it when no explicit admin roles exist.
+  return envAuthLoginRoleIds()
 }
 
 function parseJson<T>(value: string | undefined, fallback: T): T {
@@ -494,6 +551,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], envAuthLoginRoleIds())),
+    adminRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], envAdminRoleIds())),
     authGroupRoleMap: normalizeAuthGroupRoleMap(
       parseJson(map[DISCORD_SETTING_KEYS.authGroupRoleMap], {}),
       parseJson(map[DISCORD_SETTING_KEYS.legacyAuthRoleGroupMap], {}),
@@ -521,6 +579,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
+  if (input.adminRoleIds !== undefined) data[DISCORD_SETTING_KEYS.adminRoleIds] = JSON.stringify(cleanRoleIds(input.adminRoleIds))
   if (input.authGroupRoleMap !== undefined) data[DISCORD_SETTING_KEYS.authGroupRoleMap] = JSON.stringify(cleanGroupRoleMap(input.authGroupRoleMap))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
   if (input.trainingRoleMap !== undefined) data[DISCORD_SETTING_KEYS.trainingRoleMap] = JSON.stringify(cleanRoleMap(input.trainingRoleMap))

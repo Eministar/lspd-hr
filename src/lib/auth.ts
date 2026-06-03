@@ -2,8 +2,9 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
-import { hasAnyPermission, resolveEffectivePermissions, type Permission } from './permissions'
+import { hasAnyPermission, resolveEffectivePermissions, PERMISSIONS, type Permission } from './permissions'
 import { storedDiscordAvatarUrl } from './discord-auth'
+import { isDiscordUserAdmin } from './discord-integration'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -75,7 +76,20 @@ export async function getCurrentUser() {
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
   const groups = Array.from(groupsById.values())
 
-  const effectivePermissions = resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions))
+  let effectivePermissions = resolveEffectivePermissions(user.permissions, groups.map((group) => group.permissions))
+  const groupList = groups.map((group) => ({ id: group.id, name: group.name }))
+
+  // Robust admin bootstrap: anyone holding a configured admin Discord role gets
+  // full access, computed live from their actual Discord roles. This is fully
+  // independent of the dashboard group mapping (so it can't be broken by a
+  // misconfigured/missing Admin group) and is never persisted (so the periodic
+  // role sync can never strip it).
+  if (user.discordId && (await isDiscordUserAdmin(user.discordId))) {
+    effectivePermissions = [...PERMISSIONS]
+    if (!groupList.some((group) => group.name.toLowerCase() === 'admin')) {
+      groupList.unshift({ id: 'discord-admin', name: 'Admin' })
+    }
+  }
 
   return {
     id: user.id,
@@ -83,7 +97,7 @@ export async function getCurrentUser() {
     displayName: user.displayName,
     discordId: user.discordId,
     avatarUrl: storedDiscordAvatarUrl(user),
-    groups: groups.map((group) => ({ id: group.id, name: group.name })),
+    groups: groupList,
     permissions: effectivePermissions,
   } satisfies CurrentUser
 }
