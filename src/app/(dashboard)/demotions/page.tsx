@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowRight, Plus, Trash2, Play, FileText, ChevronDown, X } from 'lucide-react'
+import { Plus, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -15,10 +14,10 @@ import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
-import { formatDate, cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { RankChangeListCard } from '@/components/rank-changes/rank-change-list-card'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer {
@@ -80,10 +79,10 @@ export default function DemotionsPage() {
     const query = officerSearch.trim().toLowerCase()
     if (!query) return true
     return (
-      officer.badgeNumber.toLowerCase().includes(query) ||
-      officer.firstName.toLowerCase().includes(query) ||
-      officer.lastName.toLowerCase().includes(query) ||
-      officer.rank.name.toLowerCase().includes(query)
+        officer.badgeNumber.toLowerCase().includes(query) ||
+        officer.firstName.toLowerCase().includes(query) ||
+        officer.lastName.toLowerCase().includes(query) ||
+        officer.rank.name.toLowerCase().includes(query)
     )
   })
   const selectedOfficer = activeOfficers.find(o => o.id === entryForm.officerId)
@@ -176,206 +175,146 @@ export default function DemotionsPage() {
   if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
+  const totalEntries = lists?.reduce((sum, l) => sum + l.entries.length, 0) ?? 0
+  const executedEntries = lists?.reduce((sum, l) => sum + l.entries.filter((e) => e.executed).length, 0) ?? 0
+  const pendingEntries = totalEntries - executedEntries
+
   return (
-    <div>
-      <PageHeader
-        title="Degradierungen"
-        description={`${lists?.length || 0} Listen`}
-        action={canManage ? (
-          <Button size="sm" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
-            <Plus size={14} strokeWidth={2} />
-            Neue Liste
-          </Button>
-        ) : undefined}
-      />
+      <div>
+        <PageHeader
+            title="Degradierungen"
+            description="Listen für anstehende und durchgeführte Rang-Senkungen verwalten."
+            action={canManage ? (
+                <Button size="sm" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
+                  <Plus size={14} strokeWidth={2} /> Neue Liste
+                </Button>
+            ) : undefined}
+        />
 
-      {(!lists || lists.length === 0) && (
-        <div className="text-center py-20">
-          <FileText size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-          <p className="text-[13px] text-[#999] mb-3">Noch keine Degradierungslisten</p>
-          {canManage && <Button size="sm" variant="secondary" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
-            <Plus size={13} /> Erste Liste erstellen
-          </Button>}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {lists?.map((list, i) => {
-          const isExpanded = expandedLists.has(list.id)
-          const pendingCount = list.entries.filter(e => !e.executed).length
-          const isDraft = list.status === 'DRAFT'
-
-          return (
-            <motion.div
-              key={list.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="glass-panel-elevated rounded-[14px] overflow-hidden"
-            >
-              <button
-                onClick={() => toggleExpand(list.id)}
-                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#0f2340] transition-colors text-left"
-              >
-                <ChevronDown size={14} strokeWidth={2} className={cn('text-[#4a6585] transition-transform duration-200', !isExpanded && '-rotate-90')} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-semibold text-[#eee]">{list.name}</span>
-                    <span className={cn('text-[11px] px-1.5 py-[1px] rounded-[4px] font-medium',
-                      isDraft ? 'bg-[#1c1a11] text-[#fbbf24]' : 'bg-[#0d1f17] text-[#34d399]'
-                    )}>
-                      {isDraft ? 'Entwurf' : 'Abgeschlossen'}
-                    </span>
-                  </div>
-                  <p className="text-[11.5px] text-[#999] mt-0.5">
-                    {list.entries.length} Einträge · {formatDate(list.createdAt)} · {list.createdBy?.displayName ?? 'Gelöscht'}
-                    {list.description && <span> · {list.description}</span>}
-                  </p>
-                </div>
-                {isDraft && pendingCount > 0 && (
-                  <span className="text-[12px] text-[#888] bg-[#0f2340] px-2 py-0.5 rounded-[5px]">
-                    {pendingCount} offen
-                  </span>
-                )}
-              </button>
-
-              {isExpanded && (
-                <div className="px-5 pb-4">
-                  {list.entries.length > 0 ? (
-                    <div className="space-y-1.5 mb-3">
-                      {list.entries.map((entry) => (
-                        <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-[#0f2340] rounded-[8px]">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium text-[#eee]">
-                              <Link href={`/officers/${entry.officer.id}`} className="text-inherit hover:underline">
-                                {entry.officer.firstName} {entry.officer.lastName}
-                              </Link>
-                              <span className="text-[#bbb] font-normal ml-1">({entry.officer.badgeNumber})</span>
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11.5px] text-[#888]">{entry.currentRank.name}</span>
-                              <ArrowRight size={10} className="text-[#ccc]" />
-                              <span className="text-[11.5px] text-[#eee] font-medium">{entry.proposedRank.name}</span>
-                              {entry.note && <span className="text-[11px] text-[#bbb] ml-1">· {entry.note}</span>}
-                            </div>
-                            <p className="text-[11px] text-[#7089a5] mt-0.5">
-                              Eingereicht von <span className="text-[#9fb0c4]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
-                              {entry.executed && entry.executedAt && (
-                                <> · Durchgeführt am {formatDate(entry.executedAt)}</>
-                              )}
-                            </p>
-                          </div>
-                          {entry.executed ? (
-                            <span className="text-[11px] text-[#34d399] font-medium shrink-0">Durchgeführt</span>
-                          ) : isDraft && canExecute ? (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Button variant="danger" size="sm" onClick={() => setExecuteEntry({
-                                listId: list.id,
-                                entryId: entry.id,
-                                name: `${entry.officer.firstName} ${entry.officer.lastName}`,
-                              })}>
-                                <Play size={13} /> Durchführen
-                              </Button>
-                              <button onClick={() => handleRemoveEntry(list.id, entry.id)}
-                                className="p-1 rounded-[5px] hover:bg-[#142d52] transition-colors">
-                                <X size={13} className="text-[#4a6585]" />
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[12.5px] text-[#4a6585] mb-3 px-1">Noch keine Officers in dieser Liste</p>
-                  )}
-
-                  {((isDraft && canManage) || canDeleteLists) && (
-                    <div className="flex gap-1.5">
-                      {isDraft && canManage && (
-                        <Button variant="secondary" size="sm" onClick={() => {
-                          setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
-                          setOfficerSearch('')
-                          setAddEntryListId(list.id)
-                        }}>
-                          <Plus size={13} /> Officer hinzufügen
-                        </Button>
-                      )}
-                      {canDeleteLists && (
-                        <Button variant="danger" size="sm" onClick={() => handleDeleteList(list.id)}>
-                          <Trash2 size={13} />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          )
-        })}
-      </div>
-
-      {/* Create list modal */}
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Neue Degradierungsliste" size="sm">
-        <div className="space-y-4">
-          <Input label="Name" value={listForm.name} onChange={(e) => setListForm({ ...listForm, name: e.target.value })} required placeholder="z.B. Degradierungen April 2026" />
-          <Textarea label="Beschreibung (optional)" value={listForm.description} onChange={(e) => setListForm({ ...listForm, description: e.target.value })} rows={2} placeholder="Optional" />
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="secondary" size="sm" onClick={() => setCreateModal(false)}>Abbrechen</Button>
-            <Button size="sm" onClick={handleCreateList} disabled={!listForm.name.trim()}>Erstellen</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add entry modal */}
-      <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title="Officer hinzufügen" size="md">
-        <div className="space-y-4">
-          <Input
-            label="Officer suchen"
-            value={officerSearch}
-            onChange={(e) => setOfficerSearch(e.target.value)}
-            placeholder="Name, DN oder Rang..."
-          />
-          <Select
-            label="Officer auswählen"
-            value={entryForm.officerId}
-            onChange={(e) => { setEntryForm({ ...entryForm, officerId: e.target.value, proposedRankId: '' }) }}
-            options={filteredOfficers.map(o => ({ value: o.id, label: `${displayBadgeNumber(o.badgeNumber)} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
-            placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
-            disabled={filteredOfficers.length === 0}
-          />
-          {selectedOfficer && (
-            <>
-              <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
-                <p className="text-[13px] text-[#888]">Aktueller Rang: <strong className="text-[#eee]">{selectedOfficer.rank.name}</strong></p>
+        {(lists?.length ?? 0) > 0 && (
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
+                <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Listen</p>
+                <p className="mt-1 text-[22px] font-bold text-white">{lists?.length ?? 0}</p>
               </div>
-              <Select
-                label="Neuer Rang (niedriger)"
-                value={entryForm.proposedRankId}
-                onChange={(e) => setEntryForm({ ...entryForm, proposedRankId: e.target.value })}
-                options={getLowerRanks().map(r => ({ value: r.id, label: r.name }))}
-                placeholder="Rang wählen..."
-              />
-              <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`} />
-              <Input label="Grund (optional)" value={entryForm.note} onChange={(e) => setEntryForm({ ...entryForm, note: e.target.value })} placeholder="Grund für Degradierung..." />
-            </>
-          )}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="secondary" size="sm" onClick={() => setAddEntryListId(null)}>Abbrechen</Button>
-            <Button size="sm" onClick={handleAddEntry} disabled={!entryForm.officerId || !entryForm.proposedRankId}>Hinzufügen</Button>
-          </div>
-        </div>
-      </Modal>
+              <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
+                <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Durchgeführt</p>
+                <p className="mt-1 text-[22px] font-bold text-[#f87171]">{executedEntries}</p>
+              </div>
+              <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
+                <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Offen</p>
+                <p className="mt-1 text-[22px] font-bold text-[#fbbf24]">{pendingEntries}</p>
+              </div>
+            </div>
+        )}
 
-      {/* Execute confirmation */}
-      <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title="Degradierung ausführen">
-        <p className="text-[13px] text-[#888] mb-5">
-          Die Degradierung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
-        </p>
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
-          <Button variant="danger" size="sm" onClick={handleExecuteEntry}>Durchführen</Button>
+        {(!lists || lists.length === 0) && (
+            <div className="glass-panel-elevated rounded-[14px] py-16 text-center border border-[#1e3a5c]/45">
+              <div className="inline-flex rounded-full bg-[#f87171]/10 p-4 mb-3">
+                <TrendingDown size={26} className="text-[#f87171]" />
+              </div>
+              <p className="text-[14px] font-semibold text-white mb-1">Noch keine Degradierungslisten</p>
+              <p className="text-[12.5px] text-[#8ea4bd] mb-4">Erstelle eine Liste, um Degradierungen vorzubereiten.</p>
+              {canManage && <Button size="sm" onClick={() => { setListForm({ name: '', description: '' }); setCreateModal(true) }}>
+                <Plus size={13} /> Erste Liste erstellen
+              </Button>}
+            </div>
+        )}
+
+        <div className="space-y-3">
+          {lists?.map((list, i) => (
+              <motion.div
+                  key={list.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+              >
+                <RankChangeListCard
+                    list={list}
+                    variant="demotion"
+                    expanded={expandedLists.has(list.id)}
+                    onToggle={() => toggleExpand(list.id)}
+                    canExecute={canExecute}
+                    canManage={canManage}
+                    canDelete={canDeleteLists}
+                    emptyText="Noch keine Officers in dieser Liste"
+                    addLabel="+ Officer hinzufügen"
+                    onExecute={(entry) => setExecuteEntry({ listId: list.id, entryId: entry.id, name: `${entry.officer.firstName} ${entry.officer.lastName}` })}
+                    onRemove={(entryId) => handleRemoveEntry(list.id, entryId)}
+                    onAddEntry={() => {
+                      setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+                      setOfficerSearch('')
+                      setAddEntryListId(list.id)
+                    }}
+                    onDelete={() => handleDeleteList(list.id)}
+                />
+              </motion.div>
+          ))}
         </div>
-      </Modal>
-    </div>
+
+
+        {/* Create list modal */}
+        <Modal open={createModal} onClose={() => setCreateModal(false)} title="Neue Degradierungsliste" size="sm">
+          <div className="space-y-4">
+            <Input label="Name" value={listForm.name} onChange={(e) => setListForm({ ...listForm, name: e.target.value })} required placeholder="z.B. Degradierungen April 2026" />
+            <Textarea label="Beschreibung (optional)" value={listForm.description} onChange={(e) => setListForm({ ...listForm, description: e.target.value })} rows={2} placeholder="Optional" />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" onClick={() => setCreateModal(false)}>Abbrechen</Button>
+              <Button size="sm" onClick={handleCreateList} disabled={!listForm.name.trim()}>Erstellen</Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Add entry modal */}
+        <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title="Officer hinzufügen" size="md">
+          <div className="space-y-4">
+            <Input
+                label="Officer suchen"
+                value={officerSearch}
+                onChange={(e) => setOfficerSearch(e.target.value)}
+                placeholder="Name, DN oder Rang..."
+            />
+            <Select
+                label="Officer auswählen"
+                value={entryForm.officerId}
+                onChange={(e) => { setEntryForm({ ...entryForm, officerId: e.target.value, proposedRankId: '' }) }}
+                options={filteredOfficers.map(o => ({ value: o.id, label: `${displayBadgeNumber(o.badgeNumber)} – ${o.firstName} ${o.lastName} (${o.rank.name})` }))}
+                placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
+                disabled={filteredOfficers.length === 0}
+            />
+            {selectedOfficer && (
+                <>
+                  <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
+                    <p className="text-[13px] text-[#888]">Aktueller Rang: <strong className="text-[#eee]">{selectedOfficer.rank.name}</strong></p>
+                  </div>
+                  <Select
+                      label="Neuer Rang (niedriger)"
+                      value={entryForm.proposedRankId}
+                      onChange={(e) => setEntryForm({ ...entryForm, proposedRankId: e.target.value })}
+                      options={getLowerRanks().map(r => ({ value: r.id, label: r.name }))}
+                      placeholder="Rang wählen..."
+                  />
+                  <Input label="Neue DN (optional)" value={entryForm.newBadgeNumber} onChange={(e) => setEntryForm({ ...entryForm, newBadgeNumber: e.target.value })} placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`} />
+                  <Input label="Grund (optional)" value={entryForm.note} onChange={(e) => setEntryForm({ ...entryForm, note: e.target.value })} placeholder="Grund für Degradierung..." />
+                </>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" onClick={() => setAddEntryListId(null)}>Abbrechen</Button>
+              <Button size="sm" onClick={handleAddEntry} disabled={!entryForm.officerId || !entryForm.proposedRankId}>Hinzufügen</Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Execute confirmation */}
+        <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title="Degradierung ausführen">
+          <p className="text-[13px] text-[#888] mb-5">
+            Die Degradierung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
+            <Button variant="danger" size="sm" onClick={handleExecuteEntry}>Durchführen</Button>
+          </div>
+        </Modal>
+      </div>
   )
 }
