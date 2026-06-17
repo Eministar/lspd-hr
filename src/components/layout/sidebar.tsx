@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, Archive, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
-  ClipboardList, Megaphone, FileText, Search,
+  ClipboardList, Megaphone, FileText, Search, BookOpen, Heart, Sparkles, ArrowDownToLine,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -28,7 +28,7 @@ interface NavItem {
 interface NavContentProps {
   pathname: string
   onNavigate: () => void
-  user: { displayName: string; avatarUrl?: string | null; permissions?: string[] | null } | null
+  user: { displayName: string; avatarUrl?: string | null; permissions?: string[] | null; groups?: { id: string; name: string }[] } | null
   logout: () => Promise<void>
 }
 
@@ -61,10 +61,16 @@ const adminNav: NavItem[] = [
   { name: 'Units', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
+  { name: 'API-Tokens', href: '/admin/api-tokens', icon: KeyRound, permission: 'groups:manage' },
   { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
+  { name: 'System-Update', href: '/admin/update', icon: ArrowDownToLine, permission: 'users:manage' },
   { name: 'Update senden', href: '/admin/update-announcer', icon: Megaphone, permission: 'updates:send' },
   { name: 'Uploads', href: '/admin/uploads', icon: Upload, permission: 'settings:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
+]
+
+const developerNav: NavItem[] = [
+  { name: 'API-Dokumentation', href: '/docs', icon: BookOpen },
 ]
 
 const accountNav: NavItem[] = [
@@ -88,6 +94,20 @@ function isActivePath(pathname: string, href: string) {
   return pathname.startsWith(href)
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-3 mb-1.5 mt-1 text-[9.5px] font-bold text-[#4a6585] uppercase tracking-[0.16em] flex items-center gap-1.5">
+      <span className="h-px flex-1 bg-gradient-to-r from-[#18385f]/60 to-transparent" />
+      <span>{children}</span>
+      <span className="h-px flex-1 bg-gradient-to-l from-[#18385f]/60 to-transparent" />
+    </p>
+  )
+}
+
+function SectionDivider() {
+  return <div className="my-3 mx-3 h-px bg-gradient-to-r from-transparent via-[#d4af37]/10 to-transparent" />
+}
+
 function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate: () => void }) {
   const active = isActivePath(pathname, item.href)
   const Icon = item.icon
@@ -97,22 +117,31 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        'group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-all duration-150',
+        'group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-all duration-200 overflow-hidden',
         active
           ? 'bg-gradient-to-r from-[#d4af37] to-[#c9a52f] text-[#071b33] font-semibold shadow-[0_2px_8px_rgba(212,175,55,0.25)]'
-          : 'text-[#8ea4bd] hover:bg-[#0d2444] hover:text-[#d4d4d4]'
+          : 'text-[#8ea4bd] hover:bg-[#0d2444] hover:text-[#edf4fb] hover:translate-x-0.5'
       )}
     >
-      {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] rounded-r-full bg-[#f0d060]" />
+      {!active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-0 rounded-r-full bg-[#d4af37] transition-all duration-300 group-hover:h-[14px]" />
       )}
-      <Icon size={18} strokeWidth={active ? 2 : 1.75} />
-      {item.name}
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] rounded-r-full bg-[#f0d060] shadow-[0_0_8px_rgba(240,208,96,0.6)]" />
+      )}
+      <Icon size={18} strokeWidth={active ? 2.25 : 1.75} className={cn('shrink-0 transition-transform duration-200', !active && 'group-hover:scale-110')} />
+      <span className="truncate">{item.name}</span>
+      {active && (
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#071b33]/40" />
+      )}
     </Link>
   )
 }
 
 function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
+  // API-Dokumentation ist für alle authentifizierten User sichtbar — daher
+  // zeigen wir den Admin-Block immer, sobald irgendein Admin-Bereich freigeschaltet
+  // ist. Die einzelnen Items werden unten weiter gefiltert.
   const showAdmin = hasAnyPermission(user, [
     'ranks:manage',
     'trainings:manage',
@@ -126,29 +155,32 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-5 pb-5">
+      <div className="px-4 pt-5 pb-4">
         <div className="flex items-center gap-3">
-          <div className="h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
-            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full" priority />
+          <div className="relative h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_70%)]" />
+            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full relative" priority />
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="block text-[15px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD</span>
-            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.1em] uppercase mt-0.5">Department</span>
+            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.14em] uppercase mt-0.5">Department</span>
           </div>
         </div>
-        <div className="gold-line mt-4" />
+        <div className="relative mt-4 h-px bg-gradient-to-r from-transparent via-[#d4af37]/25 to-transparent">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] shadow-[0_0_6px_rgba(212,175,55,0.6)]" />
+        </div>
       </div>
 
       <nav className="flex-1 px-2.5 space-y-[2px] overflow-y-auto">
-        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Navigation</p>
+        <SectionLabel>Navigation</SectionLabel>
         {mainNav
           .filter((item) => !item.permission || hasPermission(user, item.permission))
           .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
         {hasAnyPermission(user, ['academy:view', 'hr:view', 'sru:view', 'detective:view']) && (
           <>
-            <div className="gold-line my-3 mx-2" />
-            <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Aufgaben</p>
+            <SectionDivider />
+            <SectionLabel>Aufgaben</SectionLabel>
             {tasksNav
               .filter((item) => !item.permission || hasPermission(user, item.permission))
               .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
@@ -157,43 +189,67 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
 
         {showAdmin && (
           <>
-            <div className="gold-line my-3 mx-2" />
-            <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Administration</p>
+            <SectionDivider />
+            <SectionLabel>Administration</SectionLabel>
             {adminNav
               .filter((item) => !item.permission || hasPermission(user, item.permission))
               .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
 
-        <div className="gold-line my-3 mx-2" />
-        <p className="px-3 mb-1.5 text-[10px] font-semibold text-[#4a6585] uppercase tracking-[0.1em]">Konto</p>
+        <SectionDivider />
+        <SectionLabel>Entwickler</SectionLabel>
+        {developerNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+
+        <SectionDivider />
+        <SectionLabel>Konto</SectionLabel>
         {accountNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
       </nav>
 
-      <div className="px-3 py-1.5 shrink-0">
-        <div className="gold-line mb-1.5 opacity-50" />
-        <div className="flex items-center justify-between gap-2 text-[9px] leading-none text-[#536b86]">
-          <span className="font-semibold text-[#9f8b42]" title="Version">{APP_VERSION_LABEL}</span>
-          <span className="font-mono text-[#4f6680]" title="Build">{releaseBuildShort()}</span>
+      {/* Credits Footer — Coded by Eministar */}
+      <div className="px-3 pt-2 pb-1.5 shrink-0">
+        <div className="relative overflow-hidden rounded-[10px] bg-gradient-to-br from-[#0a1e38]/80 via-[#0a1e38]/60 to-[#0a1e38]/80 border border-[#d4af37]/15 px-3 py-2.5 group">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.08),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <a
-            href={GITHUB_REPO_URL}
+            href="https://eministar.dev"
             target="_blank"
             rel="noopener noreferrer"
             onClick={onNavigate}
-            title="Repository"
-            className="inline-flex items-center gap-1 text-[#5f7691] transition-colors hover:text-[#d4af37]"
+            className="relative flex items-center gap-2 cursor-pointer"
+            title="eministar.dev öffnen"
           >
-            <GitHubLogo className="h-2.5 w-2.5 shrink-0" />
-            GitHub
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#d4af37] to-[#b89930] text-[#071b33] shadow-[0_1px_3px_rgba(212,175,55,0.3)] group-hover:scale-110 transition-transform duration-300">
+              <Heart size={11} strokeWidth={2.5} fill="#071b33" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[#7c93af] font-semibold leading-none mb-1">Coded with</p>
+              <p className="text-[12.5px] font-semibold text-white leading-none truncate">
+                by <span className="bg-gradient-to-r from-[#d4af37] via-[#f0d060] to-[#d4af37] bg-clip-text text-transparent group-hover:from-[#f0d060] group-hover:via-[#d4af37] group-hover:to-[#f0d060] transition-all">Eministar</span>
+              </p>
+            </div>
+            <Sparkles size={11} className="text-[#d4af37]/50 group-hover:text-[#d4af37] group-hover:rotate-12 transition-all duration-300" />
           </a>
-          <span className="text-[#4a6585]">Eministar</span>
+          <div className="relative mt-2 pt-2 border-t border-[#d4af37]/10 flex items-center justify-between text-[9px] leading-none">
+            <span className="font-semibold text-[#9f8b42]" title="Version">{APP_VERSION_LABEL}</span>
+            <span className="font-mono text-[#4f6680]" title="Build">{releaseBuildShort()}</span>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onNavigate}
+              title="Repository"
+              className="inline-flex items-center gap-1 text-[#5f7691] transition-colors hover:text-[#d4af37]"
+            >
+              <GitHubLogo className="h-2.5 w-2.5 shrink-0" />
+              <span>GitHub</span>
+            </a>
+          </div>
         </div>
       </div>
 
       <div className="px-2.5 pb-2.5 shrink-0">
-        <div className="gold-line mb-2 mx-2" />
         {user && (
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0a1e38]/50 border border-white/[0.04]">
+          <div className="group/user relative flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0a1e38]/50 border border-white/[0.04] hover:border-[#d4af37]/20 transition-colors">
             {user.avatarUrl ? (
               <span
                 className="h-7 w-7 shrink-0 rounded-full bg-cover bg-center shadow-[0_1px_3px_rgba(212,175,55,0.25)] ring-1 ring-[#d4af37]/25"
@@ -207,11 +263,14 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
             )}
             <div className="flex-1 min-w-0">
               <p className="text-[11.5px] font-medium text-white/90 truncate leading-tight">{user.displayName}</p>
+              <p className="text-[9.5px] text-[#4a6585] truncate leading-tight mt-0.5">
+                {user.groups?.[0]?.name ?? 'Mitglied'}
+              </p>
             </div>
             <button
               type="button"
               onClick={logout}
-              className="p-1 rounded-md text-[#6b8299] hover:text-[#d4af37] transition-colors -mr-0.5"
+              className="p-1.5 rounded-md text-[#6b8299] hover:text-[#d4af37] hover:bg-[#0d2444] transition-all -mr-0.5"
               title="Abmelden"
             >
               <LogOut size={13} strokeWidth={1.75} />

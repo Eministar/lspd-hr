@@ -86,6 +86,81 @@
 | 🎨 | **UI** | Dark-Mode, Glaspanele, **Gold-Akzente** · responsive |
 | 🔐 | **Auth** | JWT und frei konfigurierbare Benutzergruppen |
 | 🌐 | **Öffentliche Ansicht** | `/public/officers` zeigt Officers ohne Anmeldung im Lesemodus |
+| 🔌 | **Public API** | Jede Funktion per HTTP · OpenAPI 3.1 · Bearer-Tokens · Try-it-out unter `/docs` |
+
+---
+
+## 🔌 · Public API · alles per HTTP
+
+> **Jede Dashboard-Funktion** ist auch über die HTTP-API verfügbar. So kannst du Discord-Bots, FiveM-Skripte, CI-Pipelines, Mobile Apps etc. anbinden, ohne das Dashboard zu bemühen.
+
+### Endpoints (Auszug)
+
+| Methode | Pfad | Beschreibung |
+| :-- | :-- | --- |
+| `GET` / `POST` | `/api/officers` | Officers listen / anlegen (auto-Dienstnummer) |
+| `PATCH` | `/api/officers/{id}` | Officer bearbeiten |
+| `POST` | `/api/officers/{id}/move` | Officer in Unit verschieben |
+| `POST` | `/api/sanctions` | Sanktion ausstellen |
+| `GET` / `POST` | `/api/rank-change-lists` | Beförderungs-/Degradierungs-Listen |
+| `POST` | `/api/rank-change-lists/{id}/execute` | Liste ausführen |
+| `POST` | `/api/terminations` | Officer kündigen |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/api/calendar-events` | Kalender |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/api/notes` | Notizen |
+| `GET` / `POST` | `/api/task-lists`, `/api/tasks` | Aufgaben (Academy / HR / SRU / Detective) |
+| `GET` / `POST` | `/api/sru/folders`, `/api/sru/documents` | S.R.U.-Dokumente |
+| `GET` / `POST` / `PATCH` | `/api/patrol-boards` | Streifenboard |
+| `GET` | `/api/audit-logs` | Vollständiges Aktivitätsprotokoll |
+| `GET` / `POST` | `/api/api-tokens`, `DELETE /api/api-tokens/{id}` | Token-Management |
+| `GET` | `/api/health` | Health-Check (kein Auth nötig) |
+| `GET` | `/api/public/officers` | Public Officer-Liste (kein Auth nötig) |
+
+Vollständige Liste inkl. Parametern, Body-Schemas und Try-it-out: **`/docs`** im Dashboard.
+
+### Authentifizierung
+
+```bash
+curl https://deine-domain/api/officers \
+  -H "Authorization: Bearer lspd_DEIN_TOKEN"
+```
+
+**Token erstellen**
+
+1. Dashboard → **Admin → API-Tokens → „Neuer Token"**
+2. Scope wählen (leer = alle deinen Rechte) — der Token erbt **niemals** mehr Rechte als du selbst hast
+3. Optional Ablaufdatum (`30 Tage / 90 Tage / 1 Jahr / Nie`)
+4. Klartext-Token wird **einmalig** angezeigt — sicher speichern (z. B. in einem Secrets-Manager)
+
+### Features
+
+- **Bearer-Token** mit Prefix `lspd_` — SHA-256-Hash wird gespeichert, Klartext nie.
+- **Scopes**: pro Token frei wählbar (z. B. nur `officers:view` für ein Read-Only-Skript).
+- **Ablaufdatum** optional (oder unbegrenzt).
+- **Usage-Tracking**: `lastUsedAt`, `usageCount`, detaillierte `ApiTokenUsage`-Logs (Methode, Pfad, Status, Dauer, IP).
+- **Revoke**: ein Klick im Dashboard — der Token ist sofort ungültig.
+- **OpenAPI 3.1 Spec**: unter `/api/v1/openapi.json` — direkt in Postman / Insomnia / Swagger UI importierbar.
+- **CORS**: Proxy reflektiert Origins (per Default permissiv, via `LSPD_API_CORS_ALLOWED_ORIGINS` einschränkbar).
+- **Audit-Log**: jede Token-Erstellung / Revoke landet im zentralen Protokoll.
+
+### Beispiele
+
+```bash
+# Neuen Officer anlegen
+curl -X POST https://deine-domain/api/officers \
+  -H "Authorization: Bearer lspd_…" \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Max","lastName":"Muster","rankId":"ckxyz…"}'
+
+# Sanktion ausstellen
+curl -X POST https://deine-domain/api/sanctions \
+  -H "Authorization: Bearer lspd_…" \
+  -H "Content-Type: application/json" \
+  -d '{"officerId":"ckabc…","reason":"Dienstvergehen","penalGrade":"C","deadlineDays":14}'
+
+# Beförderungs-Liste ausführen
+curl -X POST https://deine-domain/api/rank-change-lists/{id}/execute \
+  -H "Authorization: Bearer lspd_…"
+```
 
 ---
 
@@ -105,7 +180,7 @@
 | **🎨 Styling** | Tailwind CSS 4 |
 | **🗄️ Datenbank** | **MySQL / MariaDB** |
 | **🧩 ORM** | Prisma 7 |
-| **🔒 Auth** | JWT · httpOnly-Cookie |
+| **🔒 Auth** | JWT · httpOnly-Cookie · **API-Token (Bearer)** |
 | **🧱 UI-Toolkit** | Radix UI, Framer Motion, Lucide |
 
 ---
@@ -162,12 +237,43 @@ Dann: **http://localhost:3000** — Login nach Seed: `admin` / `admin123`
 
 ---
 
+## 🚢 · Deployment-Optionen
+
+Mehrere vorkonfigurierte Deployment-Pfade stehen zur Verfügung:
+
+| Ziel | Datei | Anweisung |
+| :-- | :-- | :-- |
+| **Plesk / IIS** | `PLESK.md`, `web.config`, `start.js` | Siehe `PLESK.md` — Klassischer Windows-Server mit NodeJS-Plugin |
+| **Docker (standalone)** | `Dockerfile`, `.dockerignore` | `docker build -t lspd-hr . && docker run -p 3000:3000 lspd-hr` |
+| **Docker Compose** | `docker-compose.yml` | `docker compose up -d` (inkl. MariaDB) |
+| **Nixpacks** (Railway, Render, Coolify, Fly.io) | `nixpacks.toml` | Auto-detected, kein zusätzlicher Config nötig |
+| **Heroku / Dokku / Scalingo** | `Procfile` | Standard-Node-Buildpack |
+| **PM2 / systemd** | `start.js` + `npm run start` | Siehe `PLESK.md` für PM2-Konfiguration |
+
+### System-Update aus dem Dashboard
+
+Administratoren mit `users:manage` können One-Click-Updates aus dem Dashboard heraus ausführen:
+**Admin → System-Update → „Update starten"**.
+
+Der Workflow:
+1. `git pull --ff-only`
+2. `npm install --omit=dev`
+3. `npx prisma generate` + `npx prisma db push`
+4. `npm run build`
+5. Automatischer Neustart (PM2 / Docker / manuell)
+
+Während des Updates wird die Seite kurz nicht erreichbar (~30–120 Sekunden). Der Browser lädt automatisch neu, sobald `/api/health` wieder `200` zurückgibt. Live-Logs werden in Echtzeit per Server-Sent-Events gestreamt.
+
+> ⚠️ **Hinweis:** Funktioniert nur, wenn das Projekt via Git ausgecheckt ist und der Node-Prozess Schreibrechte im Projektverzeichnis hat. Auf stark restriktiven Shared-Hostern ggf. nicht verfügbar — in dem Fall manuell deployen.
+
+---
+
 ## 💜 · Credits
 
 | | |
 | :--: | :--: |
-| **Handcrafted with** | **&lt;3** |
-| **by** | **[Eministar](https://github.com/Eministar)** |
+| **Coded with** | **&lt;3** |
+| **by** | **[Eministar](https://eministar.dev)** · [GitHub](https://github.com/Eministar) |
 
 > *Für LSPD- & FiveM-Roleplay-Setups, die Wert auf klare Struktur legen.*
 

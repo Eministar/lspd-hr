@@ -124,6 +124,8 @@ model User {
   probationsCreated  Probation[]     @relation("ProbationCreator")
   probationsDecided  Probation[]     @relation("ProbationDecider")
   patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
+  apiTokensOwned      ApiToken[]     @relation("ApiTokenOwner")
+  apiTokensCreated    ApiToken[]     @relation("ApiTokenCreator")
 }
 
 model UserGroupMembership {
@@ -604,4 +606,63 @@ model BadgeBlacklist {
   reason      String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ApiToken {
+  id          String    @id @default(cuid())
+  name        String
+  /// Erste Zeichen des Tokens (z. B. "lspd_p4A8xKz…") — wird in Listen angezeigt,
+  /// damit User Tokens unterscheiden können, ohne das Geheimnis preiszugeben.
+  prefix      String
+  /// SHA-256-Hash des Klartext-Tokens. Der Klartext wird NIE persistiert und nur
+  /// einmalig beim Anlegen zurückgegeben — vergleichbar zu GitHub PATs.
+  tokenHash   String    @unique
+  /// Inhaber des Tokens (Subject — dessen Rechte gelten).
+  userId      String
+  user        User      @relation("ApiTokenOwner", fields: [userId], references: [id], onDelete: Cascade)
+  /// Optional: Admin, der den Token erstellt hat. Leer = self-service.
+  createdById String?
+  createdBy   User?     @relation("ApiTokenCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Whitelist von Permissions. Leer = alle Rechte des Inhabers.
+  scopes      Json      @default("[]")
+  /// Optional: nur innerhalb dieses Zeitraums gültig. null = unbegrenzt.
+  expiresAt   DateTime?
+  /// Letzter erfolgreicher Auth-Lookup. Wird throttled aktualisiert.
+  lastUsedAt  DateTime?
+  /// Anzahl erfolgreicher Auth-Lookups (für "letzte Aktivität"-Listen).
+  usageCount  Int       @default(0)
+  /// Soft-Revoke: Token bleibt in der DB sichtbar, ist aber nicht mehr gültig.
+  revokedAt   DateTime?
+  revokedReason String? @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  usages      ApiTokenUsage[]
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([revokedAt])
+  @@index([createdById])
+}
+
+model ApiTokenUsage {
+  id         String   @id @default(cuid())
+  tokenId    String
+  token      ApiToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  /// HTTP-Methode (GET, POST, …)
+  method     String
+  /// Aufgerufener Pfad (z. B. "/api/officers")
+  path       String
+  /// Antwort-Statuscode
+  statusCode Int
+  /// Antwortdauer in Millisekunden
+  durationMs Int
+  /// Eingeschränkter User-Agent (erste 200 Zeichen)
+  userAgent  String?  @db.VarChar(200)
+  /// IP-Adresse (aus x-forwarded-for oder remote addr)
+  ip         String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+
+  @@index([tokenId, createdAt])
+  @@index([createdAt])
 }

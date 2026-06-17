@@ -187,3 +187,21 @@ export function hasAnyPermission(
 ) {
   return permissions.some((permission) => hasPermission(user, permission))
 }
+
+/**
+ * Liefert die Schnittmenge zweier Permission-Listen.
+ *
+ * Wird für die Discord-ID-Impersonation genutzt: Wenn ein API-Token mit
+ * zusätzlichem `X-Discord-Id` Header aufgerufen wird, sind die effektiven
+ * Rechte = (Token-Scopes) ∩ (User-Permissions). So kann der Token nie
+ * Rechte ausüben, die der Inhaber (oder der impersonierte User) nicht hat.
+ */
+export function intersectPermissions(
+  a: readonly Permission[],
+  b: readonly Permission[],
+): Permission[] {
+  if (a.length === 0) return [...b]
+  if (b.length === 0) return [...a]
+  const setB = new Set<Permission>(b)
+  return a.filter((p) => setB.has(p))
+}
