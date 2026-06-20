@@ -15,28 +15,30 @@ type WebhookEvent = {
   error?: unknown
 }
 
-const COLORS: Record<WebhookSeverity, number> = {
-  info: 0x3b82f6,
-  success: 0x22c55e,
-  warning: 0xf59e0b,
-  error: 0xef4444,
+import {
+  componentMessage,
+  markdownHeader,
+  markdownMeta,
+  markdownQuote,
+  markdownRows,
+  separator,
+  textDisplay,
+} from './discord-components'
+
+const SEVERITY_META: Record<WebhookSeverity, { icon: string; label: string }> = {
+  info: { icon: 'ℹ️', label: 'Information' },
+  success: { icon: '✅', label: 'Erfolg' },
+  warning: { icon: '⚠️', label: 'Warnung' },
+  error: { icon: '❌', label: 'Fehler' },
 }
 
-const SEVERITY_LABEL: Record<WebhookSeverity, string> = {
-  info: 'Information',
-  success: 'Erfolg',
-  warning: 'Warnung',
-  error: 'Fehler',
-}
-
-const MAX_FIELD_VALUE = 1024
-const MAX_DESCRIPTION = 4096
+const MAX_TEXT_DISPLAY = 4000
 
 function webhookUrl() {
   return process.env.DISCORD_WEBHOOK_URL?.trim() || process.env.LSPD_DISCORD_WEBHOOK_URL?.trim() || ''
 }
 
-function truncate(value: string, max = MAX_FIELD_VALUE) {
+function truncate(value: string, max = MAX_TEXT_DISPLAY) {
   if (value.length <= max) return value
   return `${value.slice(0, max - 1)}…`
 }
@@ -54,35 +56,30 @@ function stringifyError(error: unknown) {
   }
 }
 
-function cleanField(field: WebhookField): WebhookField {
-  return {
-    name: truncate(field.name, 250),
-    value: truncate(field.value || '—'),
-    inline: field.inline,
-  }
-}
-
 export async function sendDiscordWebhookEvent(event: WebhookEvent) {
   const url = webhookUrl()
   if (!url) return
 
   const severity = event.severity ?? 'info'
+  const severityMeta = SEVERITY_META[severity]
   const now = new Date()
   const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })
 
-  const descParts: string[] = []
-  if (event.description) {
-    descParts.push(event.description.split('\n').map(l => `> ${l}`).join('\n'))
-  }
-  descParts.push(`- **Quelle:** \`${event.source ?? 'server'}\`  ·  **Umgebung:** \`${process.env.NODE_ENV || 'unknown'}\``)
-  const description = truncate(descParts.join('\n\n'), MAX_DESCRIPTION)
-
-  const fields: WebhookField[] = (event.fields ?? []).map(cleanField)
-
   const errorText = stringifyError(event.error)
-  if (errorText) {
-    fields.push({ name: 'Fehlerdetails', value: `\`\`\`\n${truncate(errorText, MAX_FIELD_VALUE - 8)}\n\`\`\``, inline: false })
-  }
+  const body = [
+    markdownHeader(severityMeta.icon, event.title),
+    event.description ? markdownQuote(event.description) : '',
+    event.fields?.length
+      ? markdownRows(event.fields.map((field) => ({ label: field.name, value: field.value })))
+      : '',
+    errorText ? `### Fehlerdetails\n\`\`\`\n${truncate(errorText, 3500)}\n\`\`\`` : '',
+    markdownMeta([
+      severityMeta.label,
+      `Quelle: \`${event.source ?? 'server'}\``,
+      `Umgebung: \`${process.env.NODE_ENV || 'unknown'}\``,
+      `${timeStr} Uhr`,
+    ]),
+  ].filter(Boolean)
 
   try {
     const res = await fetch(url, {
@@ -90,17 +87,9 @@ export async function sendDiscordWebhookEvent(event: WebhookEvent) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         username: 'LSPD Department Monitor',
-        embeds: [
-          {
-            author: { name: SEVERITY_LABEL[severity] },
-            title: truncate(event.title, 250),
-            description,
-            color: COLORS[severity],
-            fields: fields.slice(0, 25).map(cleanField),
-            timestamp: now.toISOString(),
-            footer: { text: `LSPD Department Dashboard · System-Monitor · ${timeStr} Uhr` },
-          },
-        ],
+        ...componentMessage(
+          body.flatMap((content, index) => index === 0 ? [textDisplay(content)] : [separator(), textDisplay(content)]),
+        ),
       }),
       signal: AbortSignal.timeout(5000),
     })

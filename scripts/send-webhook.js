@@ -6,11 +6,11 @@ const webhookUrl =
   String(process.env.DISCORD_WEBHOOK_URL || '').trim() ||
   String(process.env.LSPD_DISCORD_WEBHOOK_URL || '').trim()
 
-const colors = {
-  info: 0x3b82f6,
-  success: 0x22c55e,
-  warning: 0xf59e0b,
-  error: 0xef4444,
+const severityMeta = {
+  info: { icon: 'ℹ️', label: 'Information' },
+  success: { icon: '✅', label: 'Erfolg' },
+  warning: { icon: '⚠️', label: 'Warnung' },
+  error: { icon: '❌', label: 'Fehler' },
 }
 
 function truncate(value, max) {
@@ -34,27 +34,31 @@ async function main() {
 
   const [, , severity = 'info', title = 'LSPD HR Event', description = '', logPath = ''] = process.argv
   const logTail = readLogTail(logPath)
-  const fields = [
-    { name: 'Quelle', value: 'live-update.bat', inline: true },
-    { name: 'Host', value: process.env.COMPUTERNAME || 'unknown', inline: true },
-  ]
-
-  if (logPath) fields.push({ name: 'Logdatei', value: truncate(logPath, 900) })
-  if (logTail) fields.push({ name: 'Log-Auszug', value: `\`\`\`\n${logTail}\n\`\`\`` })
+  const meta = severityMeta[severity] || severityMeta.info
+  const rows = [
+    `- **Quelle:** \`live-update.bat\``,
+    `- **Host:** \`${process.env.COMPUTERNAME || 'unknown'}\``,
+    logPath ? `- **Logdatei:** \`${truncate(logPath, 900)}\`` : '',
+  ].filter(Boolean).join('\n')
+  const content = [
+    `# \`${meta.icon}\` ${truncate(title, 250)}`,
+    description ? description.split('\n').map((line) => `> ${line}`).join('\n') : '',
+    rows,
+    logTail ? `### Log-Auszug\n\`\`\`\n${logTail}\n\`\`\`` : '',
+    `-# ${meta.label} · LSPD HR Dashboard`,
+  ].filter(Boolean).join('\n\n')
 
   await fetch(webhookUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       username: 'LSPD HR Monitor',
-      embeds: [
+      flags: 32768,
+      allowed_mentions: { parse: [] },
+      components: [
         {
-          title: truncate(title, 250),
-          description: truncate(description, 1800),
-          color: colors[severity] || colors.info,
-          fields,
-          timestamp: new Date().toISOString(),
-          footer: { text: 'LSPD HR Dashboard' },
+          type: 17,
+          components: [{ type: 10, content: truncate(content, 3900) }],
         },
       ],
     }),

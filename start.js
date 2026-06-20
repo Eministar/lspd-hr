@@ -36,11 +36,11 @@ const discordSettingKeys = {
   unitRoleMap: 'discord.unitRoleMap',
 }
 
-const webhookColors = {
-  info: 0x3b82f6,
-  success: 0x22c55e,
-  warning: 0xf59e0b,
-  error: 0xef4444,
+const webhookSeverity = {
+  info: { icon: 'ℹ️', label: 'Information' },
+  success: { icon: '✅', label: 'Erfolg' },
+  warning: { icon: '⚠️', label: 'Warnung' },
+  error: { icon: '❌', label: 'Fehler' },
 }
 
 function truncate(value, max) {
@@ -65,13 +65,20 @@ function formatError(error) {
 async function sendWebhookEvent(event) {
   if (!webhookUrl || typeof fetch !== 'function') return
 
-  const fields = [
+  const severity = webhookSeverity[event.severity || 'info'] || webhookSeverity.info
+  const rows = [
     ...(event.fields || []),
-    { name: 'PID', value: String(process.pid), inline: true },
-    { name: 'Node', value: process.version, inline: true },
-  ]
+    { name: 'PID', value: `\`${process.pid}\`` },
+    { name: 'Node', value: `\`${process.version}\`` },
+  ].map((field) => `- **${field.name}:** ${truncate(field.value || '-', 900)}`)
   const errorText = formatError(event.error)
-  if (errorText) fields.push({ name: 'Fehler', value: errorText })
+  const content = [
+    `# \`${severity.icon}\` ${truncate(event.title, 250)}`,
+    event.description ? event.description.split('\n').map((line) => `> ${line}`).join('\n') : '',
+    rows.join('\n'),
+    errorText ? `### Fehlerdetails\n\`\`\`\n${truncate(errorText, 3000)}\n\`\`\`` : '',
+    `-# ${severity.label} · LSPD HR Dashboard`,
+  ].filter(Boolean).join('\n\n')
 
   try {
     await fetch(webhookUrl, {
@@ -79,18 +86,12 @@ async function sendWebhookEvent(event) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         username: 'LSPD HR Monitor',
-        embeds: [
+        flags: 32768,
+        allowed_mentions: { parse: [] },
+        components: [
           {
-            title: truncate(event.title, 250),
-            description: event.description ? truncate(event.description, 1800) : undefined,
-            color: webhookColors[event.severity || 'info'] || webhookColors.info,
-            fields: fields.slice(0, 25).map((field) => ({
-              name: truncate(field.name, 250),
-              value: truncate(field.value || '-', 900),
-              inline: field.inline,
-            })),
-            timestamp: new Date().toISOString(),
-            footer: { text: 'LSPD HR Dashboard' },
+            type: 17,
+            components: [{ type: 10, content: truncate(content, 3900) }],
           },
         ],
       }),

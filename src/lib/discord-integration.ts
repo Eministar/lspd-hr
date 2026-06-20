@@ -2,8 +2,17 @@
 import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
-import { getBadgePrefix, getOrgName } from './settings-helpers'
+import { getBadgePrefix } from './settings-helpers'
 import { queueDiscordWebhookEvent } from './discord-webhook'
+import {
+  actionRow,
+  componentMessage,
+  markdownHeader,
+  markdownMeta,
+  markdownQuote,
+  markdownRows,
+  markdownTextDisplays,
+} from './discord-components'
 
 type DiscordRole = {
   id: string
@@ -160,16 +169,14 @@ export const DISCORD_SETTING_KEYS = {
 } as const
 
 const EVENT_META = {
-  hire:        { color: 0x22c55e, accent: '🟢', label: 'Neueinstellung',           section: 'Personalmeldung' },
-  promotion:   { color: 0xd4af37, accent: '🟡', label: 'Rangänderung',              section: 'Personalmeldung' },
-  training:    { color: 0x3b82f6, accent: '🔵', label: 'Ausbildung aktualisiert',   section: 'Personalmeldung' },
-  units:       { color: 0x06b6d4, accent: '🔷', label: 'Unit-Zuordnung geändert',   section: 'Personalmeldung' },
-  sanction:    { color: 0xf97316, accent: '🟠', label: 'Sanktion ausgestellt',      section: 'Sanktion' },
-  termination: { color: 0xef4444, accent: '🔴', label: 'Dienstverhältnis beendet',  section: 'Personalmeldung' },
-  update:      { color: 0x8b5cf6, accent: '🟣', label: 'Personalakte aktualisiert', section: 'Personalmeldung' },
+  hire:        { icon: '✅', label: 'Neueinstellung' },
+  promotion:   { icon: '🔼', label: 'Rangänderung' },
+  training:    { icon: '🎓', label: 'Ausbildung aktualisiert' },
+  units:       { icon: '🛡️', label: 'Unit-Zuordnung geändert' },
+  sanction:    { icon: '⚠️', label: 'Sanktion ausgestellt' },
+  termination: { icon: '❌', label: 'Dienstverhältnis beendet' },
+  update:      { icon: '📝', label: 'Personalakte aktualisiert' },
 } as const
-
-const ZWSP = '​'
 
 let syncSchedulerStarted = false
 let absenceExpiryCheckerStarted = false
@@ -487,11 +494,6 @@ function unixSeconds(date: Date) {
 
 function discordTimestamp(date: Date, style: 'F' | 'f' | 'R' | 't' | 'D' = 'f') {
   return `<t:${unixSeconds(date)}:${style}>`
-}
-
-function hexColorToDiscord(color: string | null | undefined, fallback: number) {
-  if (!color || !/^#[0-9a-f]{6}$/i.test(color)) return fallback
-  return Number.parseInt(color.slice(1), 16)
 }
 
 async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
@@ -997,20 +999,6 @@ function bracketedServiceNumber(badgeNumber: string, prefix: string) {
   return `[${join}]`
 }
 
-async function postChannelEmbed(channelId: string, embed: Record<string, unknown>) {
-  return discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ embeds: [embed] }),
-  })
-}
-
-async function patchChannelEmbed(channelId: string, messageId: string, embed: Record<string, unknown>) {
-  await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ embeds: [embed] }),
-  })
-}
-
 async function postChannelMessage(channelId: string, payload: Record<string, unknown>) {
   return discordFetch<{ id: string }>(`/channels/${channelId}/messages`, {
     method: 'POST',
@@ -1024,17 +1012,13 @@ function cleanUpdateLines(lines: string[] | undefined) {
     .filter(Boolean)
 }
 
-function updateDiffField(name: string, prefix: '+' | '!' | '-', lines: string[]): DiscordField | null {
+function updateDiffBlock(name: string, prefix: '+' | '!' | '-', lines: string[]): string | null {
   const cleaned = cleanUpdateLines(lines)
   if (cleaned.length === 0) return null
   const value = cleaned.map((line) => `${prefix} ${line}`).join('\n')
-  const maxContentLength = 1024 - '```diff\n\n```'.length
+  const maxContentLength = 3000 - '```diff\n\n```'.length
   const content = truncate(value, maxContentLength)
-  return {
-    name,
-    value: `\`\`\`diff\n${content}\n\`\`\``,
-    inline: false,
-  }
+  return `### ${name}\n\`\`\`diff\n${content}\n\`\`\``
 }
 
 export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnouncementInput) {
@@ -1046,44 +1030,27 @@ export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnounce
   const title = input.title.trim()
   if (!title) throw new Error('Titel ist erforderlich')
 
-  const fields = [
-    updateDiffField('✨ Neu', '+', input.added ?? []),
-    updateDiffField('🔧 Geändert', '!', input.changed ?? []),
-    updateDiffField('🗑️ Entfernt', '-', input.removed ?? []),
-  ].filter((field): field is DiscordField => Boolean(field))
+  const blocks = [
+    updateDiffBlock('Neu', '+', input.added ?? []),
+    updateDiffBlock('Geändert', '!', input.changed ?? []),
+    updateDiffBlock('Entfernt', '-', input.removed ?? []),
+  ].filter((block): block is string => Boolean(block))
 
-  if (fields.length === 0) {
+  if (blocks.length === 0) {
     throw new Error('Mindestens ein Changelog-Eintrag ist erforderlich')
   }
 
-  const orgName = await getOrgName()
   const now = new Date()
   const version = input.version?.trim()
   const note = input.note?.trim()
   const actorLabel = input.actor ? discordUserLabel(input.actor) : 'System'
-  const description = [
-    version ? `> \`v${version.replace(/^v/i, '')}\`` : null,
-    note ? note.split('\n').map((line) => `> ${line}`).join('\n') : null,
-  ].filter(Boolean).join('\n')
 
-  return postChannelMessage(channelId, {
-    allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        author: { name: `${orgName} · Update` },
-        title: `📢 ${truncate(title, 240)}`,
-        description: description ? truncate(description, 2000) : undefined,
-        color: 0xd4af37,
-        fields: [
-          ...fields,
-          { name: 'Gesendet von', value: actorLabel, inline: true },
-          { name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true },
-        ].slice(0, 25).map(cleanEmbedField),
-        timestamp: now.toISOString(),
-        footer: { text: `${orgName} HR · Changelog` },
-      },
-    ],
-  })
+  return postChannelMessage(channelId, componentMessage(markdownTextDisplays([
+    markdownHeader('📢', truncate(title, 240), version ? `v${version.replace(/^v/i, '')}` : null),
+    note ? markdownQuote(note) : null,
+    ...blocks,
+    markdownMeta([`Gesendet von ${actorLabel}`, discordTimestamp(now, 'f')]),
+  ])))
 }
 
 async function runAbsenceExpiryTick() {
@@ -1135,14 +1102,6 @@ function hrEventChannelId(config: DiscordConfig, type: keyof typeof EVENT_META) 
   return config.announcementsChannelId
 }
 
-function cleanEmbedField(field: DiscordField): DiscordField {
-  return {
-    name: truncate(field.name || ZWSP, 256),
-    value: truncate(field.value || '—', 1024),
-    inline: field.inline,
-  }
-}
-
 function trainingRoleValue(config: DiscordConfig, change: DiscordTrainingChange) {
   const roleId = snowflake(config.trainingRoleMap[change.trainingId])
   return roleId ? `<@&${roleId}>` : change.label
@@ -1152,102 +1111,56 @@ function trainingStatusLabel(completed: boolean) {
   return completed ? '✅' : '❌'
 }
 
-function trainingChangeField(change: DiscordTrainingChange, config: DiscordConfig): DiscordField {
-  return {
-    name: ZWSP,
-    value: [
-      trainingRoleValue(config, change),
-      `${trainingStatusLabel(change.previousCompleted ?? false)} → ${trainingStatusLabel(change.completed)}`,
-    ].join('\n'),
-    inline: true,
-  }
+function trainingChangeLine(change: DiscordTrainingChange, config: DiscordConfig) {
+  return `- ${trainingRoleValue(config, change)}: \`${trainingStatusLabel(change.previousCompleted ?? false)} → ${trainingStatusLabel(change.completed)}\``
 }
 
-async function buildDiscordHrEventEmbed(event: DiscordHrEventInput, config: DiscordConfig) {
+async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: DiscordConfig) {
   const officer = event.officer
   const meta = EVENT_META[event.type]
   const now = new Date()
-  const [prefix, orgName] = await Promise.all([getBadgePrefix(), getOrgName()])
-  const color = officer?.rank?.color ? hexColorToDiscord(officer.rank.color, meta.color) : meta.color
+  const prefix = await getBadgePrefix()
   const actorLabel = event.actor ? discordUserLabel(event.actor) : 'System'
-  const footerText = `${orgName} HR · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr`
+  const officerDisplayName = officer ? officerName(officer) : ''
+  const customHeading = event.type === 'promotion' || event.type === 'update'
+    ? event.title.trim().replace(/:\s*/, ' · ')
+    : meta.label
+  const headingSubject = officerDisplayName && !customHeading.toLocaleLowerCase('de-DE').includes(officerDisplayName.toLocaleLowerCase('de-DE'))
+    ? officerDisplayName
+    : null
 
-  if (event.type === 'hire' && officer) {
-    const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
-    const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
-    const hireAt = officer.hireDate ?? now
-    const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
-    return {
-      author: { name: `${orgName} · Personalmeldung` },
-      title: `Neueinstellung · ${officerName(officer)}`,
-      description: `> Willkommen bei der ${orgName}, **${officerName(officer)}**!`,
-      color,
-      fields: [
-        { name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true },
-        { name: 'Dienstnummer', value: `\`${dn}\``, inline: true },
-        { name: 'Rang', value: rankValue, inline: true },
-        { name: 'Eintrittsdatum', value: discordTimestamp(hireAt, 'D'), inline: true },
-        { name: 'Bearbeitet von', value: actorLabel, inline: true },
-      ].map(cleanEmbedField),
-      timestamp: now.toISOString(),
-      footer: { text: footerText },
-    }
-  }
-
-  if (event.type === 'sanction') {
-    const fields: DiscordField[] = []
-    if (officer) {
-      const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
-      fields.push({ name: 'Officer', value: mention(officer.discordId), inline: true })
-      fields.push({ name: 'Dienstnummer', value: `\`${dn}\``, inline: true })
-    }
-    for (const f of event.fields ?? []) fields.push(f)
-    fields.push({ name: 'Ausgestellt von', value: actorLabel, inline: true })
-    return {
-      author: { name: `${orgName} · Sanktion` },
-      title: meta.label,
-      color,
-      fields: fields.slice(0, 25).map(cleanEmbedField),
-      timestamp: now.toISOString(),
-      footer: { text: footerText },
-    }
-  }
-
-  const titleName = officer ? ` · ${officerName(officer)}` : ''
-  const fields: DiscordField[] = []
+  const rows: Array<{ label: string; value: string }> = []
 
   if (officer) {
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
-    fields.push({ name: 'Officer', value: mention(officer.discordId) || `**${officerName(officer)}**`, inline: true })
-    fields.push({ name: 'Dienstnummer', value: `\`${dn}\``, inline: true })
-    fields.push({ name: 'Rang', value: rankValue, inline: true })
-  }
-
-  if (event.type === 'training' && event.trainingChanges?.length) {
-    for (const change of event.trainingChanges) {
-      fields.push(trainingChangeField(change, config))
+    rows.push({ label: 'Officer', value: mention(officer.discordId) })
+    rows.push({ label: 'Dienstnummer', value: `\`${dn}\`` })
+    rows.push({ label: 'Rang', value: rankValue })
+    if (event.type === 'hire') {
+      rows.push({ label: 'Eintrittsdatum', value: discordTimestamp(officer.hireDate ?? now, 'D') })
     }
-  } else {
-    for (const f of event.fields ?? []) fields.push(f)
   }
-  fields.push({ name: 'Bearbeitet von', value: actorLabel, inline: true })
-  fields.push({ name: 'Zeitpunkt', value: discordTimestamp(now, 'f'), inline: true })
 
-  const descriptionText = event.description
-    ? event.description.split('\n').map(l => `> ${l}`).join('\n')
-    : undefined
-
-  return {
-    author: { name: `${orgName} · ${meta.section}` },
-    title: `${meta.label}${titleName}`,
-    description: descriptionText ? truncate(descriptionText, 2000) : undefined,
-    color,
-    fields: fields.slice(0, 25).map(cleanEmbedField),
-    timestamp: now.toISOString(),
-    footer: { text: footerText },
+  for (const field of event.fields ?? []) {
+    rows.push({ label: field.name, value: field.value })
   }
+
+  const trainingBlock = event.type === 'training' && event.trainingChanges?.length
+    ? `### Ausbildungen\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
+    : null
+
+  return componentMessage(markdownTextDisplays([
+    markdownHeader(meta.icon, customHeading, headingSubject),
+    event.description ? markdownQuote(event.description) : null,
+    rows.length ? markdownRows(rows) : null,
+    trainingBlock,
+    markdownMeta([
+      `${event.type === 'sanction' ? 'Ausgestellt' : 'Bearbeitet'} von ${actorLabel}`,
+      discordTimestamp(now, 'f'),
+    ]),
+  ]))
 }
 
 export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<DiscordHrEventMessage | null> {
@@ -1255,8 +1168,8 @@ export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<Di
   const channelId = hrEventChannelId(config, event.type)
   if (!channelId || !botToken()) return null
 
-  const embed = await buildDiscordHrEventEmbed(event, config)
-  const message = await postChannelEmbed(channelId, embed)
+  const payload = await buildDiscordHrEventPayload(event, config)
+  const message = await postChannelMessage(channelId, payload)
   return { channelId, messageId: message.id }
 }
 
@@ -1267,8 +1180,11 @@ export async function editDiscordHrEventMessage(
 ) {
   if (!channelId || !messageId || !botToken()) return
   const config = await getDiscordConfig()
-  const embed = await buildDiscordHrEventEmbed(event, config)
-  await patchChannelEmbed(channelId, messageId, embed)
+  const payload = await buildDiscordHrEventPayload(event, config)
+  await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ ...payload, content: null, embeds: [] }),
+  })
 }
 
 function chunkLines(lines: string[], maxChars = 1024) {
@@ -1290,22 +1206,22 @@ function chunkLines(lines: string[], maxChars = 1024) {
 const DUTY_LIST_LIMIT = 25
 
 async function dutyStatusPayload() {
-  const [snapshot, prefix, orgName] = await Promise.all([
+  const [snapshot, prefix] = await Promise.all([
     getDutyTimesSnapshot(),
     getBadgePrefix(),
-    getOrgName(),
   ])
 
   const visible = snapshot.activeRows.slice(0, DUTY_LIST_LIMIT)
   const overflow = Math.max(0, snapshot.activeRows.length - visible.length)
 
-  const fields: DiscordField[] = [
-    { name: 'Im Dienst', value: `**${snapshot.activeCount}**`, inline: true },
-    { name: 'Spielzeit Woche', value: `**${formatDuration(snapshot.totalWeekDurationMs)}**`, inline: true },
-  ]
+  const summary = markdownRows([
+    { label: 'Im Dienst', value: `\`${snapshot.activeCount}\`` },
+    { label: 'Spielzeit diese Woche', value: `\`${formatDuration(snapshot.totalWeekDurationMs)}\`` },
+  ])
+  const listParts: string[] = []
 
   if (visible.length === 0) {
-    fields.push({ name: 'Aktive Police-Spieler', value: '*Niemand ist aktuell als Police online.*', inline: false })
+    listParts.push('> Niemand ist aktuell als Police online.')
   } else {
     const lines = visible.map((row, index) => {
       const num = String(index + 1).padStart(2, '0')
@@ -1320,24 +1236,17 @@ async function dutyStatusPayload() {
         `> \`${dn}\`  ·  ${mention(row.discordId)}  ·  seit ${since}`,
       ].join('\n')
     })
-    const chunks = chunkLines(lines, 1024)
-    chunks.forEach((value, i) => {
-      fields.push({ name: i === 0 ? 'Aktive Police-Spieler' : ZWSP, value, inline: false })
-    })
-    if (overflow > 0) fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
+    listParts.push(...chunkLines(lines, 3000))
+    if (overflow > 0) listParts.push(`-# … und ${overflow} weitere`)
   }
 
-  return {
-    embeds: [
-      {
-        author: { name: `${orgName} · Dienstzeiten` },
-        title: 'Dienstzeiten',
-        color: 0x3b82f6,
-        fields: fields.slice(0, 25).map(cleanEmbedField),
-      },
-    ],
-    components: [],
-  }
+  return componentMessage(markdownTextDisplays([
+    markdownHeader('🚓', 'Dienststatus'),
+    summary,
+    '### Aktive Police-Spieler',
+    ...listParts,
+    markdownMeta(['Automatisch aktualisiert']),
+  ]))
 }
 
 async function saveDutyStatusMessageId(messageId: string) {
@@ -1357,7 +1266,7 @@ export async function syncDiscordDutyStatusMessage(options?: { forceCreate?: boo
   if (config.dutyStatusMessageId && !options?.forceCreate) {
     await discordFetch<void>(`/channels/${channelId}/messages/${config.dutyStatusMessageId}`, {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, content: null, embeds: [] }),
     }).catch(async () => {
       const message = await postChannelMessage(channelId, payload)
       await saveDutyStatusMessageId(message.id)
@@ -1373,20 +1282,17 @@ const ABSENCE_LIST_LIMIT = 25
 
 async function absenceStatusPayload() {
   await runOfficerStatusAutomation({ force: true })
-  const [absences, prefix, orgName] = await Promise.all([
+  const [absences, prefix] = await Promise.all([
     getActiveAbsenceNotices(),
     getBadgePrefix(),
-    getOrgName(),
   ])
   const visible = absences.slice(0, ABSENCE_LIST_LIMIT)
   const overflow = Math.max(0, absences.length - visible.length)
 
-  const fields: DiscordField[] = [
-    { name: 'Aktiv', value: `**${absences.length}**`, inline: true },
-  ]
+  const listParts: string[] = []
 
   if (visible.length === 0) {
-    fields.push({ name: 'Abmeldungen', value: '*Aktuell ist niemand abgemeldet.*', inline: false })
+    listParts.push('> Aktuell ist niemand abgemeldet.')
   } else {
     const lines = visible.map((notice, index) => {
       const num = String(index + 1).padStart(2, '0')
@@ -1399,32 +1305,24 @@ async function absenceStatusPayload() {
         `> *${reason}*`,
       ].join('\n')
     })
-    chunkLines(lines, 1024).forEach((value, index) => {
-      fields.push({ name: index === 0 ? 'Abmeldungen' : ZWSP, value, inline: false })
-    })
-    if (overflow > 0) fields.push({ name: ZWSP, value: `*… und ${overflow} weitere*`, inline: false })
+    listParts.push(...chunkLines(lines, 3000))
+    if (overflow > 0) listParts.push(`-# … und ${overflow} weitere`)
   }
 
-  return {
-    embeds: [
-      {
-        author: { name: `${orgName} · Abmeldungen` },
-        title: 'Abmeldungen',
-        color: 0x38bdf8,
-        fields: fields.slice(0, 25).map(cleanEmbedField),
-      },
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
+  return componentMessage([
+    ...markdownTextDisplays([
+      markdownHeader('🌴', 'Abmeldungen'),
+      markdownRows([{ label: 'Aktiv', value: `\`${absences.length}\`` }]),
+      '### Abgemeldete Officers',
+      ...listParts,
+      markdownMeta(['Automatisch aktualisiert']),
+    ]),
+    actionRow([
           { type: 2, style: 1, custom_id: 'lspd_absence_create', label: 'Abmelden' },
           { type: 2, style: 4, custom_id: 'lspd_absence_cancel', label: 'Abmeldung beenden' },
           { type: 2, style: 2, custom_id: 'lspd_absence_refresh', label: 'Aktualisieren' },
-        ],
-      },
-    ],
-  }
+    ]),
+  ])
 }
 
 async function saveAbsenceStatusMessageId(messageId: string) {
@@ -1444,7 +1342,7 @@ export async function syncDiscordAbsenceStatusMessage(options?: { forceCreate?: 
   if (config.absenceStatusMessageId && !options?.forceCreate) {
     await discordFetch<void>(`/channels/${channelId}/messages/${config.absenceStatusMessageId}`, {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, content: null, embeds: [] }),
     }).catch(async () => {
       const message = await postChannelMessage(channelId, payload)
       await saveAbsenceStatusMessageId(message.id)
