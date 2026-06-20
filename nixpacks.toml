@@ -9,7 +9,7 @@
     NEXT_TELEMETRY_DISABLED = "1"
 
 [phases.setup]
-    nixPkgs = ["nodejs-22_x", "git", "npm-9_x"]
+    nixPkgs = ["nodejs_22", "git"]
 
 [phases.install]
     cmds = [
@@ -19,9 +19,8 @@
 [phases.build]
     cmds = [
         "npx prisma generate",
-        "npx prisma db push --accept-data-loss --skip-generate || true",
         "npm run build",
     ]
 
 [start]
-    cmd = "npx prisma migrate deploy || true && npx next start -p ${PORT:-3000} -H 0.0.0.0"
+    cmd = "node scripts/initialize-database.js && npx next start -p ${PORT:-3000} -H 0.0.0.0"
