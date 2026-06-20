@@ -5,6 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { findBlacklistedBadgeNumber } from '@/lib/badge-blacklist'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { normalizeBadgeNumber } from '@/lib/badge-number'
 
 export async function GET() {
   try {
@@ -23,11 +24,12 @@ export async function POST(req: NextRequest) {
   try {
     await requireAuth(['ADMIN'], ['ranks:manage'])
     const body = await req.json()
-    const badgeNumber = typeof body.badgeNumber === 'string' ? body.badgeNumber.trim() : ''
+    const inputBadgeNumber = typeof body.badgeNumber === 'string' ? body.badgeNumber.trim() : ''
     const reason = typeof body.reason === 'string' && body.reason.trim() ? body.reason.trim() : null
-    if (!badgeNumber) return error('Dienstnummer ist erforderlich')
+    if (!inputBadgeNumber) return error('Dienstnummer ist erforderlich')
 
     const prefix = await getBadgePrefix()
+    const badgeNumber = normalizeBadgeNumber(inputBadgeNumber, prefix)
     const blocked = await findBlacklistedBadgeNumber(badgeNumber, prefix)
     if (blocked) return error('Dienstnummer ist bereits gesperrt')
 

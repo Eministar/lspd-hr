@@ -8,7 +8,7 @@ import {
   releaseTerminatedBadgeNumber,
   releaseTerminatedBadgeNumberConflicts,
 } from '@/lib/badge-blacklist'
-import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import {
   getDiscordApplicationId,
@@ -436,6 +436,7 @@ async function performHire(options: DiscordOption[] | undefined, actor: ReturnTy
 
   const prefix = await getBadgePrefix()
   let badgeNumber = textOption(options, 'dienstnummer')
+  if (badgeNumber) badgeNumber = normalizeBadgeNumber(badgeNumber, prefix)
   if (!badgeNumber) {
     const [allRows, blacklistedBadges] = await Promise.all([
       prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } }),
@@ -493,6 +494,7 @@ async function performPromotion(options: DiscordOption[] | undefined, actor: Ret
 
   const prefix = await getBadgePrefix()
   let newBadgeNumber = textOption(options, 'dienstnummer')
+  if (newBadgeNumber) newBadgeNumber = normalizeBadgeNumber(newBadgeNumber, prefix)
   if (!newBadgeNumber) {
     if (rankHasBadgeRange(newRank)) {
       const [allRows, blacklistedBadges] = await Promise.all([

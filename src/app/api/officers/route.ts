@@ -6,7 +6,7 @@ import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { nextBadgeForRank } from '@/lib/badge-number'
+import { nextBadgeForRank, normalizeBadgeNumber } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { eligibleTrainingsForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
 
     let badgeNumber = parsed.data.badgeNumber?.trim() ?? ''
     const prefix = await getBadgePrefix()
+    if (badgeNumber) badgeNumber = normalizeBadgeNumber(badgeNumber, prefix)
     if (!badgeNumber) {
       // Exclude terminated officers so their badge numbers are treated as free
       const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })

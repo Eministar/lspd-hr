@@ -3,6 +3,7 @@ import type { CurrentUser } from './auth'
 import { createAuditLog } from './audit'
 import { getBadgePrefix } from './settings-helpers'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumberConflicts, sameBadgeNumber } from './badge-blacklist'
+import { normalizeBadgeNumber } from './badge-number'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from './discord-integration'
 
 export type UndoPromotionListEntryData = {
@@ -65,7 +66,7 @@ export async function undoPromotionListEntry(
   }
 
   const prefix = await getBadgePrefix()
-  const restoreBadgeNumber = promotionLog.oldBadgeNumber.trim()
+  const restoreBadgeNumber = normalizeBadgeNumber(promotionLog.oldBadgeNumber, prefix)
   const expectedCurrentBadgeNumber = promotionLog.newBadgeNumber?.trim()
 
   if (

@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
+import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, normalizeBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { undoPromotionListEntry } from '@/lib/rank-change-list-undo'
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const requestedBadges = new Map<string, string>()
     for (const entry of list.entries) {
       let nextBadge = entry.newBadgeNumber?.trim() ?? ''
+      if (nextBadge) nextBadge = normalizeBadgeNumber(nextBadge, prefix)
       if (!nextBadge && rankHasBadgeRange(entry.proposedRank)) {
         const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
         const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, usedBadgeInts, current)

@@ -4,7 +4,7 @@ import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
 
     let newBadgeNumber: string = typeof bodyBadge === 'string' && bodyBadge.trim() ? bodyBadge.trim() : ''
     const prefix = await getBadgePrefix()
+    if (newBadgeNumber) newBadgeNumber = normalizeBadgeNumber(newBadgeNumber, prefix)
 
     if (!newBadgeNumber) {
       if (rankHasBadgeRange(newRank)) {

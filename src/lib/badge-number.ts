@@ -20,7 +20,8 @@ export function stripTerminatedBadgeNumber(badgeNumber: string) {
 export function displayBadgeNumber(badgeNumber?: string | null) {
   const trimmed = badgeNumber?.trim() ?? ''
   if (!trimmed) return '—'
-  return stripTerminatedBadgeNumber(trimmed)
+  const visible = stripTerminatedBadgeNumber(trimmed)
+  return visible.replace(/(\d+)$/, (digits) => digits.padStart(2, '0'))
 }
 
 function badgeNumberRawDigits(badgeNumber: string, prefix: string): string | null {
@@ -33,12 +34,25 @@ function badgeNumberRawDigits(badgeNumber: string, prefix: string): string | nul
  * Baut die Dienstnummer-String aus Zahl + optionalem Präfix.
  */
 export function formatBadgeNumber(n: number, prefix: string): string {
-  return prefix ? `${prefix}${n}` : String(n)
+  return formatBadgeNumberWithWidth(n, prefix, 2)
 }
 
 function formatBadgeNumberWithWidth(n: number, prefix: string, width: number): string {
-  const value = width > 1 ? String(n).padStart(width, '0') : String(n)
+  const value = String(n).padStart(Math.max(2, width), '0')
   return prefix ? `${prefix}${value}` : value
+}
+
+/**
+ * Normalisiert manuelle Eingaben auf mindestens zwei Ziffern.
+ * Nicht-numerische Sonderformate bleiben unverändert.
+ */
+export function normalizeBadgeNumber(badgeNumber: string, prefix: string): string {
+  const trimmed = badgeNumber.trim()
+  const raw = badgeNumberRawDigits(trimmed, prefix)
+  if (raw === null) return trimmed
+  const value = Number.parseInt(raw, 10)
+  if (!Number.isFinite(value) || value < 0) return trimmed
+  return formatBadgeNumberWithWidth(value, prefix, Math.max(2, raw.length))
 }
 
 /**
@@ -99,7 +113,7 @@ export function nextBadgeForRank(
   }
   const n = findNextFreeBadgeInRange(rank.badgeMin, rank.badgeMax, used, null)
   if (n === null) return null
-  let width = 0
+  let width = 2
   for (const row of [...allOfficers, ...reservedBadges]) {
     const raw = badgeNumberRawDigits(row.badgeNumber, prefix)
     if (raw === null) continue

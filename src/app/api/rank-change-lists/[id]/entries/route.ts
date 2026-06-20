@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { getBadgePrefix } from '@/lib/settings-helpers'
-import { nextBadgeForRank, rankHasBadgeRange } from '@/lib/badge-number'
+import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
     const prefix = await getBadgePrefix()
+    if (nextBadge) nextBadge = normalizeBadgeNumber(nextBadge, prefix)
     if (!nextBadge && rankHasBadgeRange(proposedRank)) {
       // Exclude terminated officers so ihre Dienstnummern gelten als frei
       const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })

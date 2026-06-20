@@ -7,7 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
-import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
+import { normalizeBadgeNumber, stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { canCheckDiscordGuildMembers, getDiscordGuildMember, queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
@@ -120,17 +120,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     if (!existing) return notFound('Officer')
 
+    const prefix = await getBadgePrefix()
     const requestedBadgeNumber = typeof parsed.data.badgeNumber === 'string' && parsed.data.badgeNumber.trim()
-      ? stripTerminatedBadgeNumber(parsed.data.badgeNumber)
+      ? normalizeBadgeNumber(stripTerminatedBadgeNumber(parsed.data.badgeNumber), prefix)
       : undefined
     const reactivating = existing.status === 'TERMINATED' && parsed.data.status === 'ACTIVE'
     const restoredBadgeNumber = reactivating
-      ? (existing.terminations[0]?.previousBadgeNumber?.trim() || stripTerminatedBadgeNumber(existing.badgeNumber))
+      ? normalizeBadgeNumber(
+          existing.terminations[0]?.previousBadgeNumber?.trim() || stripTerminatedBadgeNumber(existing.badgeNumber),
+          prefix,
+        )
       : undefined
     const nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
 
     if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) {
-      const prefix = await getBadgePrefix()
       const badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id)
       if (badgeConflict) return error(badgeConflict)
       await releaseTerminatedBadgeNumberConflicts(nextBadgeNumber, prefix)
