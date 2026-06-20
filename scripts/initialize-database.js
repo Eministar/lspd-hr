@@ -45,7 +45,7 @@ async function main() {
   }
 
   console.log('[DB] Schema wird sicher synchronisiert.')
-  runPrisma(['db', 'push', '--skip-generate'], 'prisma db push')
+  runPrisma(['db', 'push'], 'prisma db push')
 
   const prisma = loadPrisma()
   try {

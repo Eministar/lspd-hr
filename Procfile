@@ -1,5 +1,3 @@
-# Heroku / Dokku / Scalingo / Render (Native Runtime) Procfile
-# Bei Container-basierten Hosts (Docker, Nixpacks, Kubernetes) wird diese Datei ignoriert.
+# Heroku / Dokku / Scalingo / Render / Nixpacks
 
-release: npx prisma migrate deploy
-web: node start.js
+web: node scripts/initialize-database.js && node start.js
