@@ -377,6 +377,7 @@ try {
         Invoke-LoggedCommand 'Datenbank-Backup erstellen' 'npm' @('run', 'db:backup')
         Invoke-LoggedCommand 'Prisma db push ausführen' 'npx' @('prisma', 'db', 'push')
         Invoke-LoggedCommand 'Prisma Client generieren' 'npx' @('prisma', 'generate')
+        Invoke-LoggedCommand 'Dienstnummern normalisieren' 'npm' @('run', 'db:normalize-badges')
     }
 
     Write-Step 10 11 'Projekt bauen'

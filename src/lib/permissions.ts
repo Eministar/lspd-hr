@@ -200,8 +200,6 @@ export function intersectPermissions(
   a: readonly Permission[],
   b: readonly Permission[],
 ): Permission[] {
-  if (a.length === 0) return [...b]
-  if (b.length === 0) return [...a]
   const setB = new Set<Permission>(b)
   return a.filter((p) => setB.has(p))
 }

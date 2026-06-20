@@ -72,6 +72,7 @@ export default function ApiTokensPage() {
 
   const [form, setForm] = useState({
     name: '',
+    permissionMode: 'auto' as 'auto' | 'custom',
     scopes: [] as Permission[],
     expiresInDays: 0,
     assignToUserId: '' as string, // '' = self
@@ -99,7 +100,7 @@ export default function ApiTokensPage() {
   }, [createdToken])
 
   const openCreate = () => {
-    setForm({ name: '', scopes: [], expiresInDays: 0, assignToUserId: '' })
+    setForm({ name: '', permissionMode: 'auto', scopes: [], expiresInDays: 0, assignToUserId: '' })
     setCreateOpen(true)
   }
 
@@ -115,7 +116,8 @@ export default function ApiTokensPage() {
   const submit = async () => {
     const payload: Record<string, unknown> = {
       name: form.name.trim(),
-      scopes: form.scopes,
+      permissionMode: form.permissionMode,
+      scopes: form.permissionMode === 'auto' ? [] : form.scopes,
     }
     if (form.expiresInDays > 0) {
       payload.expiresAt = new Date(Date.now() + form.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
@@ -245,7 +247,7 @@ export default function ApiTokensPage() {
                   )}
                 </div>
                 <p className="text-[11.5px] text-[#4a6585]">
-                  {token.scopes.length === 0 ? 'Alle Rechte des Inhabers' : `${token.scopes.length} Scopes`} ·
+                  {token.scopes.length === 0 ? 'Auto Perm' : `${token.scopes.length} Scopes`} ·
                   {' '}
                   {token.usageCount} Aufrufe · {token.lastUsedAt
                     ? `Zuletzt ${format(new Date(token.lastUsedAt), 'dd.MM.yyyy HH:mm', { locale: de })}`
@@ -348,9 +350,41 @@ export default function ApiTokensPage() {
             </div>
           </div>
           <div>
+            <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Berechtigungsmodus</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, permissionMode: 'auto', scopes: [] }))}
+                className={cn(
+                  'p-3 rounded-[8px] border text-left transition-colors',
+                  form.permissionMode === 'auto'
+                    ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]'
+                    : 'bg-[#0a1a33]/40 border-[#18385f]/50 text-[#9fb0c4] hover:border-[#d4af37]/30',
+                )}
+              >
+                <p className="text-[12.5px] font-semibold">Auto Perm</p>
+                <p className="text-[10.5px] text-[#6b8299] mt-0.5">Rechte automatisch vom Inhaber übernehmen</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, permissionMode: 'custom' }))}
+                className={cn(
+                  'p-3 rounded-[8px] border text-left transition-colors',
+                  form.permissionMode === 'custom'
+                    ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]'
+                    : 'bg-[#0a1a33]/40 border-[#18385f]/50 text-[#9fb0c4] hover:border-[#d4af37]/30',
+                )}
+              >
+                <p className="text-[12.5px] font-semibold">Eigene Scopes</p>
+                <p className="text-[10.5px] text-[#6b8299] mt-0.5">Token auf ausgewählte Rechte begrenzen</p>
+              </button>
+            </div>
+          </div>
+          {form.permissionMode === 'custom' && (
+          <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[12.5px] font-medium text-[#9fb0c4]">
-                Scopes ({form.scopes.length === 0 ? 'alle Rechte des Inhabers' : `${form.scopes.length} ausgewählt`})
+                Scopes ({form.scopes.length} ausgewählt)
               </label>
               <button
                 type="button"
@@ -361,7 +395,7 @@ export default function ApiTokensPage() {
               </button>
             </div>
             <p className="text-[11px] text-[#4a6585] mb-3">
-              Leer lassen = der Token erbt alle Rechte des Inhabers. Token-Scopes sind immer eine Teilmenge der Inhaber-Rechte.
+              Token-Scopes sind immer eine Teilmenge der Inhaber-Rechte.
             </p>
             <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1">
               <p className="text-[10.5px] font-semibold text-[#d4af37] uppercase tracking-wider">Leserechte</p>
@@ -390,9 +424,16 @@ export default function ApiTokensPage() {
               </div>
             </div>
           </div>
+          )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setCreateOpen(false)}>Abbrechen</Button>
-            <Button size="sm" onClick={submit} disabled={!form.name.trim()}>Token erstellen</Button>
+            <Button
+              size="sm"
+              onClick={submit}
+              disabled={!form.name.trim() || (form.permissionMode === 'custom' && form.scopes.length === 0)}
+            >
+              Token erstellen
+            </Button>
           </div>
         </div>
       </Modal>
@@ -670,7 +711,7 @@ function TokenDetailModal({ token, onClose }: { token: ApiToken | null; onClose:
               label="Läuft ab"
               value={token.expiresAt ? format(new Date(token.expiresAt), 'dd.MM.yyyy HH:mm', { locale: de }) : 'nie'}
             />
-            <Field label="Scopes" value={token.scopes.length === 0 ? 'alle Inhaber-Rechte' : `${token.scopes.length} Scopes`} />
+            <Field label="Scopes" value={token.scopes.length === 0 ? 'Auto Perm' : `${token.scopes.length} Scopes`} />
           </div>
           <div>
             <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Letzte Aufrufe</p>

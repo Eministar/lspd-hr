@@ -34,6 +34,7 @@ export interface CurrentAuth {
     tokenId: string
     tokenName: string
     tokenPrefix: string
+    tokenOwnerDisplayName: string
     scopes: Permission[]
   }
   /**
@@ -95,15 +96,6 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
   const cookieStore = await cookies()
   const headerStore = await headers()
 
-  const cookieToken = cookieStore.get('auth-token')?.value
-  if (cookieToken) {
-    const payload = verifyToken(cookieToken)
-    if (payload) {
-      const user = await loadUserForAuth(payload.userId)
-      if (user) return { kind: 'cookie', user }
-    }
-  }
-
   const bearer = extractBearer(headerStore.get('authorization'))
   if (bearer && bearer.startsWith('lspd_')) {
     const tokenHash = sha256(bearer)
@@ -126,7 +118,11 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
         const impersonated = await loadUserByDiscordId(impersonateDiscordId)
         if (!impersonated) return null
         effectiveScopes = intersectPermissions(tokenScopes, impersonated.permissions)
-        effectiveUser = impersonated
+        effectiveUser = {
+          ...impersonated,
+          groups: [{ id: 'api-token', name: 'API-Token' }],
+          permissions: effectiveScopes,
+        }
         impersonation = {
           discordId: impersonateDiscordId,
           userId: impersonated.id,
@@ -145,10 +141,21 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
           tokenId: row.id,
           tokenName: row.name,
           tokenPrefix: row.prefix,
+          tokenOwnerDisplayName: row.user.displayName,
           scopes: effectiveScopes,
         },
         impersonation,
       }
+    }
+    return null
+  }
+
+  const cookieToken = cookieStore.get('auth-token')?.value
+  if (cookieToken) {
+    const payload = verifyToken(cookieToken)
+    if (payload) {
+      const user = await loadUserForAuth(payload.userId)
+      if (user) return { kind: 'cookie', user }
     }
   }
 

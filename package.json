@@ -18,6 +18,7 @@
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:initialize": "node scripts/initialize-database.js",
+    "db:normalize-badges": "node scripts/normalize-badge-numbers.js",
     "db:studio": "npx prisma studio",
     "db:setup": "npm run db:backup && npx prisma db push && npx tsx prisma/seed.ts",
     "db:backup": "npx tsx prisma/backup.ts"

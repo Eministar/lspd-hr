@@ -46,7 +46,7 @@ export function formatAuthActor(auth: CurrentAuth | undefined): string {
   if (!auth) return ''
   if (auth.kind === 'cookie') return `Cookie ${auth.user.displayName}`
   if (auth.kind === 'api' && auth.api) {
-    const base = `API Token "${auth.api.tokenName}" (${auth.api.tokenPrefix}) by ${auth.user.displayName}`
+    const base = `API Token "${auth.api.tokenName}" (${auth.api.tokenPrefix}) by ${auth.api.tokenOwnerDisplayName}`
     if (auth.impersonation) {
       return `${base} on behalf of ${auth.impersonation.displayName} (Discord ${auth.impersonation.discordId})`
     }

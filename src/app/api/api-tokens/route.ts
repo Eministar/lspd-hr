@@ -15,6 +15,7 @@ import { getApiTokensMaxPerUser } from '@/lib/settings-helpers'
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(80),
+  permissionMode: z.enum(['auto', 'custom']).optional(),
   scopes: z.array(z.enum(PERMISSIONS as unknown as [Permission, ...Permission[]])).optional().default([]),
   expiresAt: z.string().datetime().nullable().optional(),
   /** Admin-only: User-ID, für die der Token angelegt wird. Leer = self. */
@@ -59,8 +60,13 @@ export async function POST(req: NextRequest) {
       return error(parsed.error.issues.map((i) => i.message).join(', '))
     }
 
-    const { name, scopes, expiresAt, userId: targetUserIdRaw } = parsed.data
+    const { name, permissionMode, scopes, expiresAt, userId: targetUserIdRaw } = parsed.data
+    const tokenScopes = permissionMode === 'auto' ? [] : scopes
     const isAdmin = hasAnyPermission(user, ['users:manage'])
+
+    if (permissionMode === 'custom' && tokenScopes.length === 0) {
+      return error('Wähle mindestens einen Scope oder verwende Auto Perm.')
+    }
 
     // Wenn ein userId übergeben wird: nur Admins dürfen das, und der Ziel-User
     // muss existieren. Andernfalls gehört der Token dem Aufrufer.
@@ -88,9 +94,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Subset-Check: Token-Scopes dürfen nicht mehr Rechte enthalten als der Inhaber hat.
-    if (scopes.length > 0) {
+    if (tokenScopes.length > 0) {
       const permSet = new Set(targetPermissions)
-      const invalid = scopes.filter((s) => !permSet.has(s))
+      const invalid = tokenScopes.filter((s) => !permSet.has(s))
       if (invalid.length > 0) {
         return error(
           `Token-Scopes müssen eine Teilmenge der Inhaber-Rechte sein. Ungültig: ${invalid.join(', ')}`,
@@ -106,7 +112,7 @@ export async function POST(req: NextRequest) {
       name,
       userId: targetUserId,
       createdById: targetUserId === user.id ? null : user.id,
-      scopes,
+      scopes: tokenScopes,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     })
 
@@ -119,8 +125,8 @@ export async function POST(req: NextRequest) {
       newValue: record.name,
       details:
         targetUserId === user.id
-          ? `Eigener Token · ${limitText} · ${scopes.length > 0 ? `Scopes: ${scopes.join(', ')}` : 'alle Rechte'}`
-          : `Token für ${targetDisplayName ?? targetUserId} erstellt · ${limitText} · ${scopes.length > 0 ? `Scopes: ${scopes.join(', ')}` : 'alle Rechte'}`,
+          ? `Eigener Token · ${limitText} · ${tokenScopes.length > 0 ? `Scopes: ${tokenScopes.join(', ')}` : 'Auto Perm'}`
+          : `Token für ${targetDisplayName ?? targetUserId} erstellt · ${limitText} · ${tokenScopes.length > 0 ? `Scopes: ${tokenScopes.join(', ')}` : 'Auto Perm'}`,
     })
 
     return success(

@@ -109,7 +109,7 @@
 | `GET` / `POST` / `PATCH` / `DELETE` | `/api/notes` | Notizen |
 | `GET` / `POST` | `/api/task-lists`, `/api/tasks` | Aufgaben (Academy / HR / SRU / Detective) |
 | `GET` / `POST` | `/api/sru/folders`, `/api/sru/documents` | S.R.U.-Dokumente |
-| `GET` / `POST` / `PATCH` | `/api/patrol-boards` | Streifenboard |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/api/patrol-boards`, `/api/patrol-boards/{id}` | Vollständiges Streifenboard-CRUD |
 | `GET` | `/api/audit-logs` | Vollständiges Aktivitätsprotokoll |
 | `GET` / `POST` | `/api/api-tokens`, `DELETE /api/api-tokens/{id}` | Token-Management |
 | `GET` | `/api/health` | Health-Check (kein Auth nötig) |

@@ -25,7 +25,7 @@ function applyCors(req: NextRequest, res: NextResponse): NextResponse {
     res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS')
     res.headers.set(
       'Access-Control-Allow-Headers',
-      'Authorization, Content-Type, X-Requested-With, X-Idempotency-Key',
+      'Authorization, Content-Type, X-Requested-With, X-Idempotency-Key, X-Discord-Id',
     )
     res.headers.set(
       'Access-Control-Expose-Headers',

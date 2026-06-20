@@ -17,6 +17,7 @@ const expectedImportCounts = {
   promotionLogs: 58,
   sanctions: 3,
 }
+const { normalizeBadgeNumbers } = require('./normalize-badge-numbers')
 
 function runPrisma(args, label) {
   const result = spawnSync(process.execPath, [prismaCli, ...args], {
@@ -61,6 +62,8 @@ async function main() {
     })
 
     if (marker) {
+      const normalized = await normalizeBadgeNumbers(prisma)
+      console.log(`[DB] Dienstnummern normalisiert: ${normalized.officers} Officers, ${normalized.blacklist} Blacklist-Einträge.`)
       console.log('[DB] Initialimport wurde bereits verarbeitet.')
       return
     }
@@ -72,6 +75,8 @@ async function main() {
     ])
 
     if (rankCount > 0 || officerCount > 0 || userCount > 0) {
+      const normalized = await normalizeBadgeNumbers(prisma)
+      console.log(`[DB] Dienstnummern normalisiert: ${normalized.officers} Officers, ${normalized.blacklist} Blacklist-Einträge.`)
       await prisma.systemSetting.create({
         data: {
           key: importMarkerKey,
@@ -117,6 +122,9 @@ async function main() {
     if (incompleteEntries.length > 0) {
       throw new Error(`Initialimport ist unvollständig: ${incompleteEntries.join(', ')}`)
     }
+
+    const normalized = await normalizeBadgeNumbers(prisma)
+    console.log(`[DB] Dienstnummern normalisiert: ${normalized.officers} Officers, ${normalized.blacklist} Blacklist-Einträge.`)
 
     await prisma.systemSetting.create({
       data: {

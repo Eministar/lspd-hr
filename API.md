@@ -69,7 +69,7 @@ lspd_p4A8xKzQ2mN7vR3jH9wT5yL1cV8bF0dG2nS6hX
 
 ### Discord-ID-Impersonation (`X-Discord-Id` Header)
 
-Wenn ein API-Token-Request zusätzlich den Header `X-Discord-Id: <discord-snowflake>` trägt, werden die effektiven Rechte dieses Requests **automatisch auf die Schnittmenge** aus Token-Scopes und den tatsächlichen Rechten des Users mit dieser Discord-ID beschränkt. Der Audit-Log-Eintrag zeigt den impersonierten User als Aktor; die `details` enthalten zusätzlich Token-Name und Discord-ID des Aufrufers.
+Wenn ein API-Token-Request zusätzlich den Header `X-Discord-Id: <discord-snowflake>` trägt, werden die effektiven Rechte dieses Requests **automatisch auf die Schnittmenge** aus Token-Scopes und den tatsächlichen Rechten des Users mit dieser Discord-ID beschränkt. Das gilt auch für User ohne Rechte: Eine leere Rechtemenge bleibt leer. Der Audit-Log-Eintrag zeigt den impersonierten User als Aktor; die `details` enthalten zusätzlich Token-Name und Discord-ID des Aufrufers.
 
 **Sicherheit:** Die effektiven Rechte sind `min(Token-Scopes, User-Permissions)`:
 - Ein Token kann nie mehr Rechte ausüben, als der impersonierte User tatsächlich hat
@@ -452,8 +452,48 @@ Löst eine Discord-Aktualisierungs-Message aus.
 ## Patrol Board
 
 ### `GET /api/patrol-boards` 🔒 `patrol-board:view`
+Liefert die letzten 20 Streifenlisten, das aktive Board, aktuell im Dienst befindliche Officers und den Sync-Zeitpunkt.
+
 ### `POST /api/patrol-boards` 🔒 `patrol-board:manage`
+Erstellt eine Streifenliste mit drei leeren Standardstreifen.
+
+```json
+{
+  "title": "Abendstreife",
+  "startsAt": "2026-06-20T18:00:00.000Z"
+}
+```
+
+### `GET /api/patrol-boards/{id}` 🔒 `patrol-board:view`
+Liefert ein einzelnes Board vollständig mit Streifen, Besatzungen und Officer-Daten.
+
 ### `PATCH /api/patrol-boards/{id}` 🔒 `patrol-board:manage`
+Ersetzt die vollständige Streifenaufteilung atomar.
+
+```json
+{
+  "title": "Abendstreife",
+  "startsAt": "2026-06-20T18:00:00.000Z",
+  "confirmRuleViolations": false,
+  "patrols": [
+    {
+      "name": "Streife 1",
+      "callSign": "S-1",
+      "assignment": "Patrol",
+      "notes": "Innenstadt",
+      "memberIds": ["officer-id-1", "officer-id-2"]
+    }
+  ]
+}
+```
+
+- Maximal 30 Streifen pro Board
+- Maximal drei Officers pro Streife
+- Ein Officer darf nur einer Streife zugewiesen sein
+- Solo-Streifen oder mehrere Rookies erfordern `confirmRuleViolations: true`
+
+### `DELETE /api/patrol-boards/{id}` 🔒 `patrol-board:manage`
+Löscht das Board einschließlich aller Streifen und Besatzungszuordnungen.
 
 ---
 

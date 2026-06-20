@@ -81,6 +81,24 @@ function normalizePatrols(value: unknown) {
   })
 }
 
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireAuth(undefined, ['patrol-board:view'])
+    const { id } = await params
+    const board = await prisma.patrolBoard.findUnique({
+      where: { id },
+      include: boardInclude,
+    })
+    if (!board) return notFound('Streifenliste')
+    return success(decorateBoard(board))
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['patrol-board:manage'])
