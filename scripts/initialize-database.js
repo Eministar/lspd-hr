@@ -10,6 +10,13 @@ const projectDir = path.resolve(__dirname, '..')
 const prismaCli = path.join(projectDir, 'node_modules', 'prisma', 'build', 'index.js')
 const importFile = path.join(projectDir, 'prisma', 'initial-import-2026-06-19.sql')
 const importMarkerKey = 'database.initialImport.2026-06-19'
+const expectedImportCounts = {
+  ranks: 16,
+  officers: 38,
+  dutySessions: 38,
+  promotionLogs: 58,
+  sanctions: 3,
+}
 
 function runPrisma(args, label) {
   const result = spawnSync(process.execPath, [prismaCli, ...args], {
@@ -85,12 +92,39 @@ async function main() {
     console.log('[DB] Leere Datenbank erkannt; Initialimport wird einmalig ausgeführt.')
     runPrisma(['db', 'execute', '--file', importFile], 'Initialimport')
 
+    const importedCounts = {
+      ranks: await prisma.rank.count({
+        where: { id: { startsWith: 'rank_' } },
+      }),
+      officers: await prisma.officer.count({
+        where: { id: { startsWith: 'officer_' } },
+      }),
+      dutySessions: await prisma.dutyTimeSession.count({
+        where: { id: { startsWith: 'duty_import_' } },
+      }),
+      promotionLogs: await prisma.promotionLog.count({
+        where: { id: { startsWith: 'promo_import_' } },
+      }),
+      sanctions: await prisma.sanction.count({
+        where: { id: { startsWith: 'sanction_import_' } },
+      }),
+    }
+
+    const incompleteEntries = Object.entries(expectedImportCounts)
+      .filter(([key, expected]) => importedCounts[key] !== expected)
+      .map(([key, expected]) => `${key}: ${importedCounts[key]}/${expected}`)
+
+    if (incompleteEntries.length > 0) {
+      throw new Error(`Initialimport ist unvollständig: ${incompleteEntries.join(', ')}`)
+    }
+
     await prisma.systemSetting.create({
       data: {
         key: importMarkerKey,
         value: JSON.stringify({
           status: 'imported',
           file: path.basename(importFile),
+          counts: importedCounts,
           processedAt: new Date().toISOString(),
         }),
       },
