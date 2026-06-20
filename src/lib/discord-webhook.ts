@@ -35,7 +35,11 @@ const SEVERITY_META: Record<WebhookSeverity, { icon: string; label: string }> = 
 const MAX_TEXT_DISPLAY = 4000
 
 function webhookUrl() {
-  return process.env.DISCORD_WEBHOOK_URL?.trim() || process.env.LSPD_DISCORD_WEBHOOK_URL?.trim() || ''
+  const raw = process.env.DISCORD_WEBHOOK_URL?.trim() || process.env.LSPD_DISCORD_WEBHOOK_URL?.trim() || ''
+  if (!raw) return ''
+  const url = new URL(raw)
+  url.searchParams.set('with_components', 'true')
+  return url.toString()
 }
 
 function truncate(value: string, max = MAX_TEXT_DISPLAY) {

@@ -117,6 +117,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return success({ message: 'Ausbildungen aktualisiert', officer: officerWithTrainingRows })
   } catch (e: unknown) {
+    console.error('[OfficerTrainings] Aktualisierung fehlgeschlagen:', e)
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

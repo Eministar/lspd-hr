@@ -180,6 +180,8 @@ const EVENT_META = {
 
 let syncSchedulerStarted = false
 let absenceExpiryCheckerStarted = false
+const pendingOfficerRoleSyncModes = new Map<string, 'sync' | 'remove-all'>()
+const runningOfficerRoleSyncs = new Set<string>()
 
 const ABSENCE_EXPIRY_CHECK_INTERVAL_MS = Number.parseInt(
   process.env.LSPD_ABSENCE_EXPIRY_CHECK_INTERVAL_MS || `${60 * 1000}`,
@@ -204,6 +206,7 @@ function enqueueRateLimited<T>(fn: () => Promise<T>): Promise<T> {
 
 /* ── In-Memory Cache für Guild-Daten ─────────────────────────────── */
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 Minuten
+const MEMBER_ROLES_CACHE_TTL_MS = 30 * 60 * 1000
 
 interface CacheEntry<T> {
   data: T
@@ -213,6 +216,10 @@ interface CacheEntry<T> {
 const guildRolesCache = new Map<string, CacheEntry<DiscordRole[]>>()
 const guildChannelsCache = new Map<string, CacheEntry<DiscordChannel[]>>()
 const memberRolesCache = new Map<string, CacheEntry<string[]>>()
+const guildMembersCache = new Map<string, CacheEntry<DiscordGuildMember[]>>()
+const guildMembersRequests = new Map<string, Promise<DiscordGuildMember[]>>()
+const memberPermissionBackoff = new Map<string, number>()
+const MEMBER_PERMISSION_BACKOFF_MS = 30 * 60 * 1000
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
   const entry = cache.get(key)
@@ -229,6 +236,20 @@ export function invalidateDiscordCache() {
   guildRolesCache.clear()
   guildChannelsCache.clear()
   memberRolesCache.clear()
+  guildMembersCache.clear()
+  guildMembersRequests.clear()
+  memberPermissionBackoff.clear()
+}
+
+function memberPermissionBlocked(memberId: string) {
+  const until = memberPermissionBackoff.get(memberId) ?? 0
+  if (until > Date.now()) return true
+  memberPermissionBackoff.delete(memberId)
+  return false
+}
+
+function blockMemberPermissions(memberId: string) {
+  memberPermissionBackoff.set(memberId, Date.now() + MEMBER_PERMISSION_BACKOFF_MS)
 }
 
 /**
@@ -245,9 +266,9 @@ async function getDiscordMemberRoleIds(discordId: string, guildId?: string): Pro
   if (entry && Date.now() < entry.expiresAt) return entry.data
 
   try {
-    const member = await discordFetch<DiscordGuildMember>(`/guilds/${gid}/members/${id}`)
+    const member = await discordFetchRaw<DiscordGuildMember>(`/guilds/${gid}/members/${id}`)
     const roles = member.roles ?? []
-    setCache(memberRolesCache, id, roles)
+    memberRolesCache.set(id, { data: roles, expiresAt: Date.now() + MEMBER_ROLES_CACHE_TTL_MS })
     return roles
   } catch (err) {
     console.error('[DiscordIntegration] Mitglieds-Rollen konnten nicht geladen werden:', err)
@@ -521,11 +542,37 @@ async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`Discord API ${res.status}: ${text || res.statusText}`)
+    let code: number | undefined
+    try {
+      const body = JSON.parse(text) as { code?: number }
+      code = body.code
+    } catch {
+      // Antwort ist kein JSON.
+    }
+    throw new DiscordApiError(res.status, code, text || res.statusText)
   }
 
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
+}
+
+class DiscordApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: number | undefined,
+    details: string,
+  ) {
+    super(`Discord API ${status}: ${details}`)
+    this.name = 'DiscordApiError'
+  }
+}
+
+function isUnknownDiscordMember(error: unknown) {
+  return error instanceof DiscordApiError && error.status === 404 && error.code === 10007
+}
+
+function isMissingDiscordPermissions(error: unknown) {
+  return error instanceof DiscordApiError && error.status === 403 && error.code === 50013
 }
 
 async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -648,7 +695,7 @@ export async function getDiscordGuildMember(discordId: string, guildId?: string)
   const memberId = snowflake(discordId)
   if (!id || !memberId || !botToken()) return null
 
-  return discordFetch<DiscordGuildMember>(`/guilds/${id}/members/${memberId}`).catch(() => null)
+  return discordFetchRaw<DiscordGuildMember>(`/guilds/${id}/members/${memberId}`).catch(() => null)
 }
 
 export async function getDiscordGuildMembers(guildId?: string) {
@@ -656,19 +703,44 @@ export async function getDiscordGuildMembers(guildId?: string) {
   const id = guildId || config.guildId
   if (!id || !botToken()) return []
 
-  const members: DiscordGuildMember[] = []
-  let after = '0'
+  const cached = getCached(guildMembersCache, id)
+  if (cached) return cached
 
-  while (true) {
-    const page = await discordFetch<DiscordGuildMember[]>(`/guilds/${id}/members?limit=1000&after=${after}`).catch(() => [])
-    if (page.length === 0) break
-    members.push(...page)
-    const lastId = page[page.length - 1]?.user?.id
-    if (!lastId || page.length < 1000) break
-    after = lastId
-  }
+  const existingRequest = guildMembersRequests.get(id)
+  if (existingRequest) return existingRequest
 
-  return members
+  const request = (async () => {
+    const members: DiscordGuildMember[] = []
+    let after = '0'
+
+    while (true) {
+      const page = await discordFetchRaw<DiscordGuildMember[]>(`/guilds/${id}/members?limit=1000&after=${after}`)
+      if (page.length === 0) break
+      members.push(...page)
+      const lastId = page[page.length - 1]?.user?.id
+      if (!lastId || page.length < 1000) break
+      after = lastId
+    }
+
+    setCache(guildMembersCache, id, members)
+    return members
+  })().finally(() => {
+    guildMembersRequests.delete(id)
+  })
+
+  guildMembersRequests.set(id, request)
+  return request
+}
+
+export function getCachedDiscordGuildMembers(guildId: string) {
+  return getCached(guildMembersCache, guildId)
+}
+
+export function refreshDiscordGuildMembers(guildId: string) {
+  if (!guildId || !botToken() || guildMembersRequests.has(guildId)) return
+  void getDiscordGuildMembers(guildId).catch((error) => {
+    console.error('[DiscordIntegration] Discord-Mitglieder konnten nicht aktualisiert werden:', error)
+  })
 }
 
 async function getOfficerForDiscord(officerId: string) {
@@ -719,7 +791,7 @@ async function fetchGuildMember(
 ): Promise<DiscordGuildMember | null> {
   const memberId = snowflake(discordId)
   if (!config.guildId || !memberId || !botToken()) return null
-  return discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+  return discordFetchRaw<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
 }
 
 async function syncOfficerDashboardGroupsForOfficer(
@@ -810,13 +882,16 @@ async function syncOfficerDiscordMember(
 
   const memberId = snowflake(officer.discordId)
   if (!memberId) return
+  if (memberPermissionBlocked(memberId)) return { status: 'missing-permissions' as const }
 
   const allManaged = configuredRoleIds(config)
   const desired = mode === 'remove-all' ? [] : desiredRoleIds(officer, config)
   // Reuse a member already fetched by the caller (undefined = not provided → fetch)
   const member = preloadedMember !== undefined
     ? preloadedMember
-    : await discordFetch<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+    : await discordFetchRaw<DiscordGuildMember>(`/guilds/${config.guildId}/members/${memberId}`).catch(() => null)
+  if (!member) return { status: 'not-member' as const }
+
   const currentRoles = new Set(member?.roles ?? [])
   const desiredSet = new Set(desired)
   const toAdd = desired.filter((roleId) => !currentRoles.has(roleId))
@@ -827,6 +902,12 @@ async function syncOfficerDiscordMember(
     try {
       await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' })
     } catch (err) {
+      if (isUnknownDiscordMember(err)) return { status: 'not-member' as const }
+      if (isMissingDiscordPermissions(err)) {
+        blockMemberPermissions(memberId)
+        console.warn(`[DiscordIntegration] Rollen-Sync für ${memberId} übersprungen: Bot-Rolle ist nicht hoch genug.`)
+        return { status: 'missing-permissions' as const }
+      }
       console.error('[DiscordIntegration] Rolle entfernen fehlgeschlagen:', err)
     }
   }
@@ -834,6 +915,12 @@ async function syncOfficerDiscordMember(
     try {
       await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'PUT' })
     } catch (err) {
+      if (isUnknownDiscordMember(err)) return { status: 'not-member' as const }
+      if (isMissingDiscordPermissions(err)) {
+        blockMemberPermissions(memberId)
+        console.warn(`[DiscordIntegration] Rollen-Sync für ${memberId} übersprungen: Bot-Rolle ist nicht hoch genug.`)
+        return { status: 'missing-permissions' as const }
+      }
       console.error('[DiscordIntegration] Rolle hinzufügen fehlgeschlagen:', err)
     }
   }
@@ -843,7 +930,9 @@ async function syncOfficerDiscordMember(
       method: 'PATCH',
       body: JSON.stringify({ nick: null }),
     }).catch((error) => {
-      console.error('[DiscordIntegration] Nickname-Entfernung fehlgeschlagen:', error)
+      if (!isUnknownDiscordMember(error) && !isMissingDiscordPermissions(error)) {
+        console.error('[DiscordIntegration] Nickname-Entfernung fehlgeschlagen:', error)
+      }
     })
   }
 
@@ -854,10 +943,16 @@ async function syncOfficerDiscordMember(
         method: 'PATCH',
         body: JSON.stringify({ nick }),
       }).catch((error) => {
-        console.error('[DiscordIntegration] Nickname-Sync fehlgeschlagen:', error)
+      if (isMissingDiscordPermissions(error)) {
+          blockMemberPermissions(memberId)
+          console.warn(`[DiscordIntegration] Nickname-Sync für ${memberId} übersprungen: Rollen-Hierarchie oder Serverinhaber.`)
+        } else if (!isUnknownDiscordMember(error)) {
+          console.error('[DiscordIntegration] Nickname-Sync fehlgeschlagen:', error)
+        }
       })
     }
   }
+  return { status: 'synced' as const }
 }
 
 export async function addDiscordRoleToMember(discordId: string, roleId: string) {
@@ -894,6 +989,7 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
   await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
 
   if (!config.guildId || !botToken()) return
+  if (mode === 'sync' && !member) return
 
   await syncOfficerDiscordMember(officer, config, mode, mode === 'remove-all' ? undefined : member)
 }
@@ -971,6 +1067,12 @@ export async function syncAllOfficerDiscordRoles(options?: {
       const member = canSyncDiscord && mode === 'sync'
         ? await fetchGuildMember(config, officer.discordId)
         : null
+
+      if (canSyncDiscord && mode === 'sync' && !member) {
+        skipped++
+        await emitProgress('syncing', officerLabel, `Übersprungen: ${officerLabel} ist nicht auf dem Discord-Server`)
+        continue
+      }
 
       await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
       if (canSyncDiscord) {
@@ -1087,14 +1189,15 @@ export function ensureAbsenceExpiryChecker() {
 
 export function ensureDiscordSyncScheduler() {
   if (syncSchedulerStarted || typeof setInterval !== 'function') return
+  const intervalMs = Number.parseInt(process.env.DISCORD_ROLE_SYNC_INTERVAL_MS || '0', 10)
+  if (!Number.isFinite(intervalMs) || intervalMs < 300000) return
+
   syncSchedulerStarted = true
-  const intervalMs = Number.parseInt(process.env.DISCORD_ROLE_SYNC_INTERVAL_MS || '300000', 10)
-  const safeIntervalMs = Number.isFinite(intervalMs) && intervalMs >= 60000 ? intervalMs : 300000
   setInterval(() => {
     void syncAllOfficerDiscordRoles().catch((error) => {
       console.error('[DiscordIntegration] Vollständiger Rollensync fehlgeschlagen:', error)
     })
-  }, safeIntervalMs).unref?.()
+  }, intervalMs).unref?.()
 }
 
 function hrEventChannelId(config: DiscordConfig, type: keyof typeof EVENT_META) {
@@ -1356,16 +1459,33 @@ export async function syncDiscordAbsenceStatusMessage(options?: { forceCreate?: 
 
 export function queueOfficerRoleSync(officerId: string, mode: 'sync' | 'remove-all' = 'sync') {
   ensureDiscordSyncScheduler()
-  void syncOfficerDiscordRoles(officerId, mode).catch((error) => {
-    console.error('[DiscordIntegration] Rollensync fehlgeschlagen:', error)
-    queueDiscordWebhookEvent({
-      title: 'Discord-Rollensync fehlgeschlagen',
-      severity: 'error',
-      source: 'discord-integration',
-      fields: [{ name: 'Officer-ID', value: officerId, inline: true }],
-      error,
-    })
-  })
+  pendingOfficerRoleSyncModes.set(officerId, mode)
+  if (runningOfficerRoleSyncs.has(officerId)) return
+
+  runningOfficerRoleSyncs.add(officerId)
+  void (async () => {
+    try {
+      while (pendingOfficerRoleSyncModes.has(officerId)) {
+        const nextMode = pendingOfficerRoleSyncModes.get(officerId) ?? 'sync'
+        pendingOfficerRoleSyncModes.delete(officerId)
+        await syncOfficerDiscordRoles(officerId, nextMode)
+      }
+    } catch (error) {
+      console.error('[DiscordIntegration] Rollensync fehlgeschlagen:', error)
+      queueDiscordWebhookEvent({
+        title: 'Discord-Rollensync fehlgeschlagen',
+        severity: 'error',
+        source: 'discord-integration',
+        fields: [{ name: 'Officer-ID', value: officerId, inline: true }],
+        error,
+      })
+    } finally {
+      runningOfficerRoleSyncs.delete(officerId)
+      if (pendingOfficerRoleSyncModes.has(officerId)) {
+        queueOfficerRoleSync(officerId, pendingOfficerRoleSyncModes.get(officerId))
+      }
+    }
+  })()
 }
 
 export function queueAllOfficerRoleSync() {

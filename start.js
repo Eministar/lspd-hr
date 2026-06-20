@@ -17,9 +17,16 @@ const { spawnSync } = require('node:child_process')
 const { parse } = require('node:url')
 
 const projectDir = path.resolve(__dirname)
-const webhookUrl =
+const rawWebhookUrl =
   String(process.env.DISCORD_WEBHOOK_URL || '').trim() ||
   String(process.env.LSPD_DISCORD_WEBHOOK_URL || '').trim()
+const webhookUrl = rawWebhookUrl
+  ? (() => {
+      const url = new URL(rawWebhookUrl)
+      url.searchParams.set('with_components', 'true')
+      return url.toString()
+    })()
+  : ''
 const discordBotToken =
   String(process.env.DISCORD_BOT_TOKEN || '').trim() ||
   String(process.env.LSPD_DISCORD_BOT_TOKEN || '').trim()

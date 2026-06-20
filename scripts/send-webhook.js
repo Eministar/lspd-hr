@@ -2,9 +2,16 @@
 require('dotenv/config')
 const fs = require('node:fs')
 
-const webhookUrl =
+const rawWebhookUrl =
   String(process.env.DISCORD_WEBHOOK_URL || '').trim() ||
   String(process.env.LSPD_DISCORD_WEBHOOK_URL || '').trim()
+const webhookUrl = rawWebhookUrl
+  ? (() => {
+      const url = new URL(rawWebhookUrl)
+      url.searchParams.set('with_components', 'true')
+      return url.toString()
+    })()
+  : ''
 
 const severityMeta = {
   info: { icon: 'ℹ️', label: 'Information' },

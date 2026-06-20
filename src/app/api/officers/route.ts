@@ -10,7 +10,14 @@ import { nextBadgeForRank, normalizeBadgeNumber } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { eligibleTrainingsForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
-import { canCheckDiscordGuildMembers, getDiscordGuildMembers, queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import {
+  canCheckDiscordGuildMembers,
+  getCachedDiscordGuildMembers,
+  getDiscordConfig,
+  queueDiscordHrEvent,
+  queueOfficerRoleSync,
+  refreshDiscordGuildMembers,
+} from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 
 function validDiscordId(value: string | null | undefined) {
@@ -47,7 +54,7 @@ export async function GET(req: NextRequest) {
   else where.status = { not: 'TERMINATED' }
   if (rankId) where.rankId = rankId
 
-  const [officers, trainings, canCheckDiscordMembers] = await Promise.all([
+  const [officers, trainings, discordConfig, canCheckDiscordMembers] = await Promise.all([
     prisma.officer.findMany({
       where,
       include: {
@@ -60,9 +67,16 @@ export async function GET(req: NextRequest) {
       include: { minRank: true },
       orderBy: { sortOrder: 'asc' },
     }),
+    getDiscordConfig(),
     canCheckDiscordGuildMembers(),
   ])
-  const discordMembers = canCheckDiscordMembers ? await getDiscordGuildMembers() : []
+  const cachedDiscordMembers = canCheckDiscordMembers
+    ? getCachedDiscordGuildMembers(discordConfig.guildId)
+    : null
+  if (canCheckDiscordMembers && !cachedDiscordMembers) {
+    refreshDiscordGuildMembers(discordConfig.guildId)
+  }
+  const discordMembers = cachedDiscordMembers ?? []
   const discordMemberIds = new Set(discordMembers.map((member) => member.user?.id).filter(Boolean))
 
   return success(officers.map((officer) => {
@@ -70,7 +84,7 @@ export async function GET(req: NextRequest) {
     return {
       ...withOfficerTrainingRows(officer, trainings),
       discordMember: {
-        checked: canCheckDiscordMembers && !!discordId,
+        checked: canCheckDiscordMembers && cachedDiscordMembers !== null && !!discordId,
         inGuild: !!discordId && discordMemberIds.has(discordId),
       },
     }
