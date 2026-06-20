@@ -3,6 +3,7 @@ import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix } from './settings-helpers'
+import { displayBadgeNumber } from './badge-number'
 import { queueDiscordWebhookEvent } from './discord-webhook'
 import {
   actionRow,
@@ -490,7 +491,7 @@ function officerBadge(officer: Pick<OfficerForDiscord, 'badgeNumber'>) {
 }
 
 function desiredNickname(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber'>) {
-  const nick = `[LSPD-${officerBadge(officer)}] ${officerName(officer)}`.replace(/\s+/g, ' ').trim()
+  const nick = `[LSPD-${displayBadgeNumber(officer.badgeNumber)}] ${officerName(officer)}`.replace(/\s+/g, ' ').trim()
   return truncate(nick, 32)
 }
 

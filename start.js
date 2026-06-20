@@ -260,9 +260,15 @@ function officerUnitKeys(officer) {
   return officer.unit ? [officer.unit] : []
 }
 
+function displayBadgeNumber(value) {
+  const badgeNumber = String(value || '').trim()
+  if (!badgeNumber) return ''
+  return badgeNumber.replace(/(\d+)$/, (digits) => digits.padStart(2, '0'))
+}
+
 function desiredNickname(officer) {
   const name = `${officer.firstName} ${officer.lastName}`.replace(/\s+/g, ' ').trim()
-  const nick = `[LSPD-${String(officer.badgeNumber || '').trim()}] ${name}`.replace(/\s+/g, ' ').trim()
+  const nick = `[LSPD-${displayBadgeNumber(officer.badgeNumber)}] ${name}`.replace(/\s+/g, ' ').trim()
   return truncate(nick, 32)
 }
 
