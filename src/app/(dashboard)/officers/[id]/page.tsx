@@ -617,9 +617,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       if (!res.ok) throw new Error(json.error || 'Fehler')
       if (json.data?.officer) setOfficer(json.data.officer)
       notifyLiveUpdate()
-    } catch {
+    } catch (err) {
       setOfficer(previous)
-      addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
+      addToast({
+        type: 'error',
+        title: 'Fehler beim Aktualisieren',
+        message: err instanceof Error ? err.message : '',
+      })
     }
   }, [canEditTrainings, officer, id, setOfficer, setPendingTrainingOverride, addToast])
 

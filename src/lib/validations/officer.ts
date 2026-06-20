@@ -40,6 +40,9 @@ export const updateTrainingsSchema = z.object({
   trainings: z.array(z.object({
     trainingId: z.string(),
     completed: z.boolean(),
-  })),
+  })).max(200).refine(
+    (trainings) => new Set(trainings.map((training) => training.trainingId)).size === trainings.length,
+    { message: 'Eine Ausbildung darf nur einmal übermittelt werden' },
+  ),
   overrideTrainingIds: z.array(z.string()).optional().default([]),
 })

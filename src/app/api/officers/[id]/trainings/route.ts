@@ -49,13 +49,31 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const previousByTrainingId = new Map(
       previousOfficer.trainings.map((training) => [training.trainingId, training]),
     )
+    const changedUpdates = parsed.data.trainings.filter((trainingUpdate) => (
+      (previousByTrainingId.get(trainingUpdate.trainingId)?.completed ?? false) !== trainingUpdate.completed
+    ))
 
-    for (const t of parsed.data.trainings) {
-      await prisma.officerTraining.upsert({
-        where: { officerId_trainingId: { officerId: id, trainingId: t.trainingId } },
-        update: { completed: t.completed },
-        create: { officerId: id, trainingId: t.trainingId, completed: t.completed },
-      })
+    if (changedUpdates.length > 0) {
+      const missingUpdates = changedUpdates.filter((trainingUpdate) => (
+        !previousByTrainingId.has(trainingUpdate.trainingId)
+      ))
+
+      await prisma.$transaction([
+        ...(missingUpdates.length > 0
+          ? [prisma.officerTraining.createMany({
+              data: missingUpdates.map((trainingUpdate) => ({
+                officerId: id,
+                trainingId: trainingUpdate.trainingId,
+                completed: trainingUpdate.completed,
+              })),
+              skipDuplicates: true,
+            })]
+          : []),
+        ...changedUpdates.map((trainingUpdate) => prisma.officerTraining.updateMany({
+          where: { officerId: id, trainingId: trainingUpdate.trainingId },
+          data: { completed: trainingUpdate.completed },
+        })),
+      ])
     }
 
     const officer = await prisma.officer.findUnique({
@@ -68,9 +86,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!officer) return notFound('Officer')
     const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
 
-    const changedTrainings = parsed.data.trainings.flatMap((trainingUpdate) => {
+    const changedTrainings = changedUpdates.flatMap((trainingUpdate) => {
       const previous = previousByTrainingId.get(trainingUpdate.trainingId)
-      if (previous?.completed === trainingUpdate.completed) return []
 
       const current = officerWithTrainingRows.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
       const label = current?.training.label ?? previous?.training.label ?? trainingUpdate.trainingId
@@ -78,9 +95,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         `${label}: ${trainingStateLabel(previous?.completed ?? false)} → ${trainingStateLabel(trainingUpdate.completed)}`,
       ]
     })
-    const trainingChanges = parsed.data.trainings.flatMap((trainingUpdate) => {
+    const trainingChanges = changedUpdates.flatMap((trainingUpdate) => {
       const previous = previousByTrainingId.get(trainingUpdate.trainingId)
-      if (previous?.completed === trainingUpdate.completed) return []
 
       const current = officerWithTrainingRows.trainings.find((training) => training.trainingId === trainingUpdate.trainingId)
       const training = current?.training ?? previous?.training
@@ -121,6 +137,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    if (typeof e === 'object' && e !== null && 'code' in e) {
+      const code = String((e as { code?: unknown }).code ?? '')
+      if (code === 'P2002') return error('Diese Ausbildung ist dem Officer bereits zugeordnet', 409)
+      if (code === 'P2003') return error('Officer oder Ausbildung existiert nicht mehr', 409)
+    }
     return error(msg, 500)
   }
 }

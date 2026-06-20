@@ -633,14 +633,18 @@ export default function OfficersPage() {
           })
         }
         notifyLiveUpdate()
-      } catch {
+      } catch (err) {
         setData((prev) => {
           if (!prev) return prev
           return prev.map((row) =>
             row.id === officerId ? { ...row, trainings: previousTrainings } : row
           )
         })
-        addToast({ type: 'error', title: 'Fehler beim Aktualisieren' })
+        addToast({
+          type: 'error',
+          title: 'Fehler beim Aktualisieren',
+          message: err instanceof Error ? err.message : '',
+        })
       }
     },
     [canEditTrainings, officers, setData, addToast]
