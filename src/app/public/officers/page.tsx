@@ -6,6 +6,7 @@ import { Search, Shield } from 'lucide-react'
 import { PageLoader } from '@/components/ui/loading'
 import { useFetch } from '@/hooks/use-fetch'
 import { cn, getStatusDot, getStatusLabel } from '@/lib/utils'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Officer {
   badgeNumber: string
@@ -66,7 +67,7 @@ export default function PublicOfficersPage() {
             <div className="divide-y divide-[#18385f]">
               {filtered.map((officer) => (
                 <div key={`${officer.badgeNumber}-${officer.firstName}-${officer.lastName}`} className="flex items-center gap-4 px-4 py-3.5">
-                  <span className="w-16 shrink-0 font-mono text-[12px] text-[#b7c5d8]">{officer.badgeNumber}</span>
+                  <span className="w-16 shrink-0 font-mono text-[12px] text-[#b7c5d8]">{displayBadgeNumber(officer.badgeNumber)}</span>
                   <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: officer.rank.color }} />
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-[13.5px] font-medium text-[#eee]">{officer.firstName} {officer.lastName}</p>

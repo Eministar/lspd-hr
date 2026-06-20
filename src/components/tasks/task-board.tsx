@@ -40,6 +40,7 @@ import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { cn, formatDate } from '@/lib/utils'
 import { hasPermission, type Permission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 type TaskModule = 'ACADEMY' | 'HR' | 'SRU' | 'DETECTIVE'
 type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
@@ -193,7 +194,7 @@ function AssigneePill({ officer, onRemove }: { officer: AssignmentOfficer; onRem
         className="hover:text-[#d4af37] transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
-        {officerLabel(officer)} <span className="text-[10px] text-[#6b8299] font-mono">#{officer.badgeNumber}</span>
+        {officerLabel(officer)} <span className="text-[10px] text-[#6b8299] font-mono">#{displayBadgeNumber(officer.badgeNumber)}</span>
       </Link>
       {onRemove && (
         <button
@@ -304,7 +305,7 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
                     />
                     <span className="flex-1 min-w-0 truncate text-[13px] text-[#edf4fb]">
                       {officerLabel(o)}
-                      <span className="text-[#6b8299] font-mono ml-1.5 text-[11px]">#{o.badgeNumber}</span>
+                      <span className="text-[#6b8299] font-mono ml-1.5 text-[11px]">#{displayBadgeNumber(o.badgeNumber)}</span>
                     </span>
                     <span className="text-[11px] text-[#6b8299] truncate max-w-[120px]">{o.rank.name}</span>
                   </button>

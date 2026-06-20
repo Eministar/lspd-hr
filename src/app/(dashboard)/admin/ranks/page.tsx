@@ -13,6 +13,7 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
+import { displayBadgeNumber, formatBadgeNumber } from '@/lib/badge-number'
 
 interface Rank {
   id: string
@@ -225,7 +226,9 @@ export default function RanksPage() {
               <div className="flex-1 min-w-0">
                 <span className="text-[13.5px] font-medium text-[#eee]">{rank.name}</span>
                 {rank.badgeMin != null && rank.badgeMax != null && (
-                  <span className="ml-2 text-[10px] text-[#4a6585] font-mono">DN {rank.badgeMin}–{rank.badgeMax}</span>
+                  <span className="ml-2 text-[10px] text-[#4a6585] font-mono">
+                    DN {formatBadgeNumber(rank.badgeMin, '')}–{formatBadgeNumber(rank.badgeMax, '')}
+                  </span>
                 )}
                 {roleName(discordData?.config.rankRoleMap[rank.id]) && (
                   <span className="ml-2 text-[11px] text-[#6b8299]">Discord: {roleName(discordData?.config.rankRoleMap[rank.id])}</span>
@@ -264,7 +267,7 @@ export default function RanksPage() {
                   <Ban size={15} strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-mono font-medium text-[#eee]">{row.badgeNumber}</p>
+                  <p className="text-[13.5px] font-mono font-medium text-[#eee]">{displayBadgeNumber(row.badgeNumber)}</p>
                   <p className="text-[11.5px] text-[#4a6585] truncate">{row.reason || 'Keine Begründung'}</p>
                 </div>
                 <button onClick={() => handleBlacklistDelete(row.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">

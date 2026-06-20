@@ -11,6 +11,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
+import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface AuditLog {
   id: string
@@ -83,7 +84,7 @@ export default function LogsPage() {
                       {log.officer && (
                         <p className="text-[13px] font-medium text-[#eee]">
                           {log.officer.firstName} {log.officer.lastName}
-                          <span className="text-[#bbb] font-normal ml-1">({log.officer.badgeNumber})</span>
+                          <span className="text-[#bbb] font-normal ml-1">({displayBadgeNumber(log.officer.badgeNumber)})</span>
                         </p>
                       )}
                       {log.details && (
