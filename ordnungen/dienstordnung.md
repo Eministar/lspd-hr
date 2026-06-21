@@ -266,6 +266,8 @@ Die Einhaltung dieser Dienstordnung ist die Grundlage eines funktionierenden, ve
 
 (4) Jeder Officer ist verpflichtet, die entsprechenden Ausbildungen für Sondereinsätze regelmäßig zu absolvieren.
 
+(5) Bei der Durchführung eines **Banktransports** dürfen **maximal 3 gepanzerte Fahrzeuge** eingesetzt werden.
+
 ---
 
 ## §13 Festnahmen, Miranda-Warnung & Polizeigewahrsam
