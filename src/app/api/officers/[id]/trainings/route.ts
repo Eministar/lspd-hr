@@ -37,18 +37,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       orderBy: { sortOrder: 'asc' },
     })
     const trainingById = new Map(trainings.map((training) => [training.id, training]))
+    const previousByTrainingId = new Map(
+      previousOfficer.trainings.map((training) => [training.trainingId, training]),
+    )
 
     for (const t of parsed.data.trainings) {
       const training = trainingById.get(t.trainingId)
       if (!training) return error('Ausbildung nicht gefunden')
-      if (t.completed && !isTrainingAvailableForRank(training, previousOfficer.rank) && !parsed.data.overrideTrainingIds.includes(t.trainingId)) {
+      const wasCompleted = previousByTrainingId.get(t.trainingId)?.completed ?? false
+      if (
+        t.completed &&
+        !wasCompleted &&
+        !isTrainingAvailableForRank(training, previousOfficer.rank) &&
+        !parsed.data.overrideTrainingIds.includes(t.trainingId)
+      ) {
         return error('Ausbildung ist für den Rang dieses Officers nicht verfügbar')
       }
     }
 
-    const previousByTrainingId = new Map(
-      previousOfficer.trainings.map((training) => [training.trainingId, training]),
-    )
     const changedUpdates = parsed.data.trainings.filter((trainingUpdate) => (
       (previousByTrainingId.get(trainingUpdate.trainingId)?.completed ?? false) !== trainingUpdate.completed
     ))

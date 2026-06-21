@@ -1,26 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, ListChecks } from 'lucide-react'
+import { CalendarDays, FileText, FolderOpen, GraduationCap, ListChecks } from 'lucide-react'
 import { TaskBoard } from '@/components/tasks/task-board'
+import { ModuleDocuments } from '@/components/modules/module-documents'
 import { ModuleCalendar } from '@/components/modules/module-calendar'
+import { AcademyResources } from '@/components/modules/academy-resources'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
-type Tab = 'tasks' | 'calendar'
+type Tab = 'documents' | 'files' | 'training' | 'tasks' | 'calendar'
 
 const tabs = [
+  { id: 'documents' as const, label: 'Dokumente', icon: FileText },
+  { id: 'files' as const, label: 'Dateien', icon: FolderOpen },
+  { id: 'training' as const, label: 'Ausbildungen', icon: GraduationCap },
   { id: 'tasks' as const, label: 'Aufgaben', icon: ListChecks },
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
 ]
+
+const EMPTY_ACADEMY_DOCUMENT = `# Neues Academy-Dokument
+
+## Thema
+
+- Ausbildungsziel
+- Voraussetzungen
+
+## Ablauf
+
+| Abschnitt | Inhalt | Status |
+| --- | --- | --- |
+|  |  | Offen |
+
+## Notizen
+
+`
 
 export default function AcademyPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'academy:view')
   const canManage = hasPermission(user, 'academy:manage')
-  const [activeTab, setActiveTab] = useState<Tab>('tasks')
+  const [activeTab, setActiveTab] = useState<Tab>('documents')
 
   if (!canView) return <UnauthorizedContent />
 
@@ -49,6 +71,17 @@ export default function AcademyPage() {
         })}
       </div>
 
+      {activeTab === 'documents' && (
+        <ModuleDocuments
+          module="ACADEMY"
+          title="Academy Dokumente"
+          description="Interne Ausbildungsunterlagen, Leitfäden und Vorlagen der Academy"
+          emptyDocument={EMPTY_ACADEMY_DOCUMENT}
+          canManage={canManage}
+        />
+      )}
+      {activeTab === 'files' && <AcademyResources mode="files" canManage={canManage} />}
+      {activeTab === 'training' && <AcademyResources mode="training" canManage={canManage} />}
       {activeTab === 'tasks' && (
         <TaskBoard
           module="ACADEMY"

@@ -50,6 +50,11 @@ type DiscordTrainingChange = {
   previousCompleted?: boolean
 }
 
+type DiscordUnitChange = {
+  previous: string[]
+  current: string[]
+}
+
 type DiscordGuildMember = {
   user?: DiscordApiUser
   roles?: string[]
@@ -114,6 +119,7 @@ type DiscordHrEventInput = {
   actor?: UserForDiscord
   fields?: DiscordField[]
   trainingChanges?: DiscordTrainingChange[]
+  unitChange?: DiscordUnitChange
 }
 
 type DiscordUpdateAnnouncementInput = {
@@ -1219,6 +1225,30 @@ function trainingChangeLine(change: DiscordTrainingChange, config: DiscordConfig
   return `- ${trainingRoleValue(config, change)}: \`${trainingStatusLabel(change.previousCompleted ?? false)} → ${trainingStatusLabel(change.completed)}\``
 }
 
+async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig) {
+  const keys = Array.from(new Set([...change.previous, ...change.current]))
+  const units = keys.length > 0
+    ? await prisma.unit.findMany({
+        where: { key: { in: keys } },
+        select: { key: true, name: true },
+      })
+    : []
+  const namesByKey = new Map(units.map((unit) => [unit.key, unit.name]))
+  const formatUnits = (unitKeys: string[]) => {
+    if (unitKeys.length === 0) return '*Keine Unit*'
+    return unitKeys.map((key) => {
+      const roleId = snowflake(config.unitRoleMap[key])
+      return roleId ? `<@&${roleId}>` : `**${namesByKey.get(key) ?? key}**`
+    }).join('  ·  ')
+  }
+
+  return [
+    '### Unit-Zuordnung',
+    `**Vorher**\n> ${formatUnits(change.previous)}`,
+    `**Neu zugeordnet**\n> ${formatUnits(change.current)}`,
+  ].join('\n\n')
+}
+
 async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: DiscordConfig) {
   const officer = event.officer
   const meta = EVENT_META[event.type]
@@ -1254,12 +1284,16 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
   const trainingBlock = event.type === 'training' && event.trainingChanges?.length
     ? `### Ausbildungen\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
     : null
+  const unitsBlock = event.unitChange
+    ? await unitChangeBlock(event.unitChange, config)
+    : null
 
   return componentMessage(markdownTextDisplays([
     markdownHeader(meta.icon, customHeading, headingSubject),
     event.description ? markdownQuote(event.description) : null,
     rows.length ? markdownRows(rows) : null,
     trainingBlock,
+    unitsBlock,
     markdownMeta([
       `${event.type === 'sanction' ? 'Ausgestellt' : 'Bearbeitet'} von ${actorLabel}`,
       discordTimestamp(now, 'f'),

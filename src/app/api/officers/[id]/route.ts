@@ -225,10 +225,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (rankChanged || unitsChanged) {
+      const previousUnits = normalizeUnitKeys(existing.units)
       queueDiscordHrEvent({
         type: rankChanged ? 'promotion' : 'units',
-        title: rankChanged ? 'Rang geändert' : 'Unit geändert',
-        description: 'Aktualisierung über das HR-Panel.',
+        title: rankChanged && unitsChanged
+          ? 'Rang und Unit-Zuordnung geändert'
+          : rankChanged
+            ? 'Rang geändert'
+            : 'Unit-Zuordnung geändert',
+        description: unitsChanged
+          ? 'Die organisatorische Zuordnung wurde im HR-Panel aktualisiert.'
+          : 'Der Rang wurde im HR-Panel aktualisiert.',
         officer: updated,
         actor: user,
         fields: [
@@ -236,12 +243,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             { name: 'Alter Rang', value: existing.rank.name, inline: true },
             { name: 'Neuer Rang', value: `**${updated.rank.name}**`, inline: true },
           ] : []),
-          ...(unitsChanged ? [{
-            name: 'Units',
-            value: `${normalizeUnitKeys(existing.units).join(', ') || '—'}\n→ **${unitKeys?.join(', ') || '—'}**`,
-            inline: false,
-          }] : []),
         ],
+        unitChange: unitsChanged
+          ? { previous: previousUnits, current: unitKeys ?? [] }
+          : undefined,
       })
     }
 

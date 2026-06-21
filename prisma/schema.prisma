@@ -77,6 +77,16 @@ enum ProbationStatus {
   FAILED
 }
 
+enum AcademyResourceType {
+  FILE
+  LINK
+}
+
+enum AcademyResourceScope {
+  GENERAL
+  TRAINING
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -126,6 +136,7 @@ model User {
   patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
   apiTokensOwned      ApiToken[]     @relation("ApiTokenOwner")
   apiTokensCreated    ApiToken[]     @relation("ApiTokenCreator")
+  academyResourcesCreated AcademyResource[] @relation("AcademyResourceCreator")
 }
 
 model UserGroupMembership {
@@ -182,8 +193,33 @@ model Training {
   createdAt DateTime @default(now())
 
   officerTrainings OfficerTraining[]
+  academyResources AcademyResource[]
 
   @@index([minRankId])
+}
+
+model AcademyResource {
+  id                 String               @id @default(cuid())
+  scope              AcademyResourceScope
+  type               AcademyResourceType
+  title              String
+  description        String?              @db.Text
+  trainingId         String?
+  training           Training?            @relation(fields: [trainingId], references: [id], onDelete: SetNull)
+  customTrainingName String?
+  url                String?              @db.Text
+  storedFilename     String?
+  originalFilename   String?
+  mimeType           String?
+  size               Int?
+  createdById        String?
+  createdBy          User?                @relation("AcademyResourceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([scope, createdAt])
+  @@index([trainingId, createdAt])
+  @@index([createdById])
 }
 
 model Officer {

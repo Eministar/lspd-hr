@@ -52,17 +52,28 @@ export function Modal({ open, onClose, title, description, children, className, 
                 )}
               >
                 <div className="p-6">
-                  {title && (
+                  {title ? (
                     <div className="mb-5">
                       <Dialog.Title className="text-[15px] font-semibold text-white">
                         {title}
                       </Dialog.Title>
-                      {description && (
+                      {description ? (
                         <Dialog.Description className="text-[13px] text-[#8ea4bd] mt-1">
                           {description}
                         </Dialog.Description>
+                      ) : (
+                        <Dialog.Description className="sr-only">
+                          Dialog für {title}
+                        </Dialog.Description>
                       )}
                     </div>
+                  ) : (
+                    <>
+                      <Dialog.Title className="sr-only">Dialog</Dialog.Title>
+                      <Dialog.Description className="sr-only">
+                        {description ?? 'Dialogfenster'}
+                      </Dialog.Description>
+                    </>
                   )}
                   {children}
                 </div>
