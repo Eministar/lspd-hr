@@ -1,7 +1,7 @@
 # Dienstordnung der Human Resources Abteilung
 
 **Las Santos Police Department – Nerowood** <br>
-Stand: 17.05.2026
+Stand: 22.06.2026
 
 ---
 
@@ -42,17 +42,19 @@ Stand: 17.05.2026
 
 ## §3 Bewerbungsordnung
 
-(1) Neueinstellungen erfolgen **ausschließlich auf Rookie-Ebene**.
+(1) Neueinstellungen erfolgen **grundsätzlich auf Rookie-Ebene**.
 
-(2) Abweichungen von dieser Regelung (z. B. Quereinstiege auf höheren Rängen) sind **ausnahmslos mit der Chiefebene abzustimmen** und bedürfen deren ausdrücklicher Zustimmung.
+(2) Die **HR-Leitungsebene** (HR-Leitung sowie Stv. HR-Leitung) besitzt die **eigenständige Kompetenz, Bewerber direkt auf einem höheren Rang einzustellen** (Quereinstieg).
 
-(3) Eine eigenmächtige Einstellung auf einem höheren Rang durch die HR ist untersagt.
+(3) Eine Einstellung auf höherem Rang ist stets **schriftlich zu begründen** und vollständig zu dokumentieren. Die Verantwortung trägt das freigebende HR-Leitungsmitglied.
 
-(4) Bewerbungsgespräche sind stets von **mindestens einem HR-Officer** durchzuführen. HR-Trainees dürfen Gespräche lediglich begleitend führen.
+(4) **HR-Officer und HR-Trainees** sind von dieser Kompetenz ausgenommen und dürfen Einstellungen weiterhin ausschließlich auf Rookie-Ebene vornehmen.
 
-(5) Jede Bewerbung ist **vollständig zu dokumentieren** (Name, Datum, durchführender Officer, Ergebnis).
+(5) Bewerbungsgespräche sind stets von **mindestens einem HR-Officer** durchzuführen. HR-Trainees dürfen Gespräche lediglich begleitend führen.
 
-(6) Abgelehnte Bewerber haben eine **Sperrfrist von 7 Tagen**, bevor eine erneute Bewerbung möglich ist. Ausnahmen sind durch die HR-Leitung zu genehmigen.
+(6) Jede Bewerbung ist **vollständig zu dokumentieren** (Name, Datum, durchführender Officer, eingestellter Rang, Ergebnis).
+
+(7) Abgelehnte Bewerber haben eine **Sperrfrist von 7 Tagen**, bevor eine erneute Bewerbung möglich ist. Ausnahmen sind durch die HR-Leitung zu genehmigen.
 
 ---
 
@@ -135,21 +137,25 @@ Stand: 17.05.2026
 
 **Upranks**
 
-(1) Die HR kann **Vorschläge** für Beförderungen aussprechen.
+(1) Die **HR-Leitungsebene** (HR-Leitung sowie Stv. HR-Leitung) besitzt die **eigenständige Kompetenz, Upranks zu vergeben** sowie **beantragte Upranks von Beamten zu verweigern**.
 
-(2) Die **endgültige Entscheidungsgewalt** über jede Beförderung liegt ausschließlich bei der **Chiefebene**.
+(2) HR-Officer und HR-Trainees können weiterhin lediglich **Vorschläge** für Beförderungen aussprechen; die Entscheidung trifft die HR-Leitungsebene.
 
-(3) Vorschläge der HR sind stets schriftlich und mit Begründung einzureichen.
+(3) Jede Vergabe oder Verweigerung eines Upranks ist **schriftlich zu begründen** und im Aktensystem zu dokumentieren.
+
+(4) Die Verweigerung eines Upranks ist dem betroffenen Beamten **nachvollziehbar mitzuteilen**. Ein Beamter hat keinen automatischen Anspruch auf eine Beförderung.
 
 **Deranks**
 
-(4) Deranks dürfen ausschließlich von einer Person eingetragen werden, die **im Rang höher steht als die zu derankende Person**.
+(5) Deranks dürfen ausschließlich von einer Person eingetragen werden, die **im Rang höher steht als die zu derankende Person**.
 
-(5) Auch hier gilt: Die endgültige Entscheidung über einen Derank liegt bei der Chiefebene; die HR äußert lediglich Vorschläge.
+(6) Die Entscheidung über einen Derank liegt bei der **HR-Leitungsebene**; HR-Officer und HR-Trainees äußern lediglich Vorschläge.
 
-(6) Jeder Derank ist **schriftlich zu begründen** und im Aktensystem zu dokumentieren.
+(7) Jeder Derank ist **schriftlich zu begründen** und im Aktensystem zu dokumentieren.
 
-(7) Der Betroffene ist über den Derank und dessen Gründe **unverzüglich zu informieren**.
+(8) Der Betroffene ist über den Derank und dessen Gründe **unverzüglich zu informieren**.
+
+(9) Schwerwiegende Personalentscheidungen (z. B. Deranks über mehrere Ränge oder mit weitreichenden Folgen) werden der Chiefebene **nachrichtlich zur Kenntnis gegeben**.
 
 ---
 
@@ -187,7 +193,49 @@ Stand: 17.05.2026
 
 ---
 
-## §11 Schlussbestimmungen
+## §11 Aktenführung & Dokumentation
+
+(1) Sämtliche personalrelevanten Vorgänge (Einstellungen, Sanktionen, Beschwerden, Versetzungen, Upranks und Deranks) sind **lückenlos und nachvollziehbar** im internen Aktensystem zu dokumentieren.
+
+(2) Jede Eintragung muss mindestens **Datum, durchführendes HR-Mitglied, betroffene Person und Begründung** enthalten.
+
+(3) Nachträgliche Änderungen an bestehenden Akteneinträgen sind **kenntlich zu machen** und dürfen niemals bestehende Einträge unkenntlich löschen.
+
+(4) Eine fehlende oder fehlerhafte Dokumentation kann zur **Unwirksamkeit der jeweiligen Maßnahme** führen.
+
+---
+
+## §12 Kompetenzen der HR-Leitungsebene
+
+(1) Die **HR-Leitungsebene** umfasst die HR-Leitung sowie die Stv. HR-Leitung.
+
+(2) Ihr obliegen insbesondere folgende eigenständige Kompetenzen:
+- **Direkteinstellung** von Bewerbern auf höheren Rängen (§3),
+- **Vergabe und Verweigerung von Upranks** (§7),
+- **Entscheidung über Deranks** (§7),
+- **Freigabe von Sanktionen** (§4) und Versetzungen (§6).
+
+(3) Die HR-Leitungsebene trägt für diese Entscheidungen die **volle Verantwortung** und ist zu einer sorgfältigen, nachvollziehbaren und dokumentierten Ausübung verpflichtet.
+
+(4) Die **HR-Leitungsebene besitzt grundsätzlich ein Vetorecht** in sämtlichen personalrelevanten Angelegenheiten ihres Zuständigkeitsbereichs.
+
+(5) Die **allgemeine Leitungsebene** der Abteilungen besitzt **kein Vetorecht** gegenüber Entscheidungen der HR-Leitungsebene.
+
+(6) Die **Chiefebene** besitzt als höchste Instanz des Departments **dennoch ein Vetorecht** und kann Entscheidungen der HR-Leitungsebene in begründeten Fällen aufheben. Bis zur Ausübung dieses Vetos bleiben getroffene Entscheidungen wirksam.
+
+---
+
+## §13 Eskalation & Konfliktfälle
+
+(1) Bei Unstimmigkeiten innerhalb der HR-Abteilung ist stets der **Dienstweg über die nächsthöhere Ebene** einzuhalten.
+
+(2) Kann ein Konflikt nicht intern gelöst werden, wird dieser der **HR-Leitung**, in letzter Instanz der **Chiefebene**, zur Klärung vorgelegt.
+
+(3) In dringenden Fällen, die ein sofortiges Handeln erfordern, darf jedes HR-Leitungsmitglied vorläufige Maßnahmen ergreifen, die **unverzüglich nachträglich zu dokumentieren und zu begründen** sind.
+
+---
+
+## §14 Schlussbestimmungen
 
 (1) Diese Dienstordnung tritt mit Veröffentlichung in Kraft und ist für alle Angehörigen der HR-Abteilung verbindlich.
 
