@@ -592,22 +592,34 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   })
   const map = Object.fromEntries(rows.map((row) => [row.key, row.value]))
 
+  // ENV-VORRANG: In der .env gesetzte Werte gewinnen IMMER gegen die DB.
+  // Scalars → env zuerst, DB nur als Fallback wenn env leer.
+  // Admin-/Login-Rollen → Vereinigung: in der .env definierte Rollen sind IMMER
+  // enthalten und können über DB/UI niemals entfernt werden (Break-Glass), egal
+  // auf welchem Discord-Server. So sperrt man sich nach einem Serverwechsel nicht
+  // mehr aus, indem die DB noch alte Rollen/Guild-IDs hält.
+  const envFirst = (envValue: string, dbValue: string | undefined) => envValue || dbValue || ''
+  const envLoginRoles = cleanRoleIds(envAuthLoginRoleIds())
+  const envAdminRoles = cleanRoleIds(envAdminRoleIds())
+  const dbLoginRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], []))
+  const dbAdminRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], []))
+
   return {
-    guildId: map[DISCORD_SETTING_KEYS.guildId] || envGuildId(),
-    applicationId: map[DISCORD_SETTING_KEYS.applicationId] || envApplicationId(),
-    announcementsChannelId: map[DISCORD_SETTING_KEYS.announcementsChannelId] || envAnnouncementsChannelId(),
-    updateChannelId: map[DISCORD_SETTING_KEYS.updateChannelId] || envUpdateChannelId(),
-    sanctionsChannelId: map[DISCORD_SETTING_KEYS.sanctionsChannelId] || envSanctionsChannelId(),
-    dutyStatusChannelId: map[DISCORD_SETTING_KEYS.dutyStatusChannelId] || envDutyStatusChannelId(),
-    dutyAdminLogChannelId: map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] || envDutyAdminLogChannelId(),
+    guildId: envFirst(envGuildId(), map[DISCORD_SETTING_KEYS.guildId]),
+    applicationId: envFirst(envApplicationId(), map[DISCORD_SETTING_KEYS.applicationId]),
+    announcementsChannelId: envFirst(envAnnouncementsChannelId(), map[DISCORD_SETTING_KEYS.announcementsChannelId]),
+    updateChannelId: envFirst(envUpdateChannelId(), map[DISCORD_SETTING_KEYS.updateChannelId]),
+    sanctionsChannelId: envFirst(envSanctionsChannelId(), map[DISCORD_SETTING_KEYS.sanctionsChannelId]),
+    dutyStatusChannelId: envFirst(envDutyStatusChannelId(), map[DISCORD_SETTING_KEYS.dutyStatusChannelId]),
+    dutyAdminLogChannelId: envFirst(envDutyAdminLogChannelId(), map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId]),
     dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
-    absenceStatusChannelId: map[DISCORD_SETTING_KEYS.absenceStatusChannelId] || envAbsenceStatusChannelId(),
+    absenceStatusChannelId: envFirst(envAbsenceStatusChannelId(), map[DISCORD_SETTING_KEYS.absenceStatusChannelId]),
     absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
-    humanResourcesRoleId: map[DISCORD_SETTING_KEYS.humanResourcesRoleId] || envHumanResourcesRoleId(),
+    humanResourcesRoleId: envFirst(envHumanResourcesRoleId(), map[DISCORD_SETTING_KEYS.humanResourcesRoleId]),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
-    authLoginRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], envAuthLoginRoleIds())),
-    adminRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], envAdminRoleIds())),
+    authLoginRoleIds: Array.from(new Set([...envLoginRoles, ...dbLoginRoles])),
+    adminRoleIds: Array.from(new Set([...envAdminRoles, ...dbAdminRoles])),
     authGroupRoleMap: normalizeAuthGroupRoleMap(
       parseJson(map[DISCORD_SETTING_KEYS.authGroupRoleMap], {}),
       parseJson(map[DISCORD_SETTING_KEYS.legacyAuthRoleGroupMap], {}),
