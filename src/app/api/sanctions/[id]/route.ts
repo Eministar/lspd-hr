@@ -6,6 +6,7 @@ import { error, notFound, success, unauthorized } from '@/lib/api-response'
 import {
   PENAL_GRADES,
   cleanSanctionText,
+  deleteSanctionDiscordMessage,
   dueAtFromDeadlineDays,
   escalateSanction,
   formatFineAmount,
@@ -152,11 +153,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     const existing = await getSanctionById(id)
     if (!existing) return notFound('Sanktion')
 
-    await syncSanctionDiscordMessage(existing, {
-      description: 'Sanktion wurde gelöscht.',
-      note: 'Der Eintrag wurde im HR-Dashboard gelöscht.',
-      allowCreate: false,
-    })
+    await deleteSanctionDiscordMessage(existing)
 
     await prisma.sanction.delete({ where: { id } })
     await createAuditLog({

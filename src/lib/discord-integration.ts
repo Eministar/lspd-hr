@@ -120,6 +120,8 @@ type DiscordHrEventInput = {
   fields?: DiscordField[]
   trainingChanges?: DiscordTrainingChange[]
   unitChange?: DiscordUnitChange
+  /** Discord-User-IDs, die durch diese Nachricht wirklich gepingt werden sollen. */
+  mentionUserIds?: string[]
 }
 
 type DiscordUpdateAnnouncementInput = {
@@ -1340,17 +1342,27 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
     ? await unitChangeBlock(event.unitChange, config)
     : null
 
-  return componentMessage(markdownTextDisplays([
-    markdownHeader(meta.icon, customHeading, headingSubject),
-    event.description ? markdownQuote(event.description) : null,
-    rows.length ? markdownRows(rows) : null,
-    trainingBlock,
-    unitsBlock,
-    markdownMeta([
-      `${event.type === 'sanction' ? 'Ausgestellt' : 'Bearbeitet'} von ${actorLabel}`,
-      discordTimestamp(now, 'f'),
+  const mentionIds = Array.from(
+    new Set((event.mentionUserIds ?? []).map((id) => snowflake(id)).filter((id): id is string => Boolean(id))),
+  )
+  const pingLine = mentionIds.length ? mentionIds.map((id) => `<@${id}>`).join(' ') : null
+  const allowedMentions = mentionIds.length ? { users: mentionIds } : undefined
+
+  return componentMessage(
+    markdownTextDisplays([
+      markdownHeader(meta.icon, customHeading, headingSubject),
+      pingLine,
+      event.description ? markdownQuote(event.description) : null,
+      rows.length ? markdownRows(rows) : null,
+      trainingBlock,
+      unitsBlock,
+      markdownMeta([
+        `${event.type === 'sanction' ? 'Ausgestellt' : 'Bearbeitet'} von ${actorLabel}`,
+        discordTimestamp(now, 'f'),
+      ]),
     ]),
-  ]))
+    allowedMentions ? { allowedMentions } : undefined,
+  )
 }
 
 export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<DiscordHrEventMessage | null> {
@@ -1375,6 +1387,22 @@ export async function editDiscordHrEventMessage(
     method: 'PATCH',
     body: JSON.stringify({ ...payload, content: null, embeds: [] }),
   })
+}
+
+export async function deleteDiscordHrEventMessage(
+  channelId: string | null | undefined,
+  messageId: string | null | undefined,
+) {
+  if (!channelId || !messageId || !botToken()) return
+  try {
+    await discordFetch<void>(`/channels/${channelId}/messages/${messageId}`, {
+      method: 'DELETE',
+    })
+  } catch (error) {
+    // 404 (Unknown Message/Channel) bedeutet, die Nachricht ist bereits weg – das ist in Ordnung.
+    if (error instanceof DiscordApiError && error.status === 404) return
+    throw error
+  }
 }
 
 function chunkLines(lines: string[], maxChars = 1024) {

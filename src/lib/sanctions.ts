@@ -1,5 +1,10 @@
 import { createAuditLog } from './audit'
-import { editDiscordHrEventMessage, sendDiscordHrEvent, type DiscordField } from './discord-integration'
+import {
+  deleteDiscordHrEventMessage,
+  editDiscordHrEventMessage,
+  sendDiscordHrEvent,
+  type DiscordField,
+} from './discord-integration'
 import { prisma } from './prisma'
 import {
   PENAL_GRADES,
@@ -90,34 +95,49 @@ function sanctionOfficerName(sanction: SanctionWithRelations) {
   return `${officer.firstName} ${officer.lastName}`.trim()
 }
 
-function sanctionPenaltyText(sanction: SanctionWithRelations) {
-  const parts = [
-    penalGradeLabel(sanction.penalGrade),
-    `Geldstrafe: ${formatFineAmount(sanction.fineAmount)}`,
-  ]
-  if (sanction.penalty) parts.push(sanction.penalty)
-  return parts.join('\n')
+function discordRelativeTimestamp(value: Date) {
+  return `<t:${Math.floor(value.getTime() / 1000)}:R>`
+}
+
+function sanctionDeadlineValue(sanction: SanctionWithRelations) {
+  if (!sanction.dueAt) return 'Keine Frist'
+  if (sanction.status === 'OPEN') {
+    return `${formatDateTime(sanction.dueAt)} · ${discordRelativeTimestamp(sanction.dueAt)}`
+  }
+  return formatDateTime(sanction.dueAt)
 }
 
 function sanctionDiscordFields(sanction: SanctionWithRelations): DiscordField[] {
-  return [
-    { name: 'Warum', value: sanction.reason, inline: false },
-    { name: 'Strafe', value: sanctionPenaltyText(sanction), inline: false },
-    { name: 'Frist', value: sanction.dueAt ? formatDateTime(sanction.dueAt) : '—', inline: true },
+  const fields: DiscordField[] = [
+    { name: 'Grund', value: sanction.reason, inline: false },
+    {
+      name: 'Penal Grade',
+      value: `\`${sanction.penalGrade}\` · ${penalGradeLabel(sanction.penalGrade)}`,
+      inline: true,
+    },
+    { name: 'Geldstrafe', value: `**${formatFineAmount(sanction.fineAmount)}**`, inline: true },
   ]
+  if (sanction.penalty) {
+    fields.push({ name: 'Maßnahme', value: sanction.penalty, inline: false })
+  }
+  fields.push({ name: 'Frist', value: sanctionDeadlineValue(sanction), inline: true })
+  fields.push({ name: 'Status', value: sanctionStatusLabel(sanction.status), inline: true })
+  return fields
 }
 
 export async function syncSanctionDiscordMessage(
   sanction: SanctionWithRelations,
   options?: { description?: string; note?: string; allowCreate?: boolean },
 ) {
+  const snapshot = officerSnapshot(sanction)
   const event = {
     type: 'sanction' as const,
     title: `Sanktion: ${sanctionOfficerName(sanction)}`,
     description: options?.description,
-    officer: officerSnapshot(sanction),
+    officer: snapshot,
     actor: sanction.issuedBy ?? undefined,
     fields: sanctionDiscordFields(sanction),
+    mentionUserIds: snapshot.discordId ? [snapshot.discordId] : undefined,
   }
 
   try {
@@ -141,6 +161,15 @@ export async function syncSanctionDiscordMessage(
   } catch (error) {
     console.error('[Sanctions] Discord-Embed konnte nicht synchronisiert werden:', error)
     return null
+  }
+}
+
+export async function deleteSanctionDiscordMessage(sanction: SanctionWithRelations) {
+  if (!sanction.discordChannelId || !sanction.discordMessageId) return
+  try {
+    await deleteDiscordHrEventMessage(sanction.discordChannelId, sanction.discordMessageId)
+  } catch (error) {
+    console.error('[Sanctions] Discord-Nachricht konnte nicht gelöscht werden:', error)
   }
 }
 
