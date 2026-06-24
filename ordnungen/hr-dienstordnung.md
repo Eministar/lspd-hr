@@ -199,6 +199,9 @@ Stand: 24.06.2026
 **~Dr. Dr. Emin Perez~** <br>
 *Human Resources Leitung*
 
+**~Fabian Richter~** <br>
+*Human Resources Leitung*
+
 **~Riccardo Izza~** <br>
 *Stv. Human Resources Leitung*
 
