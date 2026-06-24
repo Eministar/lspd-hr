@@ -32,7 +32,7 @@ interface NavContentProps {
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard:view' },
-  { name: 'Dienstordnung', href: '/dienstordnung', icon: FileText },
+  { name: 'Ordnungen', href: '/ordnungen', icon: FileText },
   { name: 'Kalender', href: '/calendar', icon: CalendarDays, permission: 'calendar:view' },
   { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
   { name: 'Streifenboard', href: '/patrol-board', icon: ClipboardList, permission: 'patrol-board:view' },

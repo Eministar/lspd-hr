@@ -27,6 +27,7 @@ export default function OrdnungenPage() {
   const categories = [
     { key: 'Allgemein', label: 'Allgemein', description: 'Allgemeine Dienstordnungen und verbindliche Richtlinien' },
     { key: 'HR', label: 'Human Resources', description: 'Richtlinien und Verfahren für die HR-Abteilung' },
+    { key: 'IA', label: 'Internal Affairs', description: 'Richtlinien und Verfahren für die Internal Affairs-Abteilung' },
   ]
 
   return (
