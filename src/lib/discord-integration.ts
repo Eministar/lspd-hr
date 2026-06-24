@@ -197,6 +197,8 @@ const ABSENCE_EXPIRY_CHECK_INTERVAL_MS = Number.parseInt(
 
 /* ── Rate-Limit Queue ────────────────────────────────────────────── */
 const MAX_RETRIES = 3
+const DISCORD_API_TIMEOUT_MS = Number.parseInt(process.env.DISCORD_API_TIMEOUT_MS || '30000', 10) || 30000
+const TRANSIENT_FETCH_RETRY_DELAYS_MS = [1000, 3000, 7000]
 let rateLimitQueue: Promise<void> = Promise.resolve()
 
 function enqueueRateLimited<T>(fn: () => Promise<T>): Promise<T> {
@@ -524,26 +526,64 @@ function discordTimestamp(date: Date, style: 'F' | 'f' | 'R' | 't' | 'D' = 'f') 
   return `<t:${unixSeconds(date)}:${style}>`
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function errorRecord(error: unknown): Record<string, unknown> | null {
+  return error && typeof error === 'object' ? error as Record<string, unknown> : null
+}
+
+function isTransientDiscordFetchError(error: unknown) {
+  const err = errorRecord(error)
+  const cause = errorRecord(err?.cause)
+  const name = typeof err?.name === 'string' ? err.name : ''
+  const message = typeof err?.message === 'string' ? err.message : ''
+  const causeName = typeof cause?.name === 'string' ? cause.name : ''
+  const causeCode = typeof cause?.code === 'string' ? cause.code : ''
+  const causeMessage = typeof cause?.message === 'string' ? cause.message : ''
+
+  return (
+    (name === 'TypeError' && message === 'fetch failed') ||
+    name === 'TimeoutError' ||
+    causeName === 'ConnectTimeoutError' ||
+    causeName === 'HeadersTimeoutError' ||
+    ['UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_SOCKET', 'ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'EAI_AGAIN'].includes(causeCode) ||
+    /timeout|socket|network/i.test(causeMessage)
+  )
+}
+
 async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
   const token = botToken()
   if (!token) throw new Error('Discord Bot-Token fehlt')
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      authorization: `Bot ${token}`,
-      'content-type': 'application/json',
-      ...init?.headers,
-    },
-    signal: AbortSignal.timeout(15000),
-  })
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        authorization: `Bot ${token}`,
+        'content-type': 'application/json',
+        ...init?.headers,
+      },
+      signal: AbortSignal.timeout(DISCORD_API_TIMEOUT_MS),
+    })
+  } catch (error) {
+    if (attempt < MAX_RETRIES && isTransientDiscordFetchError(error)) {
+      const waitMs = TRANSIENT_FETCH_RETRY_DELAYS_MS[Math.min(attempt, TRANSIENT_FETCH_RETRY_DELAYS_MS.length - 1)]
+      console.warn(`[DiscordIntegration] Discord-Verbindung fehlgeschlagen auf ${path}, neuer Versuch in ${waitMs}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
+      await wait(waitMs)
+      return discordFetchRaw<T>(path, init, attempt + 1)
+    }
+    throw error
+  }
 
   // Rate-Limit: warten und erneut versuchen
   if (res.status === 429 && attempt < MAX_RETRIES) {
     const body = await res.json().catch(() => ({ retry_after: 2 })) as { retry_after?: number }
     const waitMs = Math.min((body.retry_after ?? 2) * 1000, 30000)
     console.warn(`[DiscordIntegration] Rate-Limited auf ${path}, warte ${Math.round(waitMs)}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
-    await new Promise((r) => setTimeout(r, waitMs + 250))
+    await wait(waitMs + 250)
     return discordFetchRaw<T>(path, init, attempt + 1)
   }
 
