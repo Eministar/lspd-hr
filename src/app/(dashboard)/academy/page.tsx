@@ -21,7 +21,7 @@ const tabs = [
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
 ]
 
-const EMPTY_ACADEMY_DOCUMENT = `# Neues Academy-Dokument
+const EMPTY_ACADEMY_DOCUMENT = `# Neues Recruitment-&-Training-Dokument
 
 ## Thema
 
@@ -74,8 +74,8 @@ export default function AcademyPage() {
       {activeTab === 'documents' && (
         <ModuleDocuments
           module="ACADEMY"
-          title="Academy Dokumente"
-          description="Interne Ausbildungsunterlagen, Leitfäden und Vorlagen der Academy"
+          title="Recruitment & Training Dokumente"
+          description="Interne Ausbildungsunterlagen, Leitfäden und Vorlagen für Recruitment & Training"
           emptyDocument={EMPTY_ACADEMY_DOCUMENT}
           canManage={canManage}
         />
@@ -85,7 +85,7 @@ export default function AcademyPage() {
       {activeTab === 'tasks' && (
         <TaskBoard
           module="ACADEMY"
-          title="Academy"
+          title="Recruitment & Training"
           description="Ausbildungsaufgaben & To-Do-Listen für Cadets, Field Training und Schulungen."
           accentLabel="Ausbildung & Schulung"
           viewPermission="academy:view"
@@ -95,13 +95,13 @@ export default function AcademyPage() {
       {activeTab === 'calendar' && (
         <ModuleCalendar
           module="ACADEMY"
-          title="Academy Kalender"
-          description="Trainings, Prüfungen und Schulungstermine der Academy"
-          emptyLabel="Keine Academy-Termine vorhanden"
-          createToastTitle="Academy-Termin erstellt"
-          deleteToastTitle="Academy-Termin gelöscht"
+          title="Recruitment & Training Kalender"
+          description="Trainings, Prüfungen und Schulungstermine"
+          emptyLabel="Keine Recruitment-&-Training-Termine vorhanden"
+          createToastTitle="Recruitment-&-Training-Termin erstellt"
+          deleteToastTitle="Recruitment-&-Training-Termin gelöscht"
           eventTypes={[
-            { value: 'ACADEMY', label: 'Academy' },
+            { value: 'ACADEMY', label: 'Recruitment & Training' },
             { value: 'TRAINING', label: 'Training' },
             { value: 'EXAM', label: 'Prüfung' },
             { value: 'MEETING', label: 'Besprechung' },

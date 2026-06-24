@@ -38,6 +38,7 @@ export async function findBadgeNumberConflict(
   badgeNumber: string,
   prefix: string,
   currentOfficerId?: string | null,
+  options?: { allowOfficerDuplicate?: boolean },
 ) {
   const normalized = badgeNumber.trim()
   if (!normalized) return null
@@ -48,10 +49,12 @@ export async function findBadgeNumberConflict(
     prisma.badgeBlacklist.findMany({ select: { badgeNumber: true } }),
   ])
 
-  const officer = officers.find((row) => (
-    row.id !== currentOfficerId && sameBadgeNumber(row.badgeNumber, normalized, prefix)
-  ))
-  if (officer) return 'Dienstnummer bereits vergeben'
+  if (!options?.allowOfficerDuplicate) {
+    const officer = officers.find((row) => (
+      row.id !== currentOfficerId && sameBadgeNumber(row.badgeNumber, normalized, prefix)
+    ))
+    if (officer) return 'Dienstnummer bereits vergeben'
+  }
 
   const blocked = blacklisted.find((row) => sameBadgeNumber(row.badgeNumber, normalized, prefix))
   if (blocked) return 'Dienstnummer ist gesperrt'

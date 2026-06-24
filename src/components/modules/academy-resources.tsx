@@ -199,9 +199,9 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
 
   if (loading) return <PageLoader />
 
-  const title = mode === 'files' ? 'Academy Dateien' : 'Ausbildungsressourcen'
+  const title = mode === 'files' ? 'Recruitment & Training Dateien' : 'Ausbildungsressourcen'
   const description = mode === 'files'
-    ? 'Zentrale Dateiablage für Academy-Unterlagen'
+    ? 'Zentrale Dateiablage für Recruitment-&-Training-Unterlagen'
     : 'Dateien, Links und Tests geordnet nach Ausbildung'
 
   return (
@@ -234,7 +234,7 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
               </h2>
               <p className="mt-1 text-[12px] text-[#6b8299]">
                 {mode === 'files'
-                  ? 'Die Datei wird in der allgemeinen Academy-Ablage gespeichert.'
+                  ? 'Die Datei wird in der allgemeinen Recruitment-&-Training-Ablage gespeichert.'
                   : 'Ordne die Ressource einer Ausbildung oder einer eigenen Kategorie zu.'}
               </p>
             </div>
@@ -253,7 +253,7 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
               label="Titel"
               value={form.title}
               onChange={(event) => setForm({ ...form, title: event.target.value })}
-              placeholder={mode === 'files' ? 'z. B. Academy-Handbuch' : 'z. B. Abschlusstest'}
+              placeholder={mode === 'files' ? 'z. B. Recruitment-Handbuch' : 'z. B. Abschlusstest'}
               required
             />
 
@@ -393,7 +393,7 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
             ? <Upload size={27} className="mx-auto mb-3 text-[#4a6585]" />
             : <FolderOpen size={27} className="mx-auto mb-3 text-[#4a6585]" />}
           <p className="text-[13px] font-medium text-[#9fb0c4]">
-            {mode === 'files' ? 'Noch keine Academy-Dateien' : 'Noch keine Ausbildungsressourcen'}
+            {mode === 'files' ? 'Noch keine Recruitment-&-Training-Dateien' : 'Noch keine Ausbildungsressourcen'}
           </p>
           {canManage && (
             <button

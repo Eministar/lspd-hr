@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, Shield, Ban } from 'lucide-react'
+import { Plus, Edit, Trash2, Shield, Ban, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ColorField } from '@/components/ui/color-field'
 import { Input } from '@/components/ui/input'
@@ -53,6 +53,7 @@ export default function RanksPage() {
   const [activeTab, setActiveTab] = useState<'ranks' | 'blacklist'>('ranks')
   const [modalOpen, setModalOpen] = useState(false)
   const [blacklistModalOpen, setBlacklistModalOpen] = useState(false)
+  const [reassigningBadges, setReassigningBadges] = useState(false)
   const [editRank, setEditRank] = useState<Rank | null>(null)
   const [form, setForm] = useState({
     name: '',
@@ -170,6 +171,24 @@ export default function RanksPage() {
     }
   }
 
+  const handleReassignBadges = async () => {
+    if (!confirm('Dienstnummern für alle aktiven Officers anhand der aktuellen Rangbereiche neu vergeben?')) return
+    setReassigningBadges(true)
+    try {
+      const result = await execute('/api/ranks/reassign-badges', { method: 'POST' }) as { updated?: number } | null
+      const updated = result?.updated ?? 0
+      addToast({
+        type: updated > 0 ? 'success' : 'warning',
+        title: updated > 0 ? 'Dienstnummern neu vergeben' : 'Keine Änderungen',
+        message: updated > 0 ? `${updated} Dienstnummern wurden aktualisiert.` : 'Alle Dienstnummern passen bereits zu den aktuellen Bereichen.',
+      })
+    } catch (err) {
+      addToast({ type: 'error', title: 'Vergabe fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setReassigningBadges(false)
+    }
+  }
+
   if (loading || blacklistLoading || discordLoading) return <PageLoader />
 
   const roleOptions = [
@@ -186,7 +205,13 @@ export default function RanksPage() {
         description="Ränge, Dienstnummern-Bereiche und gesperrte Dienstnummern"
         action={
           activeTab === 'ranks' ? (
-            <Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neuer Rang</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={handleReassignBadges} loading={reassigningBadges}>
+                <RefreshCw size={14} strokeWidth={2} />
+                Neue Dienstnummern vergeben
+              </Button>
+              <Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neuer Rang</Button>
+            </div>
           ) : (
             <Button size="sm" onClick={openBlacklistCreate}><Plus size={14} strokeWidth={2} /> DN sperren</Button>
           )

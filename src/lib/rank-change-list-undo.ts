@@ -1,7 +1,7 @@
 import { prisma } from './prisma'
 import type { CurrentUser } from './auth'
 import { createAuditLog } from './audit'
-import { getBadgePrefix } from './settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from './settings-helpers'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumberConflicts, sameBadgeNumber } from './badge-blacklist'
 import { normalizeBadgeNumber } from './badge-number'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from './discord-integration'
@@ -80,7 +80,8 @@ export async function undoPromotionListEntry(
   }
 
   if (!sameBadgeNumber(entry.officer.badgeNumber, restoreBadgeNumber, prefix)) {
-    const badgeConflict = await findBadgeNumberConflict(restoreBadgeNumber, prefix, entry.officerId)
+    const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+    const badgeConflict = await findBadgeNumberConflict(restoreBadgeNumber, prefix, entry.officerId, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
     if (badgeConflict) return { ok: false, message: `${badgeConflict}: ${restoreBadgeNumber}` }
     await releaseTerminatedBadgeNumberConflicts(restoreBadgeNumber, prefix)
   }

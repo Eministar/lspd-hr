@@ -233,6 +233,10 @@ async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {
   )
   const groupList = groups.map((g) => ({ id: g.id, name: g.name }))
 
+  if (groups.some((g) => ['admin', 'administration'].includes(g.name.toLowerCase()))) {
+    effectivePermissions = [...PERMISSIONS]
+  }
+
   if (user.discordId && (await isDiscordUserAdmin(user.discordId))) {
     effectivePermissions = [...PERMISSIONS]
     if (!groupList.some((g) => g.name.toLowerCase() === 'admin')) {

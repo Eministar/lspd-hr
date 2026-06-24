@@ -8,7 +8,7 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeBadgeNumber, stripTerminatedBadgeNumber } from '@/lib/badge-number'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { canCheckDiscordGuildMembers, getDiscordGuildMember, queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
 import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
@@ -134,7 +134,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
 
     if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) {
-      const badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id)
+      const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+      const badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict) return error(badgeConflict)
       await releaseTerminatedBadgeNumberConflicts(nextBadgeNumber, prefix)
     }
@@ -252,7 +253,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return success(updated)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Dienstnummer oder Discord-ID bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

@@ -43,17 +43,18 @@ interface CalendarEvent {
 const eventTypes = [
   { value: 'TRAINING', label: 'Training' },
   { value: 'MEETING', label: 'Besprechung' },
-  { value: 'ACADEMY', label: 'Academy' },
+  { value: 'ACADEMY', label: 'Recruitment & Training' },
   { value: 'EXAM', label: 'Prüfung' },
   { value: 'HR_DEADLINE', label: 'HR-Frist' },
   { value: 'OTHER', label: 'Sonstiges' },
 ]
 
 const moduleMeta: Record<string, { label: string; color: string }> = {
-  ACADEMY: { label: 'Academy', color: '#d4af37' },
+  ACADEMY: { label: 'Recruitment & Training', color: '#d4af37' },
   HR: { label: 'HR', color: '#7c3aed' },
-  SRU: { label: 'S.R.U.', color: '#dc2626' },
-  DETECTIVE: { label: 'Detective', color: '#0ea5e9' },
+  SRU: { label: 'S.W.U.', color: '#dc2626' },
+  INTERNAL_AFFAIRS: { label: 'Internal Affairs', color: '#0ea5e9' },
+  AIR_SUPPORT: { label: 'Air-Support Division', color: '#38bdf8' },
 }
 
 function localDateTimeValue(days = 0) {
@@ -130,7 +131,7 @@ export default function CalendarPage() {
     <div className="max-w-6xl mx-auto space-y-5">
       <PageHeader
         title="Kalender"
-        description="Trainings, Besprechungen, Academy-Termine, Prüfungen und HR-Fristen"
+        description="Trainings, Besprechungen, Recruitment-&-Training-Termine, Prüfungen und HR-Fristen"
         action={(
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={refetch}><RefreshCw size={13} /> Aktualisieren</Button>

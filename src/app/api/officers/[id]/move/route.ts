@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return success(updatedWithTrainingRows)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

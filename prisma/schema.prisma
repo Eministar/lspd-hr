@@ -29,6 +29,8 @@ enum TaskModule {
   HR
   SRU
   DETECTIVE
+  INTERNAL_AFFAIRS
+  AIR_SUPPORT
 }
 
 enum TaskStatus {
@@ -67,6 +69,10 @@ enum CalendarEventType {
   SRU_OPERATION
   DETECTIVE_BRIEFING
   DETECTIVE_CASE
+  INTERNAL_AFFAIRS_BRIEFING
+  INTERNAL_AFFAIRS_CASE
+  AIR_SUPPORT_TRAINING
+  AIR_SUPPORT_OPERATION
   OTHER
 }
 
@@ -224,7 +230,7 @@ model AcademyResource {
 
 model Officer {
   id              String        @id @default(cuid())
-  badgeNumber     String        @unique
+  badgeNumber     String
   /// Discord-Snowflake (nur Dashboard / Verknüpfung; ohne Bot-Anbindung)
   discordId       String?       @unique
   firstName       String
@@ -255,6 +261,8 @@ model Officer {
   probation        Probation?
   calendarEvents   CalendarEvent[] @relation("CalendarEventOfficer")
   patrolAssignments PatrolAssignment[] @relation("PatrolAssigned")
+
+  @@index([badgeNumber])
 }
 
 model CalendarEvent {

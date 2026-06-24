@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
@@ -57,16 +57,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       nextBadge = assigned.str
     }
     if (nextBadge && nextBadge !== officer.badgeNumber) {
-      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, officerId)
+      const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, officerId, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict) return error(badgeConflict)
-      const badgeInList = await prisma.rankChangeListEntry.findFirst({
-        where: {
-          listId: id,
-          newBadgeNumber: nextBadge,
-          executed: false,
-        },
-      })
-      if (badgeInList) return error('Dienstnummer ist bereits in dieser Liste vorgesehen')
+      if (!allowDuplicateBadgeNumbers) {
+        const badgeInList = await prisma.rankChangeListEntry.findFirst({
+          where: {
+            listId: id,
+            newBadgeNumber: nextBadge,
+            executed: false,
+          },
+        })
+        if (badgeInList) return error('Dienstnummer ist bereits in dieser Liste vorgesehen')
+      }
     }
 
     const entry = await prisma.rankChangeListEntry.create({

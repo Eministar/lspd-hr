@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
-export type ModuleCalendarKey = 'ACADEMY' | 'HR' | 'SRU' | 'DETECTIVE'
+export type ModuleCalendarKey = 'ACADEMY' | 'HR' | 'SRU' | 'INTERNAL_AFFAIRS' | 'AIR_SUPPORT'
 
 interface Officer { id: string; firstName: string; lastName: string; badgeNumber: string }
 

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const OFFICER_FLAG_VALUES = ['RED', 'ORANGE', 'YELLOW', 'BLUE'] as const
-export const OFFICER_UNIT_VALUES = ['HR_LEITUNG', 'HR_TRAINEE', 'HR_OFFICER', 'ACADEMY', 'SRU'] as const
+export const OFFICER_UNIT_VALUES = ['HR_LEITUNG', 'HR_TRAINEE', 'HR_OFFICER', 'ACADEMY', 'SRU', 'INTERNAL_AFFAIRS', 'AIR_SUPPORT'] as const
 
 export type OfficerFlagValue = (typeof OFFICER_FLAG_VALUES)[number]
 export type OfficerUnitValue = (typeof OFFICER_UNIT_VALUES)[number]

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (newBadgeNumber && newBadgeNumber !== officer.badgeNumber) {
-      const badgeConflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officerId)
+      const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+      const badgeConflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officerId, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict) return error(badgeConflict)
       await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
     }
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     return success(promotion, 201)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Neue Dienstnummer bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

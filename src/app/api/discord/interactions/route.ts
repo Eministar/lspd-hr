@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import {
   findBadgeNumberConflict,
   getBlacklistedBadgeRows,
@@ -413,7 +413,7 @@ function runDeferred(interaction: DiscordInteraction, label: string, work: () =>
       await sendFollowup(interaction, content)
     } catch (e: unknown) {
       const message = isUniqueConstraintError(e)
-        ? 'Dienstnummer oder Discord-ID ist bereits vergeben.'
+        ? 'Discord-ID ist bereits vergeben.'
         : e instanceof Error
           ? e.message
           : 'Serverfehler'
@@ -447,7 +447,8 @@ async function performHire(options: DiscordOption[] | undefined, actor: ReturnTy
     badgeNumber = assigned.str
   }
 
-  const conflict = await findBadgeNumberConflict(badgeNumber, prefix)
+  const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+  const conflict = await findBadgeNumberConflict(badgeNumber, prefix, null, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
   if (conflict) return conflict
   await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
@@ -510,7 +511,8 @@ async function performPromotion(options: DiscordOption[] | undefined, actor: Ret
   }
 
   if (newBadgeNumber !== officer.badgeNumber) {
-    const conflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officer.id)
+    const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+    const conflict = await findBadgeNumberConflict(newBadgeNumber, prefix, officer.id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
     if (conflict) return conflict
     await releaseTerminatedBadgeNumberConflicts(newBadgeNumber, prefix)
   }

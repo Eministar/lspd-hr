@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, normalizeBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const prefix = await getBadgePrefix()
+    const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
     // Exclude terminated officers so their badge numbers are considered free
     const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
     const blacklistedBadges = await getBlacklistedBadgeRows()
@@ -71,17 +72,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
       }
       if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
-      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, entry.officerId)
+      const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, entry.officerId, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict) return error(`${badgeConflict}: ${nextBadge}`)
-      const duplicateEntry = requestedBadges.get(nextBadge)
-      if (duplicateEntry) {
-        return error(`Dienstnummer ${nextBadge} ist mehrfach in dieser Liste vorgesehen`)
+      if (!allowDuplicateBadgeNumbers) {
+        const duplicateEntry = requestedBadges.get(nextBadge)
+        if (duplicateEntry) {
+          return error(`Dienstnummer ${nextBadge} ist mehrfach in dieser Liste vorgesehen`)
+        }
       }
       requestedBadges.set(nextBadge, entry.officerId)
 
-      const owner = await prisma.officer.findUnique({ where: { badgeNumber: nextBadge }, select: { id: true, status: true } })
+      const owner = await prisma.officer.findFirst({ where: { badgeNumber: nextBadge }, select: { id: true, status: true } })
       // If owner exists and is not terminated and not the same officer, it's a conflict.
-      if (owner && owner.id !== entry.officerId && owner.status !== 'TERMINATED') return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
+      if (!allowDuplicateBadgeNumbers && owner && owner.id !== entry.officerId && owner.status !== 'TERMINATED') return error(`Dienstnummer ${nextBadge} ist bereits vergeben`)
       await releaseTerminatedBadgeNumberConflicts(nextBadge, prefix)
       entry.newBadgeNumber = nextBadge
     }
@@ -173,7 +176,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   } catch (e: unknown) {
     // Log error for debugging (will appear in server console)
     console.error('Error executing rank-change-list:', e)
-    if (isUniqueConstraintError(e)) return error('Dienstnummer bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

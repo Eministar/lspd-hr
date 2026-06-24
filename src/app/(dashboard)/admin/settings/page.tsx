@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Building2, CalendarDays, CheckCircle2, Clock, Hash, Link2, MessagesSquare, RefreshCw, Save, ShieldCheck, Tag, Terminal, Users, XCircle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/layout/page-header'
@@ -120,6 +121,7 @@ export default function SettingsPage() {
 
   const [orgName, setOrgName] = useState('LSPD')
   const [badgePrefix, setBadgePrefix] = useState('')
+  const [allowDuplicateBadgeNumbers, setAllowDuplicateBadgeNumbers] = useState(false)
   const [discordForm, setDiscordForm] = useState<DiscordConfigResponse['config']>({
     guildId: '',
     applicationId: '',
@@ -149,6 +151,7 @@ export default function SettingsPage() {
       settingsInitialized.current = true
       setOrgName(settings['orgName'] || 'LSPD')
       setBadgePrefix(settings['badgePrefix'] || '')
+      setAllowDuplicateBadgeNumbers(settings['allowDuplicateBadgeNumbers'] === 'true')
     }
   }, [settings])
 
@@ -475,11 +478,31 @@ export default function SettingsPage() {
             <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4 flex items-center gap-2">
               <Hash size={15} className="text-[#d4af37]" /> Dienstnummern
             </h3>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
+            <div className="space-y-4">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input label="Dienstnummer-Prefix" value={badgePrefix} onChange={(e) => setBadgePrefix(e.target.value)} placeholder="z.B. LSPD-" />
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
               </div>
-              <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
+              <div className="rounded-[10px] border border-[#3d2d12] bg-[#1d1608]/70 p-3">
+                <Checkbox
+                  checked={allowDuplicateBadgeNumbers}
+                  onCheckedChange={setAllowDuplicateBadgeNumbers}
+                  label="Temporär doppelte Dienstnummern erlauben"
+                />
+                <p className="mt-2 text-[11.5px] leading-5 text-[#e8c979]">
+                  Nur als Übergang nutzen, um Officers sauber in Ränge zu sortieren. Gesperrte Dienstnummern bleiben weiterhin blockiert.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => saveSetting('allowDuplicateBadgeNumbers', allowDuplicateBadgeNumbers ? 'true' : 'false')}
+                >
+                  <Save size={13} /> Speichern
+                </Button>
+              </div>
             </div>
           </div>
 

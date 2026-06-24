@@ -5,6 +5,11 @@ export async function getBadgePrefix(): Promise<string> {
   return row?.value?.trim() || ''
 }
 
+export async function getAllowDuplicateBadgeNumbers(): Promise<boolean> {
+  const row = await prisma.systemSetting.findUnique({ where: { key: 'allowDuplicateBadgeNumbers' } })
+  return row?.value === 'true'
+}
+
 export async function getOrgName(): Promise<string> {
   const row = await prisma.systemSetting.findUnique({ where: { key: 'orgName' } })
   return row?.value?.trim() || 'LSPD'

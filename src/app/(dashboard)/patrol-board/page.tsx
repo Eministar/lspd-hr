@@ -81,7 +81,7 @@ interface BoardDraft {
   patrols: PatrolDraft[]
 }
 
-const ASSIGNMENT_PRESETS = ['Patrol', 'Verkehr', 'Training', 'Einsatzleitung', 'Bank', 'Academy']
+const ASSIGNMENT_PRESETS = ['Patrol', 'Verkehr', 'Training', 'Einsatzleitung', 'Bank', 'Recruitment']
 
 type OfficerFilter = 'all' | 'free' | 'assigned' | 'rookie'
 

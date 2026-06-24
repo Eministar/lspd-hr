@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { nextBadgeForRank, normalizeBadgeNumber } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
@@ -115,7 +115,8 @@ export async function POST(req: NextRequest) {
       badgeNumber = assigned.str
     }
 
-    const badgeConflict = await findBadgeNumberConflict(badgeNumber, prefix)
+    const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
+    const badgeConflict = await findBadgeNumberConflict(badgeNumber, prefix, null, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
     if (badgeConflict) return error(badgeConflict)
     await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
 
     return success(officer, 201)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Dienstnummer oder Discord-ID bereits vergeben')
+    if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

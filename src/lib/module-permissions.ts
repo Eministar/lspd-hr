@@ -1,14 +1,15 @@
 import { requirePermission } from '@/lib/auth'
 import type { Permission } from '@/lib/permissions'
 
-export const TASK_MODULES = ['ACADEMY', 'HR', 'SRU', 'DETECTIVE'] as const
+export const TASK_MODULES = ['ACADEMY', 'HR', 'SRU', 'INTERNAL_AFFAIRS', 'AIR_SUPPORT'] as const
 export type TaskModuleKey = (typeof TASK_MODULES)[number]
 
 const MODULE_PERMISSION: Record<TaskModuleKey, { view: Permission; manage: Permission }> = {
   ACADEMY: { view: 'academy:view', manage: 'academy:manage' },
   HR: { view: 'hr:view', manage: 'hr:manage' },
   SRU: { view: 'sru:view', manage: 'sru:manage' },
-  DETECTIVE: { view: 'detective:view', manage: 'detective:manage' },
+  INTERNAL_AFFAIRS: { view: 'internal-affairs:view', manage: 'internal-affairs:manage' },
+  AIR_SUPPORT: { view: 'air-support:view', manage: 'air-support:manage' },
 }
 
 export function isTaskModule(value: unknown): value is TaskModuleKey {

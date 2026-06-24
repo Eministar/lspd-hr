@@ -49,6 +49,12 @@ async function main() {
         'academy:view',
         'hr:manage',
         'hr:view',
+        'sru:manage',
+        'sru:view',
+        'internal-affairs:manage',
+        'internal-affairs:view',
+        'air-support:manage',
+        'air-support:view',
         'notes:manage',
         'notes:view',
         'logs:view',
@@ -62,7 +68,7 @@ async function main() {
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'academy:manage', 'academy:view', 'hr:manage', 'hr:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
+      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'academy:manage', 'academy:view', 'hr:manage', 'hr:view', 'sru:manage', 'sru:view', 'internal-affairs:manage', 'internal-affairs:view', 'air-support:manage', 'air-support:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
     },
   ]
 
@@ -101,9 +107,10 @@ async function main() {
     { key: 'HR_LEITUNG', name: 'HR Leitung', sortOrder: 1, color: '#7c3aed' },
     { key: 'HR_TRAINEE', name: 'HR Trainee', sortOrder: 2, color: '#3b82f6' },
     { key: 'HR_OFFICER', name: 'HR Officer', sortOrder: 3, color: '#06b6d4' },
-    { key: 'ACADEMY', name: 'Academy', sortOrder: 4, color: '#d4af37' },
-    { key: 'SRU', name: 'S.R.U.', sortOrder: 5, color: '#dc2626' },
-    { key: 'DETECTIVE', name: 'Detective Unit', sortOrder: 6, color: '#0ea5e9' },
+    { key: 'ACADEMY', name: 'Recruitment & Training', sortOrder: 4, color: '#d4af37' },
+    { key: 'SRU', name: 'S.W.U.', sortOrder: 5, color: '#dc2626' },
+    { key: 'INTERNAL_AFFAIRS', name: 'Internal Affairs', sortOrder: 6, color: '#0ea5e9' },
+    { key: 'AIR_SUPPORT', name: 'Air-Support Division', sortOrder: 7, color: '#38bdf8' },
   ]
 
   for (const unit of units) {
