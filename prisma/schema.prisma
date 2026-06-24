@@ -173,7 +173,7 @@ model Unit {
 model Rank {
   id        String   @id @default(cuid())
   name      String   @unique
-  sortOrder Int      @unique
+  sortOrder Int
   color     String   @default("#3B82F6")
   /// Inklusiver Zahlenbereich für Dienstnummern (nur Ziffern / Prefix+Ziffern). Null = kein autom. Bereich.
   badgeMin  Int?
