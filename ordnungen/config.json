@@ -26,6 +26,15 @@
       "buttonLabel": "HR-Ordnung",
       "file": "hr-dienstordnung.md",
       "icon": "FileText"
+    },
+    {
+      "id": "ia-dienstordnung",
+      "title": "IA-Dienstordnung",
+      "description": "Richtlinien und Verfahren für die Internal Affairs-Abteilung",
+      "category": "IA",
+      "buttonLabel": "IA-Ordnung",
+      "file": "ia-dienstordnung.md",
+      "icon": "FileText"
     }
   ]
 }
