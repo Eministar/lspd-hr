@@ -501,9 +501,9 @@ model AuditLog {
   officer     Officer? @relation("AuditOfficer", fields: [officerId], references: [id], onDelete: SetNull)
   userId      String?
   user        User?    @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
-  oldValue    String?
-  newValue    String?
-  details     String?
+  oldValue    String?  @db.Text
+  newValue    String?  @db.Text
+  details     String?  @db.Text
   createdAt   DateTime @default(now())
 }
 
