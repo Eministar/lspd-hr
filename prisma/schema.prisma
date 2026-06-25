@@ -29,6 +29,7 @@ enum TaskModule {
   HR
   SRU
   AIR_SUPPORT
+  DETECTIVE
 }
 
 enum TaskStatus {

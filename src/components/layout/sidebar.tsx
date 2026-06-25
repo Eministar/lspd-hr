@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, Archive, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
-  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane,
+  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -51,6 +51,7 @@ const tasksNav: NavItem[] = [
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'hr:view' },
   { name: 'S.W.U.', href: '/swu', icon: Shield, permission: 'sru:view' },
   { name: 'Air-Support Division', href: '/air-support', icon: Plane, permission: 'air-support:view' },
+  { name: 'Detective Unit', href: '/detective', icon: Fingerprint, permission: 'detective:view' },
 ]
 
 const adminNav: NavItem[] = [
@@ -163,7 +164,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
           .filter((item) => !item.permission || hasPermission(user, item.permission))
           .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        {hasAnyPermission(user, ['academy:view', 'hr:view', 'sru:view', 'air-support:view']) && (
+        {hasAnyPermission(user, ['academy:view', 'hr:view', 'sru:view', 'air-support:view', 'detective:view']) && (
           <>
             <SectionDivider />
             <SectionLabel>Aufgaben</SectionLabel>

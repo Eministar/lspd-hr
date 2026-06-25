@@ -1,7 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface User {
   id: string
@@ -30,14 +30,25 @@ export function useAuth() {
   return ctx
 }
 
+// Minimaler Abstand zwischen zwei stillen Revalidierungen (Navigation/Fokus),
+// damit schnelle Klick-Folgen nicht /api/auth/me hämmern.
+const REVALIDATE_THROTTLE_MS = 3000
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const lastFetchRef = useRef(0)
 
-  const refreshUser = useCallback(async () => {
-    setLoading(true)
+  // Lädt den aktuellen User aus /api/auth/me.
+  // `silent`: kein globaler Loading-State und kein Zurücksetzen bei
+  // transienten Netzwerkfehlern — für Hintergrund-Revalidierung, damit die
+  // UI nicht bei jeder Navigation flackert.
+  const loadUser = useCallback(async (silent: boolean) => {
+    if (!silent) setLoading(true)
+    lastFetchRef.current = Date.now()
     try {
       const res = await fetch('/api/auth/me', { cache: 'no-store' })
       const data = await res.json()
@@ -46,16 +57,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Sitzung konnte nicht geprüft werden')
       }
 
-      setUser(data.data)
+      // data.data ist `null`, wenn keine gültige Sitzung mehr besteht — dann
+      // gilt der User auch im Silent-Modus als ausgeloggt.
+      setUser(data.data ?? null)
       setAuthError(null)
     } catch (err) {
-      setUser(null)
-      setAuthError(err instanceof Error ? err.message : 'Sitzung konnte nicht geprüft werden')
+      if (!silent) {
+        setUser(null)
+        setAuthError(err instanceof Error ? err.message : 'Sitzung konnte nicht geprüft werden')
+      }
+      // Silent: aktuellen Stand behalten (z.B. kurzzeitiger Netzwerkfehler).
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
+  const refreshUser = useCallback(() => loadUser(false), [loadUser])
+
+  const revalidateUser = useCallback(() => {
+    if (Date.now() - lastFetchRef.current < REVALIDATE_THROTTLE_MS) return
+    void loadUser(true)
+  }, [loadUser])
+
+  // Erstes Laden beim Mount (mit Loading-State).
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void refreshUser()
@@ -63,6 +87,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => window.clearTimeout(timeoutId)
   }, [refreshUser])
+
+  // Bei jedem Seitenwechsel die Rechte still neu auflösen, damit z.B. frisch
+  // über eine Benutzergruppe vergebene Permissions ohne Re-Login greifen.
+  const didMountRef = useRef(false)
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    revalidateUser()
+  }, [pathname, revalidateUser])
+
+  // Beim Zurückkehren zum Tab / Fensterfokus ebenfalls revalidieren, damit ein
+  // offener Tab Rechteänderungen mitbekommt, ohne dass navigiert werden muss.
+  useEffect(() => {
+    const onFocus = () => revalidateUser()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') revalidateUser()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [revalidateUser])
 
   const logout = async () => {
     await fetch('/api/auth/login', { method: 'DELETE' })

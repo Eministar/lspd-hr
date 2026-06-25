@@ -54,6 +54,7 @@ const moduleMeta: Record<string, { label: string; color: string }> = {
   HR: { label: 'HR', color: '#7c3aed' },
   SRU: { label: 'S.W.U.', color: '#dc2626' },
   AIR_SUPPORT: { label: 'Air-Support Division', color: '#38bdf8' },
+  DETECTIVE: { label: 'Detective Unit', color: '#a78bfa' },
 }
 
 function localDateTimeValue(days = 0) {

@@ -42,7 +42,7 @@ import { cn, formatDate } from '@/lib/utils'
 import { hasPermission, type Permission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
-type TaskModule = 'ACADEMY' | 'HR' | 'SRU' | 'AIR_SUPPORT'
+type TaskModule = 'ACADEMY' | 'HR' | 'SRU' | 'AIR_SUPPORT' | 'DETECTIVE'
 type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
 type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
