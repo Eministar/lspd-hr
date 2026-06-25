@@ -40,17 +40,30 @@ function runPrisma(args, label) {
  * um, BEVOR `db push` die zugehörigen Enum-Werte droppt. Andernfalls bricht der Push
  * mit "data loss"/"variant still used" ab, weil noch Zeilen die Werte referenzieren.
  *
- * Idempotent: Nach dem ersten Lauf matchen die Statements nichts mehr; auf einer
- * frischen DB (Tabellen noch nicht vorhanden) werden Fehler bewusst ignoriert.
+ * `prisma db push` verlangt zum ENTFERNEN von Enum-Werten zwingend `--accept-data-loss`
+ * (pauschal, auch wenn kein Datensatz die Werte nutzt). Statt das Flag global zu
+ * setzen, führen wir die Enum-Verengung hier selbst aus: erst Daten umhängen, dann
+ * per ALTER die alten Werte entfernen. Danach sieht `db push` keinen Unterschied mehr
+ * und läuft ohne Flag durch — alle anderen destruktiven Änderungen bleiben geschützt.
+ *
+ * Idempotent: Nach dem ersten Lauf matchen die UPDATEs nichts mehr und die ALTERs sind
+ * No-Ops; auf einer frischen DB (Tabellen noch nicht vorhanden) werden Fehler bewusst
+ * ignoriert (db push legt die Tabellen dann korrekt an).
  */
 async function reassignRemovedDepartmentEnums(prisma) {
   const statements = [
+    // 1) Daten der entfernten Module verlustfrei umhängen.
     "UPDATE `TaskList` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
     "UPDATE `SruFolder` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
     "UPDATE `SruDocument` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
     "UPDATE `CalendarEvent` SET `module` = NULL WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
     "UPDATE `CalendarEvent` SET `type` = 'OTHER' WHERE `type` IN ('INTERNAL_AFFAIRS_BRIEFING', 'INTERNAL_AFFAIRS_CASE', 'DETECTIVE_BRIEFING', 'DETECTIVE_CASE')",
     "DELETE FROM `Unit` WHERE `key` = 'INTERNAL_AFFAIRS'",
+    // 2) Enum-Werte entfernen, damit db push keine "data loss"-Warnung mehr wirft.
+    "ALTER TABLE `TaskList` MODIFY `module` ENUM('ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT') NOT NULL",
+    "ALTER TABLE `SruFolder` MODIFY `module` ENUM('ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT') NOT NULL DEFAULT 'SRU'",
+    "ALTER TABLE `SruDocument` MODIFY `module` ENUM('ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT') NOT NULL DEFAULT 'SRU'",
+    "ALTER TABLE `CalendarEvent` MODIFY `module` ENUM('ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT') NULL, MODIFY `type` ENUM('TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'AIR_SUPPORT_TRAINING', 'AIR_SUPPORT_OPERATION', 'OTHER') NOT NULL DEFAULT 'OTHER'",
   ]
   let changed = false
   for (const sql of statements) {
@@ -63,7 +76,7 @@ async function reassignRemovedDepartmentEnums(prisma) {
     }
   }
   if (changed) {
-    console.log('[DB] Internal-Affairs/Detective-Daten für Schema-Sync umgehängt.')
+    console.log('[DB] Internal-Affairs/Detective-Daten umgehängt und Enum-Werte entfernt.')
   }
 }
 
