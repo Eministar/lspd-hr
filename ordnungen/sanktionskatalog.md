@@ -125,4 +125,3 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 **Ausstellbar durch:** Human Resources und Chief-Ebene; Commander
 
 ---
-

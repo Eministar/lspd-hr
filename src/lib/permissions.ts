@@ -25,8 +25,6 @@ export const PERMISSIONS = [
   'hr:manage',
   'sru:view',
   'sru:manage',
-  'internal-affairs:view',
-  'internal-affairs:manage',
   'air-support:view',
   'air-support:manage',
   'notes:view',
@@ -76,8 +74,6 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'hr:manage': 'HR verwalten',
   'sru:view': 'S.W.U. ansehen',
   'sru:manage': 'S.W.U. verwalten',
-  'internal-affairs:view': 'Internal Affairs ansehen',
-  'internal-affairs:manage': 'Internal Affairs verwalten',
   'air-support:view': 'Air-Support Division ansehen',
   'air-support:manage': 'Air-Support Division verwalten',
   'notes:view': 'Notizen ansehen',
@@ -101,8 +97,6 @@ const PERMISSION_SET = new Set<string>(PERMISSIONS)
 const LEGACY_PERMISSION_MAP: Record<string, Permission[]> = {
   'tasks:view': ['academy:view', 'hr:view'],
   'tasks:manage': ['academy:manage', 'hr:manage'],
-  'detective:view': ['internal-affairs:view'],
-  'detective:manage': ['internal-affairs:manage'],
 }
 
 const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
@@ -123,7 +117,6 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'academy:manage': ['academy:view', 'officers:view'],
   'hr:manage': ['hr:view', 'officers:view'],
   'sru:manage': ['sru:view', 'officers:view'],
-  'internal-affairs:manage': ['internal-affairs:view', 'officers:view'],
   'air-support:manage': ['air-support:view', 'officers:view'],
   'notes:manage': ['notes:view', 'officers:view'],
   'ranks:manage': ['ranks:view'],

@@ -9,7 +9,6 @@ import {
   BookOpen,
   Scale,
   Briefcase,
-  Search,
   Library,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -58,15 +57,6 @@ const categories: CategoryMeta[] = [
     accent: '#d4af37',
     accentSoft: 'rgba(212,175,55,0.14)',
     ring: 'rgba(212,175,55,0.35)',
-  },
-  {
-    key: 'IA',
-    label: 'Internal Affairs',
-    description: 'Richtlinien und Verfahren für die Internal Affairs-Abteilung',
-    icon: <Search size={15} strokeWidth={2} />,
-    accent: '#e06b6b',
-    accentSoft: 'rgba(224,107,107,0.14)',
-    ring: 'rgba(224,107,107,0.35)',
   },
 ]
 

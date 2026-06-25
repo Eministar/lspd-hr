@@ -53,7 +53,6 @@ const moduleMeta: Record<string, { label: string; color: string }> = {
   ACADEMY: { label: 'Recruitment & Training', color: '#d4af37' },
   HR: { label: 'HR', color: '#7c3aed' },
   SRU: { label: 'S.W.U.', color: '#dc2626' },
-  INTERNAL_AFFAIRS: { label: 'Internal Affairs', color: '#0ea5e9' },
   AIR_SUPPORT: { label: 'Air-Support Division', color: '#38bdf8' },
 }
 

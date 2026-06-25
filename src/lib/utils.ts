@@ -75,7 +75,6 @@ export function getUnitLabel(unit: string | null | undefined): string {
     HR_OFFICER: 'HR Officer',
     ACADEMY: 'Recruitment & Training',
     SRU: 'S.W.U.',
-    INTERNAL_AFFAIRS: 'Internal Affairs',
     AIR_SUPPORT: 'Air-Support Division',
   }
   return labels[unit] || unit
@@ -88,7 +87,6 @@ export function getUnitBadgeClass(unit: string | null | undefined): string {
     HR_OFFICER: 'bg-[#1c3540] text-[#9eddee] border-[#06b6d4]/40',
     ACADEMY: 'bg-[#3a2f17] text-[#f3d8a3] border-[#d4af37]/40',
     SRU: 'bg-[#3a1818] text-[#f1b6b6] border-[#dc2626]/40',
-    INTERNAL_AFFAIRS: 'bg-[#102a3a] text-[#bae6fd] border-[#0ea5e9]/40',
     AIR_SUPPORT: 'bg-[#0f2f3a] text-[#bae6fd] border-[#38bdf8]/40',
   }
   if (!unit) return 'bg-transparent text-[#4a6585] border-transparent'

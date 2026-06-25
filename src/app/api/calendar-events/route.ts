@@ -5,8 +5,8 @@ import { createAuditLog } from '@/lib/audit'
 import { queueDiscordHrEvent } from '@/lib/discord-integration'
 import { isTaskModule, taskModuleOrNull, requireCalendarModuleManage, requireCalendarModuleView } from '@/lib/module-permissions'
 
-const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'INTERNAL_AFFAIRS_BRIEFING', 'INTERNAL_AFFAIRS_CASE', 'AIR_SUPPORT_TRAINING', 'AIR_SUPPORT_OPERATION', 'OTHER'])
-type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'INTERNAL_AFFAIRS_BRIEFING' | 'INTERNAL_AFFAIRS_CASE' | 'AIR_SUPPORT_TRAINING' | 'AIR_SUPPORT_OPERATION' | 'OTHER'
+const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'AIR_SUPPORT_TRAINING', 'AIR_SUPPORT_OPERATION', 'OTHER'])
+type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'AIR_SUPPORT_TRAINING' | 'AIR_SUPPORT_OPERATION' | 'OTHER'
 
 function eventType(value: string): CalendarEventTypeValue | null {
   return EVENT_TYPES.has(value) ? value as CalendarEventTypeValue : null

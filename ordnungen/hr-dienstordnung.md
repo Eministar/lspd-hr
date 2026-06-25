@@ -1,7 +1,7 @@
 # Dienstordnung der Human Resources Abteilung
 
 **Las Santos Police Department – Nerowood** <br>
-Stand: 24.06.2026
+Stand: 25.06.2026
 
 ---
 
@@ -58,7 +58,60 @@ Stand: 24.06.2026
 
 ---
 
-## §4 Versetzungsordnung
+## §4 Sanktionsordnung
+
+(1) Sanktionen dürfen ausschließlich von Personen ausgesprochen werden, die den **Status eines HR-Officers** innehaben.
+
+(2) Jede Sanktion bedarf der **vorherigen Freigabe durch die HR-Leitung**.
+
+(3) Jede Sanktion ist **zwingend per Clip nachzuweisen**. Ohne entsprechenden Clip-Nachweis ist die Sanktion ungültig und unwirksam.
+
+(4) Sanktionen ohne Freigabe oder ohne Clip-Nachweis können rückwirkend annulliert werden und ziehen ggf. interne Konsequenzen nach sich.
+
+(5) Folgende Sanktionsstufen stehen zur Verfügung:
+
+| Stufe | Maßnahme |
+|---|---|
+| 1 | Mündliche Verwarnung |
+| 2 | Schriftliche Verwarnung |
+| 3 | Schriftliche Verwarnung mit Akteneintrag |
+| 4 | Suspendierung (zeitlich begrenzt) |
+| 5 | Degradierung |
+| 6 | Entlassung |
+
+(6) Die Wahl der Sanktionsstufe richtet sich nach Schwere, Wiederholung und Vorsatz des Verstoßes.
+
+(7) Jede Sanktion ist dem Betroffenen **unverzüglich schriftlich mitzuteilen** und im internen Aktensystem zu vermerken.
+
+---
+
+## §5 Beschwerdenordnung
+
+(1) Beschwerden werden **nicht voreilig** bearbeitet. Jede Beschwerde ist sorgfältig, objektiv und unter Berücksichtigung aller Seiten zu prüfen.
+
+(2) Zuständigkeiten bei Beschwerden:
+
+| Beschwerde gegen | Bearbeitung durch |
+|---|---|
+| Mitglied der HR | HR-Leitung |
+| Leitungs-/Chiefebene des FJD | HR-Leitungsebene |
+| Leitungs-/Chiefebene des MD | HR-Leitungsebene |
+| Leitungs-/Chiefebene des PD | HR-Leitungsebene |
+| Reguläre Beamte | Zuständige HR-Officer |
+
+(3) Eine voreilige oder einseitige Bearbeitung von Beschwerden stellt einen Verstoß gegen diese Dienstordnung dar.
+
+(4) Beschwerden sind **innerhalb von 7 Tagen** zu bearbeiten oder zumindest mit einer Zwischenmeldung an den Beschwerdeführer zu beantworten.
+
+(5) Bei Beschwerden ist stets **beiden Parteien Gehör zu gewähren** (Audiatur et altera pars).
+
+(6) Anonyme Beschwerden werden grundsätzlich **nicht bearbeitet**, es sei denn, es liegen schwerwiegende Beweise vor.
+
+(7) Befangenheit eines HR-Mitglieds führt zur **Abgabe der Beschwerde an die HR-Leitung** oder einen anderen unbefangenen HR-Officer.
+
+---
+
+## §6 Versetzungsordnung
 
 (1) Versetzungsanträge müssen durch **ein Mitglied der HR-Leitung abgesegnet** werden.
 
@@ -80,7 +133,7 @@ Stand: 24.06.2026
 
 ---
 
-## §5 Uprank- / Derank-Ordnung
+## §7 Uprank- / Derank-Ordnung
 
 **Upranks**
 
@@ -106,11 +159,11 @@ Stand: 24.06.2026
 
 ---
 
-## §6 Schweigepflicht & Datenschutz
+## §8 Schweigepflicht & Datenschutz
 
 (1) Alle Mitglieder der HR-Abteilung unterliegen einer **strengen Schweigepflicht**.
 
-(2) Interne Informationen, insbesondere zu Bewerbungen, Versetzungen, Rangänderungen oder sonstigen Personalentscheidungen, dürfen **nicht an Dritte weitergegeben werden**.
+(2) Interne Informationen, insbesondere zu Sanktionen, Beschwerden oder Personalentscheidungen, dürfen **nicht an Dritte weitergegeben werden**.
 
 (3) Verstöße gegen die Schweigepflicht ziehen **unmittelbare disziplinarische Maßnahmen** nach sich, bis hin zur Entlassung aus der HR-Abteilung.
 
@@ -118,7 +171,7 @@ Stand: 24.06.2026
 
 ---
 
-## §7 Verhalten im Dienst
+## §9 Verhalten im Dienst
 
 (1) HR-Mitglieder haben sich jederzeit **respektvoll, professionell und neutral** gegenüber Kollegen aller Ränge zu verhalten.
 
@@ -130,7 +183,7 @@ Stand: 24.06.2026
 
 ---
 
-## §8 Inaktivität & Abmeldung
+## §10 Inaktivität & Abmeldung
 
 (1) HR-Mitglieder haben sich bei längerer Abwesenheit (ab 5 Tagen) **ordnungsgemäß bei der HR-Leitung abzumelden**.
 
@@ -140,9 +193,9 @@ Stand: 24.06.2026
 
 ---
 
-## §9 Aktenführung & Dokumentation
+## §11 Aktenführung & Dokumentation
 
-(1) Sämtliche personalrelevanten Vorgänge (Einstellungen, Versetzungen, Upranks und Deranks) sind **lückenlos und nachvollziehbar** im internen Aktensystem zu dokumentieren.
+(1) Sämtliche personalrelevanten Vorgänge (Einstellungen, Sanktionen, Beschwerden, Versetzungen, Upranks und Deranks) sind **lückenlos und nachvollziehbar** im internen Aktensystem zu dokumentieren.
 
 (2) Jede Eintragung muss mindestens **Datum, durchführendes HR-Mitglied, betroffene Person und Begründung** enthalten.
 
@@ -152,15 +205,15 @@ Stand: 24.06.2026
 
 ---
 
-## §10 Kompetenzen der HR-Leitungsebene
+## §12 Kompetenzen der HR-Leitungsebene
 
 (1) Die **HR-Leitungsebene** umfasst die HR-Leitung sowie die Stv. HR-Leitung.
 
 (2) Ihr obliegen insbesondere folgende eigenständige Kompetenzen:
 - **Direkteinstellung** von Bewerbern auf höheren Rängen (§3),
-- **Vergabe und Verweigerung von Upranks** (§5),
-- **Entscheidung über Deranks** (§5),
-- **Freigabe von Versetzungen** (§4).
+- **Vergabe und Verweigerung von Upranks** (§7),
+- **Entscheidung über Deranks** (§7),
+- **Freigabe von Sanktionen** (§4) und Versetzungen (§6).
 
 (3) Die HR-Leitungsebene trägt für diese Entscheidungen die **volle Verantwortung** und ist zu einer sorgfältigen, nachvollziehbaren und dokumentierten Ausübung verpflichtet.
 
@@ -172,7 +225,7 @@ Stand: 24.06.2026
 
 ---
 
-## §11 Eskalation & Konfliktfälle
+## §13 Eskalation & Konfliktfälle
 
 (1) Bei Unstimmigkeiten innerhalb der HR-Abteilung ist stets der **Dienstweg über die nächsthöhere Ebene** einzuhalten.
 
@@ -182,7 +235,7 @@ Stand: 24.06.2026
 
 ---
 
-## §12 Schlussbestimmungen
+## §14 Schlussbestimmungen
 
 (1) Diese Dienstordnung tritt mit Veröffentlichung in Kraft und ist für alle Angehörigen der HR-Abteilung verbindlich.
 
@@ -199,8 +252,11 @@ Stand: 24.06.2026
 **~Dr. Dr. Emin Perez~** <br>
 *Human Resources Leitung*
 
-**~Fabian Richter~** <br>
+**~Jonas Salzmann~** <br>
 *Human Resources Leitung*
+
+**~Fabian Richter~** <br>
+*Stv. Human Resources Leitung*
 
 **~Riccardo Izza~** <br>
 *Stv. Human Resources Leitung*
