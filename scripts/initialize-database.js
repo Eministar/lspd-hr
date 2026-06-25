@@ -35,6 +35,38 @@ function runPrisma(args, label) {
   }
 }
 
+/**
+ * Hängt Daten der entfernten Module (Internal Affairs / früher Detective) verlustfrei
+ * um, BEVOR `db push` die zugehörigen Enum-Werte droppt. Andernfalls bricht der Push
+ * mit "data loss"/"variant still used" ab, weil noch Zeilen die Werte referenzieren.
+ *
+ * Idempotent: Nach dem ersten Lauf matchen die Statements nichts mehr; auf einer
+ * frischen DB (Tabellen noch nicht vorhanden) werden Fehler bewusst ignoriert.
+ */
+async function reassignRemovedDepartmentEnums(prisma) {
+  const statements = [
+    "UPDATE `TaskList` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
+    "UPDATE `SruFolder` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
+    "UPDATE `SruDocument` SET `module` = 'SRU' WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
+    "UPDATE `CalendarEvent` SET `module` = NULL WHERE `module` IN ('INTERNAL_AFFAIRS', 'DETECTIVE')",
+    "UPDATE `CalendarEvent` SET `type` = 'OTHER' WHERE `type` IN ('INTERNAL_AFFAIRS_BRIEFING', 'INTERNAL_AFFAIRS_CASE', 'DETECTIVE_BRIEFING', 'DETECTIVE_CASE')",
+    "DELETE FROM `Unit` WHERE `key` = 'INTERNAL_AFFAIRS'",
+  ]
+  let changed = false
+  for (const sql of statements) {
+    try {
+      await prisma.$executeRawUnsafe(sql)
+      changed = true
+    } catch (e) {
+      // Tabelle existiert noch nicht (frische DB) → für db push irrelevant.
+      console.warn(`[DB] Enum-Reassign übersprungen: ${(e && e.message ? e.message.split('\n')[0] : e)}`)
+    }
+  }
+  if (changed) {
+    console.log('[DB] Internal-Affairs/Detective-Daten für Schema-Sync umgehängt.')
+  }
+}
+
 function loadPrisma() {
   const { PrismaClient } = require('../src/generated/prisma/client')
   const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
@@ -50,6 +82,15 @@ function loadPrisma() {
 async function main() {
   if (!fs.existsSync(prismaCli)) {
     throw new Error(`Prisma CLI wurde nicht gefunden: ${prismaCli}`)
+  }
+
+  // Vor dem Schema-Sync: Daten entfernter Module umhängen, damit `db push` die
+  // Enum-Werte gefahrlos droppen kann (sonst Abbruch wegen "data loss").
+  const migrationPrisma = loadPrisma()
+  try {
+    await reassignRemovedDepartmentEnums(migrationPrisma)
+  } finally {
+    await migrationPrisma.$disconnect()
   }
 
   console.log('[DB] Schema wird sicher synchronisiert.')
