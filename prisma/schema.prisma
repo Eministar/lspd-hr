@@ -256,6 +256,8 @@ model Officer {
   probation        Probation?
   calendarEvents   CalendarEvent[] @relation("CalendarEventOfficer")
   patrolAssignments PatrolAssignment[] @relation("PatrolAssigned")
+  patrolSessions  PatrolSession[]   @relation("PatrolSessionOfficer")
+  dispatchCenters DispatchCenterState[] @relation("DispatchCenterOfficer")
 
   @@index([badgeNumber])
 }
@@ -617,6 +619,9 @@ model PatrolUnit {
   callSign   String?
   assignment String?  @db.Text
   notes      String?  @db.Text
+  status     Int?
+  scope      String?
+  assignedDispatchId Int?
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -637,6 +642,40 @@ model PatrolAssignment {
 
   @@unique([patrolId, officerId])
   @@index([officerId])
+}
+
+model PatrolSession {
+  id                String    @id @default(cuid())
+  /// FiveM-Session-ID → idempotentes Re-Senden (Upsert-Schlüssel). null = kein Dedupe.
+  externalId        String?   @unique
+  /// Per officerDiscordId aufgelöst; null = (noch) kein passender Officer.
+  officerId         String?
+  officer           Officer?  @relation("PatrolSessionOfficer", fields: [officerId], references: [id], onDelete: SetNull)
+  officerDiscordId  String?
+  officerName       String
+  scope             String
+  patrolName        String
+  designationAtJoin String?
+  gradeAtJoin       Int?
+  joinedAt          DateTime
+  leftAt            DateTime?
+  durationSeconds   Int
+  /// leave | disband | crew | disconnect | server_shutdown
+  endReason         String
+  createdAt         DateTime  @default(now())
+
+  @@index([officerId])
+  @@index([joinedAt])
+  @@index([scope])
+  @@index([officerDiscordId])
+}
+
+model DispatchCenterState {
+  scope      String    @id
+  officerId  String?
+  officer    Officer?  @relation("DispatchCenterOfficer", fields: [officerId], references: [id], onDelete: SetNull)
+  occupiedAt DateTime?
+  updatedAt  DateTime  @updatedAt
 }
 
 model BadgeBlacklist {
