@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, use } from 'react'
+import { useState, useCallback, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -220,6 +220,12 @@ function DiscordMemberStatus({ officer }: { officer: Pick<OfficerDetail, 'discor
   )
 }
 
+function fmt(seconds: number) {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
 function formatDuration(ms: number) {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000))
   const hours = Math.floor(totalMinutes / 60)
@@ -307,11 +313,22 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [addToListBadgeNumber, setAddToListBadgeNumber] = useState('')
   const [addToListNote, setAddToListNote] = useState('')
   const [playtimeHistoryExpanded, setPlaytimeHistoryExpanded] = useState(false)
+  const [patrolTime, setPatrolTime] = useState<{ totalSeconds: number; last7DaysSeconds: number; sessionCount: number; lastSessionAt: string | null } | null>(null)
   const [pendingTrainingOverride, setPendingTrainingOverride] = useState<{
     training: Training
     completed: boolean
   } | null>(null)
   const selectedSanctionRule = resolveSanctionPenalty(sanctionForm.penalGrade) ?? SANCTION_CATALOG.I
+
+  useEffect(() => {
+    if (!canViewOfficer) return
+    fetch(`/api/officers/${id}/patrol-time`)
+      .then((r) => r.json())
+      .then((j: { success?: boolean; data?: { totalSeconds: number; last7DaysSeconds: number; sessionCount: number; lastSessionAt: string | null } }) => {
+        if (j?.success) setPatrolTime(j.data ?? null)
+      })
+      .catch(() => {})
+  }, [id, canViewOfficer])
 
   const startEditing = () => {
     if (!officer) return
@@ -1129,6 +1146,33 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[12.5px] text-[#4a6585]">Keine Notizen vorhanden</p>
             )}
           </motion.div>
+
+          {patrolTime && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }}
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Streifenzeit</h3>
+              <dl className="grid grid-cols-2 gap-3">
+                <div>
+                  <dt className="text-[11.5px] text-[#999] mb-1">Gesamt</dt>
+                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{fmt(patrolTime.totalSeconds)}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11.5px] text-[#999] mb-1">Letzte 7 Tage</dt>
+                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{fmt(patrolTime.last7DaysSeconds)}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11.5px] text-[#999] mb-1">Streifen</dt>
+                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{patrolTime.sessionCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11.5px] text-[#999] mb-1">Letzte Streife</dt>
+                  <dd className="text-[13.5px] font-semibold text-[#edf4fb]">
+                    {patrolTime.lastSessionAt ? new Date(patrolTime.lastSessionAt).toLocaleDateString('de-DE') : '—'}
+                  </dd>
+                </div>
+              </dl>
+            </motion.div>
+          )}
         </div>
       </div>
 
