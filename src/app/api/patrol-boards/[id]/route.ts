@@ -33,6 +33,9 @@ type PatrolPayload = {
   assignment?: unknown
   notes?: unknown
   memberIds?: unknown
+  status?: unknown
+  scope?: unknown
+  assignedDispatchId?: unknown
 }
 
 function isRookieRank(rankName: string | null | undefined) {
@@ -61,6 +64,15 @@ function stringOrNull(value: unknown) {
   return trimmed || null
 }
 
+function intOrNull(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value)
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value)
+    if (Number.isFinite(n)) return Math.trunc(n)
+  }
+  return null
+}
+
 function normalizePatrols(value: unknown) {
   if (!Array.isArray(value)) return null
   return value.map((raw, index) => {
@@ -77,6 +89,9 @@ function normalizePatrols(value: unknown) {
       notes: stringOrNull(patrol.notes),
       memberIds,
       sortOrder: index,
+      status: intOrNull(patrol.status),
+      scope: stringOrNull(patrol.scope),
+      assignedDispatchId: intOrNull(patrol.assignedDispatchId),
     }
   })
 }
@@ -180,6 +195,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
               assignment: patrol.assignment,
               notes: patrol.notes,
               sortOrder: patrol.sortOrder,
+              status: patrol.status,
+              scope: patrol.scope,
+              assignedDispatchId: patrol.assignedDispatchId,
               members: {
                 create: patrol.memberIds.map((officerId, memberIndex) => ({
                   officerId,
