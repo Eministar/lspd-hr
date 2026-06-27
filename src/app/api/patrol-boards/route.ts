@@ -62,13 +62,16 @@ function defaultBoardTitle(startsAt: Date) {
 export async function GET() {
   try {
     await requirePermission('patrol-board:view')
-    const [boards, dutySnapshot] = await Promise.all([
+    const [boards, dutySnapshot, dispatchCenters] = await Promise.all([
       prisma.patrolBoard.findMany({
         include: boardInclude,
         orderBy: [{ startsAt: 'desc' }, { createdAt: 'desc' }],
         take: 20,
       }),
       getDutyTimesSnapshot(),
+      prisma.dispatchCenterState.findMany({
+        include: { officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } } },
+      }),
     ])
 
     const decoratedBoards = boards.map(decorateBoard)
@@ -88,6 +91,7 @@ export async function GET() {
       boards: decoratedBoards,
       activeDutyOfficers,
       syncedAt: dutySnapshot.sync.checkedAt,
+      dispatchCenters,
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
