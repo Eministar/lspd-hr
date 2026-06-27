@@ -142,7 +142,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           firstName: true,
           lastName: true,
           badgeNumber: true,
-          rank: { select: { name: true } },
         },
       })
       : []
@@ -151,23 +150,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return error('Mindestens ein Officer wurde nicht gefunden oder ist gekündigt')
     }
 
-    const officersById = new Map(officers.map((officer) => [officer.id, officer]))
-    const ruleViolations: string[] = []
-    for (const patrol of patrols) {
-      if (patrol.memberIds.length === 1) {
-        ruleViolations.push(`${patrol.name}: ein Officer alleine`)
-      }
-      const rookies = patrol.memberIds
-        .map((officerId) => officersById.get(officerId))
-        .filter((officer): officer is NonNullable<typeof officer> => !!officer && isRookieRank(officer.rank.name))
-      if (rookies.length >= 2) {
-        ruleViolations.push(`${patrol.name}: mehrere Rookies zusammen`)
-      }
-    }
-
-    if (ruleViolations.length > 0 && body.confirmRuleViolations !== true) {
-      return error(`Streifenregel prüfen: ${ruleViolations.join(', ')}. Erneut speichern bestätigt die Ausnahme.`)
-    }
+    // Reiner FiveM-Sync-Pfad: das Board ist im Dashboard read-only und wird
+    // vollständig von FiveM gespiegelt. Die früheren manuellen Streifenregel-
+    // Warnungen (Solo-Streife, mehrere Rookies) entfallen hier bewusst, damit
+    // reale FiveM-Crews nie abgelehnt werden.
 
     const data: Record<string, unknown> = {}
     if (typeof body.title === 'string') {

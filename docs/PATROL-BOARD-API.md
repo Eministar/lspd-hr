@@ -157,9 +157,9 @@ Scope: `patrol-board:manage`.
 **Limits & Regeln:**
 - max. **30 Streifen** pro Board, max. **3 Officers** pro Streife, jeder Officer
   nur **einmal** im gesamten Board.
-- Streifen mit nur 1 Officer oder mehreren Rookies lösen eine Regelwarnung aus;
-  mit `"confirmRuleViolations": true` wird der Sync trotzdem ausgeführt
-  (FiveM ist führend → immer `true` senden).
+- Keine Streifenregel-Prüfung im Sync-Pfad: Solo-Streifen oder mehrere Rookies
+  werden **nicht** abgelehnt (FiveM ist führend). `confirmRuleViolations` wird
+  akzeptiert, aber ignoriert (nur Abwärtskompatibilität).
 - Officers mit Status `TERMINATED` werden abgelehnt (`400`).
 
 ### 4.4 Status-Mapping (1–8)

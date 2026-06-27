@@ -810,12 +810,12 @@ export const ENDPOINTS: EndpointSpec[] = [
     scope: 'patrol-board:manage',
     params: [{ name: 'id', in: 'path', required: true, description: 'Board-ID', schema: { type: 'string' } }],
     body: {
-      description: 'Vollständiger Zustand des Boards. `confirmRuleViolations` bestätigt Solo-Streifen oder mehrere Rookies in einer Streife.',
+      description: 'Vollständiger Zustand des Boards (atomarer Full-Replace, FiveM-Sync). Das Board ist im Dashboard read-only.',
       fields: [
         { name: 'title', type: 'string', required: false, description: 'Titel der Streifenliste', example: 'Abendstreife' },
         { name: 'startsAt', type: 'string', required: false, description: 'Startzeit als ISO-8601', example: '2026-06-20T18:00:00.000Z' },
         { name: 'patrols', type: 'PatrolInput[]', required: true, description: 'Streifen mit `name`, `callSign`, `assignment`, `notes`, `memberIds` und optional `status`, `scope`, `assignedDispatchId` pro Streife' },
-        { name: 'confirmRuleViolations', type: 'boolean', required: false, description: 'Regelausnahmen ausdrücklich bestätigen', example: false },
+        { name: 'confirmRuleViolations', type: 'boolean', required: false, description: 'Veraltet — wird ignoriert (es gibt keine Streifenregel-Prüfung mehr im Sync-Pfad). Kann für Abwärtskompatibilität mitgesendet werden.', example: false },
         { name: 'patrols[].status', type: 'integer', required: false, description: 'Status-Code der Streife (1–8). Wird pro Streife im `patrols`-Array gesetzt.', example: 1 },
         { name: 'patrols[].scope', type: 'string', required: false, description: 'Scope-Key der Streife (z. B. `patrol`, `k9`). Wird pro Streife im `patrols`-Array gesetzt.', example: 'patrol' },
         { name: 'patrols[].assignedDispatchId', type: 'integer', required: false, description: 'ID der zugewiesenen Leitstelle. Wird pro Streife im `patrols`-Array gesetzt.', example: 1 },
@@ -824,7 +824,7 @@ export const ENDPOINTS: EndpointSpec[] = [
     notes: [
       'Maximal 30 Streifen pro Board.',
       'Maximal drei Officers pro Streife.',
-      'Solo-Streifen und mehrere Rookies erfordern `confirmRuleViolations: true`.',
+      'Reiner FiveM-Sync-Pfad: keine Streifenregel-Prüfung (Solo/Rookies werden nicht abgelehnt).',
     ],
   },
   {

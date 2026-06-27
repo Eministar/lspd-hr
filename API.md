@@ -515,7 +515,7 @@ Ersetzt die vollständige Streifenaufteilung atomar.
 - Maximal 30 Streifen pro Board
 - Maximal drei Officers pro Streife
 - Ein Officer darf nur einer Streife zugewiesen sein
-- Solo-Streifen oder mehrere Rookies erfordern `confirmRuleViolations: true`
+- Keine Streifenregel-Prüfung (Solo/Rookies werden nicht abgelehnt); `confirmRuleViolations` wird ignoriert
 - Pro Streife optional: `status` (1–8), `scope` (Scope-Key, z. B. `patrol`), `assignedDispatchId` (Leitstellen-ID)
 
 ### `DELETE /api/patrol-boards/{id}` 🔒 `patrol-board:manage`
