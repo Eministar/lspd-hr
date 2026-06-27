@@ -848,19 +848,20 @@ export const ENDPOINTS: EndpointSpec[] = [
     description:
       'Nimmt eine abgeschlossene oder noch laufende Streifensession vom Patrol-Board-Bot entgegen und ' +
       'schreibt sie idempotent in die Datenbank. Bei bereits bekannter `externalId` wird der Eintrag aktualisiert (Upsert). ' +
-      'Der Officer wird per `officerDiscordId` oder `officerName` aufgelöst; wenn keine Übereinstimmung gefunden wird, ' +
-      'bleibt `officerId` null und die Session wird trotzdem gespeichert.',
+      'Der Officer wird ausschließlich per `officerDiscordId` (Discord-Snowflake) aufgelöst. ' +
+      '`officerName` dient nur als Anzeigename und Backfill-Referenz, nicht als Auflösungsfallback. ' +
+      'Wenn kein passender Officer gefunden wird, bleibt `officerId` null und die Session wird trotzdem gespeichert (backfillbar).',
     scope: 'patrol-board:manage',
     body: {
       description: 'Session-Daten vom Patrol-Board-Bot',
       fields: [
         { name: 'externalId', type: 'string', required: false, description: 'Stabiler Bezeichner aus dem externen System (z. B. Discord-Message-ID). Dient der Idempotenz.', example: '1234567890123456789' },
         { name: 'officerDiscordId', type: 'string', required: false, description: 'Discord-Snowflake des Officers. Bevorzugte Methode zur Officer-Auflösung.', example: '987654321098765432' },
-        { name: 'officerName', type: 'string', required: true, description: 'Anzeigename des Officers im Board (Fallback, wenn `officerDiscordId` fehlt oder unbekannt ist).', example: 'Max Muster' },
+        { name: 'officerName', type: 'string', required: true, description: 'Anzeigename des Officers im Board. Wird als Display- und Backfill-Referenz gespeichert, aber NICHT zur Officer-Auflösung verwendet.', example: 'Max Muster' },
         { name: 'scope', type: 'string', required: true, description: 'Scope-Key der Streife (z. B. `patrol`, `k9`, `air`).', example: 'patrol' },
         { name: 'patrolName', type: 'string', required: true, description: 'Name der Streife (z. B. „Streife 1", „S-1").', example: 'Streife 1' },
         { name: 'designationAtJoin', type: 'string', required: false, description: 'Designation / Rufzeichen des Officers beim Beitritt.', example: 'S-1-L' },
-        { name: 'gradeAtJoin', type: 'string', required: false, description: 'Rang-Bezeichnung beim Beitritt (free-text, nicht die Rang-ID).', example: 'Senior Officer' },
+        { name: 'gradeAtJoin', type: 'integer', required: false, description: 'ESX-Grade des Officers beim Beitritt (numerischer Grad-Wert, entspricht dem `Int?`-Feld im Schema).', example: 3 },
         { name: 'joinedAt', type: 'string', required: true, description: 'Zeitpunkt des Beitritts (ISO-8601).', example: '2026-06-27T18:00:00.000Z' },
         { name: 'leftAt', type: 'string', required: false, description: 'Zeitpunkt des Verlassens (ISO-8601). Null, wenn die Session noch läuft.', example: '2026-06-27T20:30:00.000Z' },
         { name: 'durationSeconds', type: 'integer', required: true, description: 'Dauer der Session in Sekunden (inklusive etwaiger AFK-Phasen).', example: 9000 },
@@ -868,13 +869,13 @@ export const ENDPOINTS: EndpointSpec[] = [
       ],
     },
     responseFields: [
-      { name: 'id', type: 'integer', required: true, description: 'Interne Session-ID', example: 42 },
+      { name: 'id', type: 'string', required: true, description: 'Interne Session-ID (cuid)', example: 'clx123abc' },
       { name: 'status', type: 'string', required: true, description: '`created` bei Neuanlage, `updated` bei Upsert.', enumValues: ['created', 'updated'] },
     ],
     notes: [
       '`201 Created` bei Neuanlage, `200 OK` bei Upsert (selbe `externalId`).',
-      '`400 Bad Request`, wenn Pflichtfelder fehlen oder `joinedAt` nach `leftAt` liegt.',
-      'Officer-Auflösung per `officerDiscordId` → `officerName` → kein Match: Session wird mit `officerId: null` gespeichert.',
+      '`400 Bad Request`, wenn Pflichtfelder fehlen, `durationSeconds` ungültig ist oder `endReason` unbekannt ist.',
+      'Officer-Auflösung ausschließlich per `officerDiscordId`; kein Name-Fallback. Kein Match → `officerId: null` (Session wird trotzdem gespeichert, backfillbar).',
     ],
   },
   {
@@ -926,14 +927,13 @@ export const ENDPOINTS: EndpointSpec[] = [
     ],
     responseFields: [
       { name: 'officerId', type: 'string', required: true, description: 'Officer-ID', example: 'ckxyz' },
-      { name: 'officer', type: 'Officer', required: true, description: 'Officer-Objekt (id, badgeNumber, firstName, lastName, rank)' },
+      { name: 'officer', type: 'Officer | null', required: false, description: 'Officer-Objekt (id, firstName, lastName, badgeNumber) oder null.' },
       { name: 'totalSeconds', type: 'integer', required: true, description: 'Gesamte Streifenzeit in Sekunden', example: 25200 },
-      { name: 'sessionCount', type: 'integer', required: true, description: 'Anzahl abgeschlossener Sessions im Zeitraum', example: 7 },
+      { name: 'sessionCount', type: 'integer', required: true, description: 'Anzahl Sessions im Zeitraum', example: 7 },
     ],
     notes: [
       'Die Rangliste sortiert absteigend nach `totalSeconds`.',
       'Officers ohne Session im Zeitraum erscheinen nicht.',
-      'Nur abgeschlossene Sessions (`leftAt` ist nicht null) fließen ein.',
     ],
   },
 
@@ -955,18 +955,20 @@ export const ENDPOINTS: EndpointSpec[] = [
     body: {
       description: 'Inhaber-Daten',
       fields: [
-        { name: 'officerId', type: 'string', required: true, description: 'Officer-ID des neuen Inhabers.', example: 'ckxyz' },
-        { name: 'since', type: 'string', required: false, description: 'Zeitpunkt der Übernahme (ISO-8601). Standard: jetzt.', example: '2026-06-27T19:00:00.000Z' },
+        { name: 'officerId', type: 'string', required: false, description: 'Officer-ID des neuen Inhabers. Entweder `officerId` oder `officerDiscordId` muss angegeben werden.', example: 'ckxyz' },
+        { name: 'officerDiscordId', type: 'string', required: false, description: 'Discord-Snowflake des Officers (Alternative zu `officerId`).', example: '987654321098765432' },
+        { name: 'occupiedAt', type: 'string', required: false, description: 'Zeitpunkt der Übernahme (ISO-8601). Standard: jetzt.', example: '2026-06-27T19:00:00.000Z' },
       ],
     },
     responseFields: [
       { name: 'scope', type: 'string', required: true, description: 'Leitstellen-Scope-Key', example: 'leitstelle-1' },
-      { name: 'officerId', type: 'string', required: true, description: 'Officer-ID des Inhabers', example: 'ckxyz' },
-      { name: 'since', type: 'string', required: true, description: 'Zeitpunkt der Übernahme (ISO-8601)', example: '2026-06-27T19:00:00.000Z' },
+      { name: 'officerId', type: 'string | null', required: true, description: 'Officer-ID des Inhabers', example: 'ckxyz' },
+      { name: 'occupiedAt', type: 'string | null', required: true, description: 'Zeitpunkt der Übernahme (ISO-8601)', example: '2026-06-27T19:00:00.000Z' },
+      { name: 'updatedAt', type: 'string', required: true, description: 'Letztes Update (ISO-8601)', example: '2026-06-27T19:00:05.000Z' },
+      { name: 'officer', type: 'object | null', required: true, description: 'Eingebettetes Officer-Objekt (id, firstName, lastName, badgeNumber) oder null.' },
     ],
     notes: [
       'Ein vorhandener Inhaber wird sofort ohne Warnung ersetzt.',
-      '`404`, wenn der Officer nicht existiert.',
     ],
   },
   {
