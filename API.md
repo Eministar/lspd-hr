@@ -26,6 +26,9 @@
 - [Tasks](#tasks)
 - [SRU](#sru)
 - [Patrol Board](#patrol-board)
+- [Patrol Sessions](#patrol-sessions)
+- [Patrol Time](#patrol-time)
+- [Dispatch Centers](#dispatch-centers)
 - [Admin](#admin)
 - [Users](#users)
 - [API Tokens](#api-tokens)
@@ -229,6 +232,25 @@ Löscht einen Officer (Hard-Delete). Empfohlen ist `POST /api/terminations` für
 
 ### `GET /api/officers/{id}/timeline` 🔒 `officers:view`
 Vollständige Historie: Beförderungen, Kündigungen, Notizen, Audit-Logs.
+
+### `GET /api/officers/{id}/patrol-time` 🔒 `officers:view`
+Aggregierte Streifenzeit des Officers für einen Zeitraum (unabhängig von der Dienstzeit).
+
+| Query-Param | Typ | Beschreibung |
+| :-- | :-- | :-- |
+| `from` | ISO-8601 | Beginn des Zeitraums. Standard: 30 Tage zurück. |
+| `to` | ISO-8601 | Ende des Zeitraums. Standard: jetzt. |
+
+```json
+{
+  "officerId": "ckxyz",
+  "totalSeconds": 18000,
+  "sessionCount": 5,
+  "last7DaysSeconds": 7200,
+  "lastSessionAt": "2026-06-27T20:15:00.000Z",
+  "byScope": { "patrol": 14400, "k9": 3600 }
+}
+```
 
 ### `GET /api/officers/{id}/trainings` 🔒 `officers:view`
 Alle Ausbildungen inkl. Status (completed).
@@ -481,7 +503,10 @@ Ersetzt die vollständige Streifenaufteilung atomar.
       "callSign": "S-1",
       "assignment": "Patrol",
       "notes": "Innenstadt",
-      "memberIds": ["officer-id-1", "officer-id-2"]
+      "memberIds": ["officer-id-1", "officer-id-2"],
+      "status": 1,
+      "scope": "patrol",
+      "assignedDispatchId": 1
     }
   ]
 }
@@ -491,9 +516,101 @@ Ersetzt die vollständige Streifenaufteilung atomar.
 - Maximal drei Officers pro Streife
 - Ein Officer darf nur einer Streife zugewiesen sein
 - Solo-Streifen oder mehrere Rookies erfordern `confirmRuleViolations: true`
+- Pro Streife optional: `status` (1–8), `scope` (Scope-Key, z. B. `patrol`), `assignedDispatchId` (Leitstellen-ID)
 
 ### `DELETE /api/patrol-boards/{id}` 🔒 `patrol-board:manage`
 Löscht das Board einschließlich aller Streifen und Besatzungszuordnungen.
+
+---
+
+## Patrol Sessions
+
+### `POST /api/patrol-sessions` 🔒 `patrol-board:manage`
+Nimmt eine abgeschlossene Streifensession vom Patrol-Board-Bot entgegen (Upsert per `externalId`).
+
+```json
+{
+  "externalId": "1234567890123456789",
+  "officerDiscordId": "987654321098765432",
+  "officerName": "Max Muster",
+  "scope": "patrol",
+  "patrolName": "Streife 1",
+  "designationAtJoin": "S-1-L",
+  "gradeAtJoin": "Senior Officer",
+  "joinedAt": "2026-06-27T18:00:00.000Z",
+  "leftAt": "2026-06-27T20:30:00.000Z",
+  "durationSeconds": 9000,
+  "endReason": "leave"
+}
+```
+
+Response (`201 Created` / `200 OK` bei Upsert):
+```json
+{ "id": 42, "status": "created" }
+```
+
+`endReason`: `leave` | `disband` | `crew` | `disconnect` | `server_shutdown`
+
+### `POST /api/patrol-sessions/batch` 🔒 `patrol-board:manage`
+Importiert bis zu 500 Sessions in einem Request. Ungültige Einträge werden übersprungen — der Import bricht nicht ab.
+
+```json
+{
+  "sessions": [ /* Array von Session-Objekten wie oben */ ]
+}
+```
+
+Response:
+```json
+{ "created": 12, "updated": 3, "skipped": 1, "total": 16 }
+```
+
+---
+
+## Patrol Time
+
+### `GET /api/patrol-time/leaderboard` 🔒 `patrol-board:view`
+Rangliste der Officers nach Streifenzeit im angegebenen Zeitraum.
+
+| Query-Param | Typ | Beschreibung |
+| :-- | :-- | :-- |
+| `scope` | string | Scope-Key-Filter (z. B. `patrol`). Fehlt → alle Scopes summiert. |
+| `from` | ISO-8601 | Beginn des Zeitraums. Standard: 7 Tage zurück. |
+| `to` | ISO-8601 | Ende des Zeitraums. Standard: jetzt. |
+| `limit` | integer | Max. Einträge (Standard: 10, Max: 100). |
+
+```json
+[
+  {
+    "officerId": "ckxyz",
+    "officer": { "id": "ckxyz", "badgeNumber": "1234", "firstName": "Max", "lastName": "Muster", "rank": { "name": "Senior Officer" } },
+    "totalSeconds": 25200,
+    "sessionCount": 7
+  }
+]
+```
+
+---
+
+## Dispatch Centers
+
+### `PUT /api/dispatch-centers/{scope}/occupant` 🔒 `patrol-board:manage`
+Setzt oder ersetzt den aktuellen Inhaber einer Leitstelle. Ein vorhandener Eintrag wird ohne Bestätigung überschrieben.
+
+```json
+{
+  "officerId": "ckxyz",
+  "since": "2026-06-27T19:00:00.000Z"
+}
+```
+
+Response:
+```json
+{ "scope": "leitstelle-1", "officerId": "ckxyz", "since": "2026-06-27T19:00:00.000Z" }
+```
+
+### `DELETE /api/dispatch-centers/{scope}/occupant` 🔒 `patrol-board:manage`
+Entfernt den Inhaber der Leitstelle (idempotent — kein Fehler, wenn bereits leer).
 
 ---
 

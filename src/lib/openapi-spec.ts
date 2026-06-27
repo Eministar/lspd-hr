@@ -148,6 +148,34 @@ export const ENDPOINTS: EndpointSpec[] = [
     params: [{ name: 'id', in: 'path', required: true, description: 'Officer-ID', schema: { type: 'string' } }],
   },
   {
+    id: 'officer-patrol-time',
+    method: 'GET',
+    path: '/officers/{id}/patrol-time',
+    category: 'Officers',
+    summary: 'Streifenzeit eines Officers',
+    description:
+      'Liefert die aggregierte Streifenzeit eines Officers für den angegebenen Zeitraum. ' +
+      'Die Werte basieren auf abgeschlossenen `PatrolSession`-Einträgen und sind unabhängig von der Dienstzeit (`DutyTimeSession`).',
+    scope: 'officers:view',
+    params: [
+      { name: 'id', in: 'path', required: true, description: 'Officer-ID', schema: { type: 'string' } },
+      { name: 'from', in: 'query', description: 'Beginn des Zeitraums (ISO-8601). Standard: 30 Tage zurück.', schema: { type: 'string', format: 'date-time', example: '2026-06-01T00:00:00.000Z' } },
+      { name: 'to', in: 'query', description: 'Ende des Zeitraums (ISO-8601). Standard: jetzt.', schema: { type: 'string', format: 'date-time', example: '2026-06-30T23:59:59.000Z' } },
+    ],
+    responseFields: [
+      { name: 'officerId', type: 'string', required: true, description: 'Officer-ID' },
+      { name: 'totalSeconds', type: 'integer', required: true, description: 'Gesamte Streifenzeit in Sekunden im Zeitraum', example: 18000 },
+      { name: 'sessionCount', type: 'integer', required: true, description: 'Anzahl abgeschlossener Streifensessions im Zeitraum', example: 5 },
+      { name: 'last7DaysSeconds', type: 'integer', required: true, description: 'Streifenzeit der letzten 7 Tage in Sekunden', example: 7200 },
+      { name: 'lastSessionAt', type: 'string | null', required: true, description: 'Zeitpunkt der letzten Session (ISO-8601)', example: '2026-06-27T20:15:00.000Z' },
+      { name: 'byScope', type: 'Record<string, number>', required: true, description: 'Aufschlüsselung nach Scope-Key → Sekunden', example: { patrol: 14400, k9: 3600 } },
+    ],
+    notes: [
+      'Streifenzeit und Dienstzeit (`/duty-times`) sind getrennte Systeme — es gibt keine Überschneidung.',
+      'Sessions, die noch nicht beendet sind (`leftAt` ist null), werden nicht mitgezählt.',
+    ],
+  },
+  {
     id: 'officer-trainings',
     method: 'GET',
     path: '/officers/{id}/trainings',
@@ -786,8 +814,11 @@ export const ENDPOINTS: EndpointSpec[] = [
       fields: [
         { name: 'title', type: 'string', required: false, description: 'Titel der Streifenliste', example: 'Abendstreife' },
         { name: 'startsAt', type: 'string', required: false, description: 'Startzeit als ISO-8601', example: '2026-06-20T18:00:00.000Z' },
-        { name: 'patrols', type: 'PatrolInput[]', required: true, description: 'Streifen mit `name`, `callSign`, `assignment`, `notes` und `memberIds`' },
+        { name: 'patrols', type: 'PatrolInput[]', required: true, description: 'Streifen mit `name`, `callSign`, `assignment`, `notes`, `memberIds` und optional `status`, `scope`, `assignedDispatchId` pro Streife' },
         { name: 'confirmRuleViolations', type: 'boolean', required: false, description: 'Regelausnahmen ausdrücklich bestätigen', example: false },
+        { name: 'patrols[].status', type: 'integer', required: false, description: 'Status-Code der Streife (1–8). Wird pro Streife im `patrols`-Array gesetzt.', example: 1 },
+        { name: 'patrols[].scope', type: 'string', required: false, description: 'Scope-Key der Streife (z. B. `patrol`, `k9`). Wird pro Streife im `patrols`-Array gesetzt.', example: 'patrol' },
+        { name: 'patrols[].assignedDispatchId', type: 'integer', required: false, description: 'ID der zugewiesenen Leitstelle. Wird pro Streife im `patrols`-Array gesetzt.', example: 1 },
       ],
     },
     notes: [
@@ -805,6 +836,156 @@ export const ENDPOINTS: EndpointSpec[] = [
     description: 'Löscht die Streifenliste einschließlich aller Streifen und Besatzungszuordnungen.',
     scope: 'patrol-board:manage',
     params: [{ name: 'id', in: 'path', required: true, description: 'Board-ID', schema: { type: 'string' } }],
+  },
+
+  // ============ Patrol Sessions ============
+  {
+    id: 'ingest-patrol-session',
+    method: 'POST',
+    path: '/patrol-sessions',
+    category: 'Patrol Sessions',
+    summary: 'Einzelne Streifensession einlesen',
+    description:
+      'Nimmt eine abgeschlossene oder noch laufende Streifensession vom Patrol-Board-Bot entgegen und ' +
+      'schreibt sie idempotent in die Datenbank. Bei bereits bekannter `externalId` wird der Eintrag aktualisiert (Upsert). ' +
+      'Der Officer wird per `officerDiscordId` oder `officerName` aufgelöst; wenn keine Übereinstimmung gefunden wird, ' +
+      'bleibt `officerId` null und die Session wird trotzdem gespeichert.',
+    scope: 'patrol-board:manage',
+    body: {
+      description: 'Session-Daten vom Patrol-Board-Bot',
+      fields: [
+        { name: 'externalId', type: 'string', required: false, description: 'Stabiler Bezeichner aus dem externen System (z. B. Discord-Message-ID). Dient der Idempotenz.', example: '1234567890123456789' },
+        { name: 'officerDiscordId', type: 'string', required: false, description: 'Discord-Snowflake des Officers. Bevorzugte Methode zur Officer-Auflösung.', example: '987654321098765432' },
+        { name: 'officerName', type: 'string', required: true, description: 'Anzeigename des Officers im Board (Fallback, wenn `officerDiscordId` fehlt oder unbekannt ist).', example: 'Max Muster' },
+        { name: 'scope', type: 'string', required: true, description: 'Scope-Key der Streife (z. B. `patrol`, `k9`, `air`).', example: 'patrol' },
+        { name: 'patrolName', type: 'string', required: true, description: 'Name der Streife (z. B. „Streife 1", „S-1").', example: 'Streife 1' },
+        { name: 'designationAtJoin', type: 'string', required: false, description: 'Designation / Rufzeichen des Officers beim Beitritt.', example: 'S-1-L' },
+        { name: 'gradeAtJoin', type: 'string', required: false, description: 'Rang-Bezeichnung beim Beitritt (free-text, nicht die Rang-ID).', example: 'Senior Officer' },
+        { name: 'joinedAt', type: 'string', required: true, description: 'Zeitpunkt des Beitritts (ISO-8601).', example: '2026-06-27T18:00:00.000Z' },
+        { name: 'leftAt', type: 'string', required: false, description: 'Zeitpunkt des Verlassens (ISO-8601). Null, wenn die Session noch läuft.', example: '2026-06-27T20:30:00.000Z' },
+        { name: 'durationSeconds', type: 'integer', required: true, description: 'Dauer der Session in Sekunden (inklusive etwaiger AFK-Phasen).', example: 9000 },
+        { name: 'endReason', type: 'string', required: true, description: 'Grund für das Ende der Session.', enumValues: ['leave', 'disband', 'crew', 'disconnect', 'server_shutdown'] },
+      ],
+    },
+    responseFields: [
+      { name: 'id', type: 'integer', required: true, description: 'Interne Session-ID', example: 42 },
+      { name: 'status', type: 'string', required: true, description: '`created` bei Neuanlage, `updated` bei Upsert.', enumValues: ['created', 'updated'] },
+    ],
+    notes: [
+      '`201 Created` bei Neuanlage, `200 OK` bei Upsert (selbe `externalId`).',
+      '`400 Bad Request`, wenn Pflichtfelder fehlen oder `joinedAt` nach `leftAt` liegt.',
+      'Officer-Auflösung per `officerDiscordId` → `officerName` → kein Match: Session wird mit `officerId: null` gespeichert.',
+    ],
+  },
+  {
+    id: 'batch-ingest-patrol-sessions',
+    method: 'POST',
+    path: '/patrol-sessions/batch',
+    category: 'Patrol Sessions',
+    summary: 'Batch-Import von Streifensessions',
+    description:
+      'Importiert bis zu 500 Streifensessions in einem einzigen Request. Jede Session wird separat validiert und ' +
+      'idempotent geschrieben (Upsert per `externalId`). Ungültige Einträge werden übersprungen und in `skipped` gezählt — ' +
+      'der Import bricht nicht ab.',
+    scope: 'patrol-board:manage',
+    body: {
+      description: 'Batch-Payload',
+      fields: [
+        { name: 'sessions', type: 'SessionInput[]', required: true, description: 'Array von Session-Objekten (max. 500). Jedes Objekt hat dieselbe Struktur wie `POST /api/patrol-sessions`.', example: [] },
+      ],
+    },
+    responseFields: [
+      { name: 'created', type: 'integer', required: true, description: 'Anzahl neu angelegter Sessions', example: 12 },
+      { name: 'updated', type: 'integer', required: true, description: 'Anzahl aktualisierter Sessions (Upsert)', example: 3 },
+      { name: 'skipped', type: 'integer', required: true, description: 'Anzahl übersprungener Sessions (Validierungsfehler)', example: 1 },
+      { name: 'total', type: 'integer', required: true, description: 'Gesamtanzahl der empfangenen Sessions', example: 16 },
+    ],
+    notes: [
+      'Maximum: 500 Sessions pro Request. Größere Batches werden mit `400` abgelehnt.',
+      'Jede Session wird einzeln validiert; ungültige Einträge werden übersprungen, nicht abgebrochen.',
+      'Die Antwort enthält keine Fehlerdetails pro Session — bei Bedarf die einzelne Ingest-Route nutzen.',
+    ],
+  },
+
+  // ============ Patrol Time ============
+  {
+    id: 'patrol-time-leaderboard',
+    method: 'GET',
+    path: '/patrol-time/leaderboard',
+    category: 'Patrol Time',
+    summary: 'Streifenzeit-Rangliste',
+    description:
+      'Liefert die Officers mit der höchsten Streifenzeit im angegebenen Zeitraum, optional gefiltert nach Scope. ' +
+      'Nützlich für Discord-Ranglisten, wöchentliche Reports oder Incentive-Programme.',
+    scope: 'patrol-board:view',
+    params: [
+      { name: 'scope', in: 'query', description: 'Scope-Key, auf den gefiltert wird (z. B. `patrol`, `k9`). Fehlt der Parameter, werden alle Scopes summiert.', schema: { type: 'string', example: 'patrol' } },
+      { name: 'from', in: 'query', description: 'Beginn des Zeitraums (ISO-8601). Standard: 7 Tage zurück.', schema: { type: 'string', format: 'date-time', example: '2026-06-20T00:00:00.000Z' } },
+      { name: 'to', in: 'query', description: 'Ende des Zeitraums (ISO-8601). Standard: jetzt.', schema: { type: 'string', format: 'date-time', example: '2026-06-27T23:59:59.000Z' } },
+      { name: 'limit', in: 'query', description: 'Maximale Anzahl der Einträge (Standard: 10, Max: 100).', schema: { type: 'integer', example: 10 } },
+    ],
+    responseFields: [
+      { name: 'officerId', type: 'string', required: true, description: 'Officer-ID', example: 'ckxyz' },
+      { name: 'officer', type: 'Officer', required: true, description: 'Officer-Objekt (id, badgeNumber, firstName, lastName, rank)' },
+      { name: 'totalSeconds', type: 'integer', required: true, description: 'Gesamte Streifenzeit in Sekunden', example: 25200 },
+      { name: 'sessionCount', type: 'integer', required: true, description: 'Anzahl abgeschlossener Sessions im Zeitraum', example: 7 },
+    ],
+    notes: [
+      'Die Rangliste sortiert absteigend nach `totalSeconds`.',
+      'Officers ohne Session im Zeitraum erscheinen nicht.',
+      'Nur abgeschlossene Sessions (`leftAt` ist nicht null) fließen ein.',
+    ],
+  },
+
+  // ============ Dispatch Centers ============
+  {
+    id: 'set-dispatch-center-occupant',
+    method: 'PUT',
+    path: '/dispatch-centers/{scope}/occupant',
+    category: 'Dispatch Centers',
+    summary: 'Leitstellen-Inhaber setzen',
+    description:
+      'Setzt oder ersetzt den aktuellen Inhaber einer Leitstelle. Der Leitstellen-Zustand wird in Echtzeit ' +
+      'an das Streifenboard übertragen und im Frontend angezeigt. Nur ein Inhaber pro Leitstelle gleichzeitig möglich — ' +
+      'ein vorhandener Eintrag wird ohne Bestätigung überschrieben.',
+    scope: 'patrol-board:manage',
+    params: [
+      { name: 'scope', in: 'path', required: true, description: 'Leitstellen-Scope-Key (z. B. `leitstelle-1`, `dispatch-central`).', schema: { type: 'string', example: 'leitstelle-1' } },
+    ],
+    body: {
+      description: 'Inhaber-Daten',
+      fields: [
+        { name: 'officerId', type: 'string', required: true, description: 'Officer-ID des neuen Inhabers.', example: 'ckxyz' },
+        { name: 'since', type: 'string', required: false, description: 'Zeitpunkt der Übernahme (ISO-8601). Standard: jetzt.', example: '2026-06-27T19:00:00.000Z' },
+      ],
+    },
+    responseFields: [
+      { name: 'scope', type: 'string', required: true, description: 'Leitstellen-Scope-Key', example: 'leitstelle-1' },
+      { name: 'officerId', type: 'string', required: true, description: 'Officer-ID des Inhabers', example: 'ckxyz' },
+      { name: 'since', type: 'string', required: true, description: 'Zeitpunkt der Übernahme (ISO-8601)', example: '2026-06-27T19:00:00.000Z' },
+    ],
+    notes: [
+      'Ein vorhandener Inhaber wird sofort ohne Warnung ersetzt.',
+      '`404`, wenn der Officer nicht existiert.',
+    ],
+  },
+  {
+    id: 'clear-dispatch-center-occupant',
+    method: 'DELETE',
+    path: '/dispatch-centers/{scope}/occupant',
+    category: 'Dispatch Centers',
+    summary: 'Leitstellen-Inhaber entfernen',
+    description:
+      'Entfernt den aktuellen Inhaber der Leitstelle, sodass sie als frei erscheint. ' +
+      'Hat keine Auswirkung, wenn die Leitstelle bereits leer ist (idempotent).',
+    scope: 'patrol-board:manage',
+    params: [
+      { name: 'scope', in: 'path', required: true, description: 'Leitstellen-Scope-Key.', schema: { type: 'string', example: 'leitstelle-1' } },
+    ],
+    notes: [
+      'Idempotent: kein Fehler, wenn die Leitstelle bereits keinen Inhaber hat.',
+      'Antwort: `{ success: true }` mit HTTP 200.',
+    ],
   },
 
   // ============ Admin / Misc ============
