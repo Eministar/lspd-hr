@@ -307,7 +307,7 @@ model FormResponse {
   answers        FormAnswer[]
 
   @@unique([testId, respondentId])
-  @@unique([testId, submitterHash])
+  @@index([testId, submitterHash])
   @@index([testId, submittedAt])
   @@index([respondentId, submittedAt])
   @@index([submitterHash])

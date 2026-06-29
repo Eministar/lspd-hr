@@ -6,7 +6,7 @@ ALTER TABLE `FormTest`
 ALTER TABLE `FormResponse`
     ADD COLUMN `submitterHash` VARCHAR(191) NULL;
 
-CREATE UNIQUE INDEX `FormResponse_testId_submitterHash_key`
+CREATE INDEX `FormResponse_testId_submitterHash_idx`
     ON `FormResponse`(`testId`, `submitterHash`);
 
 CREATE INDEX `FormResponse_submitterHash_idx`
