@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   Archive,
   ArchiveRestore,
-  BarChart3,
   CheckCircle2,
   Clipboard,
   Clock,
@@ -39,7 +38,6 @@ type ModuleKey = 'ACADEMY' | 'HR' | 'SRU' | 'AIR_SUPPORT' | 'DETECTIVE'
 type FormTestStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
 type FormTestKind = 'TEST' | 'SURVEY'
 type QuestionType = 'SHORT_TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'SCALE'
-type ViewMode = 'editor' | 'responses'
 
 interface QuestionOptions {
   choices?: string[]
@@ -76,38 +74,6 @@ interface FormTest {
   createdBy: { id: string; displayName: string } | null
   questions: FormQuestion[]
   _count: { responses: number; questions: number }
-}
-
-interface FormAnswer {
-  id: string
-  questionId: string
-  value: Record<string, unknown>
-  question: FormQuestion
-}
-
-interface FormResponse {
-  id: string
-  respondentName: string
-  respondent: { id: string; displayName: string; username: string; discordId: string | null } | null
-  score: number | null
-  maxScore: number
-  reviewNote: string | null
-  reviewedAt: string | null
-  reviewedBy: { id: string; displayName: string } | null
-  submittedAt: string
-  answers: FormAnswer[]
-}
-
-interface ResponsesPayload {
-  test: {
-    id: string
-    title: string
-    kind: FormTestKind
-    status: FormTestStatus
-    anonymousResponses: boolean
-    questions: FormQuestion[]
-  }
-  responses: FormResponse[]
 }
 
 interface FormTestsProps {
@@ -203,35 +169,9 @@ function statusNext(status: FormTestStatus): FormTestStatus {
   return 'ACTIVE'
 }
 
-function responseScore(response: Pick<FormResponse, 'score' | 'maxScore'>) {
-  if (response.maxScore <= 0) return 'Ohne Punkte'
-  return `${response.score ?? '-'} / ${response.maxScore}`
-}
-
-function answerText(answer: FormAnswer) {
-  const value = answer.value
-  if (typeof value.text === 'string') return value.text
-  if (typeof value.selected === 'string') return value.selected
-  if (Array.isArray(value.selected)) return value.selected.join(', ')
-  if (typeof value.value === 'number') return String(value.value)
-  return 'Keine Antwort'
-}
-
-function selectedValues(answer: FormAnswer | undefined) {
-  if (!answer) return []
-  if (typeof answer.value.selected === 'string') return [answer.value.selected]
-  if (Array.isArray(answer.value.selected)) return answer.value.selected.map(String)
-  return []
-}
-
-function correctValues(question: FormQuestion) {
-  return question.options?.correct ?? []
-}
-
 export function FormTests({ module, title, description, canManage }: FormTestsProps) {
   const [showArchived, setShowArchived] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('editor')
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM)
   const [draft, setDraft] = useState<FormTest | null>(null)
@@ -365,7 +305,6 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
     if (draftDirty && selectedId && selectedId !== id && !confirm('Ungespeicherte Änderungen verwerfen?')) return
     setDraftDirty(false)
     setSelectedId(id)
-    setViewMode('editor')
   }
 
   const patchDraft = (patch: Partial<FormTest>) => {
@@ -605,6 +544,12 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                         Öffnen
                       </Button>
                     </Link>
+                    <Link href={`/form-tests/manage/${draft.id}/responses`}>
+                      <Button variant="outline" size="sm" type="button">
+                        <Clipboard size={13} />
+                        Abgaben
+                      </Button>
+                    </Link>
                     <Button size="sm" onClick={saveDraft} loading={saving}>
                       <Save size={13} />
                       Speichern
@@ -617,30 +562,15 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
               </div>
             </div>
 
-            {canManage && (
-              <div className="flex flex-wrap gap-2">
-                <ModeButton active={viewMode === 'editor'} onClick={() => setViewMode('editor')} icon={<FileQuestion size={13} />}>
-                  Editor
-                </ModeButton>
-                <ModeButton active={viewMode === 'responses'} onClick={() => setViewMode('responses')} icon={<BarChart3 size={13} />}>
-                  Antworten
-                </ModeButton>
-              </div>
-            )}
-
-            {viewMode === 'editor' ? (
-              <QuestionEditor
-                questions={draft.questions}
-                canEdit={canEditQuestions}
-                isSurvey={draft.kind === 'SURVEY'}
-                onAdd={() => patchDraft({ questions: [...draft.questions, createEmptyQuestion()] })}
-                onChange={updateQuestion}
-                onMove={moveQuestion}
-                onRemove={removeQuestion}
-              />
-            ) : (
-              <ResponsesView testId={draft.id} />
-            )}
+            <QuestionEditor
+              questions={draft.questions}
+              canEdit={canEditQuestions}
+              isSurvey={draft.kind === 'SURVEY'}
+              onAdd={() => patchDraft({ questions: [...draft.questions, createEmptyQuestion()] })}
+              onChange={updateQuestion}
+              onMove={moveQuestion}
+              onRemove={removeQuestion}
+            />
           </section>
         )}
       </div>
@@ -717,24 +647,6 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
         <p className="mt-0.5 text-[11px] text-[#8ea4bd]">{label}</p>
       </div>
     </div>
-  )
-}
-
-function ModeButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-8 items-center gap-1.5 rounded-[8px] border px-3 text-[12.5px] font-semibold transition-colors',
-        active
-          ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
-          : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
-      )}
-    >
-      {icon}
-      {children}
-    </button>
   )
 }
 
@@ -953,243 +865,5 @@ function ScaleOptions({ question, disabled, onChange }: { question: FormQuestion
       <Input label="Label Minimum" value={options.minLabel ?? ''} disabled={disabled} onChange={(event) => onChange({ ...options, minLabel: event.target.value })} />
       <Input label="Label Maximum" value={options.maxLabel ?? ''} disabled={disabled} onChange={(event) => onChange({ ...options, maxLabel: event.target.value })} />
     </div>
-  )
-}
-
-function ResponsesView({ testId }: { testId: string }) {
-  const { addToast } = useToast()
-  const { execute } = useApi()
-  const { data, loading, refetch } = useFetch<ResponsesPayload>(`/api/form-tests/${testId}/responses`)
-  const [selectedResponseId, setSelectedResponseId] = useState<string | null>(null)
-  const [scoreInput, setScoreInput] = useState('')
-  const [noteInput, setNoteInput] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  const responses = useMemo(() => data?.responses ?? [], [data?.responses])
-  const selected = responses.find((response) => response.id === selectedResponseId) ?? responses[0] ?? null
-
-  useEffect(() => {
-    if (selected && selected.id !== selectedResponseId) setSelectedResponseId(selected.id)
-  }, [selected, selectedResponseId])
-
-  useEffect(() => {
-    if (!selected) {
-      setScoreInput('')
-      setNoteInput('')
-      return
-    }
-    setScoreInput(selected.score === null ? '' : String(selected.score))
-    setNoteInput(selected.reviewNote ?? '')
-  }, [selected])
-
-  const stats = useMemo(() => {
-    const scored = responses.filter((response) => response.maxScore > 0 && response.score !== null)
-    const average = scored.length > 0
-      ? Math.round(scored.reduce((sum, response) => sum + (response.score ?? 0), 0) / scored.length)
-      : null
-    return {
-      total: responses.length,
-      reviewed: responses.filter((response) => response.reviewedAt).length,
-      average,
-    }
-  }, [responses])
-
-  const saveReview = async () => {
-    if (!selected) return
-    setSaving(true)
-    try {
-      await execute(`/api/form-tests/${testId}/responses/${selected.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          score: scoreInput.trim() ? Number(scoreInput) : null,
-          reviewNote: noteInput,
-        }),
-      })
-      addToast({ type: 'success', title: 'Bewertung gespeichert' })
-      await refetch()
-    } catch (e) {
-      addToast({ type: 'error', title: 'Bewertung fehlgeschlagen', message: e instanceof Error ? e.message : '' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (loading) return <PageLoader />
-
-  if (responses.length === 0) {
-    return (
-      <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-14 text-center">
-        <Clipboard size={26} className="mx-auto mb-2 text-[#4a6585]" />
-        <p className="text-[13px] text-[#8ea4bd]">Noch keine Abgaben vorhanden</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <StatCard label="Abgaben" value={stats.total} icon={<Clipboard size={16} />} />
-        <StatCard label="Bewertet" value={stats.reviewed} icon={<CheckCircle2 size={16} />} />
-        <StatCard label="Ø Punkte" value={stats.average ?? 0} icon={<BarChart3 size={16} />} />
-      </div>
-
-      <QuestionAnalytics questions={data?.test.questions ?? []} responses={responses} />
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
-        <aside className="glass-panel-elevated overflow-hidden rounded-[14px] border border-[#1e3a5c]/45">
-          <div className="border-b border-[#18385f]/45 px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Abgaben</p>
-          </div>
-          <div className="max-h-[560px] overflow-y-auto p-1.5">
-            {responses.map((response) => (
-              <button
-                key={response.id}
-                type="button"
-                onClick={() => setSelectedResponseId(response.id)}
-                className={cn(
-                  'w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
-                  selected?.id === response.id
-                    ? 'border-[#d4af37]/30 bg-[#d4af37]/12'
-                    : 'border-transparent hover:bg-[#102542]/60',
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold text-white">{response.respondent?.displayName ?? response.respondentName}</p>
-                    <p className="mt-0.5 text-[11px] text-[#6b8299]">{formatDateTime(response.submittedAt)}</p>
-                  </div>
-                  <Badge variant={response.reviewedAt ? 'success' : 'default'}>{responseScore(response)}</Badge>
-                </div>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        {selected && (
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h3 className="text-[15px] font-semibold text-white">{selected.respondent?.displayName ?? selected.respondentName}</h3>
-                <p className="mt-0.5 text-[12px] text-[#8ea4bd]">Abgegeben {formatDateTime(selected.submittedAt)}</p>
-              </div>
-              <Badge variant={selected.reviewedAt ? 'success' : 'warning'}>
-                {selected.reviewedAt ? `Bewertet von ${selected.reviewedBy?.displayName ?? 'Unbekannt'}` : 'Offen'}
-              </Badge>
-            </div>
-
-            <div className="space-y-3">
-              {selected.answers.map((answer, index) => {
-                const correct = correctValues(answer.question)
-                const chosen = selectedValues(answer)
-                const showCorrect = data?.test.kind === 'TEST' && correct.length > 0
-                const isCorrect = showCorrect && correct.length === chosen.length && correct.every((value) => chosen.includes(value))
-                return (
-                  <div key={answer.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-                    <div className="mb-2 flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] bg-[#102542] text-[10px] font-semibold text-[#d4af37]">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-white">{answer.question.title}</p>
-                        <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{answerText(answer)}</p>
-                      </div>
-                      {showCorrect && (
-                        <Badge variant={isCorrect ? 'success' : 'danger'}>{isCorrect ? 'Richtig' : 'Falsch'}</Badge>
-                      )}
-                    </div>
-                    {showCorrect && (
-                      <p className="pl-7 text-[11.5px] text-[#8ea4bd]">Richtig: {correct.join(', ')}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="mt-5 rounded-[12px] border border-[#18385f]/45 bg-[#04101f]/50 p-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
-                <Input label={`Punkte${selected.maxScore > 0 ? ` von ${selected.maxScore}` : ''}`} type="number" min={0} value={scoreInput} onChange={(event) => setScoreInput(event.target.value)} />
-                <Textarea label="Bewertungsnotiz" value={noteInput} onChange={(event) => setNoteInput(event.target.value)} rows={2} />
-              </div>
-              <div className="mt-3 flex justify-end">
-                <Button size="sm" onClick={saveReview} loading={saving}>
-                  <Save size={13} />
-                  Bewertung speichern
-                </Button>
-              </div>
-            </div>
-          </section>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function QuestionAnalytics({ questions, responses }: { questions: FormQuestion[]; responses: FormResponse[] }) {
-  if (questions.length === 0) return null
-
-  return (
-    <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <BarChart3 size={15} className="text-[#d4af37]" />
-        <h3 className="text-[14px] font-semibold text-white">Auswertung</h3>
-      </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {questions.map((question) => {
-          const answers = responses
-            .map((response) => response.answers.find((answer) => answer.questionId === question.id))
-            .filter((answer): answer is FormAnswer => Boolean(answer))
-
-          if (question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE') {
-            const choices = question.options?.choices ?? []
-            const counts = new Map(choices.map((choice) => [choice, 0]))
-            for (const answer of answers) {
-              for (const selected of selectedValues(answer)) counts.set(selected, (counts.get(selected) ?? 0) + 1)
-            }
-            const max = Math.max(1, ...Array.from(counts.values()))
-            return (
-              <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-                <p className="mb-2 text-[12.5px] font-semibold text-white">{question.title}</p>
-                <div className="space-y-2">
-                  {choices.map((choice) => {
-                    const count = counts.get(choice) ?? 0
-                    return (
-                      <div key={choice}>
-                        <div className="mb-1 flex justify-between gap-2 text-[11.5px]">
-                          <span className="truncate text-[#b7c5d8]">{choice}</span>
-                          <span className="text-[#6b8299]">{count}</span>
-                        </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-[#102542]">
-                          <div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${Math.round((count / max) * 100)}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          }
-
-          if (question.type === 'SCALE') {
-            const values = answers.map((answer) => Number(answer.value.value)).filter(Number.isFinite)
-            const average = values.length > 0 ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1) : '-'
-            return (
-              <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-                <p className="text-[12.5px] font-semibold text-white">{question.title}</p>
-                <p className="mt-2 text-[22px] font-semibold text-[#d4af37] tabular-nums">{average}</p>
-                <p className="text-[11.5px] text-[#6b8299]">{values.length} Antwort(en)</p>
-              </div>
-            )
-          }
-
-          return (
-            <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-              <p className="text-[12.5px] font-semibold text-white">{question.title}</p>
-              <p className="mt-2 text-[22px] font-semibold text-[#d4af37] tabular-nums">{answers.length}</p>
-              <p className="text-[11.5px] text-[#6b8299]">Textantwort(en)</p>
-            </div>
-          )
-        })}
-      </div>
-    </section>
   )
 }

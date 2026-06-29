@@ -292,19 +292,21 @@ export default function FormTestLinkPage() {
     <div className={cn('mx-auto max-w-3xl', isActiveTest && 'select-none')}>
       {isActiveTest && (
         <style>
-          {`@media print { body * { visibility: hidden !important; } body::before { content: ""; visibility: visible !important; position: fixed; inset: 0; background: url("/screenshot.jpg") center / cover no-repeat; } }`}
+          {`@media print { body * { visibility: hidden !important; } body::before { content: ""; visibility: visible !important; position: fixed; inset: 0; background: url("/screenshot.png") center / cover no-repeat; } }`}
         </style>
       )}
       {isActiveTest && (
-        <div className="pointer-events-none fixed bottom-24 right-3 z-[80] overflow-hidden rounded-[10px] border border-[#d4af37]/35 bg-[#061426]/80 shadow-[0_12px_30px_rgba(0,0,0,0.35)] sm:right-5">
+        <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
           <Image
             src="/screenshot.jpg"
             alt=""
             aria-hidden="true"
-            width={96}
-            height={96}
-            className="h-20 w-20 object-cover opacity-90 sm:h-24 sm:w-24"
+            fill
+            sizes="100vw"
+            className="object-cover opacity-25"
+            priority
           />
+          <div className="absolute inset-0 bg-[#061426]/20" />
         </div>
       )}
       {screenshotCover && isActiveTest && (

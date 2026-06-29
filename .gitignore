@@ -58,3 +58,5 @@ next-env.d.ts
 /uploads/
 
 .claude/
+
+.idea/
