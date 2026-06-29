@@ -426,111 +426,35 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         ) : (
           <section className="space-y-4">
             <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <Badge variant={KIND_META[draft.kind].variant}>{KIND_META[draft.kind].label}</Badge>
-                    <Badge variant={STATUS_META[draft.status].variant}>{STATUS_META[draft.status].label}</Badge>
-                    {draft.kind === 'TEST' && draft.timeLimitMinutes && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
-                        <Clock size={11} />
-                        {draft.timeLimitMinutes} Min.
-                      </span>
-                    )}
-                    {draft.kind === 'SURVEY' && draft.anonymousResponses && (
-                      <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
-                        Anonym
-                      </span>
-                    )}
-                    <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(draft.updatedAt)}</span>
-                    {selected && selected._count.responses > 0 && (
-                      <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
-                        Fragen gesperrt nach {selected._count.responses} Abgabe(n)
-                      </span>
-                    )}
-                    {draftDirty && (
-                      <span className="rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 px-2 py-0.5 text-[11px] font-medium text-[#d4af37]">
-                        Ungespeichert
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_150px_150px]">
-                    <Input
-                      label="Titel"
-                      value={draft.title}
-                      onChange={(event) => patchDraft({ title: event.target.value })}
-                      disabled={!canManage}
-                    />
-                    <Select
-                      label="Status"
-                      value={draft.status}
-                      onValueChange={(value) => patchDraft({ status: value as FormTestStatus })}
-                      disabled={!canManage}
-                      options={[
-                        { value: 'DRAFT', label: 'Entwurf' },
-                        { value: 'ACTIVE', label: 'Aktiv' },
-                        { value: 'ARCHIVED', label: 'Archiv' },
-                      ]}
-                    />
-                    <Select
-                      label="Typ"
-                      value={draft.kind}
-                      onValueChange={(value) => {
-                        const kind = value as FormTestKind
-                        patchDraft({
-                          kind,
-                          timeLimitMinutes: kind === 'TEST' ? draft.timeLimitMinutes : null,
-                          anonymousResponses: kind === 'SURVEY' ? draft.anonymousResponses : false,
-                        })
-                      }}
-                      disabled={!canManage}
-                      options={[
-                        { value: 'TEST', label: 'Test' },
-                        { value: 'SURVEY', label: 'Umfrage' },
-                      ]}
-                    />
-                  </div>
-                  <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                    {draft.kind === 'TEST' ? (
-                      <Input
-                        label="Zeitlimit in Minuten"
-                        type="number"
-                        min={1}
-                        max={720}
-                        value={draft.timeLimitMinutes ?? ''}
-                        onChange={(event) => patchDraft({
-                          timeLimitMinutes: event.target.value.trim() ? Number(event.target.value) : null,
-                        })}
-                        disabled={!canManage}
-                        placeholder="Ohne Zeitlimit"
-                      />
-                    ) : (
-                      <div className="rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5">
-                        <Checkbox
-                          checked={draft.anonymousResponses}
-                          onCheckedChange={(checked) => patchDraft({ anonymousResponses: checked })}
-                          label="Antworten anonym auswerten"
-                          disabled={!canManage}
-                        />
-                      </div>
-                    )}
-                    <div className="rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5 text-[12.5px] leading-5 text-[#8ea4bd]">
-                      {draft.kind === 'TEST'
-                        ? 'Bei Tests werden Kopieren, Drucken, Tabwechsel und andere Dashboard-Seiten während der aktiven Sitzung blockiert oder protokolliert.'
-                        : 'Umfragen haben keine Zeitlimits und keine Test-Einschränkungen. Anonyme Umfragen zeigen in der Auswertung keinen Accountnamen.'}
-                    </div>
-                  </div>
-                  <Textarea
-                    label="Beschreibung"
-                    value={draft.description ?? ''}
-                    onChange={(event) => patchDraft({ description: event.target.value })}
-                    disabled={!canManage}
-                    rows={2}
-                    className="mt-3"
-                  />
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={KIND_META[draft.kind].variant}>{KIND_META[draft.kind].label}</Badge>
+                  <Badge variant={STATUS_META[draft.status].variant}>{STATUS_META[draft.status].label}</Badge>
+                  {draft.kind === 'TEST' && draft.timeLimitMinutes && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
+                      <Clock size={11} />
+                      {draft.timeLimitMinutes} Min.
+                    </span>
+                  )}
+                  {draft.kind === 'SURVEY' && draft.anonymousResponses && (
+                    <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
+                      Anonym
+                    </span>
+                  )}
+                  <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(draft.updatedAt)}</span>
+                  {selected && selected._count.responses > 0 && (
+                    <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
+                      Fragen gesperrt nach {selected._count.responses} Abgabe(n)
+                    </span>
+                  )}
+                  {draftDirty && (
+                    <span className="rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 px-2 py-0.5 text-[11px] font-medium text-[#d4af37]">
+                      Ungespeichert
+                    </span>
+                  )}
                 </div>
                 {canManage && (
-                  <div className="flex flex-wrap gap-2 xl:justify-end">
+                  <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
                     <Button variant="secondary" size="sm" onClick={() => patchDraft({ status: statusNext(draft.status) })}>
                       {STATUS_META[draft.status].action}
                     </Button>
@@ -560,6 +484,83 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                   </div>
                 )}
               </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
+                <Input
+                  label="Titel"
+                  value={draft.title}
+                  onChange={(event) => patchDraft({ title: event.target.value })}
+                  disabled={!canManage}
+                />
+                <Select
+                  label="Status"
+                  value={draft.status}
+                  onValueChange={(value) => patchDraft({ status: value as FormTestStatus })}
+                  disabled={!canManage}
+                  options={[
+                    { value: 'DRAFT', label: 'Entwurf' },
+                    { value: 'ACTIVE', label: 'Aktiv' },
+                    { value: 'ARCHIVED', label: 'Archiv' },
+                  ]}
+                />
+                <Select
+                  label="Typ"
+                  value={draft.kind}
+                  onValueChange={(value) => {
+                    const kind = value as FormTestKind
+                    patchDraft({
+                      kind,
+                      timeLimitMinutes: kind === 'TEST' ? draft.timeLimitMinutes : null,
+                      anonymousResponses: kind === 'SURVEY' ? draft.anonymousResponses : false,
+                    })
+                  }}
+                  disabled={!canManage}
+                  options={[
+                    { value: 'TEST', label: 'Test' },
+                    { value: 'SURVEY', label: 'Umfrage' },
+                  ]}
+                />
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {draft.kind === 'TEST' ? (
+                  <Input
+                    label="Zeitlimit in Minuten"
+                    type="number"
+                    min={1}
+                    max={720}
+                    value={draft.timeLimitMinutes ?? ''}
+                    onChange={(event) => patchDraft({
+                      timeLimitMinutes: event.target.value.trim() ? Number(event.target.value) : null,
+                    })}
+                    disabled={!canManage}
+                    placeholder="Ohne Zeitlimit"
+                  />
+                ) : (
+                  <div className="flex items-center rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5">
+                    <Checkbox
+                      checked={draft.anonymousResponses}
+                      onCheckedChange={(checked) => patchDraft({ anonymousResponses: checked })}
+                      label="Antworten anonym auswerten"
+                      disabled={!canManage}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5 text-[12px] leading-5 text-[#8ea4bd]">
+                  {draft.kind === 'TEST'
+                    ? 'Bei Tests werden Kopieren, Drucken, Tabwechsel und andere Dashboard-Seiten während der aktiven Sitzung blockiert oder protokolliert.'
+                    : 'Umfragen haben keine Zeitlimits und keine Test-Einschränkungen. Anonyme Umfragen zeigen in der Auswertung keinen Accountnamen.'}
+                </div>
+              </div>
+
+              <Textarea
+                label="Beschreibung"
+                value={draft.description ?? ''}
+                onChange={(event) => patchDraft({ description: event.target.value })}
+                disabled={!canManage}
+                rows={2}
+                className="mt-3"
+              />
             </div>
 
             <QuestionEditor

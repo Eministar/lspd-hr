@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock, FileQuestion, Send, ShieldAlert } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -77,6 +76,7 @@ export default function FormTestLinkPage() {
   const [submitting, setSubmitting] = useState(false)
   const [focusWarning, setFocusWarning] = useState(false)
   const [screenshotCover, setScreenshotCover] = useState(false)
+  const [windowObscured, setWindowObscured] = useState(false)
   const [remainingMs, setRemainingMs] = useState<number | null>(null)
   const securityToastAtRef = useRef(0)
   const coverTimeoutRef = useRef<number | null>(null)
@@ -183,15 +183,20 @@ export default function FormTestLinkPage() {
       blockEvent(event, 'beforeprint')
     }
     const handleBlur = () => {
-      showScreenshotCover()
+      setWindowObscured(true)
       setFocusWarning(true)
       reportSecurityEvent('window-blur')
     }
+    const handleFocus = () => {
+      setWindowObscured(false)
+    }
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        showScreenshotCover()
+        setWindowObscured(true)
         setFocusWarning(true)
         reportSecurityEvent('tab-hidden')
+      } else {
+        setWindowObscured(false)
       }
     }
 
@@ -203,6 +208,7 @@ export default function FormTestLinkPage() {
     document.addEventListener('keydown', handleKeyDown, true)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('blur', handleBlur)
+    window.addEventListener('focus', handleFocus)
     window.addEventListener('beforeprint', handleBeforePrint)
 
     return () => {
@@ -214,6 +220,7 @@ export default function FormTestLinkPage() {
       document.removeEventListener('keydown', handleKeyDown, true)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('focus', handleFocus)
       window.removeEventListener('beforeprint', handleBeforePrint)
       if (coverTimeoutRef.current) window.clearTimeout(coverTimeoutRef.current)
     }
@@ -292,28 +299,19 @@ export default function FormTestLinkPage() {
     <div className={cn('mx-auto max-w-3xl', isActiveTest && 'select-none')}>
       {isActiveTest && (
         <style>
-          {`@media print { body * { visibility: hidden !important; } body::before { content: ""; visibility: visible !important; position: fixed; inset: 0; background: url("/screenshot.png") center / cover no-repeat; } }`}
+          {`@media print { html, body { background: #040d1a !important; } body * { visibility: hidden !important; } }`}
         </style>
       )}
-      {isActiveTest && (
-        <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
-          <Image
-            src="/screenshot.png"
-            alt=""
-            aria-hidden="true"
-            fill
-            sizes="100vw"
-            className="object-cover opacity-25"
-            priority
-          />
-          <div className="absolute inset-0 bg-[#061426]/20" />
-        </div>
-      )}
-      {screenshotCover && isActiveTest && (
-        <div className="pointer-events-none fixed inset-0 z-[9999] bg-[#061426]">
-          <Image src="/screenshot.png" alt="" aria-hidden="true" fill sizes="100vw" className="object-cover" priority />
-          <div className="absolute inset-x-0 bottom-0 bg-[#061426]/80 px-4 py-4 text-center text-[13px] font-semibold text-white backdrop-blur-sm">
-            Screenshot-Schutz aktiv
+      {isActiveTest && (screenshotCover || windowObscured) && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-[#040d1a] px-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[18px] border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]">
+            <ShieldAlert size={30} />
+          </div>
+          <div>
+            <p className="text-[16px] font-semibold text-white">Inhalt geschützt</p>
+            <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-5 text-[#8ea4bd]">
+              Der Testinhalt wird ausgeblendet, sobald das Fenster verlassen wird oder ein Screenshot bzw. eine Aufnahme erkannt wird. Kehre zum Test-Tab zurück, um fortzufahren.
+            </p>
           </div>
         </div>
       )}
