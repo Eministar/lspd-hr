@@ -216,6 +216,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM)
   const [draft, setDraft] = useState<FormTest | null>(null)
+  const [draftDirty, setDraftDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const { addToast } = useToast()
   const { execute } = useApi()
@@ -231,8 +232,10 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
   useEffect(() => {
     if (!selected) {
       setDraft(null)
+      setDraftDirty(false)
       return
     }
+    if (draftDirty && draft?.id === selected.id) return
     setDraft({
       ...selected,
       questions: selected.questions.map((question, index) => ({
@@ -241,7 +244,8 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         options: defaultedOptions(question),
       })),
     })
-  }, [selected])
+    setDraftDirty(false)
+  }, [draft?.id, draftDirty, selected])
 
   const stats = useMemo(() => {
     const list = tests ?? []
@@ -299,6 +303,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         }),
       })
       addToast({ type: 'success', title: 'Test gespeichert' })
+      setDraftDirty(false)
       await refetch()
     } catch (e) {
       addToast({ type: 'error', title: 'Speichern fehlgeschlagen', message: e instanceof Error ? e.message : '' })
@@ -329,7 +334,20 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
     addToast({ type: 'success', title: 'Link kopiert' })
   }
 
+  const selectTest = (id: string) => {
+    if (draftDirty && selectedId && selectedId !== id && !confirm('Ungespeicherte Änderungen verwerfen?')) return
+    setDraftDirty(false)
+    setSelectedId(id)
+    setViewMode('editor')
+  }
+
+  const patchDraft = (patch: Partial<FormTest>) => {
+    setDraftDirty(true)
+    setDraft((current) => current ? { ...current, ...patch } : current)
+  }
+
   const updateQuestion = (index: number, patch: Partial<FormQuestion>) => {
+    setDraftDirty(true)
     setDraft((current) => {
       if (!current) return current
       const questions = current.questions.map((question, questionIndex) => {
@@ -346,6 +364,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
   }
 
   const moveQuestion = (index: number, direction: -1 | 1) => {
+    setDraftDirty(true)
     setDraft((current) => {
       if (!current) return current
       const nextIndex = index + direction
@@ -358,6 +377,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
   }
 
   const removeQuestion = (index: number) => {
+    setDraftDirty(true)
     setDraft((current) => current ? { ...current, questions: current.questions.filter((_, i) => i !== index) } : current)
   }
 
@@ -405,10 +425,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                 <button
                   key={test.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedId(test.id)
-                    setViewMode('editor')
-                  }}
+                  onClick={() => selectTest(test.id)}
                   className={cn(
                     'w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
                     selected?.id === test.id
@@ -453,18 +470,23 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                         Fragen gesperrt nach {selected._count.responses} Abgabe(n)
                       </span>
                     )}
+                    {draftDirty && (
+                      <span className="rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 px-2 py-0.5 text-[11px] font-medium text-[#d4af37]">
+                        Ungespeichert
+                      </span>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_170px]">
                     <Input
                       label="Titel"
                       value={draft.title}
-                      onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                      onChange={(event) => patchDraft({ title: event.target.value })}
                       disabled={!canManage}
                     />
                     <Select
                       label="Status"
                       value={draft.status}
-                      onValueChange={(value) => setDraft({ ...draft, status: value as FormTestStatus })}
+                      onValueChange={(value) => patchDraft({ status: value as FormTestStatus })}
                       disabled={!canManage}
                       options={[
                         { value: 'DRAFT', label: 'Entwurf' },
@@ -476,7 +498,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                   <Textarea
                     label="Beschreibung"
                     value={draft.description ?? ''}
-                    onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+                    onChange={(event) => patchDraft({ description: event.target.value })}
                     disabled={!canManage}
                     rows={2}
                     className="mt-3"
@@ -484,7 +506,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                 </div>
                 {canManage && (
                   <div className="flex flex-wrap gap-2 xl:justify-end">
-                    <Button variant="secondary" size="sm" onClick={() => setDraft({ ...draft, status: statusNext(draft.status) })}>
+                    <Button variant="secondary" size="sm" onClick={() => patchDraft({ status: statusNext(draft.status) })}>
                       {STATUS_META[draft.status].action}
                     </Button>
                     <Button variant="outline" size="sm" onClick={copyLink} disabled={draft.status !== 'ACTIVE'}>
@@ -524,7 +546,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
               <QuestionEditor
                 questions={draft.questions}
                 canEdit={canEditQuestions}
-                onAdd={() => setDraft({ ...draft, questions: [...draft.questions, createEmptyQuestion()] })}
+                onAdd={() => patchDraft({ questions: [...draft.questions, createEmptyQuestion()] })}
                 onChange={updateQuestion}
                 onMove={moveQuestion}
                 onRemove={removeQuestion}

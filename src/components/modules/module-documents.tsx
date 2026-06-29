@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable react-hooks/refs */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bold, ChevronRight, Code, Eye, FileText, Folder, FolderPlus, Heading1, Heading2, Heading3,
@@ -117,6 +119,29 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     setFolderId(selectedDocument.folderId ?? '')
   }, [dirty, selectedDocument])
 
+  const toggleFolder = (id: string) => {
+    setCollapsedFolders((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const saveDocument = useCallback(async () => {
+    if (!selectedDocument || !title.trim()) return
+    try {
+      await execute(`/api/sru/documents/${selectedDocument.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title, content, folderId: folderId || null }),
+      })
+      addToast({ type: 'success', title: 'Dokument gespeichert' })
+      setDirty(false)
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Speichern fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    }
+  }, [addToast, content, execute, folderId, refetch, selectedDocument, title])
+
   // Cmd/Ctrl+S to save
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -128,18 +153,9 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, canManage, title, fullscreen, content, folderId])
+  }, [canManage, dirty, fullscreen, saveDocument, title])
 
-  const toggleFolder = (id: string) => {
-    setCollapsedFolders((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
-  const wrapSelection = (before: string, after = before, placeholder = '') => {
+  const wrapSelection = useCallback((before: string, after = before, placeholder = '') => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
@@ -152,9 +168,9 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
       ta.focus()
       ta.setSelectionRange(start + before.length, start + before.length + selected.length)
     })
-  }
+  }, [content])
 
-  const insertAtLineStart = (prefix: string) => {
+  const insertAtLineStart = useCallback((prefix: string) => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
@@ -166,9 +182,9 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
       ta.focus()
       ta.setSelectionRange(start + prefix.length, start + prefix.length)
     })
-  }
+  }, [content])
 
-  const insertBlock = (block: string) => {
+  const insertBlock = useCallback((block: string) => {
     const ta = textareaRef.current
     if (!ta) return
     const start = ta.selectionStart
@@ -181,7 +197,23 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
       ta.focus()
       ta.setSelectionRange(start + insert.length, start + insert.length)
     })
-  }
+  }, [content])
+
+  const toolbarActions = useMemo(() => ({
+    heading1: () => insertAtLineStart('# '),
+    heading2: () => insertAtLineStart('## '),
+    heading3: () => insertAtLineStart('### '),
+    bold: () => wrapSelection('**', '**', 'fett'),
+    italic: () => wrapSelection('*', '*', 'kursiv'),
+    strike: () => wrapSelection('~~', '~~', 'text'),
+    code: () => wrapSelection('`', '`', 'code'),
+    unorderedList: () => insertAtLineStart('- '),
+    orderedList: () => insertAtLineStart('1. '),
+    checklist: () => insertAtLineStart('- [ ] '),
+    quote: () => insertAtLineStart('> '),
+    link: () => wrapSelection('[', '](https://)', 'Link-Text'),
+    table: () => insertBlock('| Spalte 1 | Spalte 2 |\n| --- | --- |\n|  |  |'),
+  }), [insertAtLineStart, insertBlock, wrapSelection])
 
   const createFolder = async () => {
     if (!folderForm.name.trim()) return
@@ -217,21 +249,6 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     }
   }
 
-  const saveDocument = async () => {
-    if (!selectedDocument || !title.trim()) return
-    try {
-      await execute(`/api/sru/documents/${selectedDocument.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ title, content, folderId: folderId || null }),
-      })
-      addToast({ type: 'success', title: 'Dokument gespeichert' })
-      setDirty(false)
-      await refetch()
-    } catch (err) {
-      addToast({ type: 'error', title: 'Speichern fehlgeschlagen', message: err instanceof Error ? err.message : '' })
-    }
-  }
-
   const deleteDocument = async () => {
     if (!selectedDocument || !confirm(`Dokument "${selectedDocument.title}" löschen?`)) return
     try {
@@ -245,15 +262,26 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     }
   }
 
+  const selectDocument = (id: string) => {
+    if (id === selectedId) return
+    if (dirty && !confirm('Ungespeicherte Änderungen verwerfen?')) return
+    setDirty(false)
+    setSelectedId(id)
+  }
+
   if (loading) return <PageLoader />
 
   const filteredLoose = (data?.looseDocuments ?? []).filter(matchesSearch)
   const filteredFolders = (data?.folders ?? []).map((f) => ({ ...f, documents: f.documents.filter(matchesSearch) }))
 
   const editor = (
-      <div className={cn('grid overflow-hidden', viewMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1', 'min-h-[640px]')}>
+      <div className={cn(
+          'grid min-h-0 overflow-hidden',
+          viewMode === 'split' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1',
+          fullscreen ? 'h-full' : 'h-[min(72vh,760px)] min-h-[560px]',
+      )}>
         {viewMode !== 'preview' && (
-            <div className="relative flex flex-col border-r border-[#18385f]/45 bg-[#04101f]/60">
+            <div className="relative flex min-h-0 flex-col border-r border-[#18385f]/45 bg-[#04101f]/60">
           <textarea
               ref={textareaRef}
               value={content}
@@ -271,13 +299,13 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
               }}
               readOnly={!canManage}
               spellCheck
-              className="flex-1 min-h-[560px] resize-none border-0 bg-transparent p-6 font-mono text-[13.5px] leading-[1.75] text-[#edf4fb] outline-none placeholder:text-[#3d556f] selection:bg-[#d4af37]/30"
+              className="h-full min-h-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent p-6 font-mono text-[13.5px] leading-[1.75] text-[#edf4fb] outline-none placeholder:text-[#3d556f] selection:bg-[#d4af37]/30"
               placeholder="Markdown schreiben…&#10;&#10;# Überschrift&#10;**fett** *kursiv*&#10;- Liste"
           />
             </div>
         )}
         {viewMode !== 'edit' && (
-            <div className="min-h-[560px] overflow-y-auto bg-gradient-to-b from-[#071a30]/40 to-[#04101f]/30 p-6">
+            <div className="min-h-0 overflow-y-auto bg-gradient-to-b from-[#071a30]/40 to-[#04101f]/30 p-6">
               <article
                   className="markdown-document mx-auto max-w-3xl rounded-[14px] border border-[#18385f]/55 bg-[#071426]/80 p-7 shadow-[0_18px_50px_rgba(0,0,0,0.25)]"
                   dangerouslySetInnerHTML={{ __html: previewHtml || '<p class="text-[#536b86] italic">Vorschau erscheint hier...</p>' }}
@@ -301,10 +329,10 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
   const editorPanel = (
       <section className={cn(
           'glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 overflow-hidden',
-          fullscreen && 'fixed inset-4 z-50 flex flex-col',
+          fullscreen && 'fixed inset-4 z-50 flex min-h-0 flex-col',
       )}>
         {selectedDocument ? (
-            <div className="flex h-full flex-col">
+            <div className="flex h-full min-h-0 flex-col">
               {/* Title bar */}
               <div className="border-b border-[#18385f]/45 bg-gradient-to-r from-[#071a30]/80 to-[#091e36]/60 p-4 space-y-3">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -341,25 +369,25 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                 {canManage && (
                     <>
                       <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
-                        {toolbarBtn(<Heading1 size={15} />, 'Überschrift 1', () => insertAtLineStart('# '))}
-                        {toolbarBtn(<Heading2 size={15} />, 'Überschrift 2', () => insertAtLineStart('## '))}
-                        {toolbarBtn(<Heading3 size={15} />, 'Überschrift 3', () => insertAtLineStart('### '))}
+                        {toolbarBtn(<Heading1 size={15} />, 'Überschrift 1', toolbarActions.heading1)}
+                        {toolbarBtn(<Heading2 size={15} />, 'Überschrift 2', toolbarActions.heading2)}
+                        {toolbarBtn(<Heading3 size={15} />, 'Überschrift 3', toolbarActions.heading3)}
                       </div>
                       <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
-                        {toolbarBtn(<Bold size={15} />, 'Fett', () => wrapSelection('**', '**', 'fett'))}
-                        {toolbarBtn(<Italic size={15} />, 'Kursiv', () => wrapSelection('*', '*', 'kursiv'))}
-                        {toolbarBtn(<Strikethrough size={15} />, 'Durchgestrichen', () => wrapSelection('~~', '~~', 'text'))}
-                        {toolbarBtn(<Code size={15} />, 'Code', () => wrapSelection('`', '`', 'code'))}
+                        {toolbarBtn(<Bold size={15} />, 'Fett', toolbarActions.bold)}
+                        {toolbarBtn(<Italic size={15} />, 'Kursiv', toolbarActions.italic)}
+                        {toolbarBtn(<Strikethrough size={15} />, 'Durchgestrichen', toolbarActions.strike)}
+                        {toolbarBtn(<Code size={15} />, 'Code', toolbarActions.code)}
                       </div>
                       <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
-                        {toolbarBtn(<List size={15} />, 'Aufzählung', () => insertAtLineStart('- '))}
-                        {toolbarBtn(<ListOrdered size={15} />, 'Nummeriert', () => insertAtLineStart('1. '))}
-                        {toolbarBtn(<ListTodo size={15} />, 'Aufgabe', () => insertAtLineStart('- [ ] '))}
-                        {toolbarBtn(<Quote size={15} />, 'Zitat', () => insertAtLineStart('> '))}
+                        {toolbarBtn(<List size={15} />, 'Aufzählung', toolbarActions.unorderedList)}
+                        {toolbarBtn(<ListOrdered size={15} />, 'Nummeriert', toolbarActions.orderedList)}
+                        {toolbarBtn(<ListTodo size={15} />, 'Aufgabe', toolbarActions.checklist)}
+                        {toolbarBtn(<Quote size={15} />, 'Zitat', toolbarActions.quote)}
                       </div>
                       <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
-                        {toolbarBtn(<Link2 size={15} />, 'Link', () => wrapSelection('[', '](https://)', 'Link-Text'))}
-                        {toolbarBtn(<Table2 size={15} />, 'Tabelle', () => insertBlock('| Spalte 1 | Spalte 2 |\n| --- | --- |\n|  |  |'))}
+                        {toolbarBtn(<Link2 size={15} />, 'Link', toolbarActions.link)}
+                        {toolbarBtn(<Table2 size={15} />, 'Tabelle', toolbarActions.table)}
                       </div>
                     </>
                 )}
@@ -393,7 +421,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                 </div>
               </div>
 
-              <div className="flex-1 overflow-hidden">{editor}</div>
+              <div className="min-h-0 flex-1 overflow-hidden">{editor}</div>
             </div>
         ) : (
             <div className="flex min-h-[680px] flex-col items-center justify-center text-center px-6">
@@ -451,7 +479,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                       <div className="mb-2">
                         <p className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wider text-[#536b86] font-semibold">Ohne Ordner</p>
                         {filteredLoose.map((doc) => (
-                            <DocumentButton key={doc.id} document={doc} active={selectedId === doc.id} onClick={() => { setDirty(false); setSelectedId(doc.id) }} />
+                            <DocumentButton key={doc.id} document={doc} active={selectedId === doc.id} onClick={() => selectDocument(doc.id)} />
                         ))}
                       </div>
                   )}
@@ -476,7 +504,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                                     <p className="px-2 py-1.5 text-[10.5px] text-[#536b86] italic">Leer</p>
                                 ) : (
                                     folder.documents.map((doc) => (
-                                        <DocumentButton key={doc.id} document={doc} color={folder.color} active={selectedId === doc.id} onClick={() => { setDirty(false); setSelectedId(doc.id) }} />
+                                        <DocumentButton key={doc.id} document={doc} color={folder.color} active={selectedId === doc.id} onClick={() => selectDocument(doc.id)} />
                                     ))
                                 )}
                               </div>
@@ -496,7 +524,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                       </div>
                   )}
                   {allDocuments.length > 0 && search && filteredLoose.length === 0 && filteredFolders.every((f) => f.documents.length === 0) && (
-                      <p className="py-8 text-center text-[11.5px] text-[#536b86]">Keine Treffer für "{search}"</p>
+                      <p className="py-8 text-center text-[11.5px] text-[#536b86]">Keine Treffer für {search}</p>
                   )}
                 </div>
               </aside>
