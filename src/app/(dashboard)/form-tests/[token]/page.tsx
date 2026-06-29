@@ -298,7 +298,7 @@ export default function FormTestLinkPage() {
       {isActiveTest && (
         <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
           <Image
-            src="/screenshot.jpg"
+            src="/screenshot.png"
             alt=""
             aria-hidden="true"
             fill
@@ -311,7 +311,7 @@ export default function FormTestLinkPage() {
       )}
       {screenshotCover && isActiveTest && (
         <div className="pointer-events-none fixed inset-0 z-[9999] bg-[#061426]">
-          <Image src="/screenshot.jpg" alt="" aria-hidden="true" fill sizes="100vw" className="object-cover" priority />
+          <Image src="/screenshot.png" alt="" aria-hidden="true" fill sizes="100vw" className="object-cover" priority />
           <div className="absolute inset-x-0 bottom-0 bg-[#061426]/80 px-4 py-4 text-center text-[13px] font-semibold text-white backdrop-blur-sm">
             Screenshot-Schutz aktiv
           </div>

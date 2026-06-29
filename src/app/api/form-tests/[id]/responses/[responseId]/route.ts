@@ -13,6 +13,44 @@ const responseInclude = {
   },
 }
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string; responseId: string }> },
+) {
+  try {
+    const { id, responseId } = await params
+
+    const test = await prisma.formTest.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        module: true,
+        kind: true,
+        title: true,
+        status: true,
+        anonymousResponses: true,
+        questions: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
+      },
+    })
+    if (!test) return notFound('Test')
+
+    await requireTaskModuleFormTestManage(test.module)
+
+    const response = await prisma.formResponse.findFirst({
+      where: { id: responseId, testId: id },
+      include: responseInclude,
+    })
+    if (!response) return notFound('Abgabe')
+
+    return success({ test, response })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    return error(msg, 500)
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; responseId: string }> },
