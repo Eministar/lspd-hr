@@ -8,9 +8,11 @@ import {
   BarChart3,
   CheckCircle2,
   Clipboard,
+  Clock,
   Copy,
   ExternalLink,
   FileQuestion,
+  FileText,
   GripVertical,
   Link2,
   MoveDown,
@@ -35,6 +37,7 @@ import { cn, formatDateTime } from '@/lib/utils'
 
 type ModuleKey = 'ACADEMY' | 'HR' | 'SRU' | 'AIR_SUPPORT' | 'DETECTIVE'
 type FormTestStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
+type FormTestKind = 'TEST' | 'SURVEY'
 type QuestionType = 'SHORT_TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'SCALE'
 type ViewMode = 'editor' | 'responses'
 
@@ -61,9 +64,12 @@ interface FormQuestion {
 interface FormTest {
   id: string
   module: ModuleKey
+  kind: FormTestKind
   title: string
   description: string | null
   status: FormTestStatus
+  timeLimitMinutes: number | null
+  anonymousResponses: boolean
   shareToken: string
   createdAt: string
   updatedAt: string
@@ -96,7 +102,9 @@ interface ResponsesPayload {
   test: {
     id: string
     title: string
+    kind: FormTestKind
     status: FormTestStatus
+    anonymousResponses: boolean
     questions: FormQuestion[]
   }
   responses: FormResponse[]
@@ -115,6 +123,11 @@ const STATUS_META: Record<FormTestStatus, { label: string; variant: 'default' | 
   ARCHIVED: { label: 'Archiv', variant: 'default', action: 'Reaktivieren' },
 }
 
+const KIND_META: Record<FormTestKind, { label: string; variant: 'info' | 'warning'; icon: React.ReactNode }> = {
+  TEST: { label: 'Test', variant: 'warning', icon: <FileQuestion size={13} /> },
+  SURVEY: { label: 'Umfrage', variant: 'info', icon: <FileText size={13} /> },
+}
+
 const QUESTION_TYPE_OPTIONS = [
   { value: 'SHORT_TEXT', label: 'Kurzantwort' },
   { value: 'LONG_TEXT', label: 'Langtext' },
@@ -123,7 +136,13 @@ const QUESTION_TYPE_OPTIONS = [
   { value: 'SCALE', label: 'Skala' },
 ]
 
-const EMPTY_CREATE_FORM = { title: '', description: '' }
+const EMPTY_CREATE_FORM = {
+  title: '',
+  description: '',
+  kind: 'TEST' as FormTestKind,
+  timeLimitMinutes: '',
+  anonymousResponses: false,
+}
 
 function createEmptyQuestion(): FormQuestion {
   return {
@@ -268,11 +287,16 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         method: 'POST',
         body: JSON.stringify({
           module,
+          kind: createForm.kind,
           title: titleValue,
           description: createForm.description,
+          timeLimitMinutes: createForm.kind === 'TEST' && createForm.timeLimitMinutes.trim()
+            ? Number(createForm.timeLimitMinutes)
+            : null,
+          anonymousResponses: createForm.kind === 'SURVEY' && createForm.anonymousResponses,
         }),
       }) as FormTest | null
-      addToast({ type: 'success', title: 'Test erstellt' })
+      addToast({ type: 'success', title: createForm.kind === 'SURVEY' ? 'Umfrage erstellt' : 'Test erstellt' })
       setCreateOpen(false)
       setCreateForm(EMPTY_CREATE_FORM)
       await refetch()
@@ -299,6 +323,9 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
           title: titleValue,
           description: draft.description,
           status: draft.status,
+          kind: draft.kind,
+          timeLimitMinutes: draft.kind === 'TEST' ? draft.timeLimitMinutes : null,
+          anonymousResponses: draft.kind === 'SURVEY' && draft.anonymousResponses,
           ...(canEditQuestions ? { questions: normalizeQuestions(draft.questions) } : {}),
         }),
       })
@@ -396,14 +423,14 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
             </Button>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus size={13} />
-              Test erstellen
+              Formular erstellen
             </Button>
           </div>
         ) : undefined}
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <StatCard label="Tests" value={stats.total} icon={<FileQuestion size={16} />} />
+        <StatCard label="Formulare" value={stats.total} icon={<FileQuestion size={16} />} />
         <StatCard label="Aktive Links" value={stats.active} icon={<Link2 size={16} />} />
         <StatCard label="Abgaben" value={stats.responses} icon={<Clipboard size={16} />} />
       </div>
@@ -411,14 +438,14 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[310px_1fr]">
         <aside className="glass-panel-elevated overflow-hidden rounded-[14px] border border-[#1e3a5c]/45">
           <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Testablage</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Formularablage</p>
             <span className="text-[10.5px] text-[#536b86]">{tests?.length ?? 0}</span>
           </div>
           <div className="max-h-[680px] overflow-y-auto p-1.5">
             {(tests ?? []).length === 0 ? (
               <div className="px-4 py-12 text-center">
                 <FileQuestion size={24} className="mx-auto mb-2 text-[#4a6585]" />
-                <p className="text-[12.5px] text-[#8ea4bd]">Noch keine Tests vorhanden</p>
+                <p className="text-[12.5px] text-[#8ea4bd]">Noch keine Formulare vorhanden</p>
               </div>
             ) : (
               tests?.map((test) => (
@@ -434,11 +461,11 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                   )}
                 >
                   <div className="flex items-start gap-2">
-                    <FileQuestion size={15} className="mt-0.5 shrink-0 text-[#d4af37]" />
+                    <span className="mt-0.5 shrink-0 text-[#d4af37]">{KIND_META[test.kind].icon}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-semibold text-white">{test.title}</p>
                       <p className="mt-0.5 text-[11px] text-[#6b8299]">
-                        {test._count.questions} Fragen · {test._count.responses} Abgaben
+                        {KIND_META[test.kind].label} · {test._count.questions} Fragen · {test._count.responses} Abgaben
                       </p>
                     </div>
                     <Badge variant={STATUS_META[test.status].variant}>{STATUS_META[test.status].label}</Badge>
@@ -452,9 +479,9 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         {!draft ? (
           <section className="glass-panel-elevated flex min-h-[520px] flex-col items-center justify-center rounded-[14px] border border-[#1e3a5c]/45 px-6 text-center">
             <FileQuestion size={34} className="mb-3 text-[#4a6585]" />
-            <p className="text-[14px] font-semibold text-[#dbe6f3]">Kein Test ausgewählt</p>
+            <p className="text-[14px] font-semibold text-[#dbe6f3]">Kein Formular ausgewählt</p>
             <p className="mt-1 max-w-sm text-[12.5px] leading-5 text-[#8ea4bd]">
-              Erstelle einen Test und teile den Link mit eingeloggten Nutzern.
+              Erstelle einen Test oder eine Umfrage und teile den Link mit eingeloggten Nutzern.
             </p>
           </section>
         ) : (
@@ -463,7 +490,19 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <Badge variant={KIND_META[draft.kind].variant}>{KIND_META[draft.kind].label}</Badge>
                     <Badge variant={STATUS_META[draft.status].variant}>{STATUS_META[draft.status].label}</Badge>
+                    {draft.kind === 'TEST' && draft.timeLimitMinutes && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
+                        <Clock size={11} />
+                        {draft.timeLimitMinutes} Min.
+                      </span>
+                    )}
+                    {draft.kind === 'SURVEY' && draft.anonymousResponses && (
+                      <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
+                        Anonym
+                      </span>
+                    )}
                     <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(draft.updatedAt)}</span>
                     {selected && selected._count.responses > 0 && (
                       <span className="rounded-full border border-[#234568]/60 bg-[#102542]/70 px-2 py-0.5 text-[11px] text-[#9fb0c4]">
@@ -476,7 +515,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_170px]">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_150px_150px]">
                     <Input
                       label="Titel"
                       value={draft.title}
@@ -494,6 +533,53 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
                         { value: 'ARCHIVED', label: 'Archiv' },
                       ]}
                     />
+                    <Select
+                      label="Typ"
+                      value={draft.kind}
+                      onValueChange={(value) => {
+                        const kind = value as FormTestKind
+                        patchDraft({
+                          kind,
+                          timeLimitMinutes: kind === 'TEST' ? draft.timeLimitMinutes : null,
+                          anonymousResponses: kind === 'SURVEY' ? draft.anonymousResponses : false,
+                        })
+                      }}
+                      disabled={!canManage}
+                      options={[
+                        { value: 'TEST', label: 'Test' },
+                        { value: 'SURVEY', label: 'Umfrage' },
+                      ]}
+                    />
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {draft.kind === 'TEST' ? (
+                      <Input
+                        label="Zeitlimit in Minuten"
+                        type="number"
+                        min={1}
+                        max={720}
+                        value={draft.timeLimitMinutes ?? ''}
+                        onChange={(event) => patchDraft({
+                          timeLimitMinutes: event.target.value.trim() ? Number(event.target.value) : null,
+                        })}
+                        disabled={!canManage}
+                        placeholder="Ohne Zeitlimit"
+                      />
+                    ) : (
+                      <div className="rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5">
+                        <Checkbox
+                          checked={draft.anonymousResponses}
+                          onCheckedChange={(checked) => patchDraft({ anonymousResponses: checked })}
+                          label="Antworten anonym auswerten"
+                          disabled={!canManage}
+                        />
+                      </div>
+                    )}
+                    <div className="rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5 text-[12.5px] leading-5 text-[#8ea4bd]">
+                      {draft.kind === 'TEST'
+                        ? 'Bei Tests werden Kopieren, Drucken, Tabwechsel und andere Dashboard-Seiten während der aktiven Sitzung blockiert oder protokolliert.'
+                        : 'Umfragen haben keine Zeitlimits und keine Test-Einschränkungen. Anonyme Umfragen zeigen in der Auswertung keinen Accountnamen.'}
+                    </div>
                   </div>
                   <Textarea
                     label="Beschreibung"
@@ -546,6 +632,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
               <QuestionEditor
                 questions={draft.questions}
                 canEdit={canEditQuestions}
+                isSurvey={draft.kind === 'SURVEY'}
                 onAdd={() => patchDraft({ questions: [...draft.questions, createEmptyQuestion()] })}
                 onChange={updateQuestion}
                 onMove={moveQuestion}
@@ -558,7 +645,7 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
         )}
       </div>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Test erstellen">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Formular erstellen">
         <div className="space-y-4">
           <Input
             label="Titel"
@@ -567,6 +654,42 @@ export function FormTests({ module, title, description, canManage }: FormTestsPr
             placeholder="z. B. Bewerbungsgespräch Theorie"
             required
           />
+          <Select
+            label="Typ"
+            value={createForm.kind}
+            onValueChange={(value) => {
+              const kind = value as FormTestKind
+              setCreateForm({
+                ...createForm,
+                kind,
+                timeLimitMinutes: kind === 'TEST' ? createForm.timeLimitMinutes : '',
+                anonymousResponses: kind === 'SURVEY' ? createForm.anonymousResponses : false,
+              })
+            }}
+            options={[
+              { value: 'TEST', label: 'Test' },
+              { value: 'SURVEY', label: 'Umfrage' },
+            ]}
+          />
+          {createForm.kind === 'TEST' ? (
+            <Input
+              label="Zeitlimit in Minuten"
+              type="number"
+              min={1}
+              max={720}
+              value={createForm.timeLimitMinutes}
+              onChange={(event) => setCreateForm({ ...createForm, timeLimitMinutes: event.target.value })}
+              placeholder="Ohne Zeitlimit"
+            />
+          ) : (
+            <div className="rounded-[10px] border border-[#18385f]/55 bg-[#071a30]/45 px-3 py-2.5">
+              <Checkbox
+                checked={createForm.anonymousResponses}
+                onCheckedChange={(checked) => setCreateForm({ ...createForm, anonymousResponses: checked })}
+                label="Antworten anonym auswerten"
+              />
+            </div>
+          )}
           <Textarea
             label="Beschreibung"
             value={createForm.description}
@@ -618,6 +741,7 @@ function ModeButton({ active, onClick, icon, children }: { active: boolean; onCl
 function QuestionEditor({
   questions,
   canEdit,
+  isSurvey,
   onAdd,
   onChange,
   onMove,
@@ -625,6 +749,7 @@ function QuestionEditor({
 }: {
   questions: FormQuestion[]
   canEdit: boolean
+  isSurvey: boolean
   onAdd: () => void
   onChange: (index: number, patch: Partial<FormQuestion>) => void
   onMove: (index: number, direction: -1 | 1) => void
@@ -668,7 +793,7 @@ function QuestionEditor({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_190px_110px]">
+            <div className={cn('grid grid-cols-1 gap-3', isSurvey ? 'lg:grid-cols-[1fr_190px]' : 'lg:grid-cols-[1fr_190px_110px]')}>
               <Input
                 label="Frage"
                 value={question.title}
@@ -683,14 +808,16 @@ function QuestionEditor({
                 options={QUESTION_TYPE_OPTIONS}
                 disabled={!canEdit}
               />
-              <Input
-                label="Punkte"
-                type="number"
-                min={0}
-                value={question.points}
-                onChange={(event) => onChange(index, { points: Number(event.target.value) })}
-                disabled={!canEdit}
-              />
+              {!isSurvey && (
+                <Input
+                  label="Punkte"
+                  type="number"
+                  min={0}
+                  value={question.points}
+                  onChange={(event) => onChange(index, { points: Number(event.target.value) })}
+                  disabled={!canEdit}
+                />
+              )}
             </div>
 
             <Textarea
@@ -712,7 +839,12 @@ function QuestionEditor({
             </div>
 
             {(question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE') && (
-              <ChoiceOptions question={question} disabled={!canEdit} onChange={(options) => onChange(index, { options })} />
+              <ChoiceOptions
+                question={question}
+                disabled={!canEdit}
+                showCorrect={!isSurvey}
+                onChange={(options) => onChange(index, { options })}
+              />
             )}
             {question.type === 'SCALE' && (
               <ScaleOptions question={question} disabled={!canEdit} onChange={(options) => onChange(index, { options })} />
@@ -724,13 +856,23 @@ function QuestionEditor({
   )
 }
 
-function ChoiceOptions({ question, disabled, onChange }: { question: FormQuestion; disabled: boolean; onChange: (options: QuestionOptions) => void }) {
+function ChoiceOptions({
+  question,
+  disabled,
+  showCorrect,
+  onChange,
+}: {
+  question: FormQuestion
+  disabled: boolean
+  showCorrect: boolean
+  onChange: (options: QuestionOptions) => void
+}) {
   const choices = question.options?.choices ?? []
   const correct = question.options?.correct ?? []
 
   const setChoice = (choiceIndex: number, value: string) => {
     const nextChoices = choices.map((choice, index) => index === choiceIndex ? value : choice)
-    onChange({ choices: nextChoices, correct: correct.filter((choice) => nextChoices.includes(choice)) })
+    onChange({ choices: nextChoices, correct: showCorrect ? correct.filter((choice) => nextChoices.includes(choice)) : [] })
   }
 
   const toggleCorrect = (choice: string) => {
@@ -753,7 +895,7 @@ function ChoiceOptions({ question, disabled, onChange }: { question: FormQuestio
           size="sm"
           variant="ghost"
           disabled={disabled}
-          onClick={() => onChange({ choices: [...choices, `Option ${choices.length + 1}`], correct })}
+          onClick={() => onChange({ choices: [...choices, `Option ${choices.length + 1}`], correct: showCorrect ? correct : [] })}
         >
           <Plus size={12} />
           Option
@@ -762,20 +904,22 @@ function ChoiceOptions({ question, disabled, onChange }: { question: FormQuestio
       <div className="space-y-2">
         {choices.map((choice, index) => (
           <div key={`${choice}-${index}`} className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => toggleCorrect(choice)}
-              className={cn(
-                'flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[8px] border text-[11px] font-semibold transition-colors',
-                correct.includes(choice)
-                  ? 'border-[#34d399]/50 bg-[#123026] text-[#86efac]'
-                  : 'border-[#234568]/70 bg-[#0a1a33] text-[#6b8299] hover:text-[#d4af37]',
-              )}
-              title="Als richtige Antwort markieren"
-            >
-              <CheckCircle2 size={14} />
-            </button>
+            {showCorrect && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => toggleCorrect(choice)}
+                className={cn(
+                  'flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[8px] border text-[11px] font-semibold transition-colors',
+                  correct.includes(choice)
+                    ? 'border-[#34d399]/50 bg-[#123026] text-[#86efac]'
+                    : 'border-[#234568]/70 bg-[#0a1a33] text-[#6b8299] hover:text-[#d4af37]',
+                )}
+                title="Als richtige Antwort markieren"
+              >
+                <CheckCircle2 size={14} />
+              </button>
+            )}
             <Input
               value={choice}
               onChange={(event) => setChoice(index, event.target.value)}
@@ -787,7 +931,7 @@ function ChoiceOptions({ question, disabled, onChange }: { question: FormQuestio
               disabled={disabled || choices.length <= 2}
               onClick={() => {
                 const nextChoices = choices.filter((_, choiceIndex) => choiceIndex !== index)
-                onChange({ choices: nextChoices, correct: correct.filter((item) => nextChoices.includes(item)) })
+                onChange({ choices: nextChoices, correct: showCorrect ? correct.filter((item) => nextChoices.includes(item)) : [] })
               }}
               className="rounded-[8px] p-2 text-[#6b8299] hover:bg-[#321218]/40 hover:text-red-400 disabled:opacity-30"
             >
@@ -937,7 +1081,7 @@ function ResponsesView({ testId }: { testId: string }) {
               {selected.answers.map((answer, index) => {
                 const correct = correctValues(answer.question)
                 const chosen = selectedValues(answer)
-                const showCorrect = correct.length > 0
+                const showCorrect = data?.test.kind === 'TEST' && correct.length > 0
                 const isCorrect = showCorrect && correct.length === chosen.length && correct.every((value) => chosen.includes(value))
                 return (
                   <div key={answer.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">

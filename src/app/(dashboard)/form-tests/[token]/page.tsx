@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useParams } from 'next/navigation'
-import { CheckCircle2, ClipboardCheck, FileQuestion, Send } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock, FileQuestion, Send, ShieldAlert } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { Button } from '@/components/ui/button'
@@ -11,9 +12,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/components/ui/toast'
+import { notifyLiveUpdate } from '@/lib/live-updates'
 import { cn, formatDateTime } from '@/lib/utils'
 
 type QuestionType = 'SHORT_TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'SCALE'
+type FormTestKind = 'TEST' | 'SURVEY'
 
 interface QuestionOptions {
   choices?: string[]
@@ -43,15 +46,28 @@ interface ExistingResponse {
 
 interface FormLinkPayload {
   id: string
+  kind: FormTestKind
   title: string
   description: string | null
   module: string
+  timeLimitMinutes: number | null
+  anonymousResponses: boolean
   questions: FormQuestion[]
   existingResponse: ExistingResponse | null
+  sessionStartedAt: string | null
+  sessionExpiresAt: string | null
+  securityEventCount: number
 }
 
 function paramToken(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value ?? ''
+}
+
+function formatRemainingTime(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 export default function FormTestLinkPage() {
@@ -59,9 +75,30 @@ export default function FormTestLinkPage() {
   const token = paramToken(params.token)
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [focusWarning, setFocusWarning] = useState(false)
+  const [screenshotCover, setScreenshotCover] = useState(false)
+  const [remainingMs, setRemainingMs] = useState<number | null>(null)
+  const securityToastAtRef = useRef(0)
+  const coverTimeoutRef = useRef<number | null>(null)
   const { data, loading, refetch } = useFetch<FormLinkPayload>(token ? `/api/form-links/${token}` : null)
   const { execute } = useApi()
   const { addToast } = useToast()
+  const isActiveTest = data?.kind === 'TEST' && !data.existingResponse
+  const timeExpired = isActiveTest && remainingMs !== null && remainingMs <= 0
+
+  const reportSecurityEvent = useCallback((type: string) => {
+    if (!token) return
+    void fetch(`/api/form-links/${token}/security-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+      cache: 'no-store',
+    }).catch(() => undefined)
+  }, [token])
+
+  useEffect(() => {
+    if (isActiveTest) notifyLiveUpdate()
+  }, [data?.sessionStartedAt, isActiveTest])
 
   const answeredRequired = useMemo(() => {
     if (!data) return false
@@ -73,12 +110,125 @@ export default function FormTestLinkPage() {
     })
   }, [answers, data])
 
+  useEffect(() => {
+    if (!isActiveTest || !data?.sessionExpiresAt) {
+      setRemainingMs(null)
+      return
+    }
+
+    const expiresAt = new Date(data.sessionExpiresAt).getTime()
+    const updateRemaining = () => setRemainingMs(Math.max(0, expiresAt - Date.now()))
+    updateRemaining()
+    const intervalId = window.setInterval(updateRemaining, 1000)
+    return () => window.clearInterval(intervalId)
+  }, [data?.sessionExpiresAt, isActiveTest])
+
+  useEffect(() => {
+    if (!isActiveTest) return
+
+    const showScreenshotCover = () => {
+      setScreenshotCover(true)
+      if (coverTimeoutRef.current) window.clearTimeout(coverTimeoutRef.current)
+      coverTimeoutRef.current = window.setTimeout(() => {
+        setScreenshotCover(false)
+        coverTimeoutRef.current = null
+      }, 4500)
+    }
+
+    const writeAttemptClipboard = () => {
+      if ('clipboard' in navigator) {
+        void navigator.clipboard.writeText('netter versuch').catch(() => undefined)
+      }
+    }
+
+    const notifyBlockedAction = (type: string, message = 'Diese Aktion ist während des Tests gesperrt') => {
+      reportSecurityEvent(type)
+      const now = Date.now()
+      if (now - securityToastAtRef.current > 2500) {
+        securityToastAtRef.current = now
+        addToast({ type: 'warning', title: message })
+      }
+    }
+
+    const blockEvent = (event: Event, type: string) => {
+      event.preventDefault()
+      event.stopPropagation()
+      notifyBlockedAction(type)
+    }
+
+    const handleClipboard = (event: ClipboardEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.type === 'copy' || event.type === 'cut') {
+        event.clipboardData?.setData('text/plain', 'netter versuch')
+        writeAttemptClipboard()
+      }
+      notifyBlockedAction(event.type, event.type === 'paste' ? 'Einfügen ist während des Tests gesperrt' : 'netter versuch')
+    }
+    const handleContextMenu = (event: MouseEvent) => blockEvent(event, 'contextmenu')
+    const handleDragStart = (event: DragEvent) => blockEvent(event, 'dragstart')
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase()
+      const blockedShortcut = (event.ctrlKey || event.metaKey) && ['a', 'c', 'p', 's', 'u', 'v', 'x'].includes(key)
+      if (blockedShortcut || event.key === 'PrintScreen') {
+        event.preventDefault()
+        event.stopPropagation()
+        if (key === 'c' || key === 'x') writeAttemptClipboard()
+        if (key === 'p' || event.key === 'PrintScreen') showScreenshotCover()
+        notifyBlockedAction(event.key === 'PrintScreen' ? 'printscreen-key' : `shortcut-${key}`)
+      }
+    }
+    const handleBeforePrint = (event: Event) => {
+      showScreenshotCover()
+      blockEvent(event, 'beforeprint')
+    }
+    const handleBlur = () => {
+      showScreenshotCover()
+      setFocusWarning(true)
+      reportSecurityEvent('window-blur')
+    }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        showScreenshotCover()
+        setFocusWarning(true)
+        reportSecurityEvent('tab-hidden')
+      }
+    }
+
+    document.addEventListener('copy', handleClipboard, true)
+    document.addEventListener('cut', handleClipboard, true)
+    document.addEventListener('paste', handleClipboard, true)
+    document.addEventListener('contextmenu', handleContextMenu, true)
+    document.addEventListener('dragstart', handleDragStart, true)
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleBlur)
+    window.addEventListener('beforeprint', handleBeforePrint)
+
+    return () => {
+      document.removeEventListener('copy', handleClipboard, true)
+      document.removeEventListener('cut', handleClipboard, true)
+      document.removeEventListener('paste', handleClipboard, true)
+      document.removeEventListener('contextmenu', handleContextMenu, true)
+      document.removeEventListener('dragstart', handleDragStart, true)
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('beforeprint', handleBeforePrint)
+      if (coverTimeoutRef.current) window.clearTimeout(coverTimeoutRef.current)
+    }
+  }, [addToast, isActiveTest, reportSecurityEvent])
+
   const setAnswer = (questionId: string, value: unknown) => {
     setAnswers((current) => ({ ...current, [questionId]: value }))
   }
 
   const submit = async () => {
     if (!data) return
+    if (timeExpired) {
+      addToast({ type: 'error', title: 'Zeit abgelaufen' })
+      return
+    }
     setSubmitting(true)
     try {
       await execute(`/api/form-links/${token}/submit`, {
@@ -111,7 +261,11 @@ export default function FormTestLinkPage() {
   if (data.existingResponse) {
     return (
       <div className="mx-auto max-w-3xl">
-        <PageHeader title={data.title} description={data.description ?? undefined} eyebrow="Test abgegeben" />
+        <PageHeader
+          title={data.title}
+          description={data.description ?? undefined}
+          eyebrow={data.kind === 'SURVEY' ? 'Umfrage abgegeben' : 'Test abgegeben'}
+        />
         <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#123026] text-[#86efac]">
             <CheckCircle2 size={28} />
@@ -130,13 +284,84 @@ export default function FormTestLinkPage() {
     )
   }
 
+  const remainingLabel = isActiveTest && data.sessionExpiresAt && remainingMs !== null
+    ? formatRemainingTime(remainingMs)
+    : null
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className={cn('mx-auto max-w-3xl', isActiveTest && 'select-none')}>
+      {isActiveTest && (
+        <style>
+          {`@media print { body * { visibility: hidden !important; } body::before { content: ""; visibility: visible !important; position: fixed; inset: 0; background: url("/screenshot.jpg") center / cover no-repeat; } }`}
+        </style>
+      )}
+      {isActiveTest && (
+        <div className="pointer-events-none fixed bottom-24 right-3 z-[80] overflow-hidden rounded-[10px] border border-[#d4af37]/35 bg-[#061426]/80 shadow-[0_12px_30px_rgba(0,0,0,0.35)] sm:right-5">
+          <Image
+            src="/screenshot.jpg"
+            alt=""
+            aria-hidden="true"
+            width={96}
+            height={96}
+            className="h-20 w-20 object-cover opacity-90 sm:h-24 sm:w-24"
+          />
+        </div>
+      )}
+      {screenshotCover && isActiveTest && (
+        <div className="pointer-events-none fixed inset-0 z-[9999] bg-[#061426]">
+          <Image src="/screenshot.jpg" alt="" aria-hidden="true" fill sizes="100vw" className="object-cover" priority />
+          <div className="absolute inset-x-0 bottom-0 bg-[#061426]/80 px-4 py-4 text-center text-[13px] font-semibold text-white backdrop-blur-sm">
+            Screenshot-Schutz aktiv
+          </div>
+        </div>
+      )}
       <PageHeader
         title={data.title}
         description={data.description ?? undefined}
-        eyebrow="Testformular"
+        eyebrow={data.kind === 'SURVEY' ? 'Umfrage' : 'Test'}
+        action={remainingLabel ? (
+          <Badge variant={timeExpired ? 'danger' : 'warning'} className="gap-1.5">
+            <Clock size={13} />
+            {remainingLabel}
+          </Badge>
+        ) : data.kind === 'SURVEY' && data.anonymousResponses ? (
+          <Badge variant="info">Anonyme Umfrage</Badge>
+        ) : undefined}
       />
+
+      {isActiveTest && (
+        <div className="mb-4 rounded-[14px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[#d4af37]" />
+            <div>
+              <p className="text-[13px] font-semibold text-white">Testmodus aktiv</p>
+              <p className="mt-1 text-[12.5px] leading-5 text-[#d8c68c]">
+                Kopieren, Einfügen, Drucken, Rechtsklick und Tabwechsel werden blockiert oder protokolliert. Andere Dashboard-Seiten bleiben bis zur Abgabe gesperrt.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {focusWarning && isActiveTest && (
+        <div className="mb-4 rounded-[14px] border border-[#7f1d1d]/45 bg-[#2a1620]/55 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#fca5a5]" />
+            <div>
+              <p className="text-[13px] font-semibold text-white">Fokusverlust protokolliert</p>
+              <p className="mt-1 text-[12.5px] leading-5 text-[#f3b7b7]">
+                Der Test wurde verlassen oder das Fenster hat den Fokus verloren.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {data.kind === 'SURVEY' && data.anonymousResponses && (
+        <div className="mb-4 rounded-[14px] border border-[#1e3a5c]/45 bg-[#071a30]/55 p-4 text-[12.5px] leading-5 text-[#8ea4bd]">
+          Diese Umfrage wird anonym ausgewertet. Deine Abgabe wird intern nur zur Vermeidung mehrfacher Abgaben erkannt.
+        </div>
+      )}
 
       <div className="space-y-4">
         {data.questions.map((question, index) => (
@@ -144,6 +369,7 @@ export default function FormTestLinkPage() {
             key={question.id}
             index={index}
             question={question}
+            showPoints={data.kind === 'TEST'}
             value={answers[question.id]}
             onChange={(value) => setAnswer(question.id, value)}
           />
@@ -155,10 +381,13 @@ export default function FormTestLinkPage() {
           <div className="flex items-center gap-2 text-[12.5px] text-[#8ea4bd]">
             <ClipboardCheck size={15} className="text-[#d4af37]" />
             {data.questions.length} Frage(n)
+            {isActiveTest && data.securityEventCount > 0 && (
+              <span className="text-[#d4af37]">· {data.securityEventCount} protokolliert</span>
+            )}
           </div>
-          <Button onClick={submit} loading={submitting} disabled={!answeredRequired}>
+          <Button onClick={submit} loading={submitting} disabled={!answeredRequired || timeExpired}>
             <Send size={14} />
-            Abgeben
+            {timeExpired ? 'Zeit abgelaufen' : 'Abgeben'}
           </Button>
         </div>
       </div>
@@ -169,11 +398,13 @@ export default function FormTestLinkPage() {
 function QuestionField({
   index,
   question,
+  showPoints,
   value,
   onChange,
 }: {
   index: number
   question: FormQuestion
+  showPoints: boolean
   value: unknown
   onChange: (value: unknown) => void
 }) {
@@ -187,7 +418,7 @@ function QuestionField({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-[14px] font-semibold text-white">{question.title}</h2>
             {question.required && <Badge variant="warning">Pflicht</Badge>}
-            {question.points > 0 && <Badge>{question.points} Punkte</Badge>}
+            {showPoints && question.points > 0 && <Badge>{question.points} Punkte</Badge>}
           </div>
           {question.description && <p className="mt-1 text-[12.5px] leading-5 text-[#8ea4bd]">{question.description}</p>}
         </div>

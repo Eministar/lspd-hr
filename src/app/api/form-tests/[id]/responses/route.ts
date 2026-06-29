@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { requireTaskModuleManage } from '@/lib/module-permissions'
+import { requireTaskModuleFormTestManage } from '@/lib/module-permissions'
 
 const responseInclude = {
   respondent: { select: { id: true, displayName: true, username: true, discordId: true } },
@@ -22,14 +22,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       select: {
         id: true,
         module: true,
+        kind: true,
         title: true,
         status: true,
+        anonymousResponses: true,
         questions: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
       },
     })
     if (!test) return notFound('Test')
 
-    await requireTaskModuleManage(test.module)
+    await requireTaskModuleFormTestManage(test.module)
 
     const responses = await prisma.formResponse.findMany({
       where: { testId: id },

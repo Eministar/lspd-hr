@@ -2,10 +2,12 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
+import { requireTaskModuleFormTestManage, requireTaskModuleView } from '@/lib/module-permissions'
 import {
   cleanFormText,
   cleanLongFormText,
+  cleanTimeLimitMinutes,
+  isFormTestKind,
   isFormTestStatus,
   sanitizeFormQuestions,
   validateQuestionsForPublish,
@@ -47,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     if (!existing) return notFound('Test')
 
-    await requireTaskModuleManage(existing.module)
+    await requireTaskModuleFormTestManage(existing.module)
 
     const updates: Record<string, unknown> = {}
     if ('title' in body) {
@@ -59,6 +61,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if ('status' in body) {
       if (!isFormTestStatus(body.status)) return error('Ungültiger Status')
       updates.status = body.status
+    }
+    const nextKind = 'kind' in body
+      ? (isFormTestKind(body.kind) ? body.kind : null)
+      : existing.kind
+    if (!nextKind) return error('Ungültiger Typ')
+    if ('kind' in body) updates.kind = nextKind
+    if ('timeLimitMinutes' in body || 'kind' in body) {
+      updates.timeLimitMinutes = nextKind === 'TEST' ? cleanTimeLimitMinutes(body.timeLimitMinutes) : null
+    }
+    if ('anonymousResponses' in body || 'kind' in body) {
+      updates.anonymousResponses = nextKind === 'SURVEY' ? body.anonymousResponses === true : false
     }
 
     const questionPayload = Array.isArray(body.questions) ? sanitizeFormQuestions(body.questions) : null
@@ -117,7 +130,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const existing = await prisma.formTest.findUnique({ where: { id } })
     if (!existing) return notFound('Test')
 
-    await requireTaskModuleManage(existing.module)
+    await requireTaskModuleFormTestManage(existing.module)
     await prisma.formTest.delete({ where: { id } })
 
     return success({ message: 'Test gelöscht' })

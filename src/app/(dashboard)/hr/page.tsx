@@ -60,6 +60,7 @@ export default function HrDepartmentPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'hr:view')
   const canManage = hasPermission(user, 'hr:manage')
+  const canManageTests = hasPermission(user, 'hr-tests:manage')
   const [activeTab, setActiveTab] = useState<Tab>('documents')
 
   if (!canView) return <UnauthorizedContent />
@@ -103,7 +104,7 @@ export default function HrDepartmentPage() {
           module="HR"
           title="HR Tests & Fragebögen"
           description="Tests und Fragebögen für Bewerbungen, Gespräche und interne HR-Auswertungen."
-          canManage={canManage}
+          canManage={canManageTests}
         />
       )}
       {activeTab === 'tasks' && (

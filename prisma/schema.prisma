@@ -94,6 +94,11 @@ enum FormTestStatus {
   ARCHIVED
 }
 
+enum FormTestKind {
+  TEST
+  SURVEY
+}
+
 enum FormQuestionType {
   SHORT_TEXT
   LONG_TEXT
@@ -155,6 +160,7 @@ model User {
   formTestsCreated FormTest[] @relation("FormTestCreator")
   formResponsesSubmitted FormResponse[] @relation("FormResponseRespondent")
   formResponsesReviewed FormResponse[] @relation("FormResponseReviewer")
+  formTestSessions FormTestSession[] @relation("FormTestSessionUser")
 }
 
 model UserGroupMembership {
@@ -243,9 +249,12 @@ model AcademyResource {
 model FormTest {
   id          String         @id @default(cuid())
   module      TaskModule
+  kind        FormTestKind   @default(TEST)
   title       String
   description String?        @db.Text
   status      FormTestStatus @default(DRAFT)
+  timeLimitMinutes Int?
+  anonymousResponses Boolean @default(false)
   shareToken  String         @unique
   createdById String?
   createdBy   User?          @relation("FormTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
@@ -254,6 +263,7 @@ model FormTest {
 
   questions   FormQuestion[]
   responses   FormResponse[]
+  sessions    FormTestSession[]
 
   @@index([module, status, updatedAt])
   @@index([createdById])
@@ -285,6 +295,7 @@ model FormResponse {
   respondentId   String?
   respondent     User?        @relation("FormResponseRespondent", fields: [respondentId], references: [id], onDelete: SetNull)
   respondentName String
+  submitterHash  String?
   score          Int?
   maxScore       Int          @default(0)
   reviewNote     String?      @db.Text
@@ -296,9 +307,29 @@ model FormResponse {
   answers        FormAnswer[]
 
   @@unique([testId, respondentId])
+  @@unique([testId, submitterHash])
   @@index([testId, submittedAt])
   @@index([respondentId, submittedAt])
+  @@index([submitterHash])
   @@index([reviewedById])
+}
+
+model FormTestSession {
+  id             String    @id @default(cuid())
+  testId         String
+  test           FormTest  @relation(fields: [testId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User      @relation("FormTestSessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  startedAt      DateTime  @default(now())
+  expiresAt      DateTime?
+  completedAt    DateTime?
+  lastSeenAt     DateTime  @default(now())
+  securityEvents Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, completedAt, expiresAt])
+  @@index([testId, userId, startedAt])
 }
 
 model FormAnswer {

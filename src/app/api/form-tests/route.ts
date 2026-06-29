@@ -2,11 +2,13 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
 import { success, error, unauthorized } from '@/lib/api-response'
-import { isTaskModule, requireTaskModuleManage, requireTaskModuleView } from '@/lib/module-permissions'
+import { isTaskModule, requireTaskModuleFormTestManage, requireTaskModuleView } from '@/lib/module-permissions'
 import {
   cleanFormText,
   cleanLongFormText,
+  cleanTimeLimitMinutes,
   generateFormShareToken,
+  isFormTestKind,
   isFormTestStatus,
   sanitizeFormQuestions,
   validateQuestionsForPublish,
@@ -58,9 +60,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     if (!isTaskModule(body.module)) return error('Ungültiges Modul')
 
-    const user = await requireTaskModuleManage(body.module)
+    const user = await requireTaskModuleFormTestManage(body.module)
     const title = cleanFormText(body.title)
     if (!title) return error('Titel ist erforderlich')
+    const kind = isFormTestKind(body.kind) ? body.kind : 'TEST'
+    const timeLimitMinutes = kind === 'TEST' ? cleanTimeLimitMinutes(body.timeLimitMinutes) : null
+    const anonymousResponses = kind === 'SURVEY' ? body.anonymousResponses === true : false
 
     let questions = sanitizeFormQuestions(body.questions)
     if (questions.length === 0) {
@@ -84,9 +89,12 @@ export async function POST(req: NextRequest) {
     const test = await prisma.formTest.create({
       data: {
         module: body.module,
+        kind,
         title,
         description: cleanLongFormText(body.description) || null,
         status,
+        timeLimitMinutes,
+        anonymousResponses,
         shareToken: await createUniqueShareToken(),
         createdById: user.id,
         questions: {

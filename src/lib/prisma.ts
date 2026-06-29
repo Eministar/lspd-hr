@@ -43,6 +43,8 @@ type PrismaClientCompat = PrismaClient & {
   formresponse: CompatDelegate
   formAnswer: CompatDelegate
   formanswer: CompatDelegate
+  formTestSession: CompatDelegate
+  formtestsession: CompatDelegate
 }
 
 const delegateAliases: Record<string, string> = {
@@ -83,6 +85,8 @@ const delegateAliases: Record<string, string> = {
   formresponse: 'formResponse',
   formAnswer: 'formanswer',
   formanswer: 'formAnswer',
+  formTestSession: 'formtestsession',
+  formtestsession: 'formTestSession',
 }
 
 const globalForPrisma = globalThis as unknown as {

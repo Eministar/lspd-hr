@@ -44,6 +44,7 @@ export default function AcademyPage() {
   const { user } = useAuth()
   const canView = hasPermission(user, 'academy:view')
   const canManage = hasPermission(user, 'academy:manage')
+  const canManageTests = hasPermission(user, 'academy-tests:manage')
   const [activeTab, setActiveTab] = useState<Tab>('documents')
 
   if (!canView) return <UnauthorizedContent />
@@ -89,7 +90,7 @@ export default function AcademyPage() {
           module="ACADEMY"
           title="Recruitment & Training Tests"
           description="Tests und Fragebögen für Bewerbungen, Trainings, Prüfungen und Schulungen."
-          canManage={canManage}
+          canManage={canManageTests}
         />
       )}
       {activeTab === 'tasks' && (

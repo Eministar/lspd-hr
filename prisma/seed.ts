@@ -46,8 +46,10 @@ async function main() {
         'rank-changes:manage',
         'rank-changes:view',
         'academy:manage',
+        'academy-tests:manage',
         'academy:view',
         'hr:manage',
+        'hr-tests:manage',
         'hr:view',
         'sru:manage',
         'sru:view',
@@ -66,7 +68,7 @@ async function main() {
     {
       name: 'Führungsebene',
       description: 'Aufgaben, Notizen und Protokolle.',
-      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'academy:manage', 'academy:view', 'hr:manage', 'hr:view', 'sru:manage', 'sru:view', 'air-support:manage', 'air-support:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
+      permissions: ['dashboard:view', 'calendar:view', 'officers:view', 'duty-times:view', 'patrol-board:manage', 'patrol-board:view', 'probations:view', 'academy:manage', 'academy-tests:manage', 'academy:view', 'hr:manage', 'hr-tests:manage', 'hr:view', 'sru:manage', 'sru:view', 'air-support:manage', 'air-support:view', 'notes:manage', 'notes:view', 'logs:view', 'exports:view', 'password:change'],
     },
   ]
 

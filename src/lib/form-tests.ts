@@ -1,10 +1,15 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 
 export const FORM_TEST_STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'] as const
 export type FormTestStatusValue = (typeof FORM_TEST_STATUSES)[number]
 
+export const FORM_TEST_KINDS = ['TEST', 'SURVEY'] as const
+export type FormTestKindValue = (typeof FORM_TEST_KINDS)[number]
+
 export const FORM_QUESTION_TYPES = ['SHORT_TEXT', 'LONG_TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE'] as const
 export type FormQuestionTypeValue = (typeof FORM_QUESTION_TYPES)[number]
+
+const HASH_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
 type QuestionOptions = {
   choices?: string[]
@@ -60,8 +65,26 @@ export function isFormTestStatus(value: unknown): value is FormTestStatusValue {
   return typeof value === 'string' && (FORM_TEST_STATUSES as readonly string[]).includes(value)
 }
 
+export function isFormTestKind(value: unknown): value is FormTestKindValue {
+  return typeof value === 'string' && (FORM_TEST_KINDS as readonly string[]).includes(value)
+}
+
 export function isFormQuestionType(value: unknown): value is FormQuestionTypeValue {
   return typeof value === 'string' && (FORM_QUESTION_TYPES as readonly string[]).includes(value)
+}
+
+export function cleanTimeLimitMinutes(value: unknown) {
+  if (value === null || value === undefined || value === '') return null
+  if (typeof value === 'string' && value.trim() === '') return null
+  const minutes = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(minutes)) return null
+  return Math.max(1, Math.min(720, Math.round(minutes)))
+}
+
+export function buildFormSubmitterHash(testId: string, userId: string) {
+  return createHash('sha256')
+    .update(`${testId}:${userId}:${HASH_SECRET}`)
+    .digest('hex')
 }
 
 function readOptions(value: unknown): Record<string, unknown> {

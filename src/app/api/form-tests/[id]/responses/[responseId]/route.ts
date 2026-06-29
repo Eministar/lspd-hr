@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { requireTaskModuleManage } from '@/lib/module-permissions'
+import { requireTaskModuleFormTestManage } from '@/lib/module-permissions'
 import { cleanLongFormText } from '@/lib/form-tests'
 
 const responseInclude = {
@@ -27,7 +27,7 @@ export async function PATCH(
     })
     if (!response) return notFound('Abgabe')
 
-    const user = await requireTaskModuleManage(response.test.module)
+    const user = await requireTaskModuleFormTestManage(response.test.module)
 
     const data: Record<string, unknown> = {
       reviewedAt: new Date(),

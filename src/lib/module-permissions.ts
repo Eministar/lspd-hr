@@ -12,6 +12,11 @@ const MODULE_PERMISSION: Record<TaskModuleKey, { view: Permission; manage: Permi
   DETECTIVE: { view: 'detective:view', manage: 'detective:manage' },
 }
 
+const MODULE_FORM_TEST_MANAGE_PERMISSION: Partial<Record<TaskModuleKey, Permission>> = {
+  ACADEMY: 'academy-tests:manage',
+  HR: 'hr-tests:manage',
+}
+
 export function isTaskModule(value: unknown): value is TaskModuleKey {
   return typeof value === 'string' && (TASK_MODULES as readonly string[]).includes(value)
 }
@@ -27,6 +32,11 @@ export async function requireTaskModuleView(module: unknown) {
 export async function requireTaskModuleManage(module: unknown) {
   if (!isTaskModule(module)) throw new Error('Forbidden')
   return requirePermission(MODULE_PERMISSION[module].manage)
+}
+
+export async function requireTaskModuleFormTestManage(module: unknown) {
+  if (!isTaskModule(module)) throw new Error('Forbidden')
+  return requirePermission(MODULE_FORM_TEST_MANAGE_PERMISSION[module] ?? MODULE_PERMISSION[module].manage)
 }
 
 export async function requireCalendarModuleView(module: unknown) {
