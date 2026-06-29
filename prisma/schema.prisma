@@ -88,6 +88,20 @@ enum AcademyResourceScope {
   TRAINING
 }
 
+enum FormTestStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum FormQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SCALE
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -138,6 +152,9 @@ model User {
   apiTokensOwned      ApiToken[]     @relation("ApiTokenOwner")
   apiTokensCreated    ApiToken[]     @relation("ApiTokenCreator")
   academyResourcesCreated AcademyResource[] @relation("AcademyResourceCreator")
+  formTestsCreated FormTest[] @relation("FormTestCreator")
+  formResponsesSubmitted FormResponse[] @relation("FormResponseRespondent")
+  formResponsesReviewed FormResponse[] @relation("FormResponseReviewer")
 }
 
 model UserGroupMembership {
@@ -221,6 +238,80 @@ model AcademyResource {
   @@index([scope, createdAt])
   @@index([trainingId, createdAt])
   @@index([createdById])
+}
+
+model FormTest {
+  id          String         @id @default(cuid())
+  module      TaskModule
+  title       String
+  description String?        @db.Text
+  status      FormTestStatus @default(DRAFT)
+  shareToken  String         @unique
+  createdById String?
+  createdBy   User?          @relation("FormTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  questions   FormQuestion[]
+  responses   FormResponse[]
+
+  @@index([module, status, updatedAt])
+  @@index([createdById])
+}
+
+model FormQuestion {
+  id          String           @id @default(cuid())
+  testId      String
+  test        FormTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  type        FormQuestionType
+  title       String           @db.Text
+  description String?          @db.Text
+  required    Boolean          @default(true)
+  options     Json?
+  points      Int              @default(0)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  answers     FormAnswer[]
+
+  @@index([testId, sortOrder])
+}
+
+model FormResponse {
+  id             String       @id @default(cuid())
+  testId         String
+  test           FormTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  respondentId   String?
+  respondent     User?        @relation("FormResponseRespondent", fields: [respondentId], references: [id], onDelete: SetNull)
+  respondentName String
+  score          Int?
+  maxScore       Int          @default(0)
+  reviewNote     String?      @db.Text
+  reviewedAt     DateTime?
+  reviewedById   String?
+  reviewedBy     User?        @relation("FormResponseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  submittedAt    DateTime     @default(now())
+
+  answers        FormAnswer[]
+
+  @@unique([testId, respondentId])
+  @@index([testId, submittedAt])
+  @@index([respondentId, submittedAt])
+  @@index([reviewedById])
+}
+
+model FormAnswer {
+  id         String       @id @default(cuid())
+  responseId String
+  response   FormResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId String
+  question   FormQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  value      Json
+  createdAt  DateTime     @default(now())
+
+  @@unique([responseId, questionId])
+  @@index([questionId])
 }
 
 model Officer {

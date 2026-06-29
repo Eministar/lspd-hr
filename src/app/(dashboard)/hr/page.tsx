@@ -2,19 +2,21 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CalendarDays, FileText, ListChecks, ScrollText } from 'lucide-react'
+import { BookOpen, CalendarDays, FileQuestion, FileText, ListChecks, ScrollText } from 'lucide-react'
 import { TaskBoard } from '@/components/tasks/task-board'
 import { ModuleDocuments } from '@/components/modules/module-documents'
 import { ModuleCalendar } from '@/components/modules/module-calendar'
+import { FormTests } from '@/components/modules/form-tests'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
-type Tab = 'documents' | 'tasks' | 'calendar'
+type Tab = 'documents' | 'tests' | 'tasks' | 'calendar'
 
 const tabs = [
   { id: 'documents' as const, label: 'Dokumente', icon: FileText },
+  { id: 'tests' as const, label: 'Tests', icon: FileQuestion },
   { id: 'tasks' as const, label: 'Aufgaben', icon: ListChecks },
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
 ]
@@ -93,6 +95,14 @@ export default function HrDepartmentPage() {
           title="HR Dokumente"
           description="Interne Dokumente, Gesprächsnotizen und Vorlagen der Personalabteilung"
           emptyDocument={EMPTY_HR_DOCUMENT}
+          canManage={canManage}
+        />
+      )}
+      {activeTab === 'tests' && (
+        <FormTests
+          module="HR"
+          title="HR Tests & Fragebögen"
+          description="Tests und Fragebögen für Bewerbungen, Gespräche und interne HR-Auswertungen."
           canManage={canManage}
         />
       )}
