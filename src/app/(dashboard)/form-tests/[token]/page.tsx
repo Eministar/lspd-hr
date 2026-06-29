@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/components/ui/toast'
+import { useAuth } from '@/context/auth-context'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { cn, formatDateTime } from '@/lib/utils'
 
@@ -78,13 +79,27 @@ export default function FormTestLinkPage() {
   const [screenshotCover, setScreenshotCover] = useState(false)
   const [windowObscured, setWindowObscured] = useState(false)
   const [remainingMs, setRemainingMs] = useState<number | null>(null)
+  const [watermarkStamp, setWatermarkStamp] = useState(() => Date.now())
   const securityToastAtRef = useRef(0)
   const coverTimeoutRef = useRef<number | null>(null)
   const { data, loading, refetch } = useFetch<FormLinkPayload>(token ? `/api/form-links/${token}` : null)
   const { execute } = useApi()
   const { addToast } = useToast()
+  const { user } = useAuth()
   const isActiveTest = data?.kind === 'TEST' && !data.existingResponse
   const timeExpired = isActiveTest && remainingMs !== null && remainingMs <= 0
+
+  const watermarkStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (!user) return undefined
+    const sanitize = (value: string) => value.replace(/[<>&]/g, ' ').slice(0, 60)
+    const identity = sanitize(`${user.displayName} · ${user.discordId ?? user.username}`)
+    const stamp = sanitize(new Date(watermarkStamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }))
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='330' height='210'><g transform='rotate(-28 165 105)'><text x='12' y='98' fill='rgba(212,175,55,0.14)' font-family='Arial, sans-serif' font-size='13' font-weight='600'>${identity}</text><text x='12' y='118' fill='rgba(212,175,55,0.11)' font-family='Arial, sans-serif' font-size='11'>${stamp}</text></g></svg>`
+    return {
+      backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
+      backgroundRepeat: 'repeat',
+    }
+  }, [user, watermarkStamp])
 
   const reportSecurityEvent = useCallback((type: string) => {
     if (!token) return
@@ -99,6 +114,12 @@ export default function FormTestLinkPage() {
   useEffect(() => {
     if (isActiveTest) notifyLiveUpdate()
   }, [data?.sessionStartedAt, isActiveTest])
+
+  useEffect(() => {
+    if (!isActiveTest) return
+    const intervalId = window.setInterval(() => setWatermarkStamp(Date.now()), 60000)
+    return () => window.clearInterval(intervalId)
+  }, [isActiveTest])
 
   const answeredRequired = useMemo(() => {
     if (!data) return false
@@ -302,6 +323,9 @@ export default function FormTestLinkPage() {
           {`@media print { html, body { background: #040d1a !important; } body * { visibility: hidden !important; } }`}
         </style>
       )}
+      {isActiveTest && watermarkStyle && (
+        <div className="pointer-events-none fixed inset-0 z-[60]" style={watermarkStyle} aria-hidden="true" />
+      )}
       {isActiveTest && (screenshotCover || windowObscured) && (
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-[#040d1a] px-6 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-[18px] border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]">
@@ -336,7 +360,7 @@ export default function FormTestLinkPage() {
             <div>
               <p className="text-[13px] font-semibold text-white">Testmodus aktiv</p>
               <p className="mt-1 text-[12.5px] leading-5 text-[#d8c68c]">
-                Kopieren, Einfügen, Drucken, Rechtsklick und Tabwechsel werden blockiert oder protokolliert. Andere Dashboard-Seiten bleiben bis zur Abgabe gesperrt.
+                Kopieren, Einfügen, Drucken, Rechtsklick und Tabwechsel werden blockiert oder protokolliert. Jeder Screenshot trägt sichtbar deinen Namen und deine Discord-ID – geleakte Aufnahmen sind dir eindeutig zuordenbar. Andere Dashboard-Seiten bleiben bis zur Abgabe gesperrt.
               </p>
             </div>
           </div>
