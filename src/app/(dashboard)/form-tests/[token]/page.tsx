@@ -94,7 +94,7 @@ export default function FormTestLinkPage() {
     const sanitize = (value: string) => value.replace(/[<>&]/g, ' ').slice(0, 60)
     const identity = sanitize(`${user.displayName} · ${user.discordId ?? user.username}`)
     const stamp = sanitize(new Date(watermarkStamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }))
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='330' height='210'><g transform='rotate(-28 165 105)'><text x='12' y='98' fill='rgba(212,175,55,0.14)' font-family='Arial, sans-serif' font-size='13' font-weight='600'>${identity}</text><text x='12' y='118' fill='rgba(212,175,55,0.11)' font-family='Arial, sans-serif' font-size='11'>${stamp}</text></g></svg>`
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='330' height='210'><g transform='rotate(-28 165 105)'><text x='12' y='98' fill='rgba(212,175,55,0.07)' font-family='Arial, sans-serif' font-size='13' font-weight='600'>${identity}</text><text x='12' y='118' fill='rgba(212,175,55,0.055)' font-family='Arial, sans-serif' font-size='11'>${stamp}</text></g></svg>`
     return {
       backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
       backgroundRepeat: 'repeat',
