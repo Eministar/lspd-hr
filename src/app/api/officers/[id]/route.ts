@@ -79,6 +79,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (!officer) return notFound('Officer')
   const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
+  const hireAudit = await prisma.auditLog.findFirst({
+    where: { officerId: id, action: 'OFFICER_CREATED' },
+    orderBy: { createdAt: 'asc' },
+    include: { user: { select: { displayName: true } } },
+  })
+  const hiredBy = hireAudit
+    ? { displayName: hireAudit.user?.displayName ?? null, createdAt: hireAudit.createdAt }
+    : null
   await syncOfficerPlayerPlaytime(id)
   const discordId = validDiscordId(officer.discordId)
   const canCheckDiscordMembers = await canCheckDiscordGuildMembers()
@@ -90,6 +98,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   ])
   return success({
     ...officerWithTrainingRows,
+    hiredBy,
     dutyTime,
     playtime,
     absences,

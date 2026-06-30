@@ -95,6 +95,7 @@ interface OfficerDetail {
   flag: string | null
   notes: string | null
   hireDate: string
+  hiredBy?: { displayName: string | null; createdAt: string } | null
   lastOnline: string | null
   discordId: string | null
   discordMember?: {
@@ -754,6 +755,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
+                <InfoRow label="Eingestellt von" value={officer.hiredBy?.displayName ?? undefined} />
                 <InfoRow label="Units">
                   <UnitBadges officer={officer} units={units ?? undefined} emptyClassName="text-[13.5px]" />
                 </InfoRow>
