@@ -94,7 +94,7 @@ export default function FormTestLinkPage() {
     const sanitize = (value: string) => value.replace(/[<>&]/g, ' ').slice(0, 60)
     const identity = sanitize(`${user.displayName} · ${user.discordId ?? user.username}`)
     const stamp = sanitize(new Date(watermarkStamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }))
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='330' height='210'><g transform='rotate(-28 165 105)'><text x='12' y='98' fill='rgba(212,175,55,0.07)' font-family='Arial, sans-serif' font-size='13' font-weight='600'>${identity}</text><text x='12' y='118' fill='rgba(212,175,55,0.055)' font-family='Arial, sans-serif' font-size='11'>${stamp}</text></g></svg>`
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='330' height='210'><g transform='rotate(-28 165 105)'><text x='12' y='98' fill='rgba(212,175,55,0.045)' font-family='Arial, sans-serif' font-size='13' font-weight='500'>${identity}</text><text x='12' y='118' fill='rgba(212,175,55,0.035)' font-family='Arial, sans-serif' font-size='11'>${stamp}</text></g></svg>`
     return {
       backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
       backgroundRepeat: 'repeat',
@@ -480,6 +480,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
     const selected = typeof value === 'string' ? value : ''
     return (
       <div className="space-y-2">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">Nur eine Antwort wählbar</p>
         {(question.options?.choices ?? []).map((choice) => (
           <button
             key={choice}
@@ -507,6 +508,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
     }
     return (
       <div className="space-y-2">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-[#d4af37]/70">Mehrfachauswahl möglich</p>
         {(question.options?.choices ?? []).map((choice) => (
           <Checkbox
             key={choice}
