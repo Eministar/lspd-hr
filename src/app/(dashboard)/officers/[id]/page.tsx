@@ -111,6 +111,7 @@ interface OfficerDetail {
     activePlaySession: { id: string; startedAt: string; currentDurationMs: number; playerName: string; license: string | null; lastSeenAt: string } | null
     weekDurationMs: number
     playtimeWeekDurationMs: number
+    totalDurationMs: number
     sessionCount: number
     averageSessionMs: number
     longestSessionMs: number
@@ -788,7 +789,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <h3 className="text-[13.5px] font-semibold text-[#eee]">Dienstzeiten</h3>
               <Link href="/duty-times" className="text-[12px] text-[#d4af37] hover:text-white transition-colors">Übersicht</Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <DutyMetric
                 label="Status"
                 value={officer.dutyTime?.activeSession ? 'Im Dienst' : 'Offline'}
@@ -802,6 +803,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <DutyMetric
                 label="Diese Woche"
                 value={formatDuration(officer.dutyTime?.weekDurationMs ?? 0)}
+              />
+              <DutyMetric
+                label="Gesamt-Dienstzeit"
+                value={formatDuration(officer.dutyTime?.totalDurationMs ?? 0)}
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">

@@ -59,6 +59,7 @@ interface DutyOfficer {
   apiError?: string
   weekDurationMs: number
   playtimeWeekDurationMs: number
+  totalDurationMs: number
   sessionCount: number
   averageSessionMs: number
   longestSessionMs: number
@@ -79,6 +80,7 @@ interface DutySnapshot {
   totalActiveDurationMs: number
   totalWeekDurationMs: number
   totalPlaytimeWeekDurationMs: number
+  totalAllTimeDurationMs: number
   totalSessionCount: number
   averageSessionMs: number
   longestSessionMs: number
@@ -190,10 +192,11 @@ export default function DutyTimesPage() {
         )}
 
         {/* KPI grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-3.5">
           <KpiCard icon={Users} label="Im Dienst" value={String(data.activeCount)} accent="#22c55e" />
           <KpiCard icon={Timer} label="Aktiv jetzt" value={formatDuration(data.totalActiveDurationMs)} />
           <KpiCard icon={Clock3} label="Spielzeit Woche" value={formatDuration(data.totalWeekDurationMs)} accent="#d4af37" />
+          <KpiCard icon={Trophy} label="Gesamt-Dienstzeit" value={formatDuration(data.totalAllTimeDurationMs)} accent="#38bdf8" />
           <KpiCard icon={Activity} label="Sessions" value={String(data.totalSessionCount)} />
           <KpiCard icon={BarChart3} label="Ø Session" value={formatDuration(data.averageSessionMs)} />
           <KpiCard icon={Database} label="Längste Session" value={formatDuration(data.longestSessionMs)} />
@@ -325,6 +328,7 @@ export default function DutyTimesPage() {
 
                       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-[#7089a5]">
                         <span>Woche: <strong className="text-[#d4af37] tabular-nums">{formatDuration(officer.weekDurationMs)}</strong></span>
+                        <span>Gesamt: <strong className="text-[#38bdf8] tabular-nums">{formatDuration(officer.totalDurationMs)}</strong></span>
                         <span>Sessions: <strong className="text-[#c7d4e4] tabular-nums">{officer.sessionCount}</strong></span>
                         <span>Heartbeat: <strong className="text-[#c7d4e4]">{formatRelativeTime(officer.lastHeartbeat ?? '')}</strong></span>
                       </div>
@@ -346,7 +350,7 @@ export default function DutyTimesPage() {
           </p>
           <div className="divide-y divide-[#18385f]/40">
             {data.rows.map((officer) => (
-                <div key={officer.id} className="grid grid-cols-1 gap-3 py-3 first:pt-0 last:pb-0 xl:grid-cols-[minmax(0,1fr)_260px_330px] xl:items-center">
+                <div key={officer.id} className="grid grid-cols-1 gap-3 py-3 first:pt-0 last:pb-0 xl:grid-cols-[minmax(0,1fr)_260px_420px] xl:items-center">
                   <div className="min-w-0 flex items-start gap-3">
                     <div className="avatar-initials" style={{ width: 30, height: 30, fontSize: 11 }}>{initials(officer)}</div>
                     <div className="min-w-0 flex-1">
@@ -374,8 +378,9 @@ export default function DutyTimesPage() {
 
                   <MiniBars daily={officer.daily} />
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-5 gap-2">
                     <Metric label="Woche" value={formatDuration(officer.weekDurationMs)} strong />
+                    <Metric label="Gesamt" value={formatDuration(officer.totalDurationMs)} strong />
                     <Metric label="Jetzt" value={officer.activePlaySession ? formatDuration(officer.activePlaySession.currentDurationMs) : 'offline'} />
                     <Metric label="Ø" value={formatDuration(officer.averageSessionMs)} />
                     <Metric label="Längste" value={formatDuration(officer.longestSessionMs)} />

@@ -94,6 +94,33 @@ function dailyPlaytime(sessions: PlaytimeSessionRow[], weekStart: Date, now: Dat
   })
 }
 
+type AllTimeTotalRow = {
+  officerId: string
+  totalSeconds: bigint | number | null
+}
+
+async function getAllTimePlaytimeTotals(now: Date) {
+  const rows = await prisma.$queryRaw<AllTimeTotalRow[]>`
+    SELECT officerId,
+           CAST(SUM(GREATEST(0, TIMESTAMPDIFF(SECOND, startedAt, COALESCE(endedAt, ${now})))) AS SIGNED) AS totalSeconds
+    FROM PlaytimeSession
+    WHERE officerId IS NOT NULL
+    GROUP BY officerId
+  `
+  return new Map(rows.map((row) => [row.officerId, Number(row.totalSeconds ?? 0) * 1000]))
+}
+
+async function getOfficerAllTimePlaytimeMs(officerId: string, now: Date) {
+  const rows = await prisma.$queryRaw<AllTimeTotalRow[]>`
+    SELECT officerId,
+           CAST(SUM(GREATEST(0, TIMESTAMPDIFF(SECOND, startedAt, COALESCE(endedAt, ${now})))) AS SIGNED) AS totalSeconds
+    FROM PlaytimeSession
+    WHERE officerId = ${officerId}
+    GROUP BY officerId
+  `
+  return Number(rows[0]?.totalSeconds ?? 0) * 1000
+}
+
 function currentPlayerFromSession(session: PlaytimeSessionRow | null, live: PlayerOnlineSyncResult | undefined): CurrentPlayer | null {
   if (live?.player) return { ...live.player, source: 'api' }
   if (!session) return null
@@ -133,6 +160,7 @@ export async function getDutyTimesSnapshot(now = new Date()) {
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
   const statusByOfficerId = new Map(sync.results.map((result) => [result.officerId, result]))
+  const allTimeTotals = await getAllTimePlaytimeTotals(now)
 
   const officers = await prisma.officer.findMany({
     where: { status: { not: 'TERMINATED' } },
@@ -202,6 +230,7 @@ export async function getDutyTimesSnapshot(now = new Date()) {
       apiError: live?.error,
       weekDurationMs: stats.weekDurationMs,
       playtimeWeekDurationMs: stats.weekDurationMs,
+      totalDurationMs: allTimeTotals.get(officer.id) ?? 0,
       sessionCount: stats.sessionCount,
       averageSessionMs: stats.averageSessionMs,
       longestSessionMs: stats.longestSessionMs,
@@ -215,6 +244,7 @@ export async function getDutyTimesSnapshot(now = new Date()) {
   const activeRows = rows.filter((row) => row.apiStatus === 'online' && row.activePlaySession)
   const totalActiveDurationMs = activeRows.reduce((total, row) => total + (row.activePlaySession?.currentDurationMs ?? 0), 0)
   const totalWeekDurationMs = rows.reduce((total, row) => total + row.weekDurationMs, 0)
+  const totalAllTimeDurationMs = rows.reduce((total, row) => total + row.totalDurationMs, 0)
   const totalSessionCount = rows.reduce((total, row) => total + row.sessionCount, 0)
   const longestSessionMs = rows.reduce((max, row) => Math.max(max, row.longestSessionMs), 0)
   const topRows = [...rows]
@@ -230,6 +260,7 @@ export async function getDutyTimesSnapshot(now = new Date()) {
     totalActiveDurationMs,
     totalWeekDurationMs,
     totalPlaytimeWeekDurationMs: totalWeekDurationMs,
+    totalAllTimeDurationMs,
     totalSessionCount,
     averageSessionMs: totalSessionCount > 0 ? Math.round(totalWeekDurationMs / totalSessionCount) : 0,
     longestSessionMs,
@@ -259,6 +290,7 @@ export async function getOfficerDutyTime(officerId: string, options?: { now?: Da
   const activePlaySession = playtimeSessions.find((session) => !session.endedAt) ?? null
   const currentDurationMs = activePlaySession ? playtimeDurationMs(activePlaySession, now) : 0
   const stats = aggregatePlaytime(playtimeSessions, weekStart, weekEnd, now)
+  const totalDurationMs = await getOfficerAllTimePlaytimeMs(officerId, now)
 
   return {
     activeSession: activePlaySession
@@ -280,6 +312,7 @@ export async function getOfficerDutyTime(officerId: string, options?: { now?: Da
       : null,
     weekDurationMs: stats.weekDurationMs,
     playtimeWeekDurationMs: stats.weekDurationMs,
+    totalDurationMs,
     sessionCount: stats.sessionCount,
     averageSessionMs: stats.averageSessionMs,
     longestSessionMs: stats.longestSessionMs,
