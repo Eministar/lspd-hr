@@ -3,16 +3,17 @@ import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { buildFormSubmitterHash, stripCorrectAnswersFromQuestion } from '@/lib/form-tests'
+import {
+  completeOpenFormTestSessions,
+  isFormTestSessionWriteConflict,
+  securityEventCount,
+} from '@/lib/form-test-sessions'
 
 const sessionSelect = {
   id: true,
   startedAt: true,
   expiresAt: true,
   securityEvents: true,
-}
-
-function securityEventCount(value: unknown) {
-  return Array.isArray(value) ? value.length : 0
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
@@ -41,10 +42,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
       select: { id: true, submittedAt: true, score: true, maxScore: true },
     })
     if (existingResponse) {
-      await prisma.formTestSession.updateMany({
-        where: { testId: test.id, userId: user.id, completedAt: null },
-        data: { completedAt: new Date() },
-      })
+      try {
+        await completeOpenFormTestSessions(test.id, user.id)
+      } catch (e: unknown) {
+        if (!isFormTestSessionWriteConflict(e)) throw e
+      }
     }
 
     let session: {
@@ -67,11 +69,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
       }
 
       session = activeSession
-        ? await prisma.formTestSession.update({
-            where: { id: activeSession.id },
-            data: { lastSeenAt: now },
-            select: sessionSelect,
-          })
+        ? activeSession
         : await prisma.formTestSession.create({
             data: {
               testId: test.id,

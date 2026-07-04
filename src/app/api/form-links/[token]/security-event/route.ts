@@ -1,19 +1,9 @@
 import { NextRequest } from 'next/server'
-import type { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { cleanFormText } from '@/lib/form-tests'
-
-const MAX_SECURITY_EVENTS = 80
-
-function readSecurityEvents(value: unknown) {
-  return Array.isArray(value)
-    ? value
-        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
-        .slice(-MAX_SECURITY_EVENTS + 1)
-    : []
-}
+import { isFormTestSessionWriteConflict, recordFormTestSessionSecurityEvent } from '@/lib/form-test-sessions'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -47,28 +37,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         ],
       },
       orderBy: { startedAt: 'desc' },
-      select: { id: true, securityEvents: true },
+      select: { id: true },
     })
     if (!session) return success({ recorded: false })
 
-    const events = [
-      ...readSecurityEvents(session.securityEvents),
-      { type, at: now.toISOString() },
-    ]
+    const result = await recordFormTestSessionSecurityEvent(session.id, type, now)
 
-    await prisma.formTestSession.update({
-      where: { id: session.id },
-      data: {
-        lastSeenAt: now,
-        securityEvents: events as Prisma.InputJsonValue,
-      },
-    })
-
-    return success({ recorded: true, count: events.length })
+    return success(result)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    if (isFormTestSessionWriteConflict(e)) return success({ recorded: false })
     return error(msg, 500)
   }
 }

@@ -82,7 +82,7 @@ export default function FormTestLinkPage() {
   const [watermarkStamp, setWatermarkStamp] = useState(() => Date.now())
   const securityToastAtRef = useRef(0)
   const coverTimeoutRef = useRef<number | null>(null)
-  const { data, loading, refetch } = useFetch<FormLinkPayload>(token ? `/api/form-links/${token}` : null)
+  const { data, loading, error: loadError, refetch } = useFetch<FormLinkPayload>(token ? `/api/form-links/${token}` : null)
   const { execute } = useApi()
   const { addToast } = useToast()
   const { user } = useAuth()
@@ -280,7 +280,9 @@ export default function FormTestLinkPage() {
         <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-16 text-center">
           <FileQuestion size={30} className="mx-auto mb-3 text-[#4a6585]" />
           <p className="text-[14px] font-semibold text-white">Test nicht verfügbar</p>
-          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">Der Link ist ungültig, archiviert oder nicht aktiv.</p>
+          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
+            {loadError ?? 'Der Link ist nicht aktiv oder nicht verfügbar.'}
+          </p>
         </div>
       </div>
     )

@@ -4,6 +4,8 @@ import type { Prisma } from '@/generated/prisma/client'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { buildFormSubmitterHash, calculateResponseScore, normalizeSubmittedAnswers } from '@/lib/form-tests'
+import { completeFormTestSessionById, isFormTestSessionWriteConflict } from '@/lib/form-test-sessions'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -54,8 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const score = test.kind === 'TEST'
       ? calculateResponseScore(test.questions, normalized)
       : { score: null, maxScore: 0 }
-    const response = await prisma.$transaction(async (tx) => {
-      const created = await tx.formResponse.create({
+    const response = await prisma.$transaction(async (tx) => (
+      tx.formResponse.create({
         data: {
           testId: test.id,
           respondentId: anonymous ? null : user.id,
@@ -74,22 +76,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
           answers: { include: { question: true } },
         },
       })
+    ))
 
-      if (activeSession) {
-        await tx.formTestSession.update({
-          where: { id: activeSession.id },
-          data: { completedAt: now, lastSeenAt: now },
-        })
+    if (activeSession) {
+      try {
+        await completeFormTestSessionById(activeSession.id, now)
+      } catch (e: unknown) {
+        if (!isFormTestSessionWriteConflict(e)) throw e
       }
-
-      return created
-    })
+    }
 
     return success(response, 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)
+    if (isUniqueConstraintError(e)) return error('Du hast diesen Test bereits abgegeben', 409)
     return error(msg, 500)
   }
 }
