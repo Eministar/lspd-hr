@@ -252,11 +252,9 @@ Stand: 25.06.2026
 **~Dr. Dr. Emin Perez~** <br>
 *Human Resources Leitung*
 
-**~Jonas Salzmann~** <br>
+**~Jonas Vega~** <br>
 *Human Resources Leitung*
 
-**~Fabian Richter~** <br>
-*Stv. Human Resources Leitung*
 
 **~Riccardo Izza~** <br>
 *Stv. Human Resources Leitung*
