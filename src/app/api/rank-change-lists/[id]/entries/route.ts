@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
-import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib/badge-number'
+import { normalizeBadgeNumber, rankHasBadgeRange, resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,29 +32,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
     const prefix = await getBadgePrefix()
     if (nextBadge) nextBadge = normalizeBadgeNumber(nextBadge, prefix)
+    // Auto-DN wird nicht gespeichert (newBadgeNumber bleibt null), sondern bei Anzeige und
+    // Durchführung live aus dem aktuellen Stand berechnet. Hier nur validieren, dass derzeit
+    // eine freie Nummer existiert, und die Vorschau für die Antwort ermitteln.
+    let previewBadge: string | null = null
     if (!nextBadge && rankHasBadgeRange(proposedRank)) {
       // Exclude terminated officers so ihre Dienstnummern gelten als frei
       const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
       const blacklistedBadges = await getBlacklistedBadgeRows()
-      const pendingBadges = await prisma.rankChangeListEntry.findMany({
-        where: { listId: id, executed: false, newBadgeNumber: { not: null } },
-        select: { newBadgeNumber: true },
+      const siblingEntries = await prisma.rankChangeListEntry.findMany({
+        where: { listId: id, executed: false },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          newBadgeNumber: true,
+          officer: { select: { badgeNumber: true } },
+          proposedRank: { select: { badgeMin: true, badgeMax: true } },
+        },
       })
-      const assigned = nextBadgeForRank(
-        proposedRank,
-        [
-          ...allRows,
-          ...pendingBadges
-            .map((entry) => entry.newBadgeNumber)
-            .filter((badgeNumber): badgeNumber is string => !!badgeNumber)
-            .map((badgeNumber) => ({ badgeNumber })),
-        ],
-        prefix,
-        officer.badgeNumber,
+      const resolved = resolveEntryBadgeNumbers(
+        [...siblingEntries, { id: '__new__', newBadgeNumber: null, officer, proposedRank }],
+        allRows,
         blacklistedBadges,
+        prefix,
       )
-      if (!assigned) return error('Keine freie Dienstnummer im Bereich des vorgeschlagenen Rangs')
-      nextBadge = assigned.str
+      previewBadge = resolved.get('__new__') ?? null
+      if (!previewBadge) return error('Keine freie Dienstnummer im Bereich des vorgeschlagenen Rangs')
     }
     if (nextBadge && nextBadge !== officer.badgeNumber) {
       const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
@@ -90,7 +93,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     })
 
-    return success(entry, 201)
+    // Vorschau der Auto-DN in der Antwort mitgeben (nicht persistiert)
+    return success({ ...entry, newBadgeNumber: entry.newBadgeNumber ?? previewBadge }, 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

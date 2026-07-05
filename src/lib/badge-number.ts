@@ -93,6 +93,58 @@ export function rankHasBadgeRange(rank: Pick<Rank, 'badgeMin' | 'badgeMax'>): ra
   return rank.badgeMin != null && rank.badgeMax != null && rank.badgeMin <= rank.badgeMax
 }
 
+export type RankChangeBadgeEntry = {
+  id: string
+  newBadgeNumber: string | null
+  officer: { badgeNumber: string }
+  proposedRank: Pick<Rank, 'badgeMin' | 'badgeMax'>
+}
+
+/**
+ * Berechnet die effektiven Dienstnummern für offene Listeneinträge (Beförderungs-/Degradierungslisten).
+ * Manuell gesetzte Nummern bleiben fix und werden zuerst reserviert; Auto-Einträge
+ * (newBadgeNumber = null) erhalten die aktuell nächste freie Nummer im Rangbereich —
+ * in Eintragsreihenfolge, damit Vorschau und Durchführung dieselben Nummern ergeben.
+ * null im Ergebnis bedeutet: Officer behält seine aktuelle Dienstnummer.
+ */
+export function resolveEntryBadgeNumbers(
+  entries: RankChangeBadgeEntry[],
+  allOfficers: { badgeNumber: string }[],
+  blacklisted: { badgeNumber: string }[],
+  prefix: string
+): Map<string, string | null> {
+  const used = collectUsedBadgeInts(allOfficers, prefix)
+  for (const row of blacklisted) {
+    const n = parseBadgeNumberToInt(row.badgeNumber, prefix)
+    if (n !== null) used.add(n)
+  }
+  const result = new Map<string, string | null>()
+  for (const entry of entries) {
+    const manual = entry.newBadgeNumber?.trim()
+    if (!manual) continue
+    const badge = normalizeBadgeNumber(manual, prefix)
+    const n = parseBadgeNumberToInt(badge, prefix)
+    if (n !== null) used.add(n)
+    result.set(entry.id, badge)
+  }
+  for (const entry of entries) {
+    if (result.has(entry.id)) continue
+    if (!rankHasBadgeRange(entry.proposedRank)) {
+      result.set(entry.id, null)
+      continue
+    }
+    const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
+    const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, used, current)
+    if (assigned === null) {
+      result.set(entry.id, null)
+    } else {
+      used.add(assigned)
+      result.set(entry.id, formatBadgeNumber(assigned, prefix))
+    }
+  }
+  return result
+}
+
 /**
  * Liefert die nächste freie Dienstnummer für einen Rang, oder null wenn kein Bereich / voll.
  */

@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
+import { resolveEntryBadgeNumbers } from '@/lib/badge-number'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,7 +26,7 @@ export async function GET(req: NextRequest) {
         include: {
           officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
           currentRank: { select: { name: true, color: true } },
-          proposedRank: { select: { name: true, color: true } },
+          proposedRank: { select: { name: true, color: true, badgeMin: true, badgeMax: true } },
           createdBy: { select: { id: true, displayName: true } },
         },
         orderBy: { createdAt: 'asc' },
@@ -31,6 +34,22 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { createdAt: 'desc' },
   })
+
+  // Auto-DNs (newBadgeNumber = null) werden nicht gespeichert, sondern hier live aus dem
+  // aktuellen Stand berechnet, damit sich die Vorschau an DN-Änderungen anpasst.
+  if (lists.some((list) => list.entries.some((entry) => !entry.executed && !entry.newBadgeNumber))) {
+    const prefix = await getBadgePrefix()
+    const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
+    const blacklistedBadges = await getBlacklistedBadgeRows()
+    for (const list of lists) {
+      const openEntries = list.entries.filter((entry) => !entry.executed)
+      if (!openEntries.some((entry) => !entry.newBadgeNumber)) continue
+      const resolved = resolveEntryBadgeNumbers(openEntries, allRows, blacklistedBadges, prefix)
+      for (const entry of openEntries) {
+        if (!entry.newBadgeNumber) entry.newBadgeNumber = resolved.get(entry.id) ?? null
+      }
+    }
+  }
 
   return success(lists)
 }

@@ -5,7 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
-import { collectUsedBadgeInts, findNextFreeBadgeInRange, formatBadgeNumber, normalizeBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/lib/badge-number'
+import { resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { undoPromotionListEntry } from '@/lib/rank-change-list-undo'
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       include: {
         entries: {
-          where: entryId ? { id: entryId, executed: false } : { executed: false },
+          where: { executed: false },
+          orderBy: { createdAt: 'asc' },
           include: {
             officer: true,
             currentRank: true,
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     if (!list) return error('Liste nicht gefunden', 404)
-    if (list.entries.length === 0) {
+    const targetEntries = entryId ? list.entries.filter((entry) => entry.id === entryId) : list.entries
+    if (targetEntries.length === 0) {
       return error(entryId ? 'Eintrag nicht gefunden oder bereits durchgeführt' : 'Keine offenen Einträge vorhanden')
     }
 
@@ -50,27 +52,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Exclude terminated officers so their badge numbers are considered free
     const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
     const blacklistedBadges = await getBlacklistedBadgeRows()
-    const usedBadgeInts = collectUsedBadgeInts(allRows, prefix)
-    for (const blacklistedBadge of blacklistedBadges) {
-      const n = parseBadgeNumberToInt(blacklistedBadge.badgeNumber, prefix)
-      if (n !== null) usedBadgeInts.add(n)
-    }
+    // Auto-DNs werden erst hier aus dem aktuellen Stand vergeben; alle offenen Einträge der
+    // Liste fließen ein, damit auch bei Einzel-Durchführung keine Nummer doppelt vergeben wird.
+    // null bedeutet: Officer behält seine aktuelle Dienstnummer (z. B. Bereich voll).
+    const resolvedBadges = resolveEntryBadgeNumbers(list.entries, allRows, blacklistedBadges, prefix)
     const requestedBadges = new Map<string, string>()
-    for (const entry of list.entries) {
-      let nextBadge = entry.newBadgeNumber?.trim() ?? ''
-      if (nextBadge) nextBadge = normalizeBadgeNumber(nextBadge, prefix)
-      if (!nextBadge && rankHasBadgeRange(entry.proposedRank)) {
-        const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
-        const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, usedBadgeInts, current)
-        // If no free badge is found, fall back to keeping the officer's current badge number
-        // (this mirrors the behaviour in the promotions endpoint and avoids a hard 400 when ranges are exhausted)
-        if (assigned === null) {
-          nextBadge = entry.officer.badgeNumber
-        } else {
-          nextBadge = formatBadgeNumber(assigned, prefix)
-          usedBadgeInts.add(assigned)
-        }
-      }
+    for (const entry of targetEntries) {
+      const nextBadge = resolvedBadges.get(entry.id) ?? null
       if (!nextBadge || nextBadge === entry.officer.badgeNumber) continue
       const badgeConflict = await findBadgeNumberConflict(nextBadge, prefix, entry.officerId, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict) return error(`${badgeConflict}: ${nextBadge}`)
@@ -91,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     let executed = 0
 
-    for (const entry of list.entries) {
+    for (const entry of targetEntries) {
       if (entry.officer.status === 'TERMINATED') continue
 
       await prisma.promotionLog.create({
@@ -172,7 +160,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
 
-    return success({ executed, total: list.entries.length })
+    return success({ executed, total: targetEntries.length })
   } catch (e: unknown) {
     // Log error for debugging (will appear in server console)
     console.error('Error executing rank-change-list:', e)
