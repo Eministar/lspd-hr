@@ -255,7 +255,6 @@ Stand: 25.06.2026
 **~Jonas Vega~** <br>
 *Human Resources Leitung*
 
-
 **~Riccardo Izza~** <br>
 *Stv. Human Resources Leitung*
 
