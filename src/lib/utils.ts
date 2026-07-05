@@ -74,7 +74,7 @@ export function getUnitLabel(unit: string | null | undefined): string {
     HR_TRAINEE: 'HR Trainee',
     HR_OFFICER: 'HR Officer',
     ACADEMY: 'Recruitment & Training',
-    SRU: 'S.W.U.',
+    SRU: 'S.R.U.',
     AIR_SUPPORT: 'Air-Support Division',
   }
   return labels[unit] || unit

@@ -113,15 +113,15 @@ const tabs: { id: Tab; label: string; icon: typeof FileText }[] = [
 ]
 
 const sruEventTypes = [
-  { value: 'SRU_TRAINING', label: 'S.W.U.-Training' },
-  { value: 'SRU_OPERATION', label: 'S.W.U.-Einsatz' },
+  { value: 'SRU_TRAINING', label: 'S.R.U.-Training' },
+  { value: 'SRU_OPERATION', label: 'S.R.U.-Einsatz' },
   { value: 'MEETING', label: 'Besprechung' },
   { value: 'OTHER', label: 'Sonstiges' },
 ]
 
 const FOLDER_COLOR_PRESETS = ['#d4af37', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fbbf24', '#06b6d4', '#f97316']
 
-const EMPTY_DOCUMENT = `# Neues S.W.U.-Dokument
+const EMPTY_DOCUMENT = `# Neues S.R.U.-Dokument
 
 ## Überblick
 
@@ -149,8 +149,8 @@ function documentPreview(content: string) {
 
 function calendarTypeLabel(type: string) {
   const labels: Record<string, string> = {
-    SRU_TRAINING: 'S.W.U.-Training',
-    SRU_OPERATION: 'S.W.U.-Einsatz',
+    SRU_TRAINING: 'S.R.U.-Training',
+    SRU_OPERATION: 'S.R.U.-Einsatz',
     MEETING: 'Besprechung',
     OTHER: 'Sonstiges',
   }
@@ -394,8 +394,8 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="S.W.U. Dokumente"
-        description="Interne Dokumente, Ordner und Einsatznotizen der S.W.U."
+        title="S.R.U. Dokumente"
+        description="Interne Dokumente, Ordner und Einsatznotizen der S.R.U."
         action={canManage ? (
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" size="sm" onClick={openCreateFolder}><FolderPlus size={13} /> Ordner</Button>
@@ -561,7 +561,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
           setFolderModalOpen(false)
           setEditingFolder(null)
         }}
-        title={editingFolder ? 'S.W.U.-Ordner bearbeiten' : 'S.W.U.-Ordner erstellen'}
+        title={editingFolder ? 'S.R.U.-Ordner bearbeiten' : 'S.R.U.-Ordner erstellen'}
       >
         <div className="space-y-4">
           <Input label="Name" value={folderForm.name} onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })} required />
@@ -590,7 +590,7 @@ function SruDocuments({ canManage }: { canManage: boolean }) {
         </div>
       </Modal>
 
-      <Modal open={docModalOpen} onClose={() => setDocModalOpen(false)} title="S.W.U.-Dokument erstellen">
+      <Modal open={docModalOpen} onClose={() => setDocModalOpen(false)} title="S.R.U.-Dokument erstellen">
         <div className="space-y-4">
           <Input label="Titel" value={docForm.title} onChange={(e) => setDocForm({ ...docForm, title: e.target.value })} required />
           <Select label="Ordner" value={docForm.folderId} onValueChange={(nextFolderId) => setDocForm({ ...docForm, folderId: nextFolderId })} options={folderOptions} />
@@ -730,7 +730,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
           officerId: form.officerId || null,
         }),
       })
-      addToast({ type: 'success', title: 'S.W.U.-Termin erstellt' })
+      addToast({ type: 'success', title: 'S.R.U.-Termin erstellt' })
       setModalOpen(false)
       setForm({ title: '', description: '', type: 'SRU_TRAINING', startsAt: localDateTimeValue(), endsAt: '', location: '', officerId: '', discordAnnouncement: false })
       await refetch()
@@ -742,7 +742,7 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
   const deleteEvent = async (id: string) => {
     try {
       await execute(`/api/calendar-events/${id}`, { method: 'DELETE' })
-      addToast({ type: 'success', title: 'S.W.U.-Termin gelöscht' })
+      addToast({ type: 'success', title: 'S.R.U.-Termin gelöscht' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Termin konnte nicht gelöscht werden', message: err instanceof Error ? err.message : '' })
@@ -751,8 +751,8 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
 
   const requestDeleteEvent = (event: CalendarEvent) => {
     setConfirmDialog({
-      title: 'S.W.U.-Termin löschen',
-      message: `Der Termin "${event.title}" wird dauerhaft aus dem S.W.U.-Kalender entfernt.`,
+      title: 'S.R.U.-Termin löschen',
+      message: `Der Termin "${event.title}" wird dauerhaft aus dem S.R.U.-Kalender entfernt.`,
       confirmLabel: 'Termin löschen',
       onConfirm: () => deleteEvent(event.id),
     })
@@ -763,8 +763,8 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="S.W.U. Kalender"
-        description="Termine, Trainings und Einsätze nur für die S.W.U."
+        title="S.R.U. Kalender"
+        description="Termine, Trainings und Einsätze nur für die S.R.U."
         action={(
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={refetch}><RefreshCw size={13} /> Aktualisieren</Button>
@@ -805,11 +805,11 @@ function SruCalendar({ canManage }: { canManage: boolean }) {
       {(events ?? []).length === 0 && (
         <div className="glass-panel-elevated rounded-[14px] p-12 text-center">
           <CalendarDays size={28} className="mx-auto mb-3 text-[#d4af37]/35" />
-          <p className="text-[13px] text-[#8ea4bd]">Keine S.W.U.-Termine vorhanden</p>
+          <p className="text-[13px] text-[#8ea4bd]">Keine S.R.U.-Termine vorhanden</p>
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="S.W.U.-Termin erstellen">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="S.R.U.-Termin erstellen">
         <div className="space-y-4">
           <Input label="Titel" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <Select label="Art" value={form.type} onValueChange={(type) => setForm({ ...form, type })} options={sruEventTypes} />
@@ -873,9 +873,9 @@ export default function SruPage() {
       {activeTab === 'tasks' && (
         <TaskBoard
           module="SRU"
-          title="S.W.U. Aufgaben"
-          description="Aufgabenlisten für S.W.U.-Einsätze, Vorbereitung, Nachbereitung und interne Abläufe."
-          accentLabel="S.W.U."
+          title="S.R.U. Aufgaben"
+          description="Aufgabenlisten für S.R.U.-Einsätze, Vorbereitung, Nachbereitung und interne Abläufe."
+          accentLabel="S.R.U."
           viewPermission="sru:view"
           managePermission="sru:manage"
         />

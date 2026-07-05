@@ -49,7 +49,7 @@ const mainNav: NavItem[] = [
 const tasksNav: NavItem[] = [
   { name: 'Recruitment & Training', href: '/academy', icon: ListChecks, permission: 'academy:view' },
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'hr:view' },
-  { name: 'S.W.U.', href: '/swu', icon: Shield, permission: 'sru:view' },
+  { name: 'S.R.U.', href: '/sru', icon: Shield, permission: 'sru:view' },
   { name: 'Air-Support Division', href: '/air-support', icon: Plane, permission: 'air-support:view' },
   { name: 'Detective Unit', href: '/detective', icon: Fingerprint, permission: 'detective:view' },
 ]
