@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { CalendarDays, Clock, MapPin, Megaphone, Plus, RefreshCw, Trash2, User as UserIcon } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -108,6 +108,7 @@ export function ModuleCalendar({
   const { addToast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming')
+  const [nowMs, setNowMs] = useState<number | null>(null)
   const [form, setForm] = useState({
     title: '', description: '', type: defaultType, startsAt: localDateTimeValue(),
     endsAt: '', location: '', officerId: '', discordAnnouncement: false,
@@ -121,13 +122,20 @@ export function ModuleCalendar({
     })),
   ], [officers])
 
+  useEffect(() => {
+    const updateNow = () => setNowMs(Date.now())
+    updateNow()
+    const interval = window.setInterval(updateNow, 60_000)
+    return () => window.clearInterval(interval)
+  }, [])
+
   const { upcoming, past } = useMemo(() => {
-    const now = Date.now()
+    const now = nowMs ?? 0
     const list = events ?? []
     const upcoming = list.filter((e) => new Date(e.startsAt).getTime() >= now).sort((a, b) => +new Date(a.startsAt) - +new Date(b.startsAt))
     const past = list.filter((e) => new Date(e.startsAt).getTime() < now).sort((a, b) => +new Date(b.startsAt) - +new Date(a.startsAt))
     return { upcoming, past }
-  }, [events])
+  }, [events, nowMs])
 
   const displayed = filter === 'upcoming' ? upcoming : filter === 'past' ? past : [...upcoming, ...past]
 
@@ -221,7 +229,7 @@ export function ModuleCalendar({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {displayed.map((event) => {
             const rel = relativeDay(event.startsAt)
-            const isPast = new Date(event.startsAt).getTime() < Date.now()
+            const isPast = new Date(event.startsAt).getTime() < (nowMs ?? 0)
             return (
                 <div
                     key={event.id}

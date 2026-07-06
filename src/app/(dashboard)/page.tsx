@@ -32,7 +32,6 @@ import {
   ScrollText,
   Send,
   Sparkles,
-  TrendingDown,
   TrendingUp,
   Trash2,
   UserCheck,
@@ -176,14 +175,13 @@ const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string; 
   { key: 'awayOfficers', label: 'Abgemeldet', icon: Clock, href: '/officers', permission: 'officers:view', accent: 'sky', hint: 'Mit Abmeldung' },
   { key: 'inactiveOfficers', label: 'Inaktiv', icon: AlertTriangle, href: '/officers', permission: 'officers:view', accent: 'amber', hint: 'Beobachtung empfohlen' },
   { key: 'totalOfficers', label: 'Gesamtbestand', icon: Users, href: '/officers', permission: 'officers:view', accent: 'gold', hint: 'Alle Officers' },
-  { key: 'recentPromotions', label: 'Beförderungen', icon: TrendingUp, href: '/promotions', permission: 'rank-changes:view', accent: 'mint', hint: 'Letzte Tage' },
+  { key: 'recentPromotions', label: 'Rangänderungen', icon: TrendingUp, href: '/promotions', permission: 'rank-changes:view', accent: 'mint', hint: 'Letzte Tage' },
   { key: 'recentTerminations', label: 'Kündigungen', icon: UserMinus, href: '/terminations', permission: 'terminations:view', accent: 'rose', hint: 'Letzte Tage' },
 ]
 
 const quickActions: { label: string; description: string; href: string; icon: LucideIcon; permission: Permission }[] = [
   { label: 'Roster prüfen', description: 'Status, Ränge & Ausbildungen', href: '/officers', icon: Users, permission: 'officers:view' },
-  { label: 'Beförderungen', description: 'Beförderungslisten verwalten', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },
-  { label: 'Degradierungen', description: 'Degradierungslisten verwalten', href: '/demotions', icon: TrendingDown, permission: 'rank-changes:view' },
+  { label: 'Up-/D-Rank-Listen', description: 'Rangänderungen vorbereiten', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },
   { label: 'Notizen', description: 'Globale & personenbezogene Notizen', href: '/notes', icon: FileText, permission: 'notes:view' },
 ]
 

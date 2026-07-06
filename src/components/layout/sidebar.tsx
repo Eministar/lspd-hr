@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard, Users, TrendingUp, TrendingDown, UserX, StickyNote, ScrollText,
+  LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, Archive, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
-  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint,
+  Menu, X, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
+  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint, Newspaper,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -37,9 +37,7 @@ const mainNav: NavItem[] = [
   { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
   { name: 'Streifenboard', href: '/patrol-board', icon: ClipboardList, permission: 'patrol-board:view' },
   { name: 'Officers', href: '/officers', icon: Users, permission: 'officers:view' },
-  { name: 'Gekündigte Officers', href: '/terminated-officers', icon: Archive, permission: 'officers:view' },
-  { name: 'Beförderungen', href: '/promotions', icon: TrendingUp, permission: 'rank-changes:view' },
-  { name: 'Degradierungen', href: '/demotions', icon: TrendingDown, permission: 'rank-changes:view' },
+  { name: 'Up-/D-Rank-Listen', href: '/promotions', icon: ArrowUpDown, permission: 'rank-changes:view' },
   { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
   { name: 'Probezeiten', href: '/probations', icon: ClipboardCheck, permission: 'probations:view' },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
@@ -49,6 +47,7 @@ const mainNav: NavItem[] = [
 const tasksNav: NavItem[] = [
   { name: 'Recruitment & Training', href: '/academy', icon: ListChecks, permission: 'academy:view' },
   { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'hr:view' },
+  { name: 'Pressesprecher', href: '/press', icon: Newspaper, permission: 'press:view' },
   { name: 'S.R.U.', href: '/sru', icon: Shield, permission: 'sru:view' },
   { name: 'Air-Support Division', href: '/air-support', icon: Plane, permission: 'air-support:view' },
   { name: 'Detective Unit', href: '/detective', icon: Fingerprint, permission: 'detective:view' },
@@ -164,7 +163,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
           .filter((item) => !item.permission || hasPermission(user, item.permission))
           .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        {hasAnyPermission(user, ['academy:view', 'hr:view', 'sru:view', 'air-support:view', 'detective:view']) && (
+        {hasAnyPermission(user, ['academy:view', 'hr:view', 'press:view', 'sru:view', 'air-support:view', 'detective:view']) && (
           <>
             <SectionDivider />
             <SectionLabel>Aufgaben</SectionLabel>

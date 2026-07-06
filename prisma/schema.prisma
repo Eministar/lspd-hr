@@ -107,6 +107,20 @@ enum FormQuestionType {
   SCALE
 }
 
+enum JobApplicationStatus {
+  SUBMITTED
+  IN_REVIEW
+  HR_INTERVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum PressReleaseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -161,6 +175,10 @@ model User {
   formResponsesSubmitted FormResponse[] @relation("FormResponseRespondent")
   formResponsesReviewed FormResponse[] @relation("FormResponseReviewer")
   formTestSessions FormTestSession[] @relation("FormTestSessionUser")
+  jobApplicationsSubmitted JobApplication[] @relation("JobApplicationApplicant")
+  jobApplicationsReviewed JobApplication[] @relation("JobApplicationReviewer")
+  pressReleasesCreated PressRelease[] @relation("PressReleaseCreator")
+  pressReleasesUpdated PressRelease[] @relation("PressReleaseUpdater")
 }
 
 model UserGroupMembership {
@@ -343,6 +361,70 @@ model FormAnswer {
 
   @@unique([responseId, questionId])
   @@index([questionId])
+}
+
+model JobApplication {
+  id                     String               @id @default(cuid())
+  applicantId            String               @unique
+  applicant              User                 @relation("JobApplicationApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  discordId              String
+  discordUsername        String?
+  discordGlobalName      String?
+  discordAvatar          String?
+  applicantDisplayName   String
+  status                 JobApplicationStatus @default(SUBMITTED)
+  statusText             String               @default("Bewerbung wurde eingereicht") @db.VarChar(500)
+  internalNote           String?              @db.Text
+  submittedAt            DateTime             @default(now())
+  reviewedAt             DateTime?
+  reviewedById           String?
+  reviewedBy             User?                @relation("JobApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  updatedAt              DateTime             @updatedAt
+
+  answers                JobApplicationAnswer[]
+
+  @@index([status, updatedAt])
+  @@index([submittedAt])
+  @@index([discordId])
+  @@index([reviewedById])
+}
+
+model JobApplicationAnswer {
+  id            String           @id @default(cuid())
+  applicationId String
+  application   JobApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String
+  questionTitle String           @db.Text
+  questionType  FormQuestionType
+  value         Json
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+
+  @@unique([applicationId, questionId])
+  @@index([applicationId, sortOrder])
+}
+
+model PressRelease {
+  id          String             @id @default(cuid())
+  title       String
+  slug        String             @unique
+  summary     String?            @db.Text
+  content     String             @db.Text
+  imageUrl    String?            @db.Text
+  imageAlt    String?
+  status      PressReleaseStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdById String?
+  createdBy   User?              @relation("PressReleaseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?              @relation("PressReleaseUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model Officer {

@@ -120,6 +120,13 @@ function hasLoginRole(roleIds: string[], loginRoleIds: string[], groupRoleMap: R
   return allowedRoles.some((roleId) => roles.has(roleId))
 }
 
+function hasApplicantPortalRole(roleIds: string[], applicantRoleIds: string[]) {
+  const roles = new Set(roleIds)
+  const allowedRoles = Array.from(new Set(applicantRoleIds))
+  if (allowedRoles.length === 0) throw new DiscordAuthError('Bewerberportal ist nicht konfiguriert')
+  return allowedRoles.some((roleId) => roles.has(roleId))
+}
+
 export async function exchangeDiscordCode(code: string, redirectUri: string) {
   const config = await getDiscordConfig()
   const id = clientId() || config.applicationId
@@ -161,6 +168,18 @@ export async function syncDiscordUserProfile(user: DiscordApiUser) {
   if (!member) throw new DiscordAuthError('Du bist auf dem konfigurierten Discord-Server nicht vorhanden')
 
   return upsertDiscordUser({
+    user,
+    roles: member.roles ?? [],
+    nick: member.nick,
+    avatar: member.avatar,
+  })
+}
+
+export async function syncDiscordApplicantProfile(user: DiscordApiUser) {
+  const member = await getDiscordGuildMember(user.id)
+  if (!member) throw new DiscordAuthError('Du bist auf dem konfigurierten Discord-Server nicht vorhanden')
+
+  return upsertDiscordApplicant({
     user,
     roles: member.roles ?? [],
     nick: member.nick,
@@ -232,6 +251,56 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
       groupMemberships: {
         create: safeGroupIds.map((groupId) => ({ groupId, source: 'discord' })),
       },
+    },
+    include: {
+      group: { select: { id: true, name: true, permissions: true } },
+      groupMemberships: {
+        select: { group: { select: { id: true, name: true, permissions: true } } },
+      },
+    },
+  })
+}
+
+export async function upsertDiscordApplicant(profile: DiscordMemberProfile) {
+  const config = await getDiscordConfig()
+  if (!hasApplicantPortalRole(profile.roles, config.applicantRoleIds)) {
+    throw new DiscordAuthError('Dir fehlt die benötigte Discord-Rolle für das Bewerberportal')
+  }
+
+  const existing = await prisma.user.findFirst({ where: { discordId: profile.user.id }, select: { id: true } })
+  const username = await uniqueUsername(profile, existing?.id)
+  const displayName = profileDisplayName(profile)
+
+  const data = {
+    username,
+    displayName,
+    discordId: profile.user.id,
+    discordUsername: profile.user.username,
+    discordGlobalName: profile.user.global_name ?? null,
+    discordAvatar: profile.user.avatar ?? null,
+    discordDiscriminator: profile.user.discriminator ?? null,
+    lastLoginAt: new Date(),
+  }
+
+  if (existing) {
+    return prisma.user.update({
+      where: { id: existing.id },
+      data,
+      include: {
+        group: { select: { id: true, name: true, permissions: true } },
+        groupMemberships: {
+          select: { group: { select: { id: true, name: true, permissions: true } } },
+        },
+      },
+    })
+  }
+
+  return prisma.user.create({
+    data: {
+      ...data,
+      passwordHash: null,
+      permissions: [],
+      groupId: null,
     },
     include: {
       group: { select: { id: true, name: true, permissions: true } },

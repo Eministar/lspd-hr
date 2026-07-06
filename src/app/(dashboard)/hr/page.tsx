@@ -2,20 +2,24 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CalendarDays, FileQuestion, FileText, ListChecks, ScrollText } from 'lucide-react'
+import { BookOpen, CalendarDays, ClipboardList, FileQuestion, FileText, ListChecks, ScrollText, Settings } from 'lucide-react'
 import { TaskBoard } from '@/components/tasks/task-board'
 import { ModuleDocuments } from '@/components/modules/module-documents'
 import { ModuleCalendar } from '@/components/modules/module-calendar'
 import { FormTests } from '@/components/modules/form-tests'
+import { HrApplications } from '@/components/applications/hr-applications'
+import { ApplicationFormSettings } from '@/components/applications/application-form-settings'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
-type Tab = 'documents' | 'tests' | 'tasks' | 'calendar'
+type Tab = 'documents' | 'applications' | 'settings' | 'tests' | 'tasks' | 'calendar'
 
 const tabs = [
   { id: 'documents' as const, label: 'Dokumente', icon: FileText },
+  { id: 'applications' as const, label: 'Bewerbungen', icon: ClipboardList },
+  { id: 'settings' as const, label: 'Einstellungen', icon: Settings },
   { id: 'tests' as const, label: 'Tests', icon: FileQuestion },
   { id: 'tasks' as const, label: 'Aufgaben', icon: ListChecks },
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
@@ -106,6 +110,12 @@ export default function HrDepartmentPage() {
           description="Tests und Fragebögen für Bewerbungen, Gespräche und interne HR-Auswertungen."
           canManage={canManageTests}
         />
+      )}
+      {activeTab === 'applications' && (
+        <HrApplications canManage={canManage} />
+      )}
+      {activeTab === 'settings' && (
+        <ApplicationFormSettings canManage={canManage} />
       )}
       {activeTab === 'tasks' && (
         <TaskBoard

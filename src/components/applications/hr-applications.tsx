@@ -1,0 +1,365 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, ClipboardList, FileText, MessageSquareText, Save, UserRound, XCircle } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
+import { PageLoader } from '@/components/ui/loading'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { useApi } from '@/hooks/use-api'
+import { useFetch } from '@/hooks/use-fetch'
+import { useToast } from '@/components/ui/toast'
+import { cn, formatDateTime } from '@/lib/utils'
+import {
+  JOB_APPLICATION_STATUSES,
+  JOB_APPLICATION_STATUS_META,
+  applicationAnswerText,
+  type JobApplicationStatusValue,
+} from '@/lib/job-applications'
+
+interface ApplicationAnswer {
+  id: string
+  questionId: string
+  questionTitle: string
+  questionType: string
+  value: Record<string, unknown>
+  sortOrder: number
+}
+
+interface ApplicationRow {
+  id: string
+  applicantId: string
+  discordId: string
+  discordUsername: string | null
+  discordGlobalName: string | null
+  discordAvatar: string | null
+  applicantDisplayName: string
+  status: JobApplicationStatusValue
+  statusText: string
+  internalNote: string | null
+  submittedAt: string
+  reviewedAt: string | null
+  updatedAt: string
+  reviewedBy: { id: string; displayName: string } | null
+  answers: ApplicationAnswer[]
+  applicant: { id: string; displayName: string; username: string; discordId: string | null }
+}
+
+interface HrApplicationsProps {
+  canManage: boolean
+}
+
+const statusOptions = JOB_APPLICATION_STATUSES.map((status) => ({
+  value: status,
+  label: JOB_APPLICATION_STATUS_META[status].label,
+}))
+
+function discordAvatarUrl(application: Pick<ApplicationRow, 'discordId' | 'discordAvatar'>) {
+  if (!application.discordId || !application.discordAvatar) return null
+  const ext = application.discordAvatar.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/avatars/${application.discordId}/${application.discordAvatar}.${ext}?size=96`
+}
+
+export function HrApplications({ canManage }: HrApplicationsProps) {
+  const { data: applications, loading, error, refetch } = useFetch<ApplicationRow[]>('/api/applications')
+  const { execute } = useApi()
+  const { addToast } = useToast()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [status, setStatus] = useState<JobApplicationStatusValue>('SUBMITTED')
+  const [statusText, setStatusText] = useState('')
+  const [internalNote, setInternalNote] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const selected = useMemo(() => applications?.find((item) => item.id === selectedId) ?? applications?.[0] ?? null, [applications, selectedId])
+
+  useEffect(() => {
+    if (selected && selected.id !== selectedId) setSelectedId(selected.id)
+  }, [selected, selectedId])
+
+  useEffect(() => {
+    if (!selected) {
+      setStatus('SUBMITTED')
+      setStatusText('')
+      setInternalNote('')
+      return
+    }
+    setStatus(selected.status)
+    setStatusText(selected.statusText)
+    setInternalNote(selected.internalNote ?? '')
+  }, [selected])
+
+  const stats = useMemo(() => {
+    const list = applications ?? []
+    return {
+      total: list.length,
+      open: list.filter((item) => item.status === 'SUBMITTED' || item.status === 'IN_REVIEW').length,
+      interviews: list.filter((item) => item.status === 'HR_INTERVIEW').length,
+      accepted: list.filter((item) => item.status === 'ACCEPTED').length,
+      rejected: list.filter((item) => item.status === 'REJECTED').length,
+    }
+  }, [applications])
+
+  const updateApplication = async (patch?: Partial<Pick<ApplicationRow, 'status' | 'statusText' | 'internalNote'>>) => {
+    if (!selected) return
+    const nextStatus = patch?.status ?? status
+    const nextText = patch?.statusText ?? statusText
+    setSaving(true)
+    try {
+      await execute(`/api/applications/${selected.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: nextStatus,
+          statusText: nextText,
+          internalNote: patch?.internalNote ?? internalNote,
+        }),
+      })
+      addToast({ type: 'success', title: 'Bewerbung aktualisiert' })
+      await refetch()
+    } catch (e) {
+      addToast({ type: 'error', title: 'Speichern fehlgeschlagen', message: e instanceof Error ? e.message : '' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <PageLoader />
+
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        title="Bewerbungen"
+        description="Eingereichte Bewerbungen prüfen, Antworten auswerten und den sichtbaren Bewerbungsstatus setzen."
+      />
+
+      {error && (
+        <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111] px-4 py-3 text-[12.5px] text-[#fca5a5]">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatCard label="Gesamt" value={stats.total} />
+        <StatCard label="Offen" value={stats.open} />
+        <StatCard label="Gespräch" value={stats.interviews} />
+        <StatCard label="Angenommen" value={stats.accepted} />
+        <StatCard label="Abgelehnt" value={stats.rejected} />
+      </div>
+
+      {(applications ?? []).length === 0 ? (
+        <section className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 py-14 text-center">
+          <ClipboardList size={28} className="mx-auto mb-3 text-[#4a6585]" />
+          <p className="text-[14px] font-semibold text-white">Noch keine Bewerbungen vorhanden</p>
+          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">Neue Abgaben erscheinen automatisch in dieser Liste.</p>
+        </section>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[330px_1fr]">
+          <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70">
+            <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Bewerbungseingang</p>
+              <span className="text-[10.5px] text-[#536b86]">{applications?.length ?? 0}</span>
+            </div>
+            <div className="max-h-[690px] overflow-y-auto p-1.5">
+              {applications?.map((application) => (
+                <ApplicationListItem
+                  key={application.id}
+                  application={application}
+                  active={selected?.id === application.id}
+                  onSelect={() => setSelectedId(application.id)}
+                />
+              ))}
+            </div>
+          </aside>
+
+          {selected && (
+            <section className="space-y-4">
+              <ApplicationDetailHeader application={selected} />
+
+              <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <FileText size={15} className="text-[#d4af37]" />
+                  <h3 className="text-[14px] font-semibold text-white">Antworten</h3>
+                </div>
+                <div className="space-y-3">
+                  {selected.answers.map((answer, index) => (
+                    <div key={answer.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/55 p-3">
+                      <div className="mb-2 flex items-start gap-2">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] bg-[#102542] text-[10px] font-semibold text-[#d4af37]">
+                          {index + 1}
+                        </span>
+                        <p className="text-[13px] font-semibold text-white">{answer.questionTitle}</p>
+                      </div>
+                      <p className="whitespace-pre-wrap pl-7 text-[12.5px] leading-5 text-[#dbe6f3]">{applicationAnswerText(answer)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <MessageSquareText size={15} className="text-[#d4af37]" />
+                  <h3 className="text-[14px] font-semibold text-white">HR-Status</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
+                  <Select
+                    label="Status"
+                    value={status}
+                    onValueChange={(value) => {
+                      const next = value as JobApplicationStatusValue
+                      setStatus(next)
+                      setStatusText(JOB_APPLICATION_STATUS_META[next].defaultText)
+                    }}
+                    options={statusOptions}
+                    disabled={!canManage || saving}
+                  />
+                  <Textarea
+                    label="Sichtbarer Bewerbungsstatus"
+                    value={statusText}
+                    onChange={(event) => setStatusText(event.target.value)}
+                    rows={2}
+                    disabled={!canManage || saving}
+                  />
+                </div>
+                <Textarea
+                  label="Interne HR-Notiz"
+                  value={internalNote}
+                  onChange={(event) => setInternalNote(event.target.value)}
+                  rows={3}
+                  className="mt-3"
+                  disabled={!canManage || saving}
+                />
+
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => updateApplication({
+                      status: 'REJECTED',
+                      statusText: JOB_APPLICATION_STATUS_META.REJECTED.defaultText,
+                    })}
+                    loading={saving}
+                    disabled={!canManage}
+                  >
+                    <XCircle size={13} />
+                    Ablehnen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => updateApplication({
+                      status: 'ACCEPTED',
+                      statusText: JOB_APPLICATION_STATUS_META.ACCEPTED.defaultText,
+                    })}
+                    loading={saving}
+                    disabled={!canManage}
+                  >
+                    <CheckCircle2 size={13} />
+                    Annehmen
+                  </Button>
+                  <Button size="sm" onClick={() => updateApplication()} loading={saving} disabled={!canManage}>
+                    <Save size={13} />
+                    Speichern
+                  </Button>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[12px] border border-white/[0.04] bg-[#091e36]/70 px-4 py-3">
+      <p className="text-[20px] font-semibold leading-tight text-white tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[11px] text-[#8ea4bd]">{label}</p>
+    </div>
+  )
+}
+
+function ApplicationListItem({
+  application,
+  active,
+  onSelect,
+}: {
+  application: ApplicationRow
+  active: boolean
+  onSelect: () => void
+}) {
+  const meta = JOB_APPLICATION_STATUS_META[application.status]
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        'w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
+        active ? 'border-[#d4af37]/35 bg-[#d4af37]/12' : 'border-transparent hover:bg-[#102542]/60',
+      )}
+    >
+      <div className="flex items-start gap-2.5">
+        <ApplicantAvatar application={application} size="sm" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold text-white">{application.applicantDisplayName}</p>
+          <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">Eingereicht {formatDateTime(application.submittedAt)}</p>
+        </div>
+        <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
+      </div>
+    </button>
+  )
+}
+
+function ApplicationDetailHeader({ application }: { application: ApplicationRow }) {
+  const meta = JOB_APPLICATION_STATUS_META[application.status]
+
+  return (
+    <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <ApplicantAvatar application={application} size="lg" />
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge variant={meta.variant}>{meta.label}</Badge>
+              <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(application.updatedAt)}</span>
+            </div>
+            <h2 className="truncate text-[19px] font-semibold text-white">{application.applicantDisplayName}</h2>
+            <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
+              {application.discordGlobalName || application.discordUsername || application.discordId}
+            </p>
+            <p className="mt-2 max-w-2xl text-[13px] leading-5 text-[#dbe6f3]">{application.statusText}</p>
+          </div>
+        </div>
+        <div className="shrink-0 rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/55 px-3 py-2">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#4a6585]">Review</p>
+          <p className="mt-1 text-[12px] text-[#b7c5d8]">
+            {application.reviewedBy ? application.reviewedBy.displayName : 'Noch offen'}
+          </p>
+          {application.reviewedAt && <p className="mt-0.5 text-[11px] text-[#6b8299]">{formatDateTime(application.reviewedAt)}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ApplicantAvatar({ application, size }: { application: ApplicationRow; size: 'sm' | 'lg' }) {
+  const avatarUrl = discordAvatarUrl(application)
+  const className = size === 'lg' ? 'h-14 w-14 text-[17px]' : 'h-9 w-9 text-[12px]'
+  if (avatarUrl) {
+    return (
+      <span
+        className={cn('shrink-0 rounded-full bg-cover bg-center ring-1 ring-[#d4af37]/25', className)}
+        style={{ backgroundImage: `url(${avatarUrl})` }}
+        aria-label={application.applicantDisplayName}
+      />
+    )
+  }
+
+  return (
+    <div className={cn('flex shrink-0 items-center justify-center rounded-full bg-[#d4af37]/90 font-bold text-[#071b33]', className)}>
+      {application.applicantDisplayName ? application.applicantDisplayName.charAt(0).toUpperCase() : <UserRound size={14} />}
+    </div>
+  )
+}

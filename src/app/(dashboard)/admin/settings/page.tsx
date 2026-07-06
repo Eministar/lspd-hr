@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Building2, CalendarDays, CheckCircle2, Clock, Hash, Link2, MessagesSquare, RefreshCw, Save, ShieldCheck, Tag, Terminal, Users, XCircle } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -61,6 +60,7 @@ interface DiscordConfigResponse {
     employeeRoleIds: string[]
     commandRoleIds: string[]
     authLoginRoleIds: string[]
+    applicantRoleIds: string[]
     authGroupRoleMap: Record<string, string[]>
     rankRoleMap: Record<string, string>
     trainingRoleMap: Record<string, string>
@@ -137,6 +137,7 @@ export default function SettingsPage() {
     employeeRoleIds: [],
     commandRoleIds: [],
     authLoginRoleIds: [],
+    applicantRoleIds: [],
     authGroupRoleMap: {},
     rankRoleMap: {},
     trainingRoleMap: {},
@@ -294,7 +295,7 @@ export default function SettingsPage() {
     }
   }
 
-  const addRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds', roleId: string) => {
+  const addRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds', roleId: string) => {
     if (!roleId) return
     setDiscordForm((prev) => ({
       ...prev,
@@ -302,7 +303,7 @@ export default function SettingsPage() {
     }))
   }
 
-  const removeRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds', roleId: string) => {
+  const removeRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds', roleId: string) => {
     setDiscordForm((prev) => ({
       ...prev,
       [field]: prev[field].filter((id) => id !== roleId),
@@ -359,7 +360,7 @@ export default function SettingsPage() {
     return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
   }
 
-  const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds') => {
+  const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds') => {
     const selected = discordForm[field]
     const options = [
       { value: '', label: 'Rolle hinzufügen' },
@@ -686,6 +687,13 @@ export default function SettingsPage() {
                 {renderRolePicker('authLoginRoleIds')}
                 <p className="text-[11px] text-[#5c728a] mt-1.5">
                   Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Rollen, die bei Benutzergruppen hinterlegt sind, zählen ebenfalls als Login-Rollen.
+                </p>
+              </div>
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Bewerberportal-Rollen</p>
+                {renderRolePicker('applicantRoleIds')}
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Mitglieder mit mindestens einer dieser Rollen dürfen das Bewerberportal öffnen, erhalten dadurch aber keine Dashboard-Rechte.
                 </p>
               </div>
               <div>

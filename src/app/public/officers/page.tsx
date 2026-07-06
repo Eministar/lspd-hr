@@ -5,14 +5,14 @@ import Image from 'next/image'
 import { Search, Shield } from 'lucide-react'
 import { PageLoader } from '@/components/ui/loading'
 import { useFetch } from '@/hooks/use-fetch'
-import { cn, getStatusDot, getStatusLabel } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Officer {
   badgeNumber: string
   firstName: string
   lastName: string
-  status: string
+  hireDate: string
   unit: string | null
   units: string[] | null
   unitInfo: { key: string; name: string; color: string }[]
@@ -47,8 +47,8 @@ export default function PublicOfficersPage() {
               <Image src="/shield.webp" alt="LSPD" width={40} height={40} className="rounded-full" priority />
             </div>
             <div>
-              <h1 className="text-[19px] font-semibold text-white tracking-[-0.01em]">Officers</h1>
-              <p className="text-[12px] text-[#8ea4bd]">{filtered.length} sichtbare Mitarbeiter</p>
+              <h1 className="text-[19px] font-semibold text-white tracking-[-0.01em]">Mitarbeiterliste</h1>
+              <p className="text-[12px] text-[#8ea4bd]">{filtered.length} Mitarbeiter</p>
             </div>
           </div>
           <div className="relative w-full sm:w-[300px]">
@@ -64,16 +64,25 @@ export default function PublicOfficersPage() {
 
         <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
           {filtered.length > 0 ? (
-            <div className="divide-y divide-[#18385f]">
+            <div>
+              <div className="hidden grid-cols-[92px_minmax(0,1.2fr)_minmax(140px,0.8fr)_minmax(150px,1fr)_130px] gap-4 border-b border-[#18385f] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#6b8299] lg:grid">
+                <span>DN</span>
+                <span>Name</span>
+                <span>Rang</span>
+                <span>Unit</span>
+                <span>Einstellung</span>
+              </div>
               {filtered.map((officer) => (
-                <div key={`${officer.badgeNumber}-${officer.firstName}-${officer.lastName}`} className="flex items-center gap-4 px-4 py-3.5">
-                  <span className="w-16 shrink-0 font-mono text-[12px] text-[#b7c5d8]">{displayBadgeNumber(officer.badgeNumber)}</span>
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: officer.rank.color }} />
-                  <div className="flex-1 min-w-0">
+                <div
+                  key={`${officer.badgeNumber}-${officer.firstName}-${officer.lastName}`}
+                  className="grid grid-cols-1 gap-2 border-b border-[#18385f] px-4 py-3.5 last:border-b-0 lg:grid-cols-[92px_minmax(0,1.2fr)_minmax(140px,0.8fr)_minmax(150px,1fr)_130px] lg:items-center lg:gap-4"
+                >
+                  <span className="font-mono text-[12px] text-[#b7c5d8]">{displayBadgeNumber(officer.badgeNumber)}</span>
+                  <div className="min-w-0">
                     <p className="truncate text-[13.5px] font-medium text-[#eee]">{officer.firstName} {officer.lastName}</p>
-                    <p className="truncate text-[11.5px] text-[#4a6585]">{officer.rank.name}</p>
                   </div>
-                  <span className="hidden sm:inline-flex items-center gap-1">
+                  <p className="truncate text-[12.5px] text-[#c8d5e5]">{officer.rank.name}</p>
+                  <span className="flex min-w-0 flex-wrap gap-1">
                     {officer.unitInfo.map((unit) => (
                       <span
                         key={unit.key}
@@ -83,11 +92,9 @@ export default function PublicOfficersPage() {
                         {unit.name}
                       </span>
                     ))}
+                    {officer.unitInfo.length === 0 && <span className="text-[12px] text-[#536b86]">Keine Unit</span>}
                   </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
-                    <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
-                  </span>
+                  <span className="text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
                 </div>
               ))}
             </div>

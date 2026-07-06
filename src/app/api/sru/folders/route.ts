@@ -24,18 +24,18 @@ function cleanColor(value: unknown) {
 }
 
 export async function GET(req: NextRequest) {
-  const module = taskModuleOrNull(req.nextUrl.searchParams.get('module')) ?? 'SRU'
+  const targetModule = taskModuleOrNull(req.nextUrl.searchParams.get('module')) ?? 'SRU'
 
   try {
-    await requireTaskModuleView(module)
+    await requireTaskModuleView(targetModule)
     const folders = await prisma.sruFolder.findMany({
-      where: { module },
+      where: { module: targetModule },
       include: folderInclude,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     })
 
     const looseDocuments = await prisma.sruDocument.findMany({
-      where: { module, folderId: null },
+      where: { module: targetModule, folderId: null },
       orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
       include: {
         createdBy: { select: { id: true, displayName: true } },
@@ -55,20 +55,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const module = taskModuleOrNull(body.module) ?? 'SRU'
-    const user = await requireTaskModuleManage(module)
+    const targetModule = taskModuleOrNull(body.module) ?? 'SRU'
+    const user = await requireTaskModuleManage(targetModule)
     const name = cleanText(body.name)
     if (!name) return error('Name ist erforderlich')
 
     const last = await prisma.sruFolder.findFirst({
-      where: { module },
+      where: { module: targetModule },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
     })
 
     const folder = await prisma.sruFolder.create({
       data: {
-        module,
+        module: targetModule,
         name,
         description: cleanText(body.description) || null,
         color: cleanColor(body.color),

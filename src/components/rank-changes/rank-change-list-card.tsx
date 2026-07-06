@@ -72,6 +72,7 @@ export function RankChangeListCard({
     const pending = total - executed
     const isDraft = list.status === 'DRAFT'
     const accent = variant === 'promotion' ? '#34d399' : '#f87171'
+    const typeLabel = variant === 'promotion' ? 'Up-Rank' : 'D-Rank'
     const progress = total > 0 ? Math.round((executed / total) * 100) : 0
 
     return (
@@ -84,6 +85,12 @@ export function RankChangeListCard({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[14px] font-semibold text-white">{list.name}</span>
+                        <span
+                            className="inline-flex items-center rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+                            style={{ borderColor: `${accent}40`, backgroundColor: `${accent}18`, color: accent }}
+                        >
+                            {typeLabel}
+                        </span>
                         <span className={cn(
                             'inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide',
                             isDraft ? 'bg-[#fbbf24]/14 text-[#fbbf24]' : 'bg-[#34d399]/14 text-[#34d399]',
@@ -158,7 +165,7 @@ export function RankChangeListCard({
                                             <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />
                                         </div>
                                         {entry.note && (
-                                            <p className="text-[11px] text-[#b7c5d8] mt-1.5 italic">"{entry.note}"</p>
+                                            <p className="text-[11px] text-[#b7c5d8] mt-1.5 italic">„{entry.note}“</p>
                                         )}
                                         <p className="text-[10.5px] text-[#536b86] mt-1">
                                             Eingereicht von <span className="text-[#7e93ab]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>

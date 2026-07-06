@@ -62,7 +62,7 @@ type DiscordGuildMember = {
   avatar?: string | null
 }
 
-type DiscordConfig = {
+export type DiscordConfig = {
   guildId: string
   applicationId: string
   announcementsChannelId: string
@@ -77,6 +77,7 @@ type DiscordConfig = {
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
+  applicantRoleIds: string[]
   adminRoleIds: string[]
   authGroupRoleMap: Record<string, string[]>
   rankRoleMap: Record<string, string>
@@ -169,6 +170,7 @@ export const DISCORD_SETTING_KEYS = {
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   authLoginRoleIds: 'discord.authLoginRoleIds',
+  applicantRoleIds: 'discord.applicantRoleIds',
   adminRoleIds: 'discord.adminRoleIds',
   authGroupRoleMap: 'discord.authGroupRoleMap',
   legacyAuthRoleGroupMap: 'discord.authRoleGroupMap',
@@ -394,6 +396,14 @@ function envAuthLoginRoleIds(): string[] {
   const raw =
     process.env.DISCORD_AUTH_LOGIN_ROLE_IDS?.trim() ||
     process.env.LSPD_DISCORD_AUTH_LOGIN_ROLE_IDS?.trim() ||
+    ''
+  return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+}
+
+function envApplicantRoleIds(): string[] {
+  const raw =
+    process.env.DISCORD_APPLICANT_ROLE_IDS?.trim() ||
+    process.env.LSPD_DISCORD_APPLICANT_ROLE_IDS?.trim() ||
     ''
   return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
 }
@@ -642,8 +652,10 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   // mehr aus, indem die DB noch alte Rollen/Guild-IDs hält.
   const envFirst = (envValue: string, dbValue: string | undefined) => envValue || dbValue || ''
   const envLoginRoles = cleanRoleIds(envAuthLoginRoleIds())
+  const envApplicantRoles = cleanRoleIds(envApplicantRoleIds())
   const envAdminRoles = cleanRoleIds(envAdminRoleIds())
   const dbLoginRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], []))
+  const dbApplicantRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.applicantRoleIds], []))
   const dbAdminRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], []))
 
   return {
@@ -661,6 +673,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     authLoginRoleIds: Array.from(new Set([...envLoginRoles, ...dbLoginRoles])),
+    applicantRoleIds: Array.from(new Set([...envApplicantRoles, ...dbApplicantRoles])),
     adminRoleIds: Array.from(new Set([...envAdminRoles, ...dbAdminRoles])),
     authGroupRoleMap: normalizeAuthGroupRoleMap(
       parseJson(map[DISCORD_SETTING_KEYS.authGroupRoleMap], {}),
@@ -689,6 +702,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
+  if (input.applicantRoleIds !== undefined) data[DISCORD_SETTING_KEYS.applicantRoleIds] = JSON.stringify(cleanRoleIds(input.applicantRoleIds))
   if (input.adminRoleIds !== undefined) data[DISCORD_SETTING_KEYS.adminRoleIds] = JSON.stringify(cleanRoleIds(input.adminRoleIds))
   if (input.authGroupRoleMap !== undefined) data[DISCORD_SETTING_KEYS.authGroupRoleMap] = JSON.stringify(cleanGroupRoleMap(input.authGroupRoleMap))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
@@ -814,12 +828,13 @@ async function getOfficerForDiscord(officerId: string) {
   })
 }
 
-function configuredRoleIds(config: DiscordConfig) {
+export function managedDiscordRoleIds(config: DiscordConfig, extraManagedRoleIds: string[] = []) {
   return Array.from(new Set([
     ...config.employeeRoleIds,
     ...Object.values(config.rankRoleMap),
     ...Object.values(config.trainingRoleMap),
     ...Object.values(config.unitRoleMap),
+    ...extraManagedRoleIds,
   ].filter(Boolean)))
 }
 
@@ -938,6 +953,7 @@ async function syncOfficerDiscordMember(
   config: DiscordConfig,
   mode: 'sync' | 'remove-all' = 'sync',
   preloadedMember?: DiscordGuildMember | null,
+  extraManagedRoleIds: string[] = [],
 ) {
   if (!officer?.discordId) return
 
@@ -945,7 +961,10 @@ async function syncOfficerDiscordMember(
   if (!memberId) return
   if (memberPermissionBlocked(memberId)) return { status: 'missing-permissions' as const }
 
-  const allManaged = configuredRoleIds(config)
+  const allManaged = Array.from(new Set([
+    ...managedDiscordRoleIds(config, extraManagedRoleIds),
+    ...config.applicantRoleIds,
+  ]))
   const desired = mode === 'remove-all' ? [] : desiredRoleIds(officer, config)
   // Reuse a member already fetched by the caller (undefined = not provided → fetch)
   const member = preloadedMember !== undefined
@@ -1066,6 +1085,7 @@ export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord)
 
 export async function syncAllOfficerDiscordRoles(options?: {
   onProgress?: (progress: DiscordFullSyncProgress) => void | Promise<void>
+  extraManagedRoleIds?: string[]
 }) {
   const config = await getDiscordConfig()
 
@@ -1137,7 +1157,13 @@ export async function syncAllOfficerDiscordRoles(options?: {
 
       await syncOfficerDashboardGroupsForOfficer(officer, config, mode, member?.roles ?? null)
       if (canSyncDiscord) {
-        await syncOfficerDiscordMember(officer, config, mode, mode === 'remove-all' ? undefined : member)
+        await syncOfficerDiscordMember(
+          officer,
+          config,
+          mode,
+          mode === 'remove-all' ? undefined : member,
+          options?.extraManagedRoleIds,
+        )
       }
       synced++
       await emitProgress('syncing', officerLabel, `Fertig: ${officerLabel}`)
@@ -1145,6 +1171,40 @@ export async function syncAllOfficerDiscordRoles(options?: {
       failed++
       console.error(`[DiscordIntegration] Sync fehlgeschlagen für Officer ${officer.badgeNumber}:`, err)
       await emitProgress('syncing', officerLabel, `Fehlgeschlagen: ${officerLabel}`)
+    }
+  }
+
+  if (canSyncDiscord) {
+    await emitProgress('syncing', undefined, 'Räume verwaiste Discord-Rollen auf')
+    const activeOfficerDiscordIds = new Set(
+      officers
+        .filter((officer) => officer.status !== 'TERMINATED')
+        .map((officer) => snowflake(officer.discordId))
+        .filter((discordId): discordId is string => Boolean(discordId)),
+    )
+    const managedRoleSet = new Set(managedDiscordRoleIds(config, options?.extraManagedRoleIds))
+    const members = await getDiscordGuildMembers(config.guildId).catch((error) => {
+      console.error('[DiscordIntegration] Verwaiste Rollen konnten nicht geprüft werden:', error)
+      return [] as DiscordGuildMember[]
+    })
+
+    for (const member of members) {
+      const memberId = snowflake(member.user?.id)
+      if (!memberId || activeOfficerDiscordIds.has(memberId)) continue
+
+      const rolesToRemove = (member.roles ?? []).filter((roleId) => managedRoleSet.has(roleId))
+      for (const roleId of rolesToRemove) {
+        try {
+          await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}/roles/${roleId}`, { method: 'DELETE' })
+        } catch (err) {
+          if (isUnknownDiscordMember(err)) break
+          if (isMissingDiscordPermissions(err)) {
+            blockMemberPermissions(memberId)
+            break
+          }
+          console.error('[DiscordIntegration] Verwaiste Rolle entfernen fehlgeschlagen:', err)
+        }
+      }
     }
   }
 
@@ -1603,9 +1663,9 @@ export function queueOfficerRoleSync(officerId: string, mode: 'sync' | 'remove-a
   })()
 }
 
-export function queueAllOfficerRoleSync() {
+export function queueAllOfficerRoleSync(options?: { extraManagedRoleIds?: string[] }) {
   ensureDiscordSyncScheduler()
-  void syncAllOfficerDiscordRoles().catch((error) => {
+  void syncAllOfficerDiscordRoles(options).catch((error) => {
     console.error('[DiscordIntegration] Vollständiger Rollensync fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
       title: 'Discord-Rollensync fehlgeschlagen',

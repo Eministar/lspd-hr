@@ -21,10 +21,11 @@ export async function GET(req: NextRequest) {
   const clientId = config.applicationId
   const state = crypto.randomUUID()
   const remember = req.nextUrl.searchParams.get('remember') === '1'
+  const mode = req.nextUrl.searchParams.get('mode') === 'application' ? 'application' : 'dashboard'
   const redirectUri = `${baseUrl(req)}/api/auth/discord/callback`
 
   if (!clientId) {
-    const url = new URL('/login', baseUrl(req))
+    const url = new URL(mode === 'application' ? '/bewerbung' : '/login', baseUrl(req))
     url.searchParams.set('error', 'Discord Application-ID ist nicht konfiguriert')
     return NextResponse.redirect(url)
   }
@@ -38,6 +39,13 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 5,
   })
   cookieStore.set('discord-oauth-remember', remember ? '1' : '0', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 5,
+  })
+  cookieStore.set('discord-oauth-mode', mode, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

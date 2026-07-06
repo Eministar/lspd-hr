@@ -8,6 +8,7 @@ import {
   getDiscordGuildChannels,
   getDiscordGuildRoles,
   invalidateDiscordCache,
+  managedDiscordRoleIds,
   queueAllOfficerRoleSync,
   saveDiscordConfig,
 } from '@/lib/discord-integration'
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
     const user = await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
     const body = await req.json()
     const canManageSettings = hasPermission(user, 'settings:manage')
+    const previousConfig = await getDiscordConfig()
 
     invalidateDiscordCache()
     await saveDiscordConfig({
@@ -98,13 +100,17 @@ export async function POST(req: NextRequest) {
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
       authLoginRoleIds: canManageSettings && Array.isArray(body.authLoginRoleIds) ? body.authLoginRoleIds : undefined,
+      applicantRoleIds: canManageSettings && Array.isArray(body.applicantRoleIds) ? body.applicantRoleIds : undefined,
       adminRoleIds: canManageSettings && Array.isArray(body.adminRoleIds) ? body.adminRoleIds : undefined,
       authGroupRoleMap: canManageSettings && body.authGroupRoleMap && typeof body.authGroupRoleMap === 'object' ? body.authGroupRoleMap : undefined,
       rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
       trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
       unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
     })
-    queueAllOfficerRoleSync()
+    const nextConfig = await getDiscordConfig()
+    const nextManagedRoles = new Set(managedDiscordRoleIds(nextConfig))
+    const staleManagedRoles = managedDiscordRoleIds(previousConfig).filter((roleId) => !nextManagedRoles.has(roleId))
+    queueAllOfficerRoleSync({ extraManagedRoleIds: staleManagedRoles })
 
     return success({ message: 'Discord-Konfiguration gespeichert' })
   } catch (e: unknown) {

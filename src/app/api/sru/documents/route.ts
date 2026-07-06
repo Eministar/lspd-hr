@@ -16,26 +16,26 @@ function cleanText(value: unknown) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const module = taskModuleOrNull(body.module) ?? 'SRU'
-    const user = await requireTaskModuleManage(module)
+    const targetModule = taskModuleOrNull(body.module) ?? 'SRU'
+    const user = await requireTaskModuleManage(targetModule)
     const title = cleanText(body.title)
     const folderId = cleanText(body.folderId)
     if (!title) return error('Titel ist erforderlich')
 
     if (folderId) {
-      const folder = await prisma.sruFolder.findFirst({ where: { id: folderId, module }, select: { id: true } })
+      const folder = await prisma.sruFolder.findFirst({ where: { id: folderId, module: targetModule }, select: { id: true } })
       if (!folder) return error('Ordner nicht gefunden', 404)
     }
 
     const last = await prisma.sruDocument.findFirst({
-      where: { module, folderId: folderId || null },
+      where: { module: targetModule, folderId: folderId || null },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
     })
 
     const document = await prisma.sruDocument.create({
       data: {
-        module,
+        module: targetModule,
         folderId: folderId || null,
         title,
         content: typeof body.content === 'string' ? body.content : '',

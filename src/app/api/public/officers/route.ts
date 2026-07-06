@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { success , forbidden } from '@/lib/api-response'
+import { success } from '@/lib/api-response'
 import { officerUnitKeys } from '@/lib/officer-units'
 
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
         badgeNumber: true,
         firstName: true,
         lastName: true,
-        status: true,
+        hireDate: true,
         unit: true,
         units: true,
         rank: { select: { name: true, color: true, sortOrder: true } },

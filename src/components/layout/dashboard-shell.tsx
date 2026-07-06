@@ -1,7 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { Sidebar } from '@/components/layout/sidebar'
@@ -23,9 +24,17 @@ interface ActiveTestSession {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading, authError, refreshUser, clearClientCache } = useAuth()
   const pathname = usePathname()
+  const router = useRouter()
   const { data: activeSession, loading: activeSessionLoading } = useFetch<ActiveTestSession | null>(
     !loading && user ? '/api/form-test-sessions/active' : null,
   )
+  const visitorOnly = Boolean(user && !user.permissions.some((permission) => permission !== 'password:change'))
+
+  useEffect(() => {
+    if (!loading && !activeSessionLoading && visitorOnly) {
+      router.replace('/besucherportal')
+    }
+  }, [activeSessionLoading, loading, router, visitorOnly])
 
   if (loading) return <PageLoader />
   if (!user) {
@@ -38,6 +47,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     )
   }
   if (activeSessionLoading) return <PageLoader />
+  if (visitorOnly) return <PageLoader />
 
   const activeTestPath = activeSession ? `/form-tests/${activeSession.shareToken}` : ''
   if (activeSession && pathname !== activeTestPath) {

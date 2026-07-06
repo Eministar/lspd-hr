@@ -308,6 +308,27 @@ select option:hover {
 .health-pill.warn { color: #e8c979; border-color: rgba(212,175,55,0.3); background: rgba(45,30,8,0.55); }
 .health-pill.err { color: #fca5a5; border-color: rgba(239,68,68,0.3); background: rgba(42,17,17,0.6); }
 
+.portal-nav-link {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(35, 69, 104, 0.72);
+  border-radius: 9px;
+  background: rgba(10, 26, 51, 0.58);
+  padding: 0 12px;
+  color: #dbe6f3;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.portal-nav-link:hover {
+  border-color: rgba(212, 175, 55, 0.34);
+  background: rgba(16, 37, 66, 0.78);
+  color: #ffffff;
+}
+
 
 /* ─── Markdown document ─── */
 .markdown-document {

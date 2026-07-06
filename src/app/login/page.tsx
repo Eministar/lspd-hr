@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import { MessageCircle, ShieldCheck } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -85,6 +86,13 @@ export default function LoginPage() {
             <ShieldCheck size={15} strokeWidth={2} />
             Discord Login
           </Button>
+
+          <Link
+            href="/besucherportal"
+            className="mt-3 flex h-[36px] items-center justify-center rounded-[9px] border border-[#234568] text-[12.5px] font-medium text-[#dbe6f3] transition-colors hover:bg-[#102542]/65 hover:text-white"
+          >
+            Besucherportal öffnen
+          </Link>
         </div>
 
         <p className="text-center text-[10.5px] text-[#4a6585] mt-8 tracking-[0.06em] uppercase font-medium">

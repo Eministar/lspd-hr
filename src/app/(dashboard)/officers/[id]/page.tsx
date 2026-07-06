@@ -594,7 +594,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           note: addToListNote || undefined,
         }),
       })
-      const label = addToListModal === 'PROMOTION' ? 'Beförderungsliste' : 'Degradierungsliste'
+      const label = addToListModal === 'PROMOTION' ? 'Up-Rank-Liste' : 'D-Rank-Liste'
       addToast({ type: 'success', title: `Zur ${label} hinzugefügt` })
       setAddToListModal(null)
     } catch (err) {
@@ -1064,7 +1064,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 {canRankChange && officer.status !== 'TERMINATED' && draftPromotionLists.length > 0 && (
                   <button onClick={() => openAddToListModal('PROMOTION')}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
-                    <ListPlus size={15} strokeWidth={1.75} /> Zur Beförderungsliste
+                    <ListPlus size={15} strokeWidth={1.75} /> Zur Up-Rank-Liste
                   </button>
                 )}
                 {canRankChange && officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
@@ -1076,7 +1076,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 {canRankChange && officer.status !== 'TERMINATED' && draftDemotionLists.length > 0 && (
                   <button onClick={() => openAddToListModal('DEMOTION')}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
-                    <ListPlus size={15} strokeWidth={1.75} /> Zur Degradierungsliste
+                    <ListPlus size={15} strokeWidth={1.75} /> Zur D-Rank-Liste
                   </button>
                 )}
                 {canManageNotes && (
@@ -1321,7 +1321,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       <Modal
         open={!!addToListModal}
         onClose={() => setAddToListModal(null)}
-        title={addToListModal === 'PROMOTION' ? 'Zur Beförderungsliste hinzufügen' : 'Zur Degradierungsliste hinzufügen'}
+        title={addToListModal === 'PROMOTION' ? 'Zur Up-Rank-Liste hinzufügen' : 'Zur D-Rank-Liste hinzufügen'}
       >
         <div className="space-y-4">
           <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
@@ -1331,7 +1331,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
           <Select
-            label={addToListModal === 'PROMOTION' ? 'Beförderungsliste' : 'Degradierungsliste'}
+            label={addToListModal === 'PROMOTION' ? 'Up-Rank-Liste' : 'D-Rank-Liste'}
             value={addToListId}
             onChange={(e) => setAddToListId(e.target.value)}
             options={(addToListModal === 'PROMOTION' ? draftPromotionLists : draftDemotionLists).map(l => ({ value: l.id, label: l.name }))}
