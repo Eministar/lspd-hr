@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { UserX, UserPlus, Plus } from 'lucide-react'
+import { UserX, UserPlus, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,7 +13,7 @@ import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
-import { formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
@@ -65,6 +65,29 @@ export default function TerminationsPage() {
   const [createModal, setCreateModal] = useState(false)
   const [selectedOfficerId, setSelectedOfficerId] = useState('')
   const [reason, setReason] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+
+  const filteredTerminations = useMemo(() => {
+    if (!terminations) return []
+    const s = search.trim().toLowerCase()
+    return terminations.filter((t) => {
+      if (statusFilter === 'open' && t.officer?.status !== 'TERMINATED') return false
+      if (statusFilter === 'rehired' && (!t.officer || t.officer.status === 'TERMINATED')) return false
+      if (statusFilter === 'deleted' && t.officer) return false
+      if (!s) return true
+      const { first, last } = terminationOfficerNames(t)
+      const haystack = [
+        `${first} ${last}`,
+        displayBadgeNumber(t.previousBadgeNumber || t.officer?.badgeNumber || null),
+        t.previousBadgeNumber ?? '',
+        t.officer?.badgeNumber ?? '',
+        t.previousRank ?? t.officer?.rank?.name ?? '',
+        t.reason,
+      ].join(' ').toLowerCase()
+      return haystack.includes(s)
+    })
+  }, [terminations, search, statusFilter])
 
   const activeOfficers = officers?.filter(o => o.status !== 'TERMINATED') || []
   const selectedOfficer = activeOfficers.find(o => o.id === selectedOfficerId)
@@ -89,11 +112,15 @@ export default function TerminationsPage() {
 
   const handleRehire = async (officerId: string) => {
     try {
-      await execute(`/api/officers/${officerId}`, {
+      const updated = await execute(`/api/officers/${officerId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'ACTIVE' }),
+      }) as { badgeNumber?: string } | null
+      addToast({
+        type: 'success',
+        title: 'Officer wiedereingestellt',
+        message: updated?.badgeNumber ? `Dienstnummer: ${displayBadgeNumber(updated.badgeNumber)}` : undefined,
       })
-      addToast({ type: 'success', title: 'Officer wiedereingestellt' })
       setRehireId(null)
       await refetch()
       await refetchOfficers()
@@ -104,6 +131,9 @@ export default function TerminationsPage() {
 
   if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
+
+  const filterClass =
+    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
 
   return (
     <div>
@@ -118,10 +148,38 @@ export default function TerminationsPage() {
         ) : undefined}
       />
 
+      <div className="flex flex-col sm:flex-row gap-2 mb-5">
+        <div className="relative flex-1">
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
+            strokeWidth={1.75}
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Suche nach Name, Dienstnummer, Rang oder Grund..."
+            className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
+          />
+        </div>
+        <Select
+          size="sm"
+          value={statusFilter}
+          onValueChange={setStatusFilter}
+          options={[
+            { value: '', label: 'Alle Einträge' },
+            { value: 'open', label: 'Wiedereinstellbar' },
+            { value: 'rehired', label: 'Wiedereingestellt' },
+            { value: 'deleted', label: 'Profil gelöscht' },
+          ]}
+          className="sm:w-[190px]"
+        />
+      </div>
+
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-        {terminations && terminations.length > 0 ? (
+        {filteredTerminations.length > 0 ? (
           <div className="divide-y divide-[#18385f]">
-            {terminations.map((t, i) => {
+            {filteredTerminations.map((t, i) => {
               const { first: fn, last: ln } = terminationOfficerNames(t)
               const displayName = [fn, ln].filter(Boolean).join(' ') || '—'
               const badgeDn = displayBadgeNumber(t.previousBadgeNumber || t.officer?.badgeNumber || null)
@@ -176,7 +234,9 @@ export default function TerminationsPage() {
         ) : (
           <div className="text-center py-20">
             <UserX size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-            <p className="text-[13px] text-[#999]">Keine Kündigungen</p>
+            <p className="text-[13px] text-[#999]">
+              {terminations && terminations.length > 0 ? 'Keine Treffer für die aktuelle Suche' : 'Keine Kündigungen'}
+            </p>
           </div>
         )}
       </div>
@@ -215,6 +275,7 @@ export default function TerminationsPage() {
       <Modal open={!!rehireId} onClose={() => setRehireId(null)} title="Officer wiedereinstellen">
         <p className="text-[13px] text-[#888] mb-5">
           Möchten Sie diesen Officer wirklich wiedereinstellen? Der Status wird auf &quot;Aktiv&quot; gesetzt.
+          Ist die alte Dienstnummer inzwischen vergeben, wird automatisch die nächste freie Nummer zugewiesen.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setRehireId(null)}>Abbrechen</Button>

@@ -7,7 +7,16 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { normalizeUnitKeys } from '@/lib/officer-units'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
-import { normalizeBadgeNumber, stripTerminatedBadgeNumber } from '@/lib/badge-number'
+import {
+  collectUsedBadgeInts,
+  findNextFreeBadgeFrom,
+  findNextFreeBadgeInRange,
+  formatBadgeNumber,
+  normalizeBadgeNumber,
+  parseBadgeNumberToInt,
+  rankHasBadgeRange,
+  stripTerminatedBadgeNumber,
+} from '@/lib/badge-number'
 import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { canCheckDiscordGuildMembers, getDiscordGuildMember, queueDiscordHrEvent, queueOfficerRoleSync, syncFormerOfficerDiscordMember, syncOfficerDiscordRoles } from '@/lib/discord-integration'
 import { getOfficerDutyTime, getOfficerPlaytimeReport } from '@/lib/duty-times'
@@ -19,6 +28,31 @@ import { withOfficerTrainingRows } from '@/lib/officer-trainings'
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
   return id && /^\d{17,22}$/.test(id) ? id : ''
+}
+
+/**
+ * Nächste freie Dienstnummer für die Wiedereinstellung: zuerst im Rangbereich,
+ * sonst ab der alten Nummer bzw. dem Bereichsende weiterzählen.
+ */
+async function findReactivationBadgeNumber(
+  rank: { badgeMin: number | null; badgeMax: number | null },
+  restoredBadge: string,
+  prefix: string,
+): Promise<string | null> {
+  const [activeOfficers, blacklisted] = await Promise.all([
+    prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } }),
+    prisma.badgeBlacklist.findMany({ select: { badgeNumber: true } }),
+  ])
+  const used = collectUsedBadgeInts([...activeOfficers, ...blacklisted], prefix)
+  let next: number | null = null
+  if (rankHasBadgeRange(rank)) {
+    next = findNextFreeBadgeInRange(rank.badgeMin, rank.badgeMax, used, null)
+    if (next === null) next = findNextFreeBadgeFrom(rank.badgeMax + 1, used)
+  } else {
+    const restoredInt = parseBadgeNumberToInt(restoredBadge, prefix)
+    next = findNextFreeBadgeFrom(restoredInt !== null ? restoredInt + 1 : 1, used)
+  }
+  return next !== null ? formatBadgeNumber(next, prefix) : null
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -140,11 +174,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           prefix,
         )
       : undefined
-    const nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
+    let nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
 
     if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) {
       const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
-      const badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
+      let badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
+      if (badgeConflict && reactivating && !requestedBadgeNumber) {
+        // Alte Dienstnummer ist inzwischen vergeben/gesperrt → nächste freie Nummer vergeben
+        const fallback = await findReactivationBadgeNumber(existing.rank, nextBadgeNumber, prefix)
+        if (fallback) {
+          nextBadgeNumber = fallback
+          badgeConflict = null
+        }
+      }
       if (badgeConflict) return error(badgeConflict)
       await releaseTerminatedBadgeNumberConflicts(nextBadgeNumber, prefix)
     }

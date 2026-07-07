@@ -89,6 +89,18 @@ export function findNextFreeBadgeInRange(
   return null
 }
 
+/**
+ * Sucht ab `start` aufwärts (bis 9999) die kleinste freie Nummer — Fallback,
+ * wenn der Rangbereich voll ist oder kein Bereich existiert („zur Not weiterzählen“).
+ */
+export function findNextFreeBadgeFrom(
+  start: number,
+  used: Set<number>,
+  excludeInt: number | null = null
+): number | null {
+  return findNextFreeBadgeInRange(Math.max(0, start), 9999, used, excludeInt)
+}
+
 export function rankHasBadgeRange(rank: Pick<Rank, 'badgeMin' | 'badgeMax'>): rank is { badgeMin: number; badgeMax: number } {
   return rank.badgeMin != null && rank.badgeMax != null && rank.badgeMin <= rank.badgeMax
 }
@@ -124,6 +136,10 @@ export function resolveEntryBadgeNumbers(
     if (!manual) continue
     const badge = normalizeBadgeNumber(manual, prefix)
     const n = parseBadgeNumberToInt(badge, prefix)
+    // Manuelle Nummer aus einer älteren Liste kann inzwischen vergeben sein →
+    // Eintrag fällt auf die automatische Neuvergabe zurück.
+    const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
+    if (n !== null && n !== current && used.has(n)) continue
     if (n !== null) used.add(n)
     result.set(entry.id, badge)
   }
@@ -134,7 +150,9 @@ export function resolveEntryBadgeNumbers(
       continue
     }
     const current = parseBadgeNumberToInt(entry.officer.badgeNumber, prefix)
-    const assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, used, current)
+    let assigned = findNextFreeBadgeInRange(entry.proposedRank.badgeMin, entry.proposedRank.badgeMax, used, current)
+    // Bereich voll → zur Not über das Bereichsmaximum hinaus weiterzählen
+    if (assigned === null) assigned = findNextFreeBadgeFrom(entry.proposedRank.badgeMax + 1, used, current)
     if (assigned === null) {
       result.set(entry.id, null)
     } else {

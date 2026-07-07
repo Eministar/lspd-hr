@@ -51,7 +51,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const officerCount = await prisma.officer.count({ where: { rankId: id } })
     if (officerCount > 0) return error('Rang wird noch von Officers verwendet')
 
-    await prisma.rank.delete({ where: { id } })
+    // Historie-Einträge referenzieren Ränge ohne Cascade — vor dem Löschen entfernen
+    await prisma.$transaction([
+      prisma.promotionLog.deleteMany({ where: { OR: [{ oldRankId: id }, { newRankId: id }] } }),
+      prisma.rankChangeListEntry.deleteMany({ where: { OR: [{ currentRankId: id }, { proposedRankId: id }] } }),
+      prisma.rank.delete({ where: { id } }),
+    ])
     return success({ message: 'Rang gelöscht' })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
