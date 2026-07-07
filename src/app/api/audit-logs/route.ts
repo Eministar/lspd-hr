@@ -2,17 +2,55 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized , forbidden } from '@/lib/api-response'
+import { actionsForGroup, allGroupedActions } from '@/lib/audit-log-groups'
+import type { Prisma } from '@/generated/prisma/client'
 
 export async function GET(req: NextRequest) {
   try {
     await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['logs:view'])
-    
+
     const { searchParams } = new URL(req.url)
     const take = parseInt(searchParams.get('take') || '50')
     const skip = parseInt(searchParams.get('skip') || '0')
+    const group = searchParams.get('group')?.trim() || ''
+    const search = searchParams.get('search')?.trim() || ''
+
+    const where: Prisma.AuditLogWhereInput = {}
+
+    if (group === 'other') {
+      where.action = { notIn: allGroupedActions() }
+    } else if (group) {
+      const actions = actionsForGroup(group)
+      if (actions) where.action = { in: actions }
+    }
+
+    if (search) {
+      const or: Prisma.AuditLogWhereInput[] = [
+        { action: { contains: search } },
+        { details: { contains: search } },
+        { oldValue: { contains: search } },
+        { newValue: { contains: search } },
+        { user: { displayName: { contains: search } } },
+        { officer: { firstName: { contains: search } } },
+        { officer: { lastName: { contains: search } } },
+        { officer: { badgeNumber: { contains: search } } },
+      ]
+      // "Vorname Nachname"-Suche über beide Felder
+      const tokens = search.split(/\s+/).filter(Boolean)
+      if (tokens.length >= 2) {
+        or.push({
+          officer: {
+            firstName: { contains: tokens[0] },
+            lastName: { contains: tokens.slice(1).join(' ') },
+          },
+        })
+      }
+      where.OR = or
+    }
 
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
+        where,
         include: {
           user: { select: { displayName: true } },
           officer: { select: { firstName: true, lastName: true, badgeNumber: true } },
@@ -21,7 +59,7 @@ export async function GET(req: NextRequest) {
         take,
         skip,
       }),
-      prisma.auditLog.count(),
+      prisma.auditLog.count({ where }),
     ])
 
     return success({ logs, total, take, skip })

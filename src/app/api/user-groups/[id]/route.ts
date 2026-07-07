@@ -72,8 +72,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       },
     })
     if (!group) return notFound('Benutzergruppe')
-    if (serializeGroup(group)._count.users > 0) return error('Benutzergruppe wird noch verwendet')
 
+    // Löschen ist immer möglich: Mitgliedschaften (auch Discord-synchronisierte) werden
+    // per Cascade entfernt, die Primärgruppen-Zuordnung der Benutzer per SetNull gelöst.
     await userGroupDelegate(prisma).delete({ where: { id } })
     return success({ message: 'Benutzergruppe gelöscht' })
   } catch (e: unknown) {

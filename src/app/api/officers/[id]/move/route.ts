@@ -49,8 +49,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let newBadge = officer.badgeNumber
     if (rankHasBadgeRange(targetRank)) {
       const assigned = nextBadgeForRank(targetRank, allForBadges, prefix, officer.badgeNumber, blacklistedBadges)
-      if (!assigned) return error('Keine freie Dienstnummer im Ziel-Bereich für diesen Rang')
-      newBadge = assigned.str
+      // Ziel-Bereich voll → Officer behält seine bisherige Dienstnummer
+      if (assigned) newBadge = assigned.str
     }
     if (newBadge !== officer.badgeNumber) {
       await releaseTerminatedBadgeNumberConflicts(newBadge, prefix)

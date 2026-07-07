@@ -503,8 +503,8 @@ async function performPromotion(options: DiscordOption[] | undefined, actor: Ret
         getBlacklistedBadgeRows(),
       ])
       const assigned = nextBadgeForRank(newRank, allRows, prefix, officer.badgeNumber, blacklistedBadges)
-      if (!assigned) return 'Keine freie Dienstnummer im Bereich des Ziel-Rangs.'
-      newBadgeNumber = assigned.str
+      // Bereich voll → Officer behält seine bisherige Dienstnummer
+      newBadgeNumber = assigned ? assigned.str : officer.badgeNumber
     } else {
       newBadgeNumber = officer.badgeNumber
     }

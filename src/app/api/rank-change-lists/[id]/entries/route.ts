@@ -56,8 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         blacklistedBadges,
         prefix,
       )
+      // null = keine freie Nummer auffindbar → Officer behält seine aktuelle Dienstnummer
       previewBadge = resolved.get('__new__') ?? null
-      if (!previewBadge) return error('Keine freie Dienstnummer im Bereich des vorgeschlagenen Rangs')
     }
     if (nextBadge && nextBadge !== officer.badgeNumber) {
       const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
