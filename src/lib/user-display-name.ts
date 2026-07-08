@@ -7,6 +7,8 @@ type UserDisplaySource = {
   discordId: string | null
 }
 
+const DEFAULT_DISPLAY_BADGE_PREFIX = 'LSPD-'
+
 export type LinkedOfficerDisplaySource = {
   badgeNumber: string
   firstName: string
@@ -19,8 +21,10 @@ function bracketedBadgeNumber(badgeNumber: string, prefix: string) {
   const displayed = displayBadgeNumber(badgeNumber)
   if (displayed === '—') return ''
 
-  const cleanPrefix = prefix.trim()
-  if (!cleanPrefix || displayed.startsWith(cleanPrefix)) return `[${displayed}]`
+  const configuredPrefix = prefix.trim()
+  const cleanPrefix = configuredPrefix || DEFAULT_DISPLAY_BADGE_PREFIX
+  if (displayed.startsWith(cleanPrefix)) return `[${displayed}]`
+  if (!configuredPrefix && /^\D/.test(displayed)) return `[${displayed}]`
 
   const joined = cleanPrefix.endsWith('-') ? `${cleanPrefix}${displayed}` : `${cleanPrefix}-${displayed}`
   return `[${joined}]`
