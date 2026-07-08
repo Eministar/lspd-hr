@@ -5,6 +5,7 @@ import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from './settings-helper
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumberConflicts, sameBadgeNumber } from './badge-blacklist'
 import { normalizeBadgeNumber } from './badge-number'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from './discord-integration'
+import { syncLinkedUserDisplayNameForOfficer } from './user-display-name'
 
 export type UndoPromotionListEntryData = {
   reverted: true
@@ -118,6 +119,10 @@ export async function undoPromotionListEntry(
     details: `Beförderung aus "${entry.list.name}" rückgängig gemacht: ${entry.officer.firstName} ${entry.officer.lastName} - ${entry.proposedRank.name} -> ${entry.currentRank.name}`,
   })
 
+  await syncLinkedUserDisplayNameForOfficer({
+    ...entry.officer,
+    badgeNumber: restoreBadgeNumber,
+  })
   queueOfficerRoleSync(entry.officerId)
   queueDiscordHrEvent({
     type: 'update',

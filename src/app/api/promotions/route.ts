@@ -8,6 +8,7 @@ import { nextBadgeForRank, normalizeBadgeNumber, rankHasBadgeRange } from '@/lib
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 export async function GET() {
   try {
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
       },
       include: { rank: true },
     })
+    await syncLinkedUserDisplayNameForOfficer(updatedOfficer)
 
     await createAuditLog({
       action: 'OFFICER_PROMOTED',

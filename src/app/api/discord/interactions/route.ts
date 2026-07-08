@@ -23,6 +23,7 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 import { DISCORD_COMMANDS } from '@/lib/discord-commands'
 import { eligibleTrainingsForRank, isTrainingAvailableForRank } from '@/lib/officer-trainings'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 export const runtime = 'nodejs'
 
@@ -477,6 +478,7 @@ async function performHire(options: DiscordOption[] | undefined, actor: ReturnTy
   }
 
   queueOfficerRoleSync(officer.id)
+  await syncLinkedUserDisplayNameForOfficer(officer)
   queueDiscordHrEvent({
     type: 'hire',
     title: 'Neuer Beitritt',
@@ -536,6 +538,7 @@ async function performPromotion(options: DiscordOption[] | undefined, actor: Ret
   })
 
   const note = textOption(options, 'notiz')
+  await syncLinkedUserDisplayNameForOfficer(updated)
   queueOfficerRoleSync(officer.id)
   queueDiscordHrEvent({
     type: 'promotion',

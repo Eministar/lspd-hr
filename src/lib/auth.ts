@@ -6,6 +6,7 @@ import { hasAnyPermission, resolveEffectivePermissions, intersectPermissions, PE
 import { storedDiscordAvatarUrl } from './discord-auth'
 import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
+import { resolveUserDisplayName } from './user-display-name'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -192,11 +193,12 @@ async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | nul
     user.permissions,
     groups.map((g) => g.permissions),
   )
+  const displayName = await resolveUserDisplayName(user)
 
   return {
     id: user.id,
     username: user.username,
-    displayName: user.displayName,
+    displayName,
     discordId: user.discordId,
     avatarUrl: storedDiscordAvatarUrl(user),
     groups: groups.map((g) => ({ id: g.id, name: g.name })),
@@ -243,11 +245,12 @@ async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {
       groupList.unshift({ id: 'discord-admin', name: 'Admin' })
     }
   }
+  const displayName = await resolveUserDisplayName(user)
 
   return {
     id: user.id,
     username: user.username,
-    displayName: user.displayName,
+    displayName,
     discordId: user.discordId,
     avatarUrl: storedDiscordAvatarUrl(user),
     groups: groupList,

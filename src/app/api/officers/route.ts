@@ -19,6 +19,7 @@ import {
   refreshDiscordGuildMembers,
 } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -43,11 +44,12 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = {}
   if (search) {
+    const canSearchDiscordId = /^\d{17,22}$/.test(search.trim())
     where.OR = [
       { firstName: { contains: search } },
       { lastName: { contains: search } },
       { badgeNumber: { contains: search } },
-      { discordId: { contains: search } },
+      ...(canSearchDiscordId ? [{ discordId: { contains: search } }] : []),
     ]
   }
   if (status) where.status = status
@@ -170,6 +172,7 @@ export async function POST(req: NextRequest) {
       newValue: `${officer.firstName} ${officer.lastName} (${officer.badgeNumber})`,
     })
 
+    await syncLinkedUserDisplayNameForOfficer(officer)
     queueOfficerRoleSync(officer.id)
     queueDiscordHrEvent({
       type: 'hire',

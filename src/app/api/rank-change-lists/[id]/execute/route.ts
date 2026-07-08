@@ -9,6 +9,7 @@ import { resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { undoPromotionListEntry } from '@/lib/rank-change-list-undo'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -94,13 +95,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         },
       })
 
-      await prisma.officer.update({
+      const updatedOfficer = await prisma.officer.update({
         where: { id: entry.officerId },
         data: {
           rankId: entry.proposedRankId,
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,
         },
       })
+      await syncLinkedUserDisplayNameForOfficer(updatedOfficer)
 
       await prisma.rankChangeListEntry.update({
         where: { id: entry.id },

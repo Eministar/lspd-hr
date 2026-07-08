@@ -3,7 +3,7 @@ import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
 import { getBadgePrefix } from './settings-helpers'
-import { displayBadgeNumber } from './badge-number'
+import { formatLinkedOfficerDisplayName, syncLinkedUserDisplayNameForOfficer } from './user-display-name'
 import { queueDiscordWebhookEvent } from './discord-webhook'
 import {
   actionRow,
@@ -510,8 +510,8 @@ function officerBadge(officer: Pick<OfficerForDiscord, 'badgeNumber'>) {
   return officer.badgeNumber.trim()
 }
 
-function desiredNickname(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber'>) {
-  const nick = `[LSPD-${displayBadgeNumber(officer.badgeNumber)}] ${officerName(officer)}`.replace(/\s+/g, ' ').trim()
+function desiredNickname(officer: Pick<OfficerForDiscord, 'firstName' | 'lastName' | 'badgeNumber'>, prefix: string) {
+  const nick = formatLinkedOfficerDisplayName(officer, prefix).replace(/\s+/g, ' ').trim()
   return truncate(nick, 32)
 }
 
@@ -1017,7 +1017,7 @@ async function syncOfficerDiscordMember(
   }
 
   if (mode === 'sync' && officer.status !== 'TERMINATED') {
-    const nick = desiredNickname(officer)
+    const nick = desiredNickname(officer, await getBadgePrefix())
     if (member?.nick !== nick) {
       await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}`, {
         method: 'PATCH',
@@ -1061,6 +1061,7 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
   const config = await getDiscordConfig()
   const officer = await getOfficerForDiscord(officerId)
   if (!officer) return
+  if (mode === 'sync') await syncLinkedUserDisplayNameForOfficer(officer)
 
   // Fetch the member once and share it between group- and role-sync to avoid
   // double Discord calls and to derive dashboard groups from actual roles.
@@ -1134,6 +1135,7 @@ export async function syncAllOfficerDiscordRoles(options?: {
   for (const officer of officers) {
     const officerLabel = `${officer.firstName} ${officer.lastName} #${officer.badgeNumber}`
     await emitProgress('checking', officerLabel, `Prüfe ${officerLabel}`)
+    await syncLinkedUserDisplayNameForOfficer(officer)
 
     if (!officer.discordId) {
       skipped++

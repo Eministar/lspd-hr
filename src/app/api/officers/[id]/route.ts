@@ -24,6 +24,7 @@ import { syncOfficerPlayerPlaytime } from '@/lib/player-online'
 import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absence-status'
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -224,6 +225,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data,
       include: { rank: true },
     })
+    await syncLinkedUserDisplayNameForOfficer(updated)
 
     if (parsed.data.status === 'TERMINATED' && existing.status !== 'TERMINATED') {
       await releaseTerminatedBadgeNumber(updated)

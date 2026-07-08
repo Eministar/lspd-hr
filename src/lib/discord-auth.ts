@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getDiscordConfig, getDiscordGuildMember, getDiscordGuildMembers, type DiscordApiUser } from '@/lib/discord-integration'
 import { sanitizePermissions } from '@/lib/permissions'
+import { resolveUserDisplayName } from '@/lib/user-display-name'
 
 const API_BASE = 'https://discord.com/api/v10'
 
@@ -202,7 +203,10 @@ export async function upsertDiscordUser(profile: DiscordMemberProfile) {
 
   const existing = await prisma.user.findFirst({ where: { discordId: profile.user.id }, select: { id: true } })
   const username = await uniqueUsername(profile, existing?.id)
-  const displayName = profileDisplayName(profile)
+  const displayName = await resolveUserDisplayName({
+    displayName: profileDisplayName(profile),
+    discordId: profile.user.id,
+  })
 
   const data = {
     username,

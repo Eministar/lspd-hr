@@ -9,6 +9,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 const includeOfficer = {
   rank: true,
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       orderBy: { sortOrder: 'asc' },
     })
     const updatedWithTrainingRows = withOfficerTrainingRows(updated, trainings)
+    await syncLinkedUserDisplayNameForOfficer(updated)
 
     await createAuditLog({
       action: 'OFFICER_PROMOTED',

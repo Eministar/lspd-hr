@@ -7,10 +7,15 @@ import { formatBadgeNumber, parseBadgeNumberToInt, rankHasBadgeRange } from '@/l
 import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { queueOfficerRoleSync } from '@/lib/discord-integration'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 
 type PlannedBadgeChange = {
   officerId: string
   officerName: string
+  firstName: string
+  lastName: string
+  discordId: string | null
+  status: string
   rankName: string
   oldBadgeNumber: string
   newBadgeNumber: string
@@ -63,6 +68,10 @@ export async function POST(_req: NextRequest) {
         changes.push({
           officerId: officer.id,
           officerName: `${officer.firstName} ${officer.lastName}`,
+          firstName: officer.firstName,
+          lastName: officer.lastName,
+          discordId: officer.discordId,
+          status: officer.status,
           rankName: officer.rank.name,
           oldBadgeNumber: officer.badgeNumber,
           newBadgeNumber,
@@ -98,6 +107,14 @@ export async function POST(_req: NextRequest) {
       userId: user.id,
       details: `${changes.length} Dienstnummern anhand der Rangbereiche neu vergeben`,
     })
+
+    await Promise.all(changes.map((change) => syncLinkedUserDisplayNameForOfficer({
+      badgeNumber: change.newBadgeNumber,
+      firstName: change.firstName,
+      lastName: change.lastName,
+      discordId: change.discordId,
+      status: change.status,
+    })))
 
     for (const change of changes) {
       queueOfficerRoleSync(change.officerId)

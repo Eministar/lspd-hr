@@ -516,12 +516,14 @@ export default function OfficersPage() {
     if (!officers) return []
     return officers.filter((o) => {
       if (search) {
-        const s = search.toLowerCase()
+        const trimmedSearch = search.trim()
+        const s = trimmedSearch.toLowerCase()
+        const canSearchDiscordId = /^\d{17,22}$/.test(trimmedSearch)
         if (
           !o.firstName.toLowerCase().includes(s) &&
           !o.lastName.toLowerCase().includes(s) &&
           !o.badgeNumber.toLowerCase().includes(s) &&
-          !o.discordId?.toLowerCase().includes(s)
+          !(canSearchDiscordId && o.discordId?.toLowerCase().includes(s))
         )
           return false
       }
