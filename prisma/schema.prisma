@@ -689,7 +689,7 @@ model Note {
   authorId  String?
   author    User?    @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   title     String?
-  content   String
+  content   String   @db.LongText
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

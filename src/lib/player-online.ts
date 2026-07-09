@@ -316,14 +316,26 @@ async function syncOneOfficerPlaytime(officer: OfficerForPlayerSync, now: Date):
 
     if (!activePolice || !status.player) {
       if (scriptDisconnectedGrace) {
-        // Don't end the session yet — surface as offline so the UI reflects reality
-        // but keep the playtime session alive until the grace period expires.
         const cached = officerResultCache.get(officer.id)
+        const hasActiveSession = cached?.result.status === 'online'
+          ? true
+          : !!(await prisma.playtimeSession.findFirst({
+            where: {
+              endedAt: null,
+              OR: [
+                { officerId: officer.id },
+                ...(officer.discordId ? [{ discordId: officer.discordId }] : []),
+              ],
+            },
+            select: { id: true },
+          }))
+        // Keep the live view stable during short script disconnects. The session
+        // still ends below if the grace period expires or the API reports offline.
         const result: PlayerOnlineSyncResult = {
           officerId: officer.id,
           discordId: officer.discordId,
-          status: 'offline',
-          online: status.online,
+          status: hasActiveSession ? 'online' : 'offline',
+          online: hasActiveSession,
           scriptConnected: false,
           lastHeartbeat: status.lastHeartbeat,
           player: cached?.result.player ?? null,

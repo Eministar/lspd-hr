@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { cleanNoteContent, cleanNotePinned, cleanNoteTitle } from '@/lib/notes'
 
 export async function GET(req: NextRequest) {
   try {
@@ -37,27 +38,39 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['notes:manage'])
-    const body = await req.json()
+    const body = await req.json() as Record<string, unknown>
+    const content = cleanNoteContent(body.content)
 
-    if (!body.content) return error('Inhalt ist erforderlich')
+    if (!content) return error('Inhalt ist erforderlich')
+
+    let title: string | null
+    try {
+      title = cleanNoteTitle(body.title)
+    } catch (e: unknown) {
+      return error(e instanceof Error ? e.message : 'Ungültiger Titel')
+    }
+
+    const officerId = typeof body.officerId === 'string' && body.officerId.trim()
+      ? body.officerId.trim()
+      : null
 
     const note = await prisma.note.create({
       data: {
-        officerId: body.officerId || null,
+        officerId,
         authorId: user.id,
-        title: body.title || null,
-        content: body.content,
-        pinned: body.pinned || false,
+        title,
+        content,
+        pinned: cleanNotePinned(body.pinned),
       },
       include: { author: { select: { displayName: true } } },
     })
 
-    if (body.officerId) {
+    if (officerId) {
       await createAuditLog({
         action: 'NOTE_ADDED',
         userId: user.id,
-        officerId: body.officerId,
-        details: body.title || 'Notiz hinzugefügt',
+        officerId,
+        details: title || 'Notiz hinzugefügt',
       })
     }
 
