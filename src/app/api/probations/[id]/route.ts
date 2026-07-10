@@ -39,6 +39,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!existing) return notFound('Probezeit')
 
     const data: Record<string, unknown> = {}
+    let nextType = existing.type
+    let nextStatus = existing.status
     if ('startsAt' in body) {
       const startsAt = parseDate(body.startsAt)
       if (!startsAt) return error('Startdatum ist ungültig')
@@ -58,11 +60,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const type = probationType(cleanText(body.type).toUpperCase())
       if (!type) return error('Probezeit-Typ ist ungültig')
       data.type = type
+      nextType = type
     }
     if ('status' in body) {
       const status = probationStatus(cleanText(body.status).toUpperCase())
       if (!status) return error('Probezeit-Status ist ungültig')
       data.status = status
+      nextStatus = status
       data.resultNote = cleanText(body.resultNote) || null
       if (status === 'ACTIVE') {
         data.decidedAt = null
@@ -76,6 +80,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const nextStart = data.startsAt instanceof Date ? data.startsAt : existing.startsAt
     const nextEnd = data.endsAt instanceof Date ? data.endsAt : existing.endsAt
     if (nextEnd < nextStart) return error('Probezeit-Ende darf nicht vor dem Start liegen')
+
+    if (nextStatus === 'ACTIVE') {
+      const duplicateActive = await prisma.probation.findFirst({
+        where: {
+          id: { not: id },
+          officerId: existing.officerId,
+          type: nextType,
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      })
+      if (duplicateActive) return error('Für diesen Officer ist dieser Probezeit-Typ bereits aktiv')
+    }
 
     const probation = await prisma.probation.update({
       where: { id },
