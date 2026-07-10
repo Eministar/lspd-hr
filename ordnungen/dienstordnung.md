@@ -48,29 +48,32 @@ Die Einhaltung dieser Dienstordnung ist die Grundlage eines funktionierenden, ve
 
 | DN | Rang | Ebene |
 |---|---|---|
-| 0 | Commissioner | Chiefebene |
 | 1 | Chief of Police | Chiefebene |
-| 2 | Assistant Chief of Police | Chiefebene |
-| 3 | Deputy Chief of Police | Chiefebene |
-| 4–5 | Commander of Organisation | Leitungsebene |
-| 6–7 | Commander of Operation | Leitungsebene |
-| 8–10 | Captain of LSPD | Leitungsebene |
-| 11–19 | Lieutenant II | Höhere Dienstränge |
-| 20–29 | Lieutenant I | Höhere Dienstränge |
-| 30–39 | Sergeant II | Mittlere Dienstränge |
-| 40–49 | Sergeant I | Mittlere Dienstränge |
-| 50–69 | Senior Officer | Mittlere Dienstränge |
-| 70–89 | Officer III | Untere Dienstränge |
-| 90–109 | Officer II | Untere Dienstränge |
-| 110–129 | Officer I | Untere Dienstränge |
-| 130–999 | Rookie | Einstiegsebene |
+| 2–3 | Assistant Chief | Chiefebene |
+| 4–5 | Deputy Chief | Chiefebene |
+| 6–10 | Grand Commander | Leitungsebene |
+| 11–13 | Commander | Leitungsebene |
+| 14–20 | First Commander | Leitungsebene |
+| 21–25 | Captain III | Höhere Dienstränge |
+| 26–30 | Captain II | Höhere Dienstränge |
+| 31–36 | Captain I | Höhere Dienstränge |
+| 37–45 | Lieutenant III | Höhere Dienstränge |
+| 46–55 | Lieutenant II | Höhere Dienstränge |
+| 56–65 | Lieutenant | Höhere Dienstränge |
+| 66–81 | Staff Sergeant | Mittlere Dienstränge |
+| 82–100 | Sergeant | Mittlere Dienstränge |
+| 101–131 | Senior Officer | Mittlere Dienstränge |
+| 132–163 | Officer III | Untere Dienstränge |
+| 166–195 | Officer II | Untere Dienstränge |
+| 196–227 | Officer I | Untere Dienstränge |
+| 229–999 | Rookie | Einstiegsebene |
 
 (2) Die Ränge werden in folgende **Ebenen** zusammengefasst:
 
-- **Chiefebene**: Commissioner, Chief of Police, Assistant Chief of Police, Deputy Chief of Police
-- **Leitungsebene**: Commander of Organisation, Commander of Operation, Captain of LSPD
-- **Höhere Dienstränge**: Lieutenant II, Lieutenant I
-- **Mittlere Dienstränge**: Sergeant II, Sergeant I, Senior Officer
+- **Chiefebene**: Chief of Police, Assistant Chief, Deputy Chief
+- **Leitungsebene**: Grand Commander, Commander, First Commander
+- **Höhere Dienstränge**: Captain III, Captain II, Captain I, Lieutenant III, Lieutenant II, Lieutenant
+- **Mittlere Dienstränge**: Staff Sergeant, Sergeant, Senior Officer
 - **Untere Dienstränge**: Officer III, Officer II, Officer I
 - **Einstiegsebene**: Rookie
 
