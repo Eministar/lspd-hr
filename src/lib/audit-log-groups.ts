@@ -25,7 +25,7 @@ export const AUDIT_LOG_GROUPS = {
   },
   probation: {
     label: 'Probezeit',
-    actions: ['PROBATION_STARTED', 'PROBATION_UPDATED', 'PROBATION_DELETED'],
+    actions: ['PROBATION_STARTED', 'PROBATION_UPDATED', 'PROBATION_DELETED', 'PROBATION_ENTRY_CREATED'],
   },
   note: {
     label: 'Notizen',

@@ -500,6 +500,10 @@ export const ENDPOINTS: EndpointSpec[] = [
     category: 'Probations',
     summary: 'Probezeiten auflisten',
     scope: 'probations:view',
+    params: [
+      { name: 'status', in: 'query', description: 'Status-Filter.', schema: { type: 'string', enum: ['ACTIVE', 'PASSED', 'EXTENDED', 'FAILED'] } },
+      { name: 'type', in: 'query', description: 'Probezeit-Typ.', schema: { type: 'string', enum: ['ROOKIE', 'SERGEANT_SUPERVISOR', 'LEADERSHIP', 'CHIEF'] } },
+    ],
   },
   {
     id: 'create-probation',
@@ -508,6 +512,15 @@ export const ENDPOINTS: EndpointSpec[] = [
     category: 'Probations',
     summary: 'Probezeit anlegen',
     scope: 'probations:manage',
+    body: {
+      description: 'Probezeit-Daten',
+      fields: [
+        { name: 'officerId', type: 'string', required: true, description: 'Officer-ID' },
+        { name: 'type', type: 'string', required: false, description: 'ROOKIE, SERGEANT_SUPERVISOR, LEADERSHIP oder CHIEF', enumValues: ['ROOKIE', 'SERGEANT_SUPERVISOR', 'LEADERSHIP', 'CHIEF'] },
+        { name: 'startsAt', type: 'string', required: false, description: 'Startdatum (ISO-8601)' },
+        { name: 'endsAt', type: 'string', required: true, description: 'Enddatum (ISO-8601)' },
+      ],
+    },
   },
   {
     id: 'update-probation',
@@ -518,6 +531,23 @@ export const ENDPOINTS: EndpointSpec[] = [
     description: 'Setzt Status (PASSED / FAILED / EXTENDED) und optional `resultNote`.',
     scope: 'probations:manage',
     params: [{ name: 'id', in: 'path', required: true, description: 'Probezeit-ID', schema: { type: 'string' } }],
+  },
+  {
+    id: 'create-probation-entry',
+    method: 'POST',
+    path: '/probations/{id}/entries',
+    category: 'Probations',
+    summary: 'Probezeit-Historieneintrag anlegen',
+    description: 'Schreibt einen positiven oder negativen Kommentar in die Historie einer Probezeit.',
+    scope: 'probations:manage',
+    params: [{ name: 'id', in: 'path', required: true, description: 'Probezeit-ID', schema: { type: 'string' } }],
+    body: {
+      description: 'Historieneintrag',
+      fields: [
+        { name: 'rating', type: 'string', required: true, description: 'POSITIVE oder NEGATIVE', enumValues: ['POSITIVE', 'NEGATIVE'] },
+        { name: 'comment', type: 'string', required: true, description: 'Kommentar' },
+      ],
+    },
   },
 
   // ============ Calendar ============

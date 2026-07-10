@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/((?!_next/static|favicon.ico|shield.webp|logo.webp|logo-og.png|opengraph-image|twitter-image|uploads).*)',
+        source: '/((?!_next/static|favicon.ico|shield.webp|logo.webp|logo-og.png|op-image.png|opengraph-image|twitter-image|uploads).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-store, max-age=0' },
         ],

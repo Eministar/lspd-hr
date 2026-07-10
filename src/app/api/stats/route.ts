@@ -239,7 +239,7 @@ export async function GET() {
       severity: 'warning',
       title: `${probationsEndingSoon.length} Probezeit${probationsEndingSoon.length === 1 ? '' : 'en'} endet diese Woche`,
       description: probationsEndingSoon.map((item) => `${item.officer.firstName} ${item.officer.lastName}`).join(', '),
-      href: '/probations',
+      href: '/hr?tab=probations',
     }] : []),
     ...(upcomingEvents.length > 0 ? [{
       id: 'upcoming-events',

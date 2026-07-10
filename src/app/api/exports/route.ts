@@ -7,6 +7,7 @@ import { formatDate, formatDateTime } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import { formatFineAmount, penalGradeLabel } from '@/lib/sanction-catalog'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
+import { PROBATION_STATUS_LABELS, PROBATION_TYPE_LABELS } from '@/lib/probations'
 
 function csvEscape(value: unknown) {
   const text = value === null || value === undefined ? '' : String(value)
@@ -168,7 +169,10 @@ export async function GET(req: NextRequest) {
           sanctions: true,
           promotionLogs: { include: { oldRank: true, newRank: true } },
           officerNotes: true,
-          probation: true,
+          probations: {
+            include: { entries: true },
+            orderBy: { startsAt: 'desc' },
+          },
         },
       }),
       prisma.training.findMany({
@@ -180,6 +184,7 @@ export async function GET(req: NextRequest) {
     const officerWithTrainingRows = withOfficerTrainingRows(officer, trainings)
 
     if (format === 'html') {
+      const latestProbation = officer.probations[0]
       return new NextResponse(html(
         `Officer-Akte ${officer.firstName} ${officer.lastName}`,
         [
@@ -189,9 +194,27 @@ export async function GET(req: NextRequest) {
           ['Status', officer.status],
           ['Einstellung', formatDate(officer.hireDate)],
           ['Discord-ID', officer.discordId ?? ''],
-          ['Probezeit', officer.probation ? `${officer.probation.status} bis ${formatDate(officer.probation.endsAt)}` : 'Keine'],
+          ['Probezeit', latestProbation ? `${PROBATION_TYPE_LABELS[latestProbation.type]} / ${PROBATION_STATUS_LABELS[latestProbation.status]} bis ${formatDate(latestProbation.endsAt)}` : 'Keine'],
         ],
         [
+          {
+            title: 'Probezeiten',
+            rows: [
+              ['Typ', 'Status', 'Zeitraum', 'Positiv', 'Negativ', 'Ergebnis'],
+              ...officer.probations.map((item) => {
+                const positive = item.entries.filter((entry) => entry.rating === 'POSITIVE').length
+                const negative = item.entries.filter((entry) => entry.rating === 'NEGATIVE').length
+                return [
+                  PROBATION_TYPE_LABELS[item.type],
+                  PROBATION_STATUS_LABELS[item.status],
+                  `${formatDate(item.startsAt)} bis ${formatDate(item.endsAt)}`,
+                  String(positive),
+                  String(negative),
+                  item.resultNote ?? '',
+                ]
+              }),
+            ],
+          },
           { title: 'Ausbildungen', rows: [['Ausbildung', 'Status'], ...officerWithTrainingRows.trainings.map((item) => [item.training.label, item.completed ? 'Abgeschlossen' : 'Offen'])] },
           { title: 'Rangverlauf', rows: [['Datum', 'Von', 'Nach', 'Notiz'], ...officer.promotionLogs.map((item) => [formatDateTime(item.createdAt), item.oldRank.name, item.newRank.name, item.note ?? ''])] },
           { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), penalGradeLabel(item.penalGrade), item.status, formatFineAmount(item.fineAmount), item.penalty ?? '', item.reason])] },

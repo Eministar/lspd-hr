@@ -3,20 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
-
-const PROBATION_STATUSES = new Set(['ACTIVE', 'PASSED', 'EXTENDED', 'FAILED'])
-type ProbationStatusValue = 'ACTIVE' | 'PASSED' | 'EXTENDED' | 'FAILED'
-
-function probationStatus(value: string): ProbationStatusValue | null {
-  return PROBATION_STATUSES.has(value) ? value as ProbationStatusValue : null
-}
-
-const DEFAULT_CHECKLIST = [
-  { id: 'grundausbildung', label: 'Grundausbildung geprüft', completed: false },
-  { id: 'dienstzeiten', label: 'Dienstzeiten ausreichend', completed: false },
-  { id: 'verhalten', label: 'Verhalten bewertet', completed: false },
-  { id: 'abschlussgespraech', label: 'Abschlussgespräch geführt', completed: false },
-]
+import {
+  PROBATION_TYPE_LABELS,
+  defaultChecklistForProbationType,
+  probationStatus,
+  probationType,
+  type ProbationTypeValue,
+} from '@/lib/probations'
 
 function parseDate(value: unknown) {
   if (typeof value !== 'string' || !value.trim()) return null
@@ -28,8 +21,8 @@ function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function normalizeChecklist(value: unknown) {
-  if (!Array.isArray(value)) return DEFAULT_CHECKLIST
+function normalizeChecklist(value: unknown, type: ProbationTypeValue) {
+  if (!Array.isArray(value)) return defaultChecklistForProbationType(type)
   return value
     .filter((item) => item && typeof item === 'object')
     .map((item) => {
@@ -53,15 +46,23 @@ export async function GET(req: NextRequest) {
     return error(msg, 500)
   }
 
-  const status = probationStatus(req.nextUrl.searchParams.get('status') || '')
+  const status = probationStatus((req.nextUrl.searchParams.get('status') || '').toUpperCase())
+  const type = probationType((req.nextUrl.searchParams.get('type') || '').toUpperCase())
   const probations = await prisma.probation.findMany({
-    where: status ? { status } : undefined,
+    where: {
+      ...(status ? { status } : {}),
+      ...(type ? { type } : {}),
+    },
     include: {
       officer: { include: { rank: true } },
       createdBy: { select: { displayName: true } },
       decidedBy: { select: { displayName: true } },
+      entries: {
+        include: { createdBy: { select: { displayName: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
     },
-    orderBy: [{ status: 'asc' }, { endsAt: 'asc' }],
+    orderBy: [{ status: 'asc' }, { type: 'asc' }, { endsAt: 'asc' }],
   })
 
   return success(probations)
@@ -72,13 +73,16 @@ export async function POST(req: NextRequest) {
     const user = await requirePermission('probations:manage')
     const body = await req.json()
     const officerId = cleanText(body.officerId)
+    const rawType = cleanText(body.type)
+    const type = rawType ? probationType(rawType.toUpperCase()) : 'ROOKIE'
     const startsAt = parseDate(body.startsAt) ?? new Date()
     const endsAt = parseDate(body.endsAt)
-    const checklist = normalizeChecklist(body.checklist)
 
     if (!officerId) return error('Officer ist erforderlich')
+    if (!type) return error('Probezeit-Typ ist ungültig')
     if (!endsAt) return error('Probezeit-Enddatum ist erforderlich')
     if (endsAt < startsAt) return error('Probezeit-Ende darf nicht vor dem Start liegen')
+    const checklist = normalizeChecklist(body.checklist, type)
 
     const officer = await prisma.officer.findUnique({
       where: { id: officerId },
@@ -87,28 +91,30 @@ export async function POST(req: NextRequest) {
     if (!officer) return error('Officer nicht gefunden', 404)
     if (officer.status === 'TERMINATED') return error('Gekündigte Officers können keine aktive Probezeit erhalten')
 
-    const probation = await prisma.probation.upsert({
-      where: { officerId },
-      create: {
+    const existingActive = await prisma.probation.findFirst({
+      where: { officerId, type, status: 'ACTIVE' },
+      select: { id: true },
+    })
+    if (existingActive) return error('Für diesen Officer ist dieser Probezeit-Typ bereits aktiv')
+
+    const probation = await prisma.probation.create({
+      data: {
         officerId,
-        startsAt,
-        endsAt,
-        checklist,
-        createdById: user.id,
-      },
-      update: {
+        type,
         startsAt,
         endsAt,
         checklist,
         status: 'ACTIVE',
-        resultNote: null,
-        decidedAt: null,
-        decidedById: null,
+        createdById: user.id,
       },
       include: {
         officer: { include: { rank: true } },
         createdBy: { select: { displayName: true } },
         decidedBy: { select: { displayName: true } },
+        entries: {
+          include: { createdBy: { select: { displayName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
 
@@ -116,7 +122,7 @@ export async function POST(req: NextRequest) {
       action: 'PROBATION_STARTED',
       userId: user.id,
       officerId,
-      details: `${officer.firstName} ${officer.lastName} bis ${endsAt.toLocaleDateString('de-DE')}`,
+      details: `${PROBATION_TYPE_LABELS[type]}: ${officer.firstName} ${officer.lastName} bis ${endsAt.toLocaleDateString('de-DE')}`,
     })
 
     return success(probation, 201)

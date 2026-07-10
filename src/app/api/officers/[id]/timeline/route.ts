@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { sessionDurationMs } from '@/lib/duty-times'
+import { PROBATION_ENTRY_RATING_LABELS, PROBATION_STATUS_LABELS, PROBATION_TYPE_LABELS } from '@/lib/probations'
 
 type TimelineItem = {
   id: string
@@ -42,7 +43,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       absenceNotices: true,
       dutySessions: true,
       playtimeSessions: true,
-      probation: { include: { createdBy: { select: { displayName: true } }, decidedBy: { select: { displayName: true } } } },
+      probations: {
+        include: {
+          createdBy: { select: { displayName: true } },
+          decidedBy: { select: { displayName: true } },
+          entries: {
+            include: { createdBy: { select: { displayName: true } } },
+          },
+        },
+      },
       calendarEvents: true,
       auditLogs: { include: { user: { select: { displayName: true } } } },
     },
@@ -146,15 +155,29 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     })
   }
 
-  if (officer.probation) {
+  for (const probation of officer.probations) {
     push(items, {
-      id: `probation-${officer.probation.id}`,
+      id: `probation-${probation.id}`,
       type: 'probation',
-      title: `Probezeit: ${officer.probation.status}`,
-      description: officer.probation.resultNote,
-      createdAt: officer.probation.startsAt,
-      meta: { endsAt: officer.probation.endsAt, decidedBy: officer.probation.decidedBy?.displayName ?? null },
+      title: `${PROBATION_TYPE_LABELS[probation.type]}: ${PROBATION_STATUS_LABELS[probation.status]}`,
+      description: probation.resultNote,
+      createdAt: probation.startsAt,
+      meta: { endsAt: probation.endsAt, decidedBy: probation.decidedBy?.displayName ?? null },
     })
+
+    for (const entry of probation.entries) {
+      push(items, {
+        id: `probation-entry-${entry.id}`,
+        type: 'probation',
+        title: `Probezeit-Eintrag: ${PROBATION_ENTRY_RATING_LABELS[entry.rating]}`,
+        description: entry.comment,
+        createdAt: entry.createdAt,
+        meta: {
+          probationType: PROBATION_TYPE_LABELS[probation.type],
+          author: entry.createdBy?.displayName ?? 'Gelöscht',
+        },
+      })
+    }
   }
 
   for (const event of officer.calendarEvents) {

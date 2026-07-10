@@ -5,7 +5,9 @@ import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { updateOfficerSchema } from '@/lib/validations/officer'
 import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { normalizeUnitKeys } from '@/lib/officer-units'
+import { hasPermission } from '@/lib/permissions'
+import { normalizeUnitKeys, officerUnitKeys } from '@/lib/officer-units'
+import { getManagedUnitKeysForUser, hasOfficerWriteAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import {
   collectUsedBadgeInts,
@@ -93,12 +95,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           include: { author: { select: { displayName: true } } },
           orderBy: { createdAt: 'desc' },
         },
-        probation: {
-          include: {
-            createdBy: { select: { displayName: true } },
-            decidedBy: { select: { displayName: true } },
-          },
-        },
         calendarEvents: {
           where: { startsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
           orderBy: { startsAt: 'desc' },
@@ -146,9 +142,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['officers:write'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['officers:write', 'unit-leadership:manage'])
     const { id } = await params
     const body = await req.json()
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return error('Ungültige Anfrage')
+    const canWriteOfficer = hasOfficerWriteAccess(user)
+    const unitLeadershipOnly = !canWriteOfficer && hasPermission(user, 'unit-leadership:manage')
+    if (unitLeadershipOnly) {
+      const invalidField = Object.keys(body).find((key) => key !== 'unit' && key !== 'units')
+      if (invalidField) return error('Unit-Leitung darf nur Unit-Zuweisungen ändern', 403)
+    }
+
     const parsed = updateOfficerSchema.safeParse(body)
     if (!parsed.success) return error(parsed.error.issues.map(e => e.message).join(', '))
 
@@ -209,6 +213,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (missing) return error('Unit nicht gefunden')
     }
 
+    if (unitLeadershipOnly) {
+      if (unitKeys === undefined) return error('Unit-Zuweisung ist erforderlich')
+      const managedUnitKeys = await getManagedUnitKeysForUser(user)
+      const leadershipError = unitLeadershipChangeError(officerUnitKeys(existing), unitKeys, managedUnitKeys)
+      if (leadershipError) return error(leadershipError, 403)
+    }
+
     const data: Record<string, unknown> = { ...parsed.data }
     if (data.badgeNumber === null || data.badgeNumber === '') delete data.badgeNumber
     delete data.unit
@@ -237,8 +248,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) changes.push(`Dienstnummer: ${existing.badgeNumber} → ${nextBadgeNumber}`)
     if (parsed.data.status && parsed.data.status !== existing.status) changes.push(`Status: ${existing.status} → ${parsed.data.status}`)
     if (parsed.data.rankId && parsed.data.rankId !== existing.rankId) changes.push(`Rang geändert`)
-    if (unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))) {
-      changes.push(`Units: ${normalizeUnitKeys(existing.units).join(', ') || '—'} → ${unitKeys.join(', ') || '—'}`)
+    if (unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(officerUnitKeys(existing))) {
+      changes.push(`Units: ${officerUnitKeys(existing).join(', ') || '—'} → ${unitKeys.join(', ') || '—'}`)
     }
     if ('flag' in parsed.data && parsed.data.flag !== existing.flag) {
       changes.push(`Markierung: ${existing.flag ?? '—'} → ${parsed.data.flag ?? '—'}`)
@@ -264,7 +275,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       (!!parsed.data.lastName && parsed.data.lastName !== existing.lastName)
     )
     const badgeChanged = !!nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber
-    const unitsChanged = !!unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(normalizeUnitKeys(existing.units))
+    const unitsChanged = !!unitKeys && JSON.stringify(unitKeys) !== JSON.stringify(officerUnitKeys(existing))
     const discordChanged = 'discordId' in parsed.data && parsed.data.discordId !== existing.discordId
     const statusChanged = !!parsed.data.status && parsed.data.status !== existing.status
 
@@ -279,7 +290,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (rankChanged || unitsChanged) {
-      const previousUnits = normalizeUnitKeys(existing.units)
+      const previousUnits = officerUnitKeys(existing)
       queueDiscordHrEvent({
         type: rankChanged ? 'promotion' : 'units',
         title: rankChanged && unitsChanged

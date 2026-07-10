@@ -10,6 +10,13 @@ const siteUrl =
       ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000')
 
+const ogImage = {
+  url: '/op-image.png',
+  width: 1723,
+  height: 913,
+  alt: 'LSPD Department Dashboard',
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: 'LSPD Department Dashboard',
@@ -38,11 +45,13 @@ export const metadata: Metadata = {
     siteName: 'LSPD Department Dashboard',
     title: 'LSPD Department Dashboard',
     description: 'Department-Verwaltung, Dienstzeiten, Aufgaben und operative Tools des Los Santos Police Department.',
+    images: [ogImage],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'LSPD Department Dashboard',
     description: 'Department-Verwaltung, Dienstzeiten, Aufgaben und operative Tools des Los Santos Police Department.',
+    images: [ogImage],
   },
 }
 

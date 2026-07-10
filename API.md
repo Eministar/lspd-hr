@@ -128,6 +128,7 @@ curl https://deine-domain/api/users/by-discord/123456789012345678 \
 | `terminations:manage` | Kündigungen verwalten |
 | `probations:view` | Probezeiten ansehen |
 | `probations:manage` | Probezeiten verwalten |
+| `unit-leadership:manage` | Unit-Leitung: Officer-Units zuweisen |
 | `sanctions:manage` | Sanktionen ausstellen |
 | `rank-changes:view` | Beförderungen/Degradierungen ansehen |
 | `rank-changes:manage` | Beförderungen/Degradierungen |
@@ -385,11 +386,20 @@ Macht eine bereits ausgeführte Beförderung/Degradierung rückgängig.
 ## Probations
 
 ### `GET /api/probations` 🔒 `probations:view`
+Optionale Filter: `status`, `type`.
 
 ### `POST /api/probations` 🔒 `probations:manage`
+```json
+{ "officerId": "ckabc", "type": "ROOKIE", "startsAt": "2026-07-10", "endsAt": "2026-07-24" }
+```
 
 ### `PATCH /api/probations/{id}` 🔒 `probations:manage`
-Setzt Status (`PASSED` / `FAILED` / `EXTENDED`).
+Setzt Typ, Checkliste, Zeitraum oder Status (`PASSED` / `FAILED` / `EXTENDED`).
+
+### `POST /api/probations/{id}/entries` 🔒 `probations:manage`
+```json
+{ "rating": "POSITIVE", "comment": "Saubere Einsatzführung und gute Kommunikation." }
+```
 
 ---
 

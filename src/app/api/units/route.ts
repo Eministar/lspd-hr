@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, requirePermission } from '@/lib/auth'
+import { requireAuth, requirePermission, type CurrentUser } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
+import { hasPermission } from '@/lib/permissions'
+import { getManagedUnitKeysForUser, hasOfficerWriteAccess } from '@/lib/unit-leadership'
 
 function createUnitKey(name: string) {
   return name
@@ -15,8 +17,9 @@ function createUnitKey(name: string) {
 }
 
 export async function GET(req: NextRequest) {
+  let user: CurrentUser
   try {
-    await requirePermission('units:view')
+    user = await requirePermission('units:view')
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -25,8 +28,19 @@ export async function GET(req: NextRequest) {
   }
 
   const activeOnly = req.nextUrl.searchParams.get('active') === 'true'
+  const unitLeadershipOnly = activeOnly &&
+    hasPermission(user, 'unit-leadership:manage') &&
+    !hasOfficerWriteAccess(user) &&
+    !hasPermission(user, 'units:manage')
+  const managedUnitKeys = unitLeadershipOnly ? await getManagedUnitKeysForUser(user) : []
+
   const units = await prisma.unit.findMany({
-    where: activeOnly ? { active: true } : undefined,
+    where: activeOnly
+      ? {
+          active: true,
+          ...(unitLeadershipOnly ? { key: { in: managedUnitKeys } } : {}),
+        }
+      : undefined,
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 

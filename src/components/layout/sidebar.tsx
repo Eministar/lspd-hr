@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
-  Menu, X, KeyRound, Timer, Upload, CalendarDays, ClipboardCheck, Download,
+  Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
   ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint, Newspaper,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -39,7 +39,6 @@ const mainNav: NavItem[] = [
   { name: 'Officers', href: '/officers', icon: Users, permission: 'officers:view' },
   { name: 'Up-/D-Rank-Listen', href: '/promotions', icon: ArrowUpDown, permission: 'rank-changes:view' },
   { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
-  { name: 'Probezeiten', href: '/probations', icon: ClipboardCheck, permission: 'probations:view' },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
   { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
 ]

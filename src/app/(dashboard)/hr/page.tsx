@@ -1,29 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, CalendarDays, ClipboardList, FileQuestion, FileText, ListChecks, ScrollText, Settings } from 'lucide-react'
+import { BookOpen, CalendarDays, ClipboardCheck, ClipboardList, FileQuestion, FileText, ListChecks, ScrollText, Settings } from 'lucide-react'
 import { TaskBoard } from '@/components/tasks/task-board'
 import { ModuleDocuments } from '@/components/modules/module-documents'
 import { ModuleCalendar } from '@/components/modules/module-calendar'
 import { FormTests } from '@/components/modules/form-tests'
 import { HrApplications } from '@/components/applications/hr-applications'
 import { ApplicationFormSettings } from '@/components/applications/application-form-settings'
+import { ProbationsWorkspace } from '@/components/probations/probations-workspace'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
-type Tab = 'documents' | 'applications' | 'settings' | 'tests' | 'tasks' | 'calendar'
+type Tab = 'documents' | 'applications' | 'settings' | 'tests' | 'probations' | 'tasks' | 'calendar'
 
 const tabs = [
   { id: 'documents' as const, label: 'Dokumente', icon: FileText },
   { id: 'applications' as const, label: 'Bewerbungen', icon: ClipboardList },
   { id: 'settings' as const, label: 'Einstellungen', icon: Settings },
   { id: 'tests' as const, label: 'Tests', icon: FileQuestion },
+  { id: 'probations' as const, label: 'Probezeiten', icon: ClipboardCheck },
   { id: 'tasks' as const, label: 'Aufgaben', icon: ListChecks },
   { id: 'calendar' as const, label: 'Kalender', icon: CalendarDays },
 ]
+
+function isTab(value: string | null): value is Tab {
+  return !!value && tabs.some((tab) => tab.id === value)
+}
 
 const EMPTY_HR_DOCUMENT = `# Neues HR-Dokument
 
@@ -66,6 +72,11 @@ export default function HrDepartmentPage() {
   const canManage = hasPermission(user, 'hr:manage')
   const canManageTests = hasPermission(user, 'hr-tests:manage')
   const [activeTab, setActiveTab] = useState<Tab>('documents')
+
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab')
+    if (isTab(tab)) setActiveTab(tab)
+  }, [])
 
   if (!canView) return <UnauthorizedContent />
 
@@ -116,6 +127,9 @@ export default function HrDepartmentPage() {
       )}
       {activeTab === 'settings' && (
         <ApplicationFormSettings canManage={canManage} />
+      )}
+      {activeTab === 'probations' && (
+        <ProbationsWorkspace embedded />
       )}
       {activeTab === 'tasks' && (
         <TaskBoard

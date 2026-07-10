@@ -78,6 +78,18 @@ enum ProbationStatus {
   FAILED
 }
 
+enum ProbationType {
+  ROOKIE
+  SERGEANT_SUPERVISOR
+  LEADERSHIP
+  CHIEF
+}
+
+enum ProbationEntryRating {
+  POSITIVE
+  NEGATIVE
+}
+
 enum AcademyResourceType {
   FILE
   LINK
@@ -134,51 +146,52 @@ model UserGroup {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String?
-  displayName  String
-  discordId    String?
-  discordUsername String?
-  discordGlobalName String?
-  discordAvatar String?
+  id                   String     @id @default(cuid())
+  username             String     @unique
+  passwordHash         String?
+  displayName          String
+  discordId            String?
+  discordUsername      String?
+  discordGlobalName    String?
+  discordAvatar        String?
   discordDiscriminator String?
-  lastLoginAt  DateTime?
-  role         UserRole @default(READONLY)
-  groupId      String?
-  group        UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  permissions  Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  lastLoginAt          DateTime?
+  role                 UserRole   @default(READONLY)
+  groupId              String?
+  group                UserGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  permissions          Json?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
-  groupMemberships UserGroupMembership[]
-  promotionsPerformed PromotionLog[] @relation("PerformedBy")
-  terminationsPerformed Termination[] @relation("TerminatedBy")
-  sanctionsIssued      Sanction[]     @relation("SanctionIssuedBy")
-  notesAuthored       Note[]         @relation("NoteAuthor")
-  auditLogs           AuditLog[]     @relation("AuditUser")
-  createdLists        RankChangeList[] @relation("ListCreator")
+  groupMemberships         UserGroupMembership[]
+  promotionsPerformed      PromotionLog[]        @relation("PerformedBy")
+  terminationsPerformed    Termination[]         @relation("TerminatedBy")
+  sanctionsIssued          Sanction[]            @relation("SanctionIssuedBy")
+  notesAuthored            Note[]                @relation("NoteAuthor")
+  auditLogs                AuditLog[]            @relation("AuditUser")
+  createdLists             RankChangeList[]      @relation("ListCreator")
   rankChangeEntriesCreated RankChangeListEntry[] @relation("EntryCreator")
-  taskListsCreated    TaskList[]     @relation("TaskListCreator")
-  tasksCreated        Task[]         @relation("TaskCreator")
-  calendarEventsCreated CalendarEvent[] @relation("CalendarEventCreator")
-  sruFoldersCreated SruFolder[] @relation("SruFolderCreator")
-  sruDocumentsCreated SruDocument[] @relation("SruDocumentCreator")
-  sruDocumentsUpdated SruDocument[] @relation("SruDocumentUpdater")
-  probationsCreated  Probation[]     @relation("ProbationCreator")
-  probationsDecided  Probation[]     @relation("ProbationDecider")
-  patrolBoardsCreated PatrolBoard[]  @relation("PatrolBoardCreator")
-  apiTokensOwned      ApiToken[]     @relation("ApiTokenOwner")
-  apiTokensCreated    ApiToken[]     @relation("ApiTokenCreator")
-  academyResourcesCreated AcademyResource[] @relation("AcademyResourceCreator")
-  formTestsCreated FormTest[] @relation("FormTestCreator")
-  formResponsesSubmitted FormResponse[] @relation("FormResponseRespondent")
-  formResponsesReviewed FormResponse[] @relation("FormResponseReviewer")
-  formTestSessions FormTestSession[] @relation("FormTestSessionUser")
-  jobApplicationsSubmitted JobApplication[] @relation("JobApplicationApplicant")
-  jobApplicationsReviewed JobApplication[] @relation("JobApplicationReviewer")
-  pressReleasesCreated PressRelease[] @relation("PressReleaseCreator")
-  pressReleasesUpdated PressRelease[] @relation("PressReleaseUpdater")
+  taskListsCreated         TaskList[]            @relation("TaskListCreator")
+  tasksCreated             Task[]                @relation("TaskCreator")
+  calendarEventsCreated    CalendarEvent[]       @relation("CalendarEventCreator")
+  sruFoldersCreated        SruFolder[]           @relation("SruFolderCreator")
+  sruDocumentsCreated      SruDocument[]         @relation("SruDocumentCreator")
+  sruDocumentsUpdated      SruDocument[]         @relation("SruDocumentUpdater")
+  probationsCreated        Probation[]           @relation("ProbationCreator")
+  probationsDecided        Probation[]           @relation("ProbationDecider")
+  probationEntriesCreated  ProbationEntry[]      @relation("ProbationEntryCreator")
+  patrolBoardsCreated      PatrolBoard[]         @relation("PatrolBoardCreator")
+  apiTokensOwned           ApiToken[]            @relation("ApiTokenOwner")
+  apiTokensCreated         ApiToken[]            @relation("ApiTokenCreator")
+  academyResourcesCreated  AcademyResource[]     @relation("AcademyResourceCreator")
+  formTestsCreated         FormTest[]            @relation("FormTestCreator")
+  formResponsesSubmitted   FormResponse[]        @relation("FormResponseRespondent")
+  formResponsesReviewed    FormResponse[]        @relation("FormResponseReviewer")
+  formTestSessions         FormTestSession[]     @relation("FormTestSessionUser")
+  jobApplicationsSubmitted JobApplication[]      @relation("JobApplicationApplicant")
+  jobApplicationsReviewed  JobApplication[]      @relation("JobApplicationReviewer")
+  pressReleasesCreated     PressRelease[]        @relation("PressReleaseCreator")
+  pressReleasesUpdated     PressRelease[]        @relation("PressReleaseUpdater")
 }
 
 model UserGroupMembership {
@@ -217,12 +230,12 @@ model Rank {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  officers     Officer[]
-  minimumForTrainings Training[] @relation("TrainingMinimumRank")
-  oldRankLogs  PromotionLog[] @relation("OldRank")
-  newRankLogs  PromotionLog[] @relation("NewRank")
-  entryCurrentRanks  RankChangeListEntry[] @relation("EntryCurrentRank")
-  entryProposedRanks RankChangeListEntry[] @relation("EntryProposedRank")
+  officers            Officer[]
+  minimumForTrainings Training[]            @relation("TrainingMinimumRank")
+  oldRankLogs         PromotionLog[]        @relation("OldRank")
+  newRankLogs         PromotionLog[]        @relation("NewRank")
+  entryCurrentRanks   RankChangeListEntry[] @relation("EntryCurrentRank")
+  entryProposedRanks  RankChangeListEntry[] @relation("EntryProposedRank")
 }
 
 model Training {
@@ -256,8 +269,8 @@ model AcademyResource {
   size               Int?
   createdById        String?
   createdBy          User?                @relation("AcademyResourceCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   @@index([scope, createdAt])
   @@index([trainingId, createdAt])
@@ -265,23 +278,23 @@ model AcademyResource {
 }
 
 model FormTest {
-  id          String         @id @default(cuid())
-  module      TaskModule
-  kind        FormTestKind   @default(TEST)
-  title       String
-  description String?        @db.Text
-  status      FormTestStatus @default(DRAFT)
-  timeLimitMinutes Int?
-  anonymousResponses Boolean @default(false)
-  shareToken  String         @unique
-  createdById String?
-  createdBy   User?          @relation("FormTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  module             TaskModule
+  kind               FormTestKind   @default(TEST)
+  title              String
+  description        String?        @db.Text
+  status             FormTestStatus @default(DRAFT)
+  timeLimitMinutes   Int?
+  anonymousResponses Boolean        @default(false)
+  shareToken         String         @unique
+  createdById        String?
+  createdBy          User?          @relation("FormTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  questions   FormQuestion[]
-  responses   FormResponse[]
-  sessions    FormTestSession[]
+  questions FormQuestion[]
+  responses FormResponse[]
+  sessions  FormTestSession[]
 
   @@index([module, status, updatedAt])
   @@index([createdById])
@@ -301,28 +314,28 @@ model FormQuestion {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  answers     FormAnswer[]
+  answers FormAnswer[]
 
   @@index([testId, sortOrder])
 }
 
 model FormResponse {
-  id             String       @id @default(cuid())
+  id             String    @id @default(cuid())
   testId         String
-  test           FormTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  test           FormTest  @relation(fields: [testId], references: [id], onDelete: Cascade)
   respondentId   String?
-  respondent     User?        @relation("FormResponseRespondent", fields: [respondentId], references: [id], onDelete: SetNull)
+  respondent     User?     @relation("FormResponseRespondent", fields: [respondentId], references: [id], onDelete: SetNull)
   respondentName String
   submitterHash  String?
   score          Int?
-  maxScore       Int          @default(0)
-  reviewNote     String?      @db.Text
+  maxScore       Int       @default(0)
+  reviewNote     String?   @db.Text
   reviewedAt     DateTime?
   reviewedById   String?
-  reviewedBy     User?        @relation("FormResponseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  submittedAt    DateTime     @default(now())
+  reviewedBy     User?     @relation("FormResponseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  submittedAt    DateTime  @default(now())
 
-  answers        FormAnswer[]
+  answers FormAnswer[]
 
   @@unique([testId, respondentId])
   @@index([testId, submitterHash])
@@ -364,24 +377,24 @@ model FormAnswer {
 }
 
 model JobApplication {
-  id                     String               @id @default(cuid())
-  applicantId            String               @unique
-  applicant              User                 @relation("JobApplicationApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
-  discordId              String
-  discordUsername        String?
-  discordGlobalName      String?
-  discordAvatar          String?
-  applicantDisplayName   String
-  status                 JobApplicationStatus @default(SUBMITTED)
-  statusText             String               @default("Bewerbung wurde eingereicht") @db.VarChar(500)
-  internalNote           String?              @db.Text
-  submittedAt            DateTime             @default(now())
-  reviewedAt             DateTime?
-  reviewedById           String?
-  reviewedBy             User?                @relation("JobApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  updatedAt              DateTime             @updatedAt
+  id                   String               @id @default(cuid())
+  applicantId          String               @unique
+  applicant            User                 @relation("JobApplicationApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  discordId            String
+  discordUsername      String?
+  discordGlobalName    String?
+  discordAvatar        String?
+  applicantDisplayName String
+  status               JobApplicationStatus @default(SUBMITTED)
+  statusText           String               @default("Bewerbung wurde eingereicht") @db.VarChar(500)
+  internalNote         String?              @db.Text
+  submittedAt          DateTime             @default(now())
+  reviewedAt           DateTime?
+  reviewedById         String?
+  reviewedBy           User?                @relation("JobApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  updatedAt            DateTime             @updatedAt
 
-  answers                JobApplicationAnswer[]
+  answers JobApplicationAnswer[]
 
   @@index([status, updatedAt])
   @@index([submittedAt])
@@ -428,40 +441,40 @@ model PressRelease {
 }
 
 model Officer {
-  id              String        @id @default(cuid())
-  badgeNumber     String
+  id          String        @id @default(cuid())
+  badgeNumber String
   /// Discord-Snowflake (nur Dashboard / Verknüpfung; ohne Bot-Anbindung)
-  discordId       String?       @unique
-  firstName       String
-  lastName        String
-  rankId          String
-  rank            Rank          @relation(fields: [rankId], references: [id])
-  status          OfficerStatus @default(ACTIVE)
-  unit            String?
-  units           Json?
-  flag            OfficerFlag?
-  notes           String?
-  hireDate        DateTime      @default(now())
-  lastOnline      DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  discordId   String?       @unique
+  firstName   String
+  lastName    String
+  rankId      String
+  rank        Rank          @relation(fields: [rankId], references: [id])
+  status      OfficerStatus @default(ACTIVE)
+  unit        String?
+  units       Json?
+  flag        OfficerFlag?
+  notes       String?
+  hireDate    DateTime      @default(now())
+  lastOnline  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  trainings       OfficerTraining[]
-  promotionLogs   PromotionLog[]
-  terminations    Termination[]
-  sanctions        Sanction[]
-  officerNotes    Note[]         @relation("OfficerNotes")
-  auditLogs       AuditLog[]     @relation("AuditOfficer")
+  trainings         OfficerTraining[]
+  promotionLogs     PromotionLog[]
+  terminations      Termination[]
+  sanctions         Sanction[]
+  officerNotes      Note[]                @relation("OfficerNotes")
+  auditLogs         AuditLog[]            @relation("AuditOfficer")
   rankChangeEntries RankChangeListEntry[]
-  taskAssignments TaskAssignment[] @relation("TaskAssigned")
-  dutySessions    DutyTimeSession[]
-  playtimeSessions PlaytimeSession[]
-  absenceNotices  AbsenceNotice[]
-  probation        Probation?
-  calendarEvents   CalendarEvent[] @relation("CalendarEventOfficer")
-  patrolAssignments PatrolAssignment[] @relation("PatrolAssigned")
-  patrolSessions  PatrolSession[]   @relation("PatrolSessionOfficer")
-  dispatchCenters DispatchCenterState[] @relation("DispatchCenterOfficer")
+  taskAssignments   TaskAssignment[]      @relation("TaskAssigned")
+  dutySessions      DutyTimeSession[]
+  playtimeSessions  PlaytimeSession[]
+  absenceNotices    AbsenceNotice[]
+  probations        Probation[]
+  calendarEvents    CalendarEvent[]       @relation("CalendarEventOfficer")
+  patrolAssignments PatrolAssignment[]    @relation("PatrolAssigned")
+  patrolSessions    PatrolSession[]       @relation("PatrolSessionOfficer")
+  dispatchCenters   DispatchCenterState[] @relation("DispatchCenterOfficer")
 
   @@index([badgeNumber])
 }
@@ -492,36 +505,36 @@ model CalendarEvent {
 }
 
 model SruFolder {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   module      TaskModule @default(SRU)
   name        String
-  description String?  @db.Text
-  color       String   @default("#d4af37")
-  sortOrder   Int      @default(0)
+  description String?    @db.Text
+  color       String     @default("#d4af37")
+  sortOrder   Int        @default(0)
   createdById String?
-  createdBy   User?    @relation("SruFolderCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdBy   User?      @relation("SruFolderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  documents   SruDocument[]
+  documents SruDocument[]
 
   @@index([module, sortOrder, createdAt])
 }
 
 model SruDocument {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   module      TaskModule @default(SRU)
   folderId    String?
   folder      SruFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title       String
-  content     String    @db.Text
-  sortOrder   Int       @default(0)
+  content     String     @db.Text
+  sortOrder   Int        @default(0)
   createdById String?
-  createdBy   User?     @relation("SruDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?      @relation("SruDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
   updatedById String?
-  updatedBy   User?     @relation("SruDocumentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedBy   User?      @relation("SruDocumentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([folderId, sortOrder])
   @@index([module, updatedAt])
@@ -530,8 +543,9 @@ model SruDocument {
 
 model Probation {
   id          String          @id @default(cuid())
-  officerId   String          @unique
+  officerId   String
   officer     Officer         @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  type        ProbationType   @default(ROOKIE)
   startsAt    DateTime        @default(now())
   endsAt      DateTime
   status      ProbationStatus @default(ACTIVE)
@@ -545,41 +559,60 @@ model Probation {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  entries ProbationEntry[]
+
   @@index([status, endsAt])
+  @@index([officerId, startsAt])
+  @@index([type, status])
+}
+
+model ProbationEntry {
+  id          String               @id @default(cuid())
+  probationId String
+  probation   Probation            @relation(fields: [probationId], references: [id], onDelete: Cascade)
+  rating      ProbationEntryRating
+  comment     String               @db.Text
+  createdById String?
+  createdBy   User?                @relation("ProbationEntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([probationId, createdAt])
+  @@index([createdById, createdAt])
 }
 
 model AbsenceNotice {
-  id              String   @id @default(cuid())
-  officerId       String
-  officer         Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
-  startsAt        DateTime @default(now())
-  endsAt          DateTime
-  reason          String   @db.Text
-  source          String   @default("discord")
-  actorDiscordId  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  officerId      String
+  officer        Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  startsAt       DateTime @default(now())
+  endsAt         DateTime
+  reason         String   @db.Text
+  source         String   @default("discord")
+  actorDiscordId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([officerId, startsAt])
   @@index([endsAt])
 }
 
 model DutyTimeSession {
-  id             String    @id @default(cuid())
-  officerId      String
-  officer        Officer   @relation(fields: [officerId], references: [id], onDelete: Cascade)
-  clockInAt      DateTime  @default(now())
-  clockOutAt     DateTime?
-  clockInSource  String    @default("dashboard")
-  clockOutSource String?
-  actorDiscordId String?
+  id                     String    @id @default(cuid())
+  officerId              String
+  officer                Officer   @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  clockInAt              DateTime  @default(now())
+  clockOutAt             DateTime?
+  clockInSource          String    @default("dashboard")
+  clockOutSource         String?
+  actorDiscordId         String?
   activityCheckSentAt    DateTime?
   activityCheckMessageId String?
   activityCheckChannelId String?
   activityConfirmedAt    DateTime?
   autoClockedOut         Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@index([officerId, clockInAt])
   @@index([clockOutAt])
@@ -635,14 +668,14 @@ model PromotionLog {
 }
 
 model Termination {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   /// Bei Löschen des Officers: null bleibt; Anzeige über previous*-Felder.
   officerId           String?
-  officer             Officer?  @relation(fields: [officerId], references: [id], onDelete: SetNull)
+  officer             Officer? @relation(fields: [officerId], references: [id], onDelete: SetNull)
   reason              String
   terminatedByUserId  String?
-  terminatedBy        User?     @relation("TerminatedBy", fields: [terminatedByUserId], references: [id], onDelete: SetNull)
-  terminatedAt        DateTime  @default(now())
+  terminatedBy        User?    @relation("TerminatedBy", fields: [terminatedByUserId], references: [id], onDelete: SetNull)
+  terminatedAt        DateTime @default(now())
   previousRank        String?
   previousBadgeNumber String?
   previousFirstName   String?
@@ -696,16 +729,16 @@ model Note {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  action      String
-  officerId   String?
-  officer     Officer? @relation("AuditOfficer", fields: [officerId], references: [id], onDelete: SetNull)
-  userId      String?
-  user        User?    @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
-  oldValue    String?  @db.Text
-  newValue    String?  @db.Text
-  details     String?  @db.Text
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  action    String
+  officerId String?
+  officer   Officer? @relation("AuditOfficer", fields: [officerId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+  oldValue  String?  @db.Text
+  newValue  String?  @db.Text
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
 }
 
 model RankChangeList {
@@ -713,7 +746,7 @@ model RankChangeList {
   name        String
   description String?
   type        String   @default("PROMOTION") // PROMOTION or DEMOTION
-  status      String   @default("DRAFT")     // DRAFT, COMPLETED
+  status      String   @default("DRAFT") // DRAFT, COMPLETED
   createdById String?
   createdBy   User?    @relation("ListCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
@@ -723,22 +756,22 @@ model RankChangeList {
 }
 
 model RankChangeListEntry {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   listId         String
   list           RankChangeList @relation(fields: [listId], references: [id], onDelete: Cascade)
   officerId      String
-  officer        Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  officer        Officer        @relation(fields: [officerId], references: [id], onDelete: Cascade)
   currentRankId  String
-  currentRank    Rank     @relation("EntryCurrentRank", fields: [currentRankId], references: [id])
+  currentRank    Rank           @relation("EntryCurrentRank", fields: [currentRankId], references: [id])
   proposedRankId String
-  proposedRank   Rank     @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
+  proposedRank   Rank           @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
   newBadgeNumber String?
   note           String?
-  executed       Boolean  @default(false)
+  executed       Boolean        @default(false)
   executedAt     DateTime?
   createdById    String?
-  createdBy      User?    @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt      DateTime @default(now())
+  createdBy      User?          @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
 
   @@unique([listId, officerId])
 }
@@ -763,7 +796,7 @@ model TaskList {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  tasks       Task[]
+  tasks Task[]
 
   @@index([module, archived])
 }
@@ -810,39 +843,39 @@ model PatrolBoard {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  patrols     PatrolUnit[]
+  patrols PatrolUnit[]
 
   @@index([startsAt])
 }
 
 model PatrolUnit {
-  id         String   @id @default(cuid())
-  boardId    String
-  board      PatrolBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  name       String
-  callSign   String?
-  assignment String?  @db.Text
-  notes      String?  @db.Text
-  status     Int?
-  scope      String?
+  id                 String      @id @default(cuid())
+  boardId            String
+  board              PatrolBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name               String
+  callSign           String?
+  assignment         String?     @db.Text
+  notes              String?     @db.Text
+  status             Int?
+  scope              String?
   assignedDispatchId Int?
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  sortOrder          Int         @default(0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  members    PatrolAssignment[]
+  members PatrolAssignment[]
 
   @@index([boardId, sortOrder])
 }
 
 model PatrolAssignment {
-  id         String   @id @default(cuid())
+  id         String     @id @default(cuid())
   patrolId   String
   patrol     PatrolUnit @relation(fields: [patrolId], references: [id], onDelete: Cascade)
   officerId  String
-  officer    Officer @relation("PatrolAssigned", fields: [officerId], references: [id], onDelete: Cascade)
-  sortOrder  Int      @default(0)
-  assignedAt DateTime @default(now())
+  officer    Officer    @relation("PatrolAssigned", fields: [officerId], references: [id], onDelete: Cascade)
+  sortOrder  Int        @default(0)
+  assignedAt DateTime   @default(now())
 
   @@unique([patrolId, officerId])
   @@index([officerId])
@@ -891,35 +924,35 @@ model BadgeBlacklist {
 }
 
 model ApiToken {
-  id          String    @id @default(cuid())
-  name        String
+  id            String    @id @default(cuid())
+  name          String
   /// Erste Zeichen des Tokens (z. B. "lspd_p4A8xKz…") — wird in Listen angezeigt,
   /// damit User Tokens unterscheiden können, ohne das Geheimnis preiszugeben.
-  prefix      String
+  prefix        String
   /// SHA-256-Hash des Klartext-Tokens. Der Klartext wird NIE persistiert und nur
   /// einmalig beim Anlegen zurückgegeben — vergleichbar zu GitHub PATs.
-  tokenHash   String    @unique
+  tokenHash     String    @unique
   /// Inhaber des Tokens (Subject — dessen Rechte gelten).
-  userId      String
-  user        User      @relation("ApiTokenOwner", fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation("ApiTokenOwner", fields: [userId], references: [id], onDelete: Cascade)
   /// Optional: Admin, der den Token erstellt hat. Leer = self-service.
-  createdById String?
-  createdBy   User?     @relation("ApiTokenCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdBy     User?     @relation("ApiTokenCreator", fields: [createdById], references: [id], onDelete: SetNull)
   /// Whitelist von Permissions. Leer = alle Rechte des Inhabers.
-  scopes      Json      @default("[]")
+  scopes        Json      @default("[]")
   /// Optional: nur innerhalb dieses Zeitraums gültig. null = unbegrenzt.
-  expiresAt   DateTime?
+  expiresAt     DateTime?
   /// Letzter erfolgreicher Auth-Lookup. Wird throttled aktualisiert.
-  lastUsedAt  DateTime?
+  lastUsedAt    DateTime?
   /// Anzahl erfolgreicher Auth-Lookups (für "letzte Aktivität"-Listen).
-  usageCount  Int       @default(0)
+  usageCount    Int       @default(0)
   /// Soft-Revoke: Token bleibt in der DB sichtbar, ist aber nicht mehr gültig.
-  revokedAt   DateTime?
-  revokedReason String? @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  revokedAt     DateTime?
+  revokedReason String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  usages      ApiTokenUsage[]
+  usages ApiTokenUsage[]
 
   @@index([userId])
   @@index([tokenHash])

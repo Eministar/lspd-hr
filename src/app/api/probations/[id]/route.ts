@@ -3,13 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
-
-const PROBATION_STATUSES = new Set(['ACTIVE', 'PASSED', 'EXTENDED', 'FAILED'])
-type ProbationStatusValue = 'ACTIVE' | 'PASSED' | 'EXTENDED' | 'FAILED'
-
-function probationStatus(value: string): ProbationStatusValue | null {
-  return PROBATION_STATUSES.has(value) ? value as ProbationStatusValue : null
-}
+import { PROBATION_STATUS_LABELS, PROBATION_TYPE_LABELS, probationStatus, probationType } from '@/lib/probations'
 
 function parseDate(value: unknown) {
   if (typeof value !== 'string' || !value.trim()) return undefined
@@ -60,6 +54,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!checklist) return error('Checkliste ist ungültig')
       data.checklist = checklist
     }
+    if ('type' in body) {
+      const type = probationType(cleanText(body.type).toUpperCase())
+      if (!type) return error('Probezeit-Typ ist ungültig')
+      data.type = type
+    }
     if ('status' in body) {
       const status = probationStatus(cleanText(body.status).toUpperCase())
       if (!status) return error('Probezeit-Status ist ungültig')
@@ -85,6 +84,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         officer: { include: { rank: true } },
         createdBy: { select: { displayName: true } },
         decidedBy: { select: { displayName: true } },
+        entries: {
+          include: { createdBy: { select: { displayName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
 
@@ -92,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       action: 'PROBATION_UPDATED',
       userId: user.id,
       officerId: probation.officerId,
-      details: `${probation.officer.firstName} ${probation.officer.lastName}: ${probation.status}`,
+      details: `${probation.officer.firstName} ${probation.officer.lastName}: ${PROBATION_TYPE_LABELS[probation.type]} / ${PROBATION_STATUS_LABELS[probation.status]}`,
     })
 
     return success(probation)

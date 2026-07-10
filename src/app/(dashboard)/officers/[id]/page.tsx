@@ -276,6 +276,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { execute } = useApi()
   const canViewOfficer = hasPermission(user, 'officers:view')
   const canEditOfficer = hasPermission(user, 'officers:write')
+  const canManageOfficerUnits = canEditOfficer || hasPermission(user, 'unit-leadership:manage')
   const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
@@ -284,13 +285,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canManageNotes = hasPermission(user, 'notes:manage')
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
-  const { data: units } = useFetch<Unit[]>(canEditOfficer ? '/api/units?active=true' : null)
+  const { data: units } = useFetch<Unit[]>(canManageOfficerUnits ? '/api/units?active=true' : null)
   const { data: promotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=PROMOTION' : null)
   const { data: demotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=DEMOTION' : null)
   const draftPromotionLists = promotionLists?.filter(l => l.status === 'DRAFT') ?? []
   const draftDemotionLists = demotionLists?.filter(l => l.status === 'DRAFT') ?? []
 
-  const [editing, setEditing] = useState(false)
+  const [editingMode, setEditingMode] = useState<'full' | 'units' | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [terminateModal, setTerminateModal] = useState(false)
   const [sanctionModal, setSanctionModal] = useState(false)
@@ -321,6 +322,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     completed: boolean
   } | null>(null)
   const selectedSanctionRule = resolveSanctionPenalty(sanctionForm.penalGrade) ?? SANCTION_CATALOG.I
+  const editing = editingMode !== null
+  const unitOnlyEditing = editingMode === 'units'
 
   useEffect(() => {
     if (!canViewOfficer) return
@@ -332,7 +335,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       .catch(() => {})
   }, [id, canViewOfficer])
 
-  const startEditing = () => {
+  const startEditing = (mode: 'full' | 'units' = 'full') => {
     if (!officer) return
     setForm({
       badgeNumber: officer.badgeNumber,
@@ -346,20 +349,22 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       hireDate: officer.hireDate?.split('T')[0] || '',
       discordId: officer.discordId ?? '',
     })
-    setEditing(true)
+    setEditingMode(mode)
   }
 
   const handleSave = async () => {
     try {
-      const payload = {
-        ...form,
-        units: form.units,
-        flag: form.flag ? form.flag : null,
-        discordId: form.discordId.trim() === '' ? null : form.discordId.trim(),
-      }
+      const payload = unitOnlyEditing
+        ? { units: form.units }
+        : {
+            ...form,
+            units: form.units,
+            flag: form.flag ? form.flag : null,
+            discordId: form.discordId.trim() === '' ? null : form.discordId.trim(),
+          }
       await execute(`/api/officers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
       addToast({ type: 'success', title: 'Officer aktualisiert' })
-      setEditing(false)
+      setEditingMode(null)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -677,12 +682,17 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <Button variant="secondary" size="sm"><Download size={14} strokeWidth={1.75} /> Export</Button>
             </a>
             {!editing ? (
-              canEditOfficer && (
-                <Button variant="secondary" size="sm" onClick={startEditing}><Edit size={14} strokeWidth={1.75} /> Bearbeiten</Button>
-              )
+              <>
+                {canEditOfficer && (
+                  <Button variant="secondary" size="sm" onClick={() => startEditing('full')}><Edit size={14} strokeWidth={1.75} /> Bearbeiten</Button>
+                )}
+                {!canEditOfficer && canManageOfficerUnits && (
+                  <Button variant="secondary" size="sm" onClick={() => startEditing('units')}><Edit size={14} strokeWidth={1.75} /> Units</Button>
+                )}
+              </>
             ) : (
               <>
-                <Button variant="secondary" size="sm" onClick={() => setEditing(false)}><X size={14} /> Abbrechen</Button>
+                <Button variant="secondary" size="sm" onClick={() => setEditingMode(null)}><X size={14} /> Abbrechen</Button>
                 <Button size="sm" onClick={handleSave}><Save size={14} strokeWidth={1.75} /> Speichern</Button>
               </>
             )}
@@ -699,42 +709,48 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Persönliche Daten</h3>
             {editing ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Vorname" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-                  <Input label="Nachname" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Dienstnummer" value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
-                  <Select label="Rang" value={form.rankId} onChange={(e) => setForm({ ...form, rankId: e.target.value })} options={ranks?.map(r => ({ value: r.id, label: r.name })) || []} />
-                </div>
-                <Input
-                  label="Discord-ID"
-                  value={form.discordId}
-                  onChange={(e) => setForm({ ...form, discordId: e.target.value })}
-                  placeholder="Optional (Snowflake)"
-                  className="font-mono"
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={[
-                    { value: 'ACTIVE', label: 'Aktiv' },
-                    { value: 'AWAY', label: 'Abgemeldet' },
-                    { value: 'INACTIVE', label: 'Inaktiv' },
-                      { value: 'TERMINATED', label: 'Gekündigt' },
-                  ]} />
-                  <DateField
-                    label="Einstellungsdatum"
-                    value={form.hireDate}
-                    onChange={(v) => setForm({ ...form, hireDate: v })}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {unitOnlyEditing ? (
                   <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
-                </div>
-                <div>
-                  <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
-                  <FlagPicker value={form.flag ?? null} onChange={(v) => setForm({ ...form, flag: v ?? '' })} />
-                </div>
-                <Textarea label="Notizen" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label="Vorname" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                      <Input label="Nachname" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input label="Dienstnummer" value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
+                      <Select label="Rang" value={form.rankId} onChange={(e) => setForm({ ...form, rankId: e.target.value })} options={ranks?.map(r => ({ value: r.id, label: r.name })) || []} />
+                    </div>
+                    <Input
+                      label="Discord-ID"
+                      value={form.discordId}
+                      onChange={(e) => setForm({ ...form, discordId: e.target.value })}
+                      placeholder="Optional (Snowflake)"
+                      className="font-mono"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={[
+                        { value: 'ACTIVE', label: 'Aktiv' },
+                        { value: 'AWAY', label: 'Abgemeldet' },
+                        { value: 'INACTIVE', label: 'Inaktiv' },
+                        { value: 'TERMINATED', label: 'Gekündigt' },
+                      ]} />
+                      <DateField
+                        label="Einstellungsdatum"
+                        value={form.hireDate}
+                        onChange={(v) => setForm({ ...form, hireDate: v })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
+                    </div>
+                    <div>
+                      <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
+                      <FlagPicker value={form.flag ?? null} onChange={(v) => setForm({ ...form, flag: v ?? '' })} />
+                    </div>
+                    <Textarea label="Notizen" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
+                  </>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-6">
