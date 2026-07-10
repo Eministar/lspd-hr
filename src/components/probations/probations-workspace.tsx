@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
+  ArrowRightLeft,
   CheckCircle2,
   ClipboardCheck,
   MessageSquarePlus,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -125,7 +127,7 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
   const { user } = useAuth()
   const canView = hasPermission(user, 'probations:view')
   const canManage = hasPermission(user, 'probations:manage')
-  const { data: probations, loading, refetch } = useFetch<Probation[]>(canView ? '/api/probations' : null)
+  const { data: probations, loading, refetch, setData: setProbations } = useFetch<Probation[]>(canView ? '/api/probations' : null)
   const { data: officers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
@@ -134,12 +136,14 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [resultModal, setResultModal] = useState<Probation | null>(null)
+  const [deleteModal, setDeleteModal] = useState<Probation | null>(null)
   const [form, setForm] = useState({
     officerId: '',
     type: 'ROOKIE' as ProbationTypeValue,
     startsAt: dateInputValue(new Date()),
     endsAt: dateAfterDays(14),
   })
+  const [moveType, setMoveType] = useState<ProbationTypeValue>('ROOKIE')
   const [result, setResult] = useState({ status: 'PASSED' as Exclude<ProbationStatusValue, 'ACTIVE'>, resultNote: '' })
   const [entryForm, setEntryForm] = useState({ rating: 'POSITIVE' as ProbationEntryRatingValue, comment: '' })
 
@@ -165,6 +169,10 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
     }
     if (selectedProbation.id !== selectedId) setSelectedId(selectedProbation.id)
   }, [selectedProbation, selectedId])
+
+  useEffect(() => {
+    if (selectedProbation) setMoveType(selectedProbation.type)
+  }, [selectedProbation])
 
   const officerOptions = useMemo(() => (officers ?? [])
     .filter((officer) => officer.status !== 'TERMINATED')
@@ -205,12 +213,48 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
         method: 'PATCH',
         body: JSON.stringify({ status: result.status, resultNote: result.resultNote }),
       })
-      addToast({ type: 'success', title: 'Probezeit aktualisiert' })
+      addToast({ type: 'success', title: 'Probezeit beendet' })
       setResultModal(null)
       setResult({ status: 'PASSED', resultNote: '' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Probezeit konnte nicht aktualisiert werden', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const moveProbation = async () => {
+    if (!selectedProbation || moveType === selectedProbation.type) return
+    const probationId = selectedProbation.id
+    const targetType = moveType
+    try {
+      const updated = await execute(`/api/probations/${probationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ type: targetType }),
+      }) as Probation | null
+      setProbations((current) => current
+        ? current.map((probation) => probation.id === probationId ? (updated ?? { ...probation, type: targetType }) : probation)
+        : current)
+      setActiveType(targetType)
+      setSelectedId(probationId)
+      addToast({ type: 'success', title: 'Probezeit verschoben' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Probezeit konnte nicht verschoben werden', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const deleteProbation = async () => {
+    if (!deleteModal) return
+    const probationId = deleteModal.id
+    try {
+      await execute(`/api/probations/${probationId}`, { method: 'DELETE' })
+      setProbations((current) => current ? current.filter((probation) => probation.id !== probationId) : current)
+      if (selectedId === probationId) setSelectedId(null)
+      addToast({ type: 'success', title: 'Probezeit gelöscht' })
+      setDeleteModal(null)
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Probezeit konnte nicht gelöscht werden', message: err instanceof Error ? err.message : '' })
     }
   }
 
@@ -351,6 +395,42 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
                 </p>
               )}
 
+              {canManage && (
+                <div className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/35 p-3">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-semibold text-[#edf4fb]">Verwaltung</p>
+                    <Button variant="danger" size="sm" onClick={() => setDeleteModal(selectedProbation)}>
+                      <Trash2 size={13} /> Löschen
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+                    <Select
+                      label="Kategorie"
+                      value={moveType}
+                      onValueChange={(type) => setMoveType(type as ProbationTypeValue)}
+                      options={typeOptions}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="self-end"
+                      onClick={moveProbation}
+                      disabled={moveType === selectedProbation.type}
+                    >
+                      <ArrowRightLeft size={13} /> Verschieben
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="self-end"
+                      onClick={() => { setResultModal(selectedProbation); setResult({ status: 'PASSED', resultNote: '' }) }}
+                      disabled={selectedProbation.status !== 'ACTIVE'}
+                    >
+                      <CheckCircle2 size={13} /> Beenden
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {stats && (
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-[10px] border border-[#166534]/35 bg-[#052e1a]/35 px-3 py-2.5">
@@ -423,11 +503,6 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="text-[13px] font-semibold text-[#edf4fb]">Historie</p>
-                  {canManage && selectedProbation.status === 'ACTIVE' && (
-                    <Button size="sm" onClick={() => { setResultModal(selectedProbation); setResult({ status: 'PASSED', resultNote: '' }) }}>
-                      Ergebnis setzen
-                    </Button>
-                  )}
                 </div>
                 <div className="space-y-2">
                   {(selectedProbation.entries ?? []).length > 0 ? (
@@ -482,7 +557,7 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
         </div>
       </Modal>
 
-      <Modal open={!!resultModal} onClose={() => setResultModal(null)} title="Probezeit-Ergebnis">
+      <Modal open={!!resultModal} onClose={() => setResultModal(null)} title="Probezeit beenden">
         <div className="space-y-4">
           <Select
             label="Ergebnis"
@@ -494,10 +569,33 @@ export function ProbationsWorkspace({ embedded = false }: ProbationsWorkspacePro
               { value: 'FAILED', label: 'Nicht bestanden' },
             ]}
           />
-          <Textarea label="Notiz" value={result.resultNote} onChange={(e) => setResult({ ...result, resultNote: e.target.value })} rows={4} />
+          <Textarea label="Kommentar" value={result.resultNote} onChange={(e) => setResult({ ...result, resultNote: e.target.value })} rows={4} />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setResultModal(null)}>Abbrechen</Button>
-            <Button size="sm" onClick={decideProbation}>Speichern</Button>
+            <Button size="sm" onClick={decideProbation}>Beenden</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={!!deleteModal} onClose={() => setDeleteModal(null)} title="Probezeit löschen">
+        <div className="space-y-4">
+          <p className="text-[13px] leading-relaxed text-[#c7d4e4]">
+            Diese Probezeit inklusive Historie wird dauerhaft gelöscht.
+          </p>
+          {deleteModal && (
+            <div className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/55 px-3 py-3">
+              <p className="text-[13px] font-semibold text-white">
+                {deleteModal.officer.firstName} {deleteModal.officer.lastName}
+                <span className="ml-1 font-mono text-[#d4af37]">#{displayBadgeNumber(deleteModal.officer.badgeNumber)}</span>
+              </p>
+              <p className="mt-1 text-[12px] text-[#8ea4bd]">
+                {PROBATION_TYPE_LABELS[deleteModal.type]} · {formatDate(deleteModal.startsAt)} bis {formatDate(deleteModal.endsAt)}
+              </p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setDeleteModal(null)}>Abbrechen</Button>
+            <Button variant="danger" size="sm" onClick={deleteProbation}><Trash2 size={13} /> Löschen</Button>
           </div>
         </div>
       </Modal>

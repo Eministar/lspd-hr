@@ -1343,6 +1343,10 @@ function trainingChangeLine(change: DiscordTrainingChange, config: DiscordConfig
 
 async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig) {
   const keys = Array.from(new Set([...change.previous, ...change.current]))
+  const previousSet = new Set(change.previous)
+  const currentSet = new Set(change.current)
+  const added = change.current.filter((key) => !previousSet.has(key))
+  const removed = change.previous.filter((key) => !currentSet.has(key))
   const units = keys.length > 0
     ? await prisma.unit.findMany({
         where: { key: { in: keys } },
@@ -1350,18 +1354,32 @@ async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig)
       })
     : []
   const namesByKey = new Map(units.map((unit) => [unit.key, unit.name]))
-  const formatUnits = (unitKeys: string[]) => {
-    if (unitKeys.length === 0) return '*Keine Unit*'
-    return unitKeys.map((key) => {
-      const roleId = snowflake(config.unitRoleMap[key])
-      return roleId ? `<@&${roleId}>` : `**${namesByKey.get(key) ?? key}**`
-    }).join('  ·  ')
+  const unitLabel = (key: string) => {
+    const roleId = snowflake(config.unitRoleMap[key])
+    return roleId ? `<@&${roleId}>` : `**${namesByKey.get(key) ?? key}**`
   }
+  const unitCount = (count: number) => `${count} ${count === 1 ? 'Unit' : 'Units'}`
+  const unitLines = (unitKeys: string[]) => unitKeys.map((key, index) => (
+    `\`${String(index + 1).padStart(2, '0')}\` ${unitLabel(key)}`
+  ))
+  const changeLines = (unitKeys: string[], prefix: '+' | '-') => unitKeys.map((key) => `${prefix} ${unitLabel(key)}`)
+  const section = (title: string, lines: string[], empty: string) => [
+    `**${title}**`,
+    ...(lines.length > 0 ? lines : [empty]).map((line) => `> ${line}`),
+  ].join('\n')
+
+  const deltaSections = added.length > 0 || removed.length > 0
+    ? [
+        section('Hinzugefügt', changeLines(added, '+'), 'Keine neuen Units'),
+        section('Entfernt', changeLines(removed, '-'), 'Keine entfernten Units'),
+      ]
+    : [section('Änderung', [], 'Keine Änderung an den Units')]
 
   return [
     '### Unit-Zuordnung',
-    `**Vorher**\n> ${formatUnits(change.previous)}`,
-    `**Neu zugeordnet**\n> ${formatUnits(change.current)}`,
+    `\`${unitCount(change.previous.length)}\` vorher → \`${unitCount(change.current.length)}\` aktuell`,
+    ...deltaSections,
+    section('Aktuelle Zuordnung', unitLines(change.current), 'Keine Unit'),
   ].join('\n\n')
 }
 

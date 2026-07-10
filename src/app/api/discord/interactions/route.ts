@@ -623,11 +623,7 @@ async function performUnit(options: DiscordOption[] | undefined, actor: ReturnTy
     description: `Unit-Zuordnung via Discord-Command (${action}).`,
     officer: updated,
     actor,
-    fields: [{
-      name: 'Units',
-      value: `${current.join(', ') || '—'}\n→ **${next.join(', ') || '—'}**`,
-      inline: false,
-    }],
+    unitChange: { previous: current, current: next },
   })
 
   return `Units aktualisiert: ${updated.firstName} ${updated.lastName} → ${next.join(', ') || 'keine Unit'}.`
