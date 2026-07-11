@@ -453,6 +453,8 @@ model Officer {
   unit        String?
   units       Json?
   flag        OfficerFlag?
+  /// Uprank-Sperre: blockiert Beförderungen (Aufstieg). Degradierungen bleiben erlaubt.
+  promotionBlocked Boolean  @default(false)
   notes       String?
   hireDate    DateTime      @default(now())
   lastOnline  DateTime?

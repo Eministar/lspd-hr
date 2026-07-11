@@ -466,6 +466,38 @@ export async function syncAllPlayerPlaytime(options?: { force?: boolean; now?: D
   }
 }
 
+/**
+ * Liefert das zuletzt erfolgreich berechnete Sync-Ergebnis OHNE einen neuen
+ * externen API-Call auszulösen. Wird von häufig gepollten Endpoints (Dashboard-
+ * Stats, Streifenboard) genutzt, damit diese nicht auf die externe Player-Online
+ * API warten (Ursache für 524-Timeouts).
+ */
+export function getLastPlayerSyncSummary(now = new Date()): PlayerOnlineSyncSummary {
+  if (lastAllSync) return lastAllSync
+  return {
+    configured: playerOnlineApiConfigured(),
+    checkedAt: now,
+    onlineCount: 0,
+    errorCount: 0,
+    results: [],
+  }
+}
+
+/**
+ * Stößt den Player-Online-Sync im Hintergrund an (fire-and-forget), ohne auf das
+ * Ergebnis zu warten. TTL- und In-Flight-Deduplizierung greifen weiterhin, sodass
+ * parallele Aufrufe nur einen tatsächlichen Sync auslösen. So bleibt der Cache für
+ * `getLastPlayerSyncSummary` warm, ohne den Request-Pfad zu blockieren.
+ */
+export function triggerPlayerPlaytimeSync(options?: { now?: Date }) {
+  if (!playerOnlineApiConfigured()) return
+  if (lastAllSync && Date.now() - lastAllSyncAt < syncTtlMs()) return
+  if (activeAllSync) return
+  void syncAllPlayerPlaytime(options).catch((error) => {
+    console.error('[PlayerOnline] Hintergrund-Sync fehlgeschlagen:', error)
+  })
+}
+
 export async function syncOfficerPlayerPlaytime(officerId: string, options?: { now?: Date }) {
   const now = options?.now ?? new Date()
   if (!playerOnlineApiConfigured()) return null

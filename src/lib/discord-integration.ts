@@ -74,6 +74,7 @@ export type DiscordConfig = {
   absenceStatusChannelId: string
   absenceStatusMessageId: string
   humanResourcesRoleId: string
+  promotionBlockRoleId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
@@ -92,6 +93,7 @@ type OfficerForDiscord = {
   lastName: string
   badgeNumber: string
   status: string
+  promotionBlocked?: boolean | null
   units?: unknown
   unit?: string | null
   rankId: string
@@ -167,6 +169,7 @@ export const DISCORD_SETTING_KEYS = {
   absenceStatusChannelId: 'discord.absenceStatusChannelId',
   absenceStatusMessageId: 'discord.absenceStatusMessageId',
   humanResourcesRoleId: 'discord.humanResourcesRoleId',
+  promotionBlockRoleId: 'discord.promotionBlockRoleId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   authLoginRoleIds: 'discord.authLoginRoleIds',
@@ -388,6 +391,14 @@ function envHumanResourcesRoleId() {
   return (
     process.env.DISCORD_HUMAN_RESOURCES_ROLE_ID?.trim() ||
     process.env.LSPD_DISCORD_HUMAN_RESOURCES_ROLE_ID?.trim() ||
+    ''
+  )
+}
+
+function envPromotionBlockRoleId() {
+  return (
+    process.env.DISCORD_PROMOTION_BLOCK_ROLE_ID?.trim() ||
+    process.env.LSPD_DISCORD_PROMOTION_BLOCK_ROLE_ID?.trim() ||
     ''
   )
 }
@@ -670,6 +681,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     absenceStatusChannelId: envFirst(envAbsenceStatusChannelId(), map[DISCORD_SETTING_KEYS.absenceStatusChannelId]),
     absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
     humanResourcesRoleId: envFirst(envHumanResourcesRoleId(), map[DISCORD_SETTING_KEYS.humanResourcesRoleId]),
+    promotionBlockRoleId: envFirst(envPromotionBlockRoleId(), map[DISCORD_SETTING_KEYS.promotionBlockRoleId]),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     authLoginRoleIds: Array.from(new Set([...envLoginRoles, ...dbLoginRoles])),
@@ -699,6 +711,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.absenceStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusChannelId] = input.absenceStatusChannelId.trim()
   if (input.absenceStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusMessageId] = input.absenceStatusMessageId.trim()
   if (input.humanResourcesRoleId !== undefined) data[DISCORD_SETTING_KEYS.humanResourcesRoleId] = input.humanResourcesRoleId.trim()
+  if (input.promotionBlockRoleId !== undefined) data[DISCORD_SETTING_KEYS.promotionBlockRoleId] = input.promotionBlockRoleId.trim()
   if (input.employeeRoleIds !== undefined) data[DISCORD_SETTING_KEYS.employeeRoleIds] = JSON.stringify(cleanRoleIds(input.employeeRoleIds))
   if (input.commandRoleIds !== undefined) data[DISCORD_SETTING_KEYS.commandRoleIds] = JSON.stringify(cleanRoleIds(input.commandRoleIds))
   if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
@@ -834,6 +847,7 @@ export function managedDiscordRoleIds(config: DiscordConfig, extraManagedRoleIds
     ...Object.values(config.rankRoleMap),
     ...Object.values(config.trainingRoleMap),
     ...Object.values(config.unitRoleMap),
+    config.promotionBlockRoleId,
     ...extraManagedRoleIds,
   ].filter(Boolean)))
 }
@@ -858,6 +872,7 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
     ...(officer.trainings ?? [])
       .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),
+    ...(officer.promotionBlocked ? [config.promotionBlockRoleId] : []),
   ].filter((roleId): roleId is string => !!roleId)))
 }
 

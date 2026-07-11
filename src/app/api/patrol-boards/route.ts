@@ -68,7 +68,7 @@ export async function GET() {
         orderBy: [{ startsAt: 'desc' }, { createdAt: 'desc' }],
         take: 20,
       }),
-      getDutyTimesSnapshot(),
+      getDutyTimesSnapshot(new Date(), { sync: false }),
       prisma.dispatchCenterState.findMany({
         include: { officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } } },
       }),

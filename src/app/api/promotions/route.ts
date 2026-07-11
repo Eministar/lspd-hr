@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
     const newRank = await prisma.rank.findUnique({ where: { id: newRankId } })
     if (!newRank) return error('Rang nicht gefunden')
 
+    // Uprank-Sperre: gesperrte Officer können nicht befördert werden (Aufstieg =
+    // kleinerer sortOrder). Degradierungen bleiben erlaubt.
+    if (newRank.sortOrder < officer.rank.sortOrder && officer.promotionBlocked) {
+      return error('Officer hat eine aktive Uprank-Sperre und kann nicht befördert werden.')
+    }
+
     let newBadgeNumber: string = typeof bodyBadge === 'string' && bodyBadge.trim() ? bodyBadge.trim() : ''
     const prefix = await getBadgePrefix()
     if (newBadgeNumber) newBadgeNumber = normalizeBadgeNumber(newBadgeNumber, prefix)

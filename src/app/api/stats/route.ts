@@ -26,7 +26,12 @@ export async function GET() {
   }
 
   const recentSince = new Date(Date.now() - RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
-  await runOfficerStatusAutomation()
+  // Status-Automation NICHT abwarten: sie schreibt sequenziell pro Officer und ist
+  // ohnehin auf 60s gedrosselt. Blockieren würde den (häufig gepollten) Stats-Request
+  // unnötig verlangsamen. Ergebnis basiert auf dem zuletzt gespeicherten Stand.
+  void runOfficerStatusAutomation().catch((err) => {
+    console.error('[Stats] Status-Automation fehlgeschlagen:', err)
+  })
 
   const canViewLogs = hasPermission(user, 'logs:view')
   const canViewNotes = hasPermission(user, 'notes:view')
@@ -74,7 +79,7 @@ export async function GET() {
       where: { terminatedAt: { gte: recentSince } },
     }),
     prisma.rankChangeList.count({ where: { status: 'DRAFT' } }),
-    canViewDutyTimes ? getDutyTimesSnapshot() : Promise.resolve(null),
+    canViewDutyTimes ? getDutyTimesSnapshot(new Date(), { sync: false }) : Promise.resolve(null),
     getActiveAbsenceNotices(),
     prisma.sanction.count({
       where: { status: 'OPEN', dueAt: { lt: new Date() } },
