@@ -57,6 +57,7 @@ interface DiscordConfigResponse {
     absenceStatusChannelId: string
     absenceStatusMessageId: string
     humanResourcesRoleId: string
+    promotionBlockRoleId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
     authLoginRoleIds: string[]
@@ -134,6 +135,7 @@ export default function SettingsPage() {
     absenceStatusChannelId: '',
     absenceStatusMessageId: '',
     humanResourcesRoleId: '',
+    promotionBlockRoleId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
     authLoginRoleIds: [],
@@ -677,6 +679,17 @@ export default function SettingsPage() {
                 />
                 <p className="text-[11px] text-[#5c728a] mt-1.5">
                   Diese Rolle wird in Sanktions-Embeds als Human Resources erwähnt.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                    label="Uprank-Sperre-Rolle"
+                    value={discordForm.promotionBlockRoleId}
+                    onValueChange={(promotionBlockRoleId) => setDiscordForm({ ...discordForm, promotionBlockRoleId })}
+                    options={roleOptions}
+                />
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Officer mit aktiver Uprank-Sperre erhalten diese Rolle automatisch (und verlieren sie beim Aufheben).
                 </p>
               </div>
             </div>

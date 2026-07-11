@@ -93,6 +93,7 @@ interface OfficerDetail {
   unit: string | null
   units: string[] | null
   flag: string | null
+  promotionBlocked: boolean
   notes: string | null
   hireDate: string
   hiredBy?: { displayName: string | null; createdAt: string } | null
@@ -279,6 +280,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canManageOfficerUnits = canEditOfficer || hasPermission(user, 'unit-leadership:manage')
   const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
+  const canBlockPromotion = hasPermission(user, 'officers:promotion-block')
   const canRankChange = hasPermission(user, 'rank-changes:manage')
   const canTerminate = hasPermission(user, 'terminations:manage')
   const canSanction = hasPermission(user, 'sanctions:manage')
@@ -378,6 +380,18 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         body: JSON.stringify({ flag: next }),
       })
       addToast({ type: 'success', title: next ? `Markierung: ${getFlagLabel(next)}` : 'Markierung entfernt' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleTogglePromotionBlock = async () => {
+    if (!officer) return
+    const blocking = !officer.promotionBlocked
+    try {
+      await execute(`/api/officers/${id}/promotion-block`, { method: blocking ? 'POST' : 'DELETE' })
+      addToast({ type: 'success', title: blocking ? 'Uprank-Sperre gesetzt' : 'Uprank-Sperre aufgehoben' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -789,6 +803,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-[13.5px] text-[#4a6585]">—</span>
                   )}
                 </InfoRow>
+                <InfoRow label="Uprank-Sperre">
+                  {officer.promotionBlocked ? (
+                    <span className="inline-flex items-center gap-1.5 text-[13.5px] text-[#f59e0b]">
+                      <CircleSlash size={14} strokeWidth={2} /> Aktiv – Beförderungen blockiert
+                    </span>
+                  ) : (
+                    <span className="text-[13.5px] text-[#4a6585]">—</span>
+                  )}
+                </InfoRow>
                 <InfoRow label="Zuletzt Online" value={formatDateTime(officer.lastOnline)} />
                 {officer.notes && (
                   <div className="col-span-full">
@@ -1105,6 +1128,18 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   <button onClick={openSanctionModal}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f59e0b] hover:bg-[#1d1608] transition-colors text-left">
                     <Gavel size={15} strokeWidth={1.75} /> Sanktion
+                  </button>
+                )}
+                {canBlockPromotion && officer.status !== 'TERMINATED' && (
+                  <button onClick={handleTogglePromotionBlock}
+                    className={cn(
+                      'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] transition-colors text-left',
+                      officer.promotionBlocked
+                        ? 'text-[#34d399] hover:bg-[#0f2340]'
+                        : 'text-[#f59e0b] hover:bg-[#1d1608]',
+                    )}>
+                    <CircleSlash size={15} strokeWidth={1.75} />
+                    {officer.promotionBlocked ? 'Uprank-Sperre aufheben' : 'Uprank-Sperre setzen'}
                   </button>
                 )}
                 {canEditOfficer && officer.status === 'TERMINATED' ? (

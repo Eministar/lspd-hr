@@ -9,12 +9,16 @@ type UserDisplaySource = {
 
 const DEFAULT_DISPLAY_BADGE_PREFIX = 'LSPD-'
 
+/** Marker, der bei aktiver Uprank-Sperre vor den Namen gesetzt wird. */
+export const PROMOTION_BLOCK_MARKER = '[X]'
+
 export type LinkedOfficerDisplaySource = {
   badgeNumber: string
   firstName: string
   lastName: string
   discordId?: string | null
   status?: string | null
+  promotionBlocked?: boolean | null
 }
 
 function bracketedBadgeNumber(badgeNumber: string, prefix: string) {
@@ -32,7 +36,8 @@ function bracketedBadgeNumber(badgeNumber: string, prefix: string) {
 
 export function formatLinkedOfficerDisplayName(officer: LinkedOfficerDisplaySource, prefix: string) {
   const name = `${officer.firstName} ${officer.lastName}`.replace(/\s+/g, ' ').trim()
-  return [bracketedBadgeNumber(officer.badgeNumber, prefix), name].filter(Boolean).join(' ')
+  const marker = officer.promotionBlocked ? PROMOTION_BLOCK_MARKER : ''
+  return [marker, bracketedBadgeNumber(officer.badgeNumber, prefix), name].filter(Boolean).join(' ')
 }
 
 export async function resolveLinkedOfficerDisplayName(discordId: string | null | undefined) {
@@ -48,6 +53,7 @@ export async function resolveLinkedOfficerDisplayName(discordId: string | null |
       badgeNumber: true,
       firstName: true,
       lastName: true,
+      promotionBlocked: true,
     },
   })
   if (!officer) return null

@@ -19,10 +19,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!list) return error('Liste nicht gefunden', 404)
     if (list.status === 'COMPLETED') return error('Liste ist bereits abgeschlossen')
 
-    const officer = await prisma.officer.findUnique({ where: { id: officerId } })
+    const officer = await prisma.officer.findUnique({ where: { id: officerId }, include: { rank: true } })
     if (!officer) return error('Officer nicht gefunden')
     const proposedRank = await prisma.rank.findUnique({ where: { id: proposedRankId } })
     if (!proposedRank) return error('Vorgeschlagener Rang nicht gefunden')
+
+    // Uprank-Sperre: gesperrte Officer dürfen nicht auf Beförderungslisten (Aufstieg).
+    // Kleinerer sortOrder = höherer Rang = Beförderung. Degradierungen bleiben erlaubt.
+    const isPromotion = proposedRank.sortOrder < officer.rank.sortOrder
+    if (isPromotion && officer.promotionBlocked) {
+      return error('Officer hat eine aktive Uprank-Sperre und kann nicht befördert werden.')
+    }
 
     const existing = await prisma.rankChangeListEntry.findUnique({
       where: { listId_officerId: { listId: id, officerId } },

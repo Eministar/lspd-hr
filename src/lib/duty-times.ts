@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import {
+  getLastPlayerSyncSummary,
   syncAllPlayerPlaytime,
   syncOfficerPlayerPlaytime,
+  triggerPlayerPlaytimeSync,
   type PlayerOnlinePlayer,
   type PlayerOnlineStatusName,
   type PlayerOnlineSyncResult,
@@ -155,8 +157,18 @@ function aggregatePlaytime(sessions: PlaytimeSessionRow[], weekStart: Date, week
   }
 }
 
-export async function getDutyTimesSnapshot(now = new Date()) {
-  const sync = await syncAllPlayerPlaytime({ now })
+export async function getDutyTimesSnapshot(now = new Date(), options?: { sync?: boolean }) {
+  // sync === false: nicht auf die externe Player-Online API warten. Stattdessen das
+  // zuletzt gecachte Ergebnis verwenden und den Sync im Hintergrund anstoßen. Das
+  // verhindert 524-Timeouts auf häufig gepollten Endpoints (Dashboard-Stats,
+  // Streifenboard), die früher pro Officer einen HTTP-Call abgewartet haben.
+  let sync: Awaited<ReturnType<typeof syncAllPlayerPlaytime>>
+  if (options?.sync === false) {
+    triggerPlayerPlaytimeSync({ now })
+    sync = getLastPlayerSyncSummary(now)
+  } else {
+    sync = await syncAllPlayerPlaytime({ now })
+  }
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
   const statusByOfficerId = new Map(sync.results.map((result) => [result.officerId, result]))

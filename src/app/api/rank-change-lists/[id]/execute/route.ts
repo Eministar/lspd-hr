@@ -79,9 +79,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     let executed = 0
+    let skippedBlocked = 0
 
     for (const entry of targetEntries) {
       if (entry.officer.status === 'TERMINATED') continue
+
+      // Uprank-Sperre: gesperrte Officer bei Beförderungen (Aufstieg = kleinerer
+      // sortOrder) überspringen. Degradierungen bleiben erlaubt.
+      if (entry.proposedRank.sortOrder < entry.currentRank.sortOrder && entry.officer.promotionBlocked) {
+        skippedBlocked++
+        continue
+      }
 
       await prisma.promotionLog.create({
         data: {
@@ -151,9 +159,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       executed++
     }
 
-    const remainingEntries = entryId
-      ? await prisma.rankChangeListEntry.count({ where: { listId: id, executed: false } })
-      : 0
+    // Immer real zählen: übersprungene (gesperrte) Einträge bleiben offen, damit die
+    // Liste nicht fälschlich als abgeschlossen markiert wird.
+    const remainingEntries = await prisma.rankChangeListEntry.count({ where: { listId: id, executed: false } })
 
     if (remainingEntries === 0) {
       await prisma.rankChangeList.update({
@@ -162,7 +170,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
 
-    return success({ executed, total: targetEntries.length })
+    return success({ executed, total: targetEntries.length, skippedBlocked })
   } catch (e: unknown) {
     // Log error for debugging (will appear in server console)
     console.error('Error executing rank-change-list:', e)
