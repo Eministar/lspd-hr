@@ -98,6 +98,34 @@ const globalForPrisma = globalThis as unknown as {
   prismaCompat: PrismaClientCompat | undefined
 }
 
+function intEnv(name: string, fallback: number) {
+  const raw = process.env[name]?.trim()
+  const parsed = raw ? Number(raw) : NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+/**
+ * Baut eine explizite mariadb-Pool-Konfiguration aus der DATABASE_URL.
+ *
+ * Der Adapter-Default ist `connectionLimit=10`, was für ein Dashboard mit
+ * mehreren pollenden Endpunkten + Hintergrund-Sync (bis zu 8 parallele
+ * Verbindungen) zu knapp ist → Pool-Timeouts. Größe und Acquire-Timeout sind
+ * jetzt per Env steuerbar; `acquireTimeout` sorgt außerdem für schnelles
+ * Fehlschlagen statt minutenlangem Hängen.
+ */
+function buildPoolConfig(url: string) {
+  const u = new URL(url)
+  return {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 3306,
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ''),
+    connectionLimit: intEnv('DB_CONNECTION_LIMIT', 15),
+    acquireTimeout: intEnv('DB_POOL_ACQUIRE_TIMEOUT_MS', 12_000),
+  }
+}
+
 function createPrismaClient() {
   const url = process.env.DATABASE_URL?.trim()
   if (!url) {
@@ -105,8 +133,30 @@ function createPrismaClient() {
       '[Prisma] DATABASE_URL fehlt oder ist leer. .env im Projektroot prüfen und den Node-Prozess neu starten.',
     )
   }
-  const adapter = new PrismaMariaDb(url)
-  return new PrismaClient({ adapter })
+  const adapter = new PrismaMariaDb(buildPoolConfig(url))
+  const client = new PrismaClient({
+    adapter,
+    log: [{ emit: 'event', level: 'query' }, { emit: 'stdout', level: 'warn' }, { emit: 'stdout', level: 'error' }],
+  })
+
+  // Slow-Query-Diagnose: hilft, einen echten Verbindungs-Leak (eine Query
+  // hängt lange und hält ihre Connection) von reiner Contention zu unterscheiden.
+  const slowMs = intEnv('DB_SLOW_QUERY_MS', 1_500)
+  try {
+    // Das Query-Event ist nur typisiert, wenn `log` es enthält (tut es oben).
+    ;(client as unknown as { $on: (e: 'query', cb: (ev: { duration: number; query: string }) => void) => void }).$on(
+      'query',
+      (event) => {
+        if (event.duration >= slowMs) {
+          console.warn(`[Prisma][slow-query] ${event.duration}ms :: ${event.query}`)
+        }
+      },
+    )
+  } catch {
+    // Query-Logging ist optional — Fehler hier dürfen den Client nicht blockieren.
+  }
+
+  return client
 }
 
 function createPrismaCompatClient(client: PrismaClient): PrismaClientCompat {
