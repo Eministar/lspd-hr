@@ -1,38 +1,25 @@
-export interface OrdnungConfig {
+export interface OrdnungCategoryDTO {
   id: string
+  key: string
+  label: string
+  description: string | null
+  icon: string
+  color: string
+  sortOrder: number
+}
+
+export interface OrdnungDTO {
+  id: string
+  slug: string
   title: string
   description: string
-  category: string
   buttonLabel: string
-  file: string
   icon: string
+  categoryId: string
+  sortOrder: number
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+export interface OrdnungenPayload {
+  categories: OrdnungCategoryDTO[]
+  ordnungen: OrdnungDTO[]
 }
-
-function isOrdnungConfig(value: unknown): value is OrdnungConfig {
-  if (!isRecord(value)) return false
-
-  return (
-    typeof value.id === 'string' &&
-    typeof value.title === 'string' &&
-    typeof value.description === 'string' &&
-    typeof value.category === 'string' &&
-    typeof value.buttonLabel === 'string' &&
-    typeof value.file === 'string' &&
-    typeof value.icon === 'string'
-  )
-}
-
-export function normalizeOrdnungConfigs(parsed: unknown): OrdnungConfig[] {
-  const entries = Array.isArray(parsed)
-    ? parsed
-    : isRecord(parsed) && 'ordnungen' in parsed
-      ? parsed.ordnungen
-      : null
-
-  return Array.isArray(entries) ? entries.filter(isOrdnungConfig) : []
-}
-
