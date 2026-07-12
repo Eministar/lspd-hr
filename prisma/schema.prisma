@@ -192,6 +192,7 @@ model User {
   jobApplicationsReviewed  JobApplication[]      @relation("JobApplicationReviewer")
   pressReleasesCreated     PressRelease[]        @relation("PressReleaseCreator")
   pressReleasesUpdated     PressRelease[]        @relation("PressReleaseUpdater")
+  ordnungenCreated         Ordnung[]             @relation("OrdnungCreator")
 }
 
 model UserGroupMembership {
@@ -982,4 +983,37 @@ model ApiTokenUsage {
 
   @@index([tokenId, createdAt])
   @@index([createdAt])
+}
+
+model OrdnungCategory {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  description String?  @db.Text
+  icon        String   @default("Library")
+  color       String   @default("#4a8fd8")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ordnungen   Ordnung[]
+}
+
+model Ordnung {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @db.Text
+  buttonLabel String
+  icon        String   @default("FileText")
+  content     String   @db.Text
+  categoryId  String
+  category    OrdnungCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  sortOrder   Int      @default(0)
+  createdById String?
+  createdBy   User?    @relation("OrdnungCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
 }
