@@ -26,6 +26,8 @@ interface User {
   groupIds: string[]
   permissions: Permission[]
   groups: { id: string; name: string }[]
+  unitIds?: string[]
+  units?: { id: string; name: string; key: string }[]
   createdAt: string | null
   lastLoginAt?: string | null
   discordOnly?: boolean
@@ -35,6 +37,13 @@ interface GroupOption {
   id: string
   name: string
   discordRoles: { id: string; name: string }[]
+}
+
+interface UnitOption {
+  id: string
+  name: string
+  key: string
+  active: boolean
 }
 
 const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
@@ -61,12 +70,14 @@ function UserAvatar({ user }: { user: User }) {
 export default function UsersPage() {
   const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
   const { data: groupOptions } = useFetch<GroupOption[]>('/api/users/group-options')
+  const { data: unitOptions } = useFetch<UnitOption[]>('/api/units')
   const { user: currentUser, refreshUser } = useAuth()
   const { execute } = useApi()
   const { addToast } = useToast()
   const [editUser, setEditUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([])
   const [selectedDiscordRoleIds, setSelectedDiscordRoleIds] = useState<string[]>([])
 
   // Determine which Discord roles are relevant for the currently selected groups
@@ -81,6 +92,7 @@ export default function UsersPage() {
     setEditUser(user)
     setPermissions(user.permissions ?? [])
     setSelectedGroupIds(user.groups.map((g) => g.id))
+    setSelectedUnitIds(user.units?.map((u) => u.id) ?? [])
     setSelectedDiscordRoleIds([])
   }
 
@@ -104,6 +116,12 @@ export default function UsersPage() {
     )
   }
 
+  const toggleUnit = (unitId: string, checked: boolean) => {
+    setSelectedUnitIds((prev) =>
+      checked ? Array.from(new Set([...prev, unitId])) : prev.filter((id) => id !== unitId)
+    )
+  }
+
   const toggleDiscordRole = (roleId: string, checked: boolean) => {
     setSelectedDiscordRoleIds((prev) =>
       checked ? Array.from(new Set([...prev, roleId])) : prev.filter((id) => id !== roleId)
@@ -118,6 +136,7 @@ export default function UsersPage() {
         body: JSON.stringify({
           permissions,
           groupIds: selectedGroupIds,
+          unitIds: selectedUnitIds,
           ...(selectedDiscordRoleIds.length > 0 ? { discordRoleIds: selectedDiscordRoleIds } : {}),
         }),
       })
@@ -206,6 +225,27 @@ export default function UsersPage() {
                     checked={selectedGroupIds.includes(group.id)}
                     onCheckedChange={(checked) => toggleGroup(group.id, checked)}
                     label={group.name}
+                    className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Direct Unit Assignment */}
+          {unitOptions && unitOptions.filter((u) => u.active).length > 0 && (
+            <div>
+              <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Units (direkt zuweisen)</p>
+              <p className="text-[11px] text-[#4a6585] mb-2">
+                Zusätzlich zu den Units des verknüpften Officers. Der Benutzer erhält die Rechte dieser Units.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {unitOptions.filter((u) => u.active).map((unit) => (
+                  <Checkbox
+                    key={unit.id}
+                    checked={selectedUnitIds.includes(unit.id)}
+                    onCheckedChange={(checked) => toggleUnit(unit.id, checked)}
+                    label={unit.name}
                     className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
                   />
                 ))}
