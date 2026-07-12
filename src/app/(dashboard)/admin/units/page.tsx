@@ -13,6 +13,10 @@ import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
+import { PERMISSIONS, PERMISSION_LABELS, type Permission } from '@/lib/permissions'
+
+const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
+const MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
 
 interface Unit {
   id: string
@@ -21,6 +25,7 @@ interface Unit {
   color: string
   sortOrder: number
   active: boolean
+  permissions?: Permission[]
 }
 
 export default function UnitsPage() {
@@ -30,17 +35,26 @@ export default function UnitsPage() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editUnit, setEditUnit] = useState<Unit | null>(null)
-  const [form, setForm] = useState({ name: '', color: '#d4af37', sortOrder: 0, active: true })
+  const [form, setForm] = useState({ name: '', color: '#d4af37', sortOrder: 0, active: true, permissions: [] as Permission[] })
+
+  const togglePermission = (permission: Permission, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      permissions: checked
+        ? Array.from(new Set([...prev.permissions, permission]))
+        : prev.permissions.filter((p) => p !== permission),
+    }))
+  }
 
   const openCreate = () => {
     setEditUnit(null)
-    setForm({ name: '', color: '#d4af37', sortOrder: (units?.length || 0) + 1, active: true })
+    setForm({ name: '', color: '#d4af37', sortOrder: (units?.length || 0) + 1, active: true, permissions: [] })
     setModalOpen(true)
   }
 
   const openEdit = (unit: Unit) => {
     setEditUnit(unit)
-    setForm({ name: unit.name, color: unit.color, sortOrder: unit.sortOrder, active: unit.active })
+    setForm({ name: unit.name, color: unit.color, sortOrder: unit.sortOrder, active: unit.active, permissions: unit.permissions ?? [] })
     setModalOpen(true)
   }
 
@@ -50,6 +64,7 @@ export default function UnitsPage() {
       color: form.color,
       sortOrder: form.sortOrder,
       active: form.active,
+      permissions: form.permissions,
     }
     try {
       if (editUnit) {
@@ -103,6 +118,11 @@ export default function UnitsPage() {
                 <span className="text-[13.5px] font-medium text-[#eee]">{unit.name}</span>
                 <span className="text-[11px] text-[#4a6585] ml-2 font-mono">{unit.key}</span>
               </div>
+              {(unit.permissions?.length ?? 0) > 0 && (
+                <span className="text-[11px] text-[#7fb2e8] bg-[#132b4a] px-2 py-[3px] rounded-[5px]">
+                  {unit.permissions!.length} Rechte
+                </span>
+              )}
               <span className="text-[11px] text-[#8ea4bd] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
                 {unit.active ? 'Aktiv' : 'Inaktiv'}
               </span>
@@ -131,6 +151,40 @@ export default function UnitsPage() {
           <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
           <ColorField value={form.color} onChange={(color) => setForm({ ...form, color })} />
           <Checkbox checked={form.active} onCheckedChange={(active) => setForm({ ...form, active })} label="Unit aktiv" />
+
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1">Zusätzliche Rechte dieser Unit</p>
+            <p className="text-[11px] text-[#6a8199] mb-2">Mitglieder dieser Unit (per Officer oder direkter Zuweisung) erhalten diese Rechte zusätzlich.</p>
+          </div>
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Leserechte</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-auto">
+              {READ_PERMISSIONS.map((permission) => (
+                <Checkbox
+                  key={permission}
+                  checked={form.permissions.includes(permission)}
+                  onCheckedChange={(checked) => togglePermission(permission, checked)}
+                  label={PERMISSION_LABELS[permission]}
+                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Verwaltungsrechte</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-auto">
+              {MANAGE_PERMISSIONS.map((permission) => (
+                <Checkbox
+                  key={permission}
+                  checked={form.permissions.includes(permission)}
+                  onCheckedChange={(checked) => togglePermission(permission, checked)}
+                  label={PERMISSION_LABELS[permission]}
+                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Abbrechen</Button>
             <Button size="sm" onClick={saveUnit} disabled={!form.name.trim()}>Speichern</Button>
