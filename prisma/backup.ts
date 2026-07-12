@@ -116,13 +116,19 @@ async function loadSnapshot(prisma: PrismaClient): Promise<Snapshot> {
       try {
         return [key, await getFindManyDelegate(prisma, delegateNames).findMany()] as const
       } catch (e) {
-        if (!isSchemaDriftBackupError(e)) {
-          throw e
+        if (isSchemaDriftBackupError(e)) {
+          console.warn(
+            `Tabelle ${key} konnte wegen Schema-Unterschied nicht gelesen werden; Snapshot enthält dafür [].`,
+          )
+          return [key, []] as const
         }
 
-        console.warn(
-          `Tabelle ${key} konnte wegen Schema-Unterschied nicht gelesen werden; Snapshot enthält dafür [].`,
-        )
+        // Jeder andere Fehler (z.B. "Unexpected end of JSON input" bei einer
+        // Json-Spalte mit ungültigem Wert) darf das GESAMTE Backup nicht crashen.
+        // Tabelle laut + benannt überspringen, damit ein partielles Backup
+        // entsteht und die Ursache lokalisierbar ist.
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error(`Tabelle ${key} konnte NICHT gelesen werden (${msg}); Snapshot enthält dafür [].`)
         return [key, []] as const
       }
     }),
