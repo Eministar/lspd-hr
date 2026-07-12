@@ -27,8 +27,15 @@ log() { printf '\n\033[36m=== %s ===\033[0m\n' "$1"; }
 log "Wechsel ins App-Verzeichnis: $APP_DIR"
 cd "$APP_DIR"
 
-log "DB-Backup"
-npm run db:backup
+if [ "${SKIP_BACKUP:-0}" = "1" ]; then
+  log "DB-Backup übersprungen (--no-backup)"
+else
+  log "DB-Backup"
+  # Non-fatal: ein fehlgeschlagenes Backup darf den Deploy nicht blockieren.
+  if ! npm run db:backup; then
+    echo "WARN: DB-Backup fehlgeschlagen — Deploy wird fortgesetzt (Schema-Änderungen sind additiv). Mit --no-backup ganz überspringen."
+  fi
+fi
 
 log "Code aktualisieren (git reset --hard origin/$BRANCH)"
 git fetch origin "$BRANCH"

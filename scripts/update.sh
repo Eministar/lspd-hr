@@ -6,6 +6,7 @@
 #   bash scripts/update.sh --seed       # zusätzlich Seed (einmalig: importiert bestehende
 #                                        #   Ordnungen; ACHTUNG: setzt Gruppen-/Unit-Rechte
 #                                        #   auf die Seed-Defaults zurück!)
+#   bash scripts/update.sh --no-backup  # DB-Backup überspringen (schneller/robuster)
 #   bash scripts/update.sh --branch dev # anderen Branch deployen (Default: main)
 #
 # Erkennt den App-Ordner selbst (Elternverzeichnis dieses Skripts) und ruft dann
@@ -20,11 +21,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RUN_SEED=0
+SKIP_BACKUP=0
 DEPLOY_BRANCH="main"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --seed) RUN_SEED=1; shift ;;
+    --no-backup) SKIP_BACKUP=1; shift ;;
     --branch) DEPLOY_BRANCH="${2:?--branch braucht einen Wert}"; shift 2 ;;
     -h|--help)
       sed '1d' "${BASH_SOURCE[0]}" | grep '^#' | sed 's/^# \{0,1\}//'
@@ -33,7 +36,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-export APP_DIR RUN_SEED DEPLOY_BRANCH
+export APP_DIR RUN_SEED SKIP_BACKUP DEPLOY_BRANCH
 
 # Wichtig: deploy-server.sh liegt im Repo und wird von `git reset --hard`
 # mitten im Lauf überschrieben. Bash liest Skripte fortlaufend aus der Datei —
