@@ -34,4 +34,11 @@ while [ "$#" -gt 0 ]; do
 done
 
 export APP_DIR RUN_SEED DEPLOY_BRANCH
-exec bash "$SCRIPT_DIR/deploy-server.sh"
+
+# Wichtig: deploy-server.sh liegt im Repo und wird von `git reset --hard`
+# mitten im Lauf überschrieben. Bash liest Skripte fortlaufend aus der Datei —
+# würde die Datei sich darunter ändern, führt das zu Fehlern. Deshalb in eine
+# stabile temporäre Kopie ausführen.
+TMP_DEPLOY="$(mktemp)"
+cp "$SCRIPT_DIR/deploy-server.sh" "$TMP_DEPLOY"
+exec bash "$TMP_DEPLOY"
