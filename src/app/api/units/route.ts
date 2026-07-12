@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission, type CurrentUser } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, sanitizePermissions } from '@/lib/permissions'
 import { getManagedUnitKeysForUser, hasOfficerWriteAccess } from '@/lib/unit-leadership'
 
 function createUnitKey(name: string) {
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         color: typeof body.color === 'string' && body.color ? body.color : '#d4af37',
         sortOrder: typeof body.sortOrder === 'number' ? body.sortOrder : 0,
         active: typeof body.active === 'boolean' ? body.active : true,
+        permissions: sanitizePermissions(body.permissions),
       },
     })
 

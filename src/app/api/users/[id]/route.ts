@@ -69,6 +69,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       })
     }
 
+    // Direkte Unit-Zuweisung (analog Gruppen)
+    if ('unitIds' in body && Array.isArray(body.unitIds)) {
+      const requestedUnitIds = body.unitIds.filter((uid: unknown): uid is string => typeof uid === 'string' && uid.length > 0)
+      const validUnits = requestedUnitIds.length > 0
+        ? await prisma.unit.findMany({ where: { id: { in: requestedUnitIds } }, select: { id: true } })
+        : []
+      const validUnitIds = validUnits.map((u) => u.id)
+
+      await prisma.$transaction(async (tx) => {
+        await tx.userUnitAssignment.deleteMany({ where: { userId: id } })
+        for (const unitId of validUnitIds) {
+          await tx.userUnitAssignment.create({ data: { userId: id, unitId } })
+        }
+      })
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data,
@@ -87,6 +103,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         permissions: true,
         groupMemberships: {
           select: { group: { select: { id: true, name: true } }, source: true },
+        },
+        unitAssignments: {
+          select: { unit: { select: { id: true, name: true, key: true } } },
         },
         createdAt: true,
       },

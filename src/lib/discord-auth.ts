@@ -328,12 +328,16 @@ export function serializeDiscordBackedUser<T extends {
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
   const groups = Array.from(groupsById.values())
   const rest = Object.fromEntries(
-    Object.entries(user).filter(([key]) => key !== 'groupMemberships'),
+    Object.entries(user).filter(([key]) => key !== 'groupMemberships' && key !== 'unitAssignments'),
   ) as Omit<T, 'groupMemberships'>
+  const unitAssignments = (user as { unitAssignments?: { unit: { id: string; name: string; key: string } }[] }).unitAssignments ?? []
+  const units = unitAssignments.map((assignment) => assignment.unit)
   return {
     ...rest,
     groupIds: groups.map((group) => group.id),
     groups,
+    unitIds: units.map((unit) => unit.id),
+    units,
     permissions: sanitizePermissions(user.permissions),
     avatarUrl: storedDiscordAvatarUrl(user),
   }
