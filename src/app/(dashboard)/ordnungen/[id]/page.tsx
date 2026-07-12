@@ -1,28 +1,20 @@
-import { promises as fs } from 'fs'
-import path from 'path'
 import Link from 'next/link'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { renderMarkdown } from '@/lib/markdown'
-import { normalizeOrdnungConfigs, type OrdnungConfig } from '@/lib/ordnungen'
+import { prisma } from '@/lib/prisma'
 
-async function loadOrdnung(id: string) {
+async function loadOrdnung(slug: string) {
   try {
-    const configPath = path.join(process.cwd(), 'ordnungen', 'config.json')
-    const configData = await fs.readFile(configPath, 'utf8')
-    const parsed: unknown = JSON.parse(configData)
-    const configs: OrdnungConfig[] = normalizeOrdnungConfigs(parsed)
-
-    const config = configs.find((c) => c.id === id)
-    if (!config) {
+    const ordnung = await prisma.ordnung.findUnique({ where: { slug } })
+    if (!ordnung) {
       return { config: null, html: null, error: 'Ordnung nicht gefunden' }
     }
-
-    const markdownPath = path.join(process.cwd(), 'ordnungen', config.file)
-    const markdown = await fs.readFile(markdownPath, 'utf8')
-    const html = renderMarkdown(markdown)
-
-    return { config, html, error: null }
+    return {
+      config: { title: ordnung.title, description: ordnung.description },
+      html: renderMarkdown(ordnung.content),
+      error: null,
+    }
   } catch (error) {
     return {
       config: null,
