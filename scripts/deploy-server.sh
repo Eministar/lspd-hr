@@ -44,6 +44,13 @@ log "Schema anwenden (prisma db push, ohne --accept-data-loss)"
 # Bricht bewusst ab, wenn der Push destruktiv wäre → dann manuell eingreifen.
 npx prisma db push
 
+# Optionaler Seed — NUR wenn RUN_SEED=1 (z.B. update.sh --seed). Standardmäßig
+# aus, weil der Seed Gruppen-/Unit-Rechte auf die Defaults zurücksetzen würde.
+if [ "${RUN_SEED:-0}" = "1" ]; then
+  log "Seed (RUN_SEED=1)"
+  npm run db:seed
+fi
+
 log "Build"
 npm run build
 
