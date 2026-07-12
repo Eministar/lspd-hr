@@ -1,5 +1,7 @@
 // @ts-nocheck
 import 'dotenv/config'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import bcrypt from 'bcryptjs'
@@ -19,6 +21,57 @@ function getUpsertDelegate(names: readonly string[]): UpsertDelegate {
     throw new Error(`Prisma-Delegate nicht gefunden: ${names.join(' / ')}`)
   }
   return delegate
+}
+
+const SEED_ORDNUNG_CATEGORIES = [
+  { key: 'allgemein', label: 'Allgemein', description: 'Allgemeine Dienstordnungen und verbindliche Richtlinien', icon: 'Scale', color: '#4a8fd8', sortOrder: 0 },
+  { key: 'hr', label: 'Human Resources', description: 'Richtlinien und Verfahren für die HR-Abteilung', icon: 'Briefcase', color: '#d4af37', sortOrder: 1 },
+]
+// Mapping der alten config.json-Kategorien auf die neuen Kategorie-Keys.
+const LEGACY_CATEGORY_KEY = { Allgemein: 'allgemein', HR: 'hr' }
+
+async function importOrdnungen() {
+  const existing = await prisma.ordnung.count()
+  if (existing > 0) {
+    console.log('Ordnungen bereits vorhanden — Import übersprungen.')
+    return
+  }
+
+  // Kategorien anlegen (idempotent per key).
+  const catIdByKey = {}
+  for (const c of SEED_ORDNUNG_CATEGORIES) {
+    const cat = await prisma.ordnungCategory.upsert({
+      where: { key: c.key },
+      update: {},
+      create: c,
+    })
+    catIdByKey[c.key] = cat.id
+  }
+
+  const dir = path.join(process.cwd(), 'ordnungen')
+  const configRaw = await fs.readFile(path.join(dir, 'config.json'), 'utf8')
+  const parsed = JSON.parse(configRaw)
+  const entries = Array.isArray(parsed?.ordnungen) ? parsed.ordnungen : []
+
+  let sort = 0
+  for (const e of entries) {
+    const categoryKey = LEGACY_CATEGORY_KEY[e.category] ?? 'allgemein'
+    const content = await fs.readFile(path.join(dir, e.file), 'utf8')
+    await prisma.ordnung.create({
+      data: {
+        slug: e.id,
+        title: e.title,
+        description: e.description ?? '',
+        buttonLabel: e.buttonLabel ?? e.title,
+        icon: typeof e.icon === 'string' ? e.icon : 'FileText',
+        content,
+        categoryId: catIdByKey[categoryKey],
+        sortOrder: sort++,
+      },
+    })
+    console.log(`  importiert: ${e.id}`)
+  }
+  console.log(`Ordnungen-Import fertig (${entries.length}).`)
 }
 
 async function main() {
@@ -165,6 +218,8 @@ async function main() {
     })
   }
   console.log('Trainings created:', trainings.length)
+
+  await importOrdnungen()
 
   console.log('Seeding completed!')
 }

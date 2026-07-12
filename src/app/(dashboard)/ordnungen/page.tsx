@@ -1,64 +1,15 @@
 'use client'
 
+import { useRef } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import {
-  ScrollText,
-  FileText,
-  ArrowRight,
-  BookOpen,
-  Scale,
-  Briefcase,
-  Library,
-} from 'lucide-react'
+import { ArrowRight, Library, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useFetch } from '@/hooks/use-fetch'
-
-interface OrdnungConfig {
-  id: string
-  title: string
-  description: string
-  category: string
-  buttonLabel: string
-  file: string
-  icon: string
-}
-
-const iconMap: { [key: string]: React.ReactNode } = {
-  ScrollText: <ScrollText size={20} strokeWidth={1.75} />,
-  FileText: <FileText size={20} strokeWidth={1.75} />,
-}
-
-interface CategoryMeta {
-  key: string
-  label: string
-  description: string
-  icon: React.ReactNode
-  accent: string
-  accentSoft: string
-  ring: string
-}
-
-const categories: CategoryMeta[] = [
-  {
-    key: 'Allgemein',
-    label: 'Allgemein',
-    description: 'Allgemeine Dienstordnungen und verbindliche Richtlinien',
-    icon: <Scale size={15} strokeWidth={2} />,
-    accent: '#4a8fd8',
-    accentSoft: 'rgba(74,143,216,0.14)',
-    ring: 'rgba(74,143,216,0.35)',
-  },
-  {
-    key: 'HR',
-    label: 'Human Resources',
-    description: 'Richtlinien und Verfahren für die HR-Abteilung',
-    icon: <Briefcase size={15} strokeWidth={2} />,
-    accent: '#d4af37',
-    accentSoft: 'rgba(212,175,55,0.14)',
-    ring: 'rgba(212,175,55,0.35)',
-  },
-]
+import { useAuth } from '@/context/auth-context'
+import { ordnungIcon } from '@/lib/ordnungen-icons'
+import type { OrdnungenPayload } from '@/lib/ordnungen'
+import { OrdnungenManager, type OrdnungenManagerHandle } from '@/components/ordnungen/ordnungen-manager'
 
 function OrdnungCardSkeleton() {
   return (
@@ -74,9 +25,14 @@ function OrdnungCardSkeleton() {
 }
 
 export default function OrdnungenPage() {
-  const { data: configs } = useFetch<OrdnungConfig[]>('/api/ordnungen/config')
-  const isLoading = configs === undefined
-  const total = configs?.length ?? 0
+  const { data, refetch } = useFetch<OrdnungenPayload>('/api/ordnungen')
+  const { user } = useAuth()
+  const canManage = !!user?.permissions.includes('ordnungen:manage')
+  const managerRef = useRef<OrdnungenManagerHandle>(null)
+  const isLoading = data === undefined
+  const categories = data?.categories ?? []
+  const ordnungen = data?.ordnungen ?? []
+  const total = ordnungen.length
 
   return (
     <div className="max-w-6xl mx-auto pb-6">
@@ -109,20 +65,28 @@ export default function OrdnungenPage() {
         </div>
       </motion.div>
 
-      {categories.map((category, catIdx) => {
-        const categoryOrdnungen = configs?.filter((c) => c.category === category.key) ?? []
+      {data && canManage && (
+        <OrdnungenManager ref={managerRef} payload={data} canManage={canManage} onChanged={refetch} />
+      )}
 
+      {categories.map((category, catIdx) => {
+        const categoryOrdnungen = ordnungen.filter((o) => o.categoryId === category.id)
         if (!isLoading && categoryOrdnungen.length === 0) return null
 
+        const accent = category.color
+        const accentSoft = `${accent}24`
+        const ring = `${accent}59`
+        const CategoryIcon = ordnungIcon(category.icon)
+
         return (
-          <div key={category.key} className="mb-9">
+          <div key={category.id} className="mb-9">
             {/* Section header */}
             <div className="flex items-center gap-2.5 mb-4">
               <span
                 className="flex items-center justify-center w-7 h-7 rounded-[8px] shrink-0"
-                style={{ background: category.accentSoft, color: category.accent }}
+                style={{ background: accentSoft, color: accent }}
               >
-                {category.icon}
+                <CategoryIcon size={15} strokeWidth={2} />
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -130,66 +94,102 @@ export default function OrdnungenPage() {
                   {!isLoading && (
                     <span
                       className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-                      style={{ background: category.accentSoft, color: category.accent }}
+                      style={{ background: accentSoft, color: accent }}
                     >
                       {categoryOrdnungen.length}
                     </span>
                   )}
                 </div>
-                <p className="text-[12.5px] text-[#7e93ab] leading-tight">{category.description}</p>
+                {category.description && (
+                  <p className="text-[12.5px] text-[#7e93ab] leading-tight">{category.description}</p>
+                )}
               </div>
+              {canManage && (
+                <div className="flex gap-1 ml-auto">
+                  <button
+                    onClick={() => managerRef.current?.openEditCategory(category)}
+                    className="h-7 w-7 grid place-items-center rounded-[7px] bg-[#0b1c34]/80 text-[#8194a9] hover:text-[#edf4fb] transition-colors"
+                    title="Kategorie bearbeiten"
+                  >
+                    <Pencil size={13} strokeWidth={2} />
+                  </button>
+                  <button
+                    onClick={() => managerRef.current?.deleteCategory(category.id, category.label)}
+                    className="h-7 w-7 grid place-items-center rounded-[7px] bg-[#0b1c34]/80 text-[#8194a9] hover:text-[#ff6b6b] transition-colors"
+                    title="Kategorie löschen"
+                  >
+                    <Trash2 size={13} strokeWidth={2} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {isLoading
                 ? Array.from({ length: 2 }).map((_, i) => <OrdnungCardSkeleton key={i} />)
-                : categoryOrdnungen.map((ordnung, idx) => (
-                    <motion.div
-                      key={ordnung.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: catIdx * 0.06 + idx * 0.05 }}
-                    >
-                      <Link
-                        href={`/ordnungen/${ordnung.id}`}
-                        className="group relative flex items-start gap-4 p-5 glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/40 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-ring)] hover:bg-[#0f2340]/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
-                        style={
-                          {
-                            '--accent-ring': category.ring,
-                            '--accent': category.accent,
-                          } as React.CSSProperties
-                        }
+                : categoryOrdnungen.map((ordnung, idx) => {
+                    const Icon = ordnungIcon(ordnung.icon)
+                    return (
+                      <motion.div
+                        key={ordnung.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: catIdx * 0.06 + idx * 0.05 }}
                       >
-                        {/* accent edge */}
-                        <span
-                          className="absolute left-0 top-5 bottom-5 w-[3px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ background: category.accent }}
-                        />
-                        <div
-                          className="flex items-center justify-center w-12 h-12 rounded-[10px] shrink-0 transition-transform duration-200 group-hover:scale-[1.05]"
-                          style={{ background: category.accentSoft, color: category.accent }}
+                        <Link
+                          href={`/ordnungen/${ordnung.slug}`}
+                          className="group relative flex items-start gap-4 p-5 glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/40 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-ring)] hover:bg-[#0f2340]/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+                          style={{ '--accent-ring': ring, '--accent': accent } as React.CSSProperties}
                         >
-                          {iconMap[ordnung.icon] ?? <BookOpen size={20} strokeWidth={1.75} />}
-                        </div>
-                        <div className="flex-1 min-w-0 pt-0.5">
-                          <h3 className="text-[14px] font-semibold text-[#eef3f9] group-hover:text-[#fff] transition-colors">
-                            {ordnung.title}
-                          </h3>
-                          <p className="text-[12.5px] text-[#8194a9] mt-1 leading-relaxed line-clamp-2">
-                            {ordnung.description}
-                          </p>
-                          <span className="inline-flex items-center gap-1 mt-2.5 text-[12px] font-medium text-[#6a8fb8] group-hover:text-[var(--accent)] transition-colors">
-                            Öffnen
-                            <ArrowRight
-                              size={13}
-                              strokeWidth={2.25}
-                              className="transition-transform duration-200 group-hover:translate-x-0.5"
-                            />
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
+                          {/* accent edge */}
+                          <span
+                            className="absolute left-0 top-5 bottom-5 w-[3px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ background: accent }}
+                          />
+                          {canManage && (
+                            <div className="absolute right-2 top-2 flex gap-1">
+                              <button
+                                onClick={(e) => { e.preventDefault(); managerRef.current?.openEditOrdnung(ordnung.id) }}
+                                className="h-7 w-7 grid place-items-center rounded-[7px] bg-[#0b1c34]/80 text-[#8194a9] hover:text-[#edf4fb] transition-colors"
+                                title="Ordnung bearbeiten"
+                              >
+                                <Pencil size={13} strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); managerRef.current?.deleteOrdnung(ordnung.id, ordnung.title) }}
+                                className="h-7 w-7 grid place-items-center rounded-[7px] bg-[#0b1c34]/80 text-[#8194a9] hover:text-[#ff6b6b] transition-colors"
+                                title="Ordnung löschen"
+                              >
+                                <Trash2 size={13} strokeWidth={2} />
+                              </button>
+                            </div>
+                          )}
+                          <div
+                            className="flex items-center justify-center w-12 h-12 rounded-[10px] shrink-0 transition-transform duration-200 group-hover:scale-[1.05]"
+                            style={{ background: accentSoft, color: accent }}
+                          >
+                            <Icon size={20} strokeWidth={1.75} />
+                          </div>
+                          <div className="flex-1 min-w-0 pt-0.5">
+                            <h3 className="text-[14px] font-semibold text-[#eef3f9] group-hover:text-[#fff] transition-colors">
+                              {ordnung.title}
+                            </h3>
+                            <p className="text-[12.5px] text-[#8194a9] mt-1 leading-relaxed line-clamp-2">
+                              {ordnung.description}
+                            </p>
+                            <span className="inline-flex items-center gap-1 mt-2.5 text-[12px] font-medium text-[#6a8fb8] group-hover:text-[var(--accent)] transition-colors">
+                              Öffnen
+                              <ArrowRight
+                                size={13}
+                                strokeWidth={2.25}
+                                className="transition-transform duration-200 group-hover:translate-x-0.5"
+                              />
+                            </span>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    )
+                  })}
             </div>
           </div>
         )
