@@ -193,6 +193,7 @@ model User {
   pressReleasesCreated     PressRelease[]        @relation("PressReleaseCreator")
   pressReleasesUpdated     PressRelease[]        @relation("PressReleaseUpdater")
   ordnungenCreated         Ordnung[]             @relation("OrdnungCreator")
+  unitAssignments          UserUnitAssignment[]
 }
 
 model UserGroupMembership {
@@ -216,8 +217,25 @@ model Unit {
   color     String   @default("#d4af37")
   sortOrder Int      @default(0)
   active    Boolean  @default(true)
+  /// Zusätzliche Rechte, die diese Unit ihren Mitgliedern gewährt (analog UserGroup.permissions).
+  permissions Json   @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userAssignments UserUnitAssignment[]
+}
+
+/// Direkte Zuweisung einer Unit an einen Login-User (unabhängig vom Officer-Status).
+model UserUnitAssignment {
+  userId    String
+  unitId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@id([userId, unitId])
+  @@index([unitId])
 }
 
 model Rank {

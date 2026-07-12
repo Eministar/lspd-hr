@@ -7,6 +7,7 @@ import { storedDiscordAvatarUrl } from './discord-auth'
 import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
 import { resolveUserDisplayName } from './user-display-name'
+import { officerUnitKeys } from './officer-units'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -167,6 +168,52 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
  * Lädt einen User per Discord-Snowflake inkl. effektiver Permissions + Gruppen.
  * Liefert `null`, wenn kein User mit dieser Discord-ID existiert.
  */
+/**
+ * Ermittelt die zusätzlichen Rechte, die ein Login-User über Units erhält.
+ * Vereinigung aus (a) direkten Zuweisungen und (b) Officer-basiert
+ * (discordId → Officer, nicht gekündigt → dessen Unit-Keys). Es zählen nur
+ * `active` Units. Rückgabe: Liste roher `permissions`-Arrays (werden vom
+ * Aufrufer zusammen mit den Gruppenrechten normalisiert).
+ */
+async function loadUserUnitPermissions(params: { userId: string; discordId: string | null }): Promise<unknown[]> {
+  const { userId, discordId } = params
+  const unitPermsLists: unknown[] = []
+  const seenUnitIds = new Set<string>()
+
+  const directAssignments = await prisma.userUnitAssignment.findMany({
+    where: { userId, unit: { active: true } },
+    select: { unit: { select: { id: true, permissions: true } } },
+  })
+  for (const assignment of directAssignments) {
+    if (!seenUnitIds.has(assignment.unit.id)) {
+      seenUnitIds.add(assignment.unit.id)
+      unitPermsLists.push(assignment.unit.permissions)
+    }
+  }
+
+  if (discordId) {
+    const officer = await prisma.officer.findFirst({
+      where: { discordId, status: { not: 'TERMINATED' } },
+      select: { unit: true, units: true },
+    })
+    const keys = officer ? officerUnitKeys(officer) : []
+    if (keys.length > 0) {
+      const units = await prisma.unit.findMany({
+        where: { key: { in: keys }, active: true },
+        select: { id: true, permissions: true },
+      })
+      for (const unit of units) {
+        if (!seenUnitIds.has(unit.id)) {
+          seenUnitIds.add(unit.id)
+          unitPermsLists.push(unit.permissions)
+        }
+      }
+    }
+  }
+
+  return unitPermsLists
+}
+
 async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | null> {
   const user = await prisma.user.findFirst({
     where: { discordId },
@@ -189,9 +236,10 @@ async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | nul
   const groupsById = new Map(user.groupMemberships.map((m) => [m.group.id, m.group]))
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
   const groups = Array.from(groupsById.values())
+  const unitPerms = await loadUserUnitPermissions({ userId: user.id, discordId: user.discordId })
   const permissions = resolveEffectivePermissions(
     user.permissions,
-    groups.map((g) => g.permissions),
+    [...groups.map((g) => g.permissions), ...unitPerms],
   )
   const displayName = await resolveUserDisplayName(user)
 
@@ -229,9 +277,10 @@ async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
   const groups = Array.from(groupsById.values())
 
+  const unitPerms = await loadUserUnitPermissions({ userId: user.id, discordId: user.discordId })
   let effectivePermissions = resolveEffectivePermissions(
     user.permissions,
-    groups.map((g) => g.permissions),
+    [...groups.map((g) => g.permissions), ...unitPerms],
   )
   const groupList = groups.map((g) => ({ id: g.id, name: g.name }))
 
@@ -262,14 +311,16 @@ async function loadUserPermissions(userId: string): Promise<Permission[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      discordId: true,
       permissions: true,
       groupMemberships: { select: { group: { select: { permissions: true } } } },
     },
   })
   if (!user) return []
+  const unitPerms = await loadUserUnitPermissions({ userId, discordId: user.discordId })
   return resolveEffectivePermissions(
     user.permissions,
-    user.groupMemberships.map((m) => m.group.permissions),
+    [...user.groupMemberships.map((m) => m.group.permissions), ...unitPerms],
   )
 }
 

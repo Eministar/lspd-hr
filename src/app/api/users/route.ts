@@ -36,6 +36,9 @@ export async function GET() {
         groupMemberships: {
           select: { group: { select: { id: true, name: true } } },
         },
+        unitAssignments: {
+          select: { unit: { select: { id: true, name: true, key: true } } },
+        },
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
