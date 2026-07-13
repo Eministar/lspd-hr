@@ -45,8 +45,12 @@ async function fixJsonPermissions(prisma, { apply }) {
   let totalFixed = 0
 
   for (const [table, col] of TARGETS) {
+    // WICHTIG: Spalte als CHAR casten. Der mariadb-Adapter meldet die Spalte
+    // sonst als JSON-Typ, und Prisma ruft beim Deserialisieren JSON.parse('')
+    // auf → genau der Crash, den wir reparieren wollen. CAST liefert einen
+    // String und umgeht das Parsen.
     const rows = await prisma.$queryRawUnsafe(
-      `SELECT id, \`${col}\` AS v FROM \`${table}\` WHERE ${badRowsWhere(col)}`,
+      `SELECT id, CAST(\`${col}\` AS CHAR) AS v FROM \`${table}\` WHERE ${badRowsWhere(col)}`,
     )
     if (rows.length === 0) {
       console.log(`[ok]  ${table}.${col}: sauber`)
