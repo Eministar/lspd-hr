@@ -3,12 +3,12 @@
 import { forwardRef, useImperativeHandle, useState } from 'react'
 import { Plus, FolderPlus } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { ColorField } from '@/components/ui/color-field'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/components/ui/toast'
-import { renderMarkdown } from '@/lib/markdown'
 import { ORDNUNG_ICON_NAMES, ordnungIcon } from '@/lib/ordnungen-icons'
+import { OrdnungEditor } from '@/components/ordnungen/ordnung-editor'
 import type { OrdnungCategoryDTO, OrdnungenPayload } from '@/lib/ordnungen'
 
 export interface OrdnungenManagerHandle {
@@ -166,7 +166,6 @@ export const OrdnungenManager = forwardRef<OrdnungenManagerHandle, Props>(functi
   if (!canManage) return null
 
   const categoryOptions = payload.categories.map((c) => ({ value: c.id, label: c.label }))
-  const inputClass = 'w-full h-9 rounded-[8px] bg-[#0b1c34] border border-[#1e3a5c]/60 px-3 text-[13px] text-[#edf4fb]'
 
   return (
     <div className="mb-6 flex flex-wrap gap-2">
@@ -183,60 +182,17 @@ export const OrdnungenManager = forwardRef<OrdnungenManagerHandle, Props>(functi
         <FolderPlus size={15} strokeWidth={2} /> Neue Kategorie
       </button>
 
-      {/* Ordnung-Editor */}
-      <Modal
+      {/* Ordnung-Editor (Vollbild) */}
+      <OrdnungEditor
         open={ordnungModalOpen}
+        isEditing={!!editingOrdnungId}
+        form={ordnungForm}
+        onChange={(patch) => setOrdnungForm((f) => ({ ...f, ...patch }))}
+        categoryOptions={categoryOptions}
+        saving={saving}
+        onSave={saveOrdnung}
         onClose={() => setOrdnungModalOpen(false)}
-        title={editingOrdnungId ? 'Ordnung bearbeiten' : 'Neue Ordnung'}
-        size="lg"
-      >
-        <div className="space-y-3">
-          <input
-            value={ordnungForm.title}
-            onChange={(e) => setOrdnungForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Titel"
-            className={inputClass}
-          />
-          <input
-            value={ordnungForm.description}
-            onChange={(e) => setOrdnungForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Kurzbeschreibung"
-            className={inputClass}
-          />
-          <input
-            value={ordnungForm.buttonLabel}
-            onChange={(e) => setOrdnungForm((f) => ({ ...f, buttonLabel: e.target.value }))}
-            placeholder="Button-Label (optional, sonst = Titel)"
-            className={inputClass}
-          />
-          <Select
-            options={categoryOptions}
-            value={ordnungForm.categoryId}
-            onValueChange={(v) => setOrdnungForm((f) => ({ ...f, categoryId: v }))}
-            placeholder="Kategorie wählen"
-          />
-          <div>
-            <p className="text-[12px] text-[#8194a9] mb-1.5">Icon</p>
-            <IconPicker value={ordnungForm.icon} onChange={(v) => setOrdnungForm((f) => ({ ...f, icon: v }))} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <textarea
-              value={ordnungForm.content}
-              onChange={(e) => setOrdnungForm((f) => ({ ...f, content: e.target.value }))}
-              placeholder="Markdown-Inhalt …"
-              className="h-64 rounded-[8px] bg-[#0b1c34] border border-[#1e3a5c]/60 p-3 text-[12.5px] font-mono text-[#edf4fb] resize-none"
-            />
-            <div
-              className="markdown-document h-64 overflow-auto rounded-[8px] bg-[#0b1c34]/50 border border-[#1e3a5c]/40 p-3 text-[12.5px]"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(ordnungForm.content) }}
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button onClick={() => setOrdnungModalOpen(false)} className="h-9 px-3 rounded-[8px] bg-[#102542] text-[12.5px] text-[#cdd8e6]">Abbrechen</button>
-            <button disabled={saving} onClick={saveOrdnung} className="h-9 px-4 rounded-[8px] bg-[#17375f] text-[12.5px] text-[#edf4fb] disabled:opacity-50">Speichern</button>
-          </div>
-        </div>
-      </Modal>
+      />
 
       {/* Kategorie-Modal */}
       <Modal
@@ -246,24 +202,24 @@ export const OrdnungenManager = forwardRef<OrdnungenManagerHandle, Props>(functi
         size="md"
       >
         <div className="space-y-3">
-          <input
+          <Input
+            label="Bezeichnung"
             value={categoryForm.label}
             onChange={(e) => setCategoryForm((f) => ({ ...f, label: e.target.value }))}
-            placeholder="Bezeichnung"
-            className={inputClass}
+            placeholder="z. B. Human Resources"
           />
-          <input
+          <Input
+            label="Beschreibung"
             value={categoryForm.description}
             onChange={(e) => setCategoryForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Beschreibung (optional)"
-            className={inputClass}
+            placeholder="Optional"
           />
           <div>
-            <p className="text-[12px] text-[#8194a9] mb-1.5">Icon</p>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Icon</p>
             <IconPicker value={categoryForm.icon} onChange={(v) => setCategoryForm((f) => ({ ...f, icon: v }))} />
           </div>
           <div>
-            <p className="text-[12px] text-[#8194a9] mb-1.5">Farbe</p>
+            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Farbe</p>
             <ColorField value={categoryForm.color} onChange={(v) => setCategoryForm((f) => ({ ...f, color: v }))} />
           </div>
           <div className="flex justify-end gap-2 pt-1">
