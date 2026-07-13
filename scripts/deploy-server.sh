@@ -66,7 +66,13 @@ log "App neu starten (screen: $SCREEN_NAME)"
 screen -S "$SCREEN_NAME" -X quit || true
 # Kurz warten, damit der Port freigegeben wird.
 sleep 2
-screen -dmS "$SCREEN_NAME" npm run start
+# V8-Heap deckeln: ohne Limit wählt Node das Ceiling nach RAM (mehrere GB) und
+# gibt Speicher nie ans OS zurück → RSS klettert nach einem Peak auf 2+ GB und
+# bleibt dort. Das Limit MUSS beim Start als echte Env-Var gesetzt sein (nicht
+# via .env/dotenv — das lädt erst nach dem Node-Start, zu spät für V8-Flags).
+# Über NODE_MAX_OLD_SPACE_MB überschreibbar.
+NODE_MAX_OLD_SPACE_MB="${NODE_MAX_OLD_SPACE_MB:-1024}"
+screen -dmS "$SCREEN_NAME" env "NODE_OPTIONS=--max-old-space-size=$NODE_MAX_OLD_SPACE_MB" npm run start
 
 log "Deploy fertig — Screen-Sessions:"
 screen -ls || true

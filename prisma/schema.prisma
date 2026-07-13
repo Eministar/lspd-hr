@@ -137,7 +137,7 @@ model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?  @db.Text
-  permissions Json
+  permissions Json     @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
