@@ -3,6 +3,22 @@
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from 'react'
 import { LIVE_REFRESH_INTERVAL_MS, LIVE_UPDATE_CHANNEL, LIVE_UPDATE_EVENT } from '@/lib/live-updates'
 
+/**
+ * True, wenn der Nutzer gerade in einem editierbaren Element tippt (Input,
+ * Textarea, Select oder contentEditable). Der stille Hintergrund-Refetch würde
+ * sonst `data` überschreiben und Formulare/Editoren, die ihren Bearbeitungs-State
+ * aus `data` seeden, während des Tippens zurücksetzen — Eingaben gingen verloren.
+ * Explizite refetch()-Aufrufe (z. B. nach dem Speichern) sind davon NICHT betroffen.
+ */
+function isEditingActiveElement(): boolean {
+  if (typeof document === 'undefined') return false
+  const el = document.activeElement as HTMLElement | null
+  if (!el) return false
+  const tag = el.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  return el.isContentEditable === true
+}
+
 interface UseFetchResult<T> {
   data: T | null
   loading: boolean
@@ -61,13 +77,13 @@ export function useFetch<T>(url: string | null): UseFetchResult<T> {
     }
 
     const refreshSilently = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !isEditingActiveElement()) {
         void fetchData({ silent: true })
       }
     }
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !isEditingActiveElement()) {
         void fetchData({ silent: true })
       }
     }

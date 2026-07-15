@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, ClipboardList, FileText, MessageSquareText, Save, UserRound, XCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -71,6 +71,11 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
   const [statusText, setStatusText] = useState('')
   const [internalNote, setInternalNote] = useState('')
   const [saving, setSaving] = useState(false)
+  // Merkt sich die zuletzt in die Editierfelder geladene Bewerbung. Der stille
+  // Live-Refetch (useFetch) liefert `selected` als NEUES Objekt mit gleicher id —
+  // ohne diesen Ref würden Status-Text/interne Notiz bei jedem Refetch aus den
+  // Serverdaten überschrieben und laufende Eingaben gingen verloren.
+  const loadedApplicationIdRef = useRef<string | null>(null)
 
   const selected = useMemo(() => applications?.find((item) => item.id === selectedId) ?? applications?.[0] ?? null, [applications, selectedId])
 
@@ -80,11 +85,15 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
 
   useEffect(() => {
     if (!selected) {
+      loadedApplicationIdRef.current = null
       setStatus('SUBMITTED')
       setStatusText('')
       setInternalNote('')
       return
     }
+    // Nur beim WECHSEL der Bewerbung seeden, nicht bei jedem Live-Refetch derselben.
+    if (loadedApplicationIdRef.current === selected.id) return
+    loadedApplicationIdRef.current = selected.id
     setStatus(selected.status)
     setStatusText(selected.statusText)
     setInternalNote(selected.internalNote ?? '')

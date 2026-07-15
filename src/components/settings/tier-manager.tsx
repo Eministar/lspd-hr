@@ -45,10 +45,13 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
 
   const [tiers, setTiers] = useState<Tier[]>([])
   const [savingId, setSavingId] = useState<string | null>(null)
+  // Solange lokale, ungespeicherte Änderungen existieren, darf der Live-Refetch
+  // (useFetch aktualisiert `data` im Hintergrund) die Bearbeitung nicht überschreiben.
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    if (data) setTiers(data)
-  }, [data])
+    if (data && !dirty) setTiers(data)
+  }, [data, dirty])
 
   const roleOptions = useMemo(
     () => [{ value: '', label: 'Keine Rolle' }, ...roles.map((r) => ({ value: r.id, label: r.name }))],
@@ -65,6 +68,7 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
   }, [data])
 
   const updateLocal = (id: string, patch: Partial<Tier>) => {
+    setDirty(true)
     setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
   }
 
@@ -81,6 +85,7 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
         method: 'POST',
         body: JSON.stringify({ name: `Neue Ebene ${tiers.length + 1}`, rankIds: [], discordRoleId: null }),
       })
+      setDirty(false)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -95,6 +100,7 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
         body: JSON.stringify({ name: tier.name, discordRoleId: tier.discordRoleId, rankIds: tier.rankIds }),
       })
       addToast({ type: 'success', title: 'Ebene gespeichert', message: 'Rollen werden synchronisiert' })
+      setDirty(false)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -108,6 +114,7 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
     try {
       await execute(`/api/discord/tiers/${tier.id}`, { method: 'DELETE' })
       addToast({ type: 'success', title: 'Ebene gelöscht' })
+      setDirty(false)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })

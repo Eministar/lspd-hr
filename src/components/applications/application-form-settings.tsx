@@ -120,10 +120,19 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   const { addToast } = useToast()
   const [draft, setDraft] = useState<ApplicationFormConfig>(() => cloneConfig(DEFAULT_APPLICATION_FORM_CONFIG))
   const [saving, setSaving] = useState(false)
+  // Sobald der Nutzer editiert, darf der Live-Refetch (useFetch aktualisiert `data`
+  // alle paar Sekunden im Hintergrund) den Draft NICHT mehr überschreiben — sonst
+  // gehen ungespeicherte Eingaben verloren.
+  const [dirty, setDirty] = useState(false)
+
+  const editDraft: typeof setDraft = (value) => {
+    setDirty(true)
+    setDraft(value)
+  }
 
   useEffect(() => {
-    if (data) setDraft(cloneConfig(data))
-  }, [data])
+    if (data && !dirty) setDraft(cloneConfig(data))
+  }, [data, dirty])
 
   const requiredCount = useMemo(
     () => draft.questions.filter((question) => question.required).length,
@@ -131,7 +140,7 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   )
 
   const updateQuestion = (index: number, patch: Partial<ApplicationQuestion>) => {
-    setDraft((current) => ({
+    editDraft((current) => ({
       ...current,
       questions: current.questions.map((question, questionIndex) =>
         questionIndex === index ? { ...question, ...patch } : question,
@@ -140,7 +149,7 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   }
 
   const updateQuestionOptions = (index: number, patch: ApplicationQuestionOptions) => {
-    setDraft((current) => ({
+    editDraft((current) => ({
       ...current,
       questions: current.questions.map((question, questionIndex) => {
         if (questionIndex !== index) return question
@@ -151,7 +160,7 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   }
 
   const changeQuestionType = (index: number, type: ApplicationQuestionType) => {
-    setDraft((current) => ({
+    editDraft((current) => ({
       ...current,
       questions: current.questions.map((question, questionIndex) => {
         if (questionIndex !== index) return question
@@ -177,7 +186,7 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   }
 
   const addQuestion = () => {
-    setDraft((current) => {
+    editDraft((current) => {
       const previousSection = current.questions[current.questions.length - 1]?.section ?? null
       return {
         ...current,
@@ -190,14 +199,14 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   }
 
   const removeQuestion = (index: number) => {
-    setDraft((current) => ({
+    editDraft((current) => ({
       ...current,
       questions: reindexQuestions(current.questions.filter((_, questionIndex) => questionIndex !== index)),
     }))
   }
 
   const moveQuestion = (index: number, direction: -1 | 1) => {
-    setDraft((current) => {
+    editDraft((current) => {
       const nextIndex = index + direction
       if (nextIndex < 0 || nextIndex >= current.questions.length) return current
 
@@ -213,7 +222,7 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
   }
 
   const loadDefaults = () => {
-    setDraft(cloneConfig(DEFAULT_APPLICATION_FORM_CONFIG))
+    editDraft(cloneConfig(DEFAULT_APPLICATION_FORM_CONFIG))
   }
 
   const save = async () => {
@@ -224,6 +233,9 @@ export function ApplicationFormSettings({ canManage }: ApplicationFormSettingsPr
         body: JSON.stringify(draft),
       })
       if (saved) setDraft(cloneConfig(saved))
+      // Gespeichert → Draft entspricht wieder dem Server-Stand, Live-Refetch darf
+      // wieder seeden.
+      setDirty(false)
       addToast({ type: 'success', title: 'Bewerbungsformular gespeichert' })
       await refetch()
     } catch (e) {
