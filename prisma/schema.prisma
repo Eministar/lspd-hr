@@ -255,6 +255,33 @@ model Rank {
   newRankLogs         PromotionLog[]        @relation("NewRank")
   entryCurrentRanks   RankChangeListEntry[] @relation("EntryCurrentRank")
   entryProposedRanks  RankChangeListEntry[] @relation("EntryProposedRank")
+  tierRanks           TierRank[]
+}
+
+/// Eine "Ebene" = eine Discord-Rolle, die Officer automatisch erhalten, wenn ihr
+/// Rang einer der zugewiesenen Ränge ist. Voll gemanaged (add + remove) über den
+/// bestehenden Officer-Discord-Sync.
+model Tier {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  /// Discord-Snowflake der Ebenen-Rolle. Null = (noch) keine Rolle hinterlegt.
+  discordRoleId String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ranks TierRank[]
+}
+
+model TierRank {
+  tierId String
+  /// Ein Rang gehört zu genau EINER Ebene (global unique).
+  rankId String @unique
+  tier   Tier   @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  rank   Rank   @relation(fields: [rankId], references: [id], onDelete: Cascade)
+
+  @@id([tierId, rankId])
+  @@index([rankId])
 }
 
 model Training {

@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
+import { TierManager } from '@/components/settings/tier-manager'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
@@ -810,6 +811,9 @@ export default function SettingsPage() {
                       />
                   ))}
                 </div>
+              </div>
+              <div className="border-t border-[#18385f]/40 pt-5">
+                <TierManager roles={discordData?.roles ?? []} ranks={discordData?.ranks ?? []} />
               </div>
             </div>
           </div>

@@ -84,6 +84,14 @@ export type DiscordConfig = {
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
   unitRoleMap: Record<string, string>
+  /// Ebenen: eine Discord-Rolle, die Officer mit einem der zugewiesenen Ränge
+  /// automatisch erhalten. Aus der DB (Tier/TierRank) geladen.
+  tiers: DiscordTier[]
+}
+
+export type DiscordTier = {
+  discordRoleId: string
+  rankIds: string[]
 }
 
 type OfficerForDiscord = {
@@ -650,10 +658,23 @@ async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function getDiscordConfig(): Promise<DiscordConfig> {
-  const rows = await prisma.systemSetting.findMany({
-    where: { key: { in: Object.values(DISCORD_SETTING_KEYS) } },
-  })
+  const [rows, tierRows] = await Promise.all([
+    prisma.systemSetting.findMany({
+      where: { key: { in: Object.values(DISCORD_SETTING_KEYS) } },
+    }),
+    prisma.tier.findMany({
+      where: { discordRoleId: { not: null } },
+      select: { discordRoleId: true, ranks: { select: { rankId: true } } },
+    }),
+  ])
   const map = Object.fromEntries(rows.map((row) => [row.key, row.value]))
+
+  const tiers: DiscordTier[] = tierRows
+    .map((tier) => ({
+      discordRoleId: snowflake(tier.discordRoleId),
+      rankIds: tier.ranks.map((r) => r.rankId),
+    }))
+    .filter((tier) => tier.discordRoleId && tier.rankIds.length > 0)
 
   // ENV-VORRANG: In der .env gesetzte Werte gewinnen IMMER gegen die DB.
   // Scalars → env zuerst, DB nur als Fallback wenn env leer.
@@ -694,6 +715,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
     trainingRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.trainingRoleMap], {})),
     unitRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {})),
+    tiers,
   }
 }
 
@@ -847,6 +869,7 @@ export function managedDiscordRoleIds(config: DiscordConfig, extraManagedRoleIds
     ...Object.values(config.rankRoleMap),
     ...Object.values(config.trainingRoleMap),
     ...Object.values(config.unitRoleMap),
+    ...config.tiers.map((tier) => tier.discordRoleId),
     config.promotionBlockRoleId,
     ...extraManagedRoleIds,
   ].filter(Boolean)))
@@ -872,6 +895,10 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
     ...(officer.trainings ?? [])
       .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),
+    // Ebenen: Rolle vergeben, wenn der Rang des Officers einer Ebene zugewiesen ist.
+    ...config.tiers
+      .filter((tier) => tier.rankIds.includes(officer.rankId))
+      .map((tier) => tier.discordRoleId),
     ...(officer.promotionBlocked ? [config.promotionBlockRoleId] : []),
   ].filter((roleId): roleId is string => !!roleId)))
 }
