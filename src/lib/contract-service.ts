@@ -340,26 +340,3 @@ export function summarizeOfficerContracts(contracts: ContractStateRow[]): Office
   }
 }
 
-/** Vertragsstand für mehrere Officer in einer Abfrage (für Listenansichten). */
-export async function loadContractSummaries(officerIds: string[]) {
-  if (officerIds.length === 0) return new Map<string, OfficerContractSummary>()
-
-  const rows = await prisma.contract.findMany({
-    where: { officerId: { in: officerIds } },
-    select: { id: true, officerId: true, status: true, signedAt: true, sentAt: true, createdAt: true },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  const byOfficer = new Map<string, ContractStateRow[]>()
-  for (const row of rows) {
-    const list = byOfficer.get(row.officerId) ?? []
-    list.push(row)
-    byOfficer.set(row.officerId, list)
-  }
-
-  const summaries = new Map<string, OfficerContractSummary>()
-  for (const officerId of officerIds) {
-    summaries.set(officerId, summarizeOfficerContracts(byOfficer.get(officerId) ?? []))
-  }
-  return summaries
-}

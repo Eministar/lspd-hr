@@ -20,7 +20,7 @@ import {
 } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
-import { loadContractSummaries, queueContractForNewOfficer } from '@/lib/contract-service'
+import { queueContractForNewOfficer } from '@/lib/contract-service'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -81,7 +81,6 @@ export async function GET(req: NextRequest) {
   }
   const discordMembers = cachedDiscordMembers ?? []
   const discordMemberIds = new Set(discordMembers.map((member) => member.user?.id).filter(Boolean))
-  const contractSummaries = await loadContractSummaries(officers.map((officer) => officer.id))
 
   return success(officers.map((officer) => {
     const discordId = validDiscordId(officer.discordId)
@@ -91,7 +90,6 @@ export async function GET(req: NextRequest) {
         checked: canCheckDiscordMembers && cachedDiscordMembers !== null && !!discordId,
         inGuild: !!discordId && discordMemberIds.has(discordId),
       },
-      contract: contractSummaries.get(officer.id) ?? null,
     }
   }))
 }
