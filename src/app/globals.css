@@ -660,19 +660,37 @@ select option:hover {
    Dashboard. Ein Vertrag soll wie ein echtes Dokument wirken und nicht wie eine
    weitere UI-Karte. Deshalb hier feste Farben statt Theme-Variablen. */
 .contract-paper {
+  /* Cambria/Charter sind auf Windows bzw. macOS vorhanden und deutlich
+     bildschirmtauglicher als Times New Roman. Times bleibt letzter Fallback,
+     damit das Dokument nie in einer Systemschrift ohne Serifen landet. */
+  --contract-serif: 'Cambria', 'Charter', 'Georgia', 'Liberation Serif', 'Times New Roman', serif;
+  /* Für Kleinteiliges (Labels, Metazeilen): humanistische Grotesk. */
+  --contract-sans: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --contract-ink: #1b2333;
+  --contract-ink-soft: #4a5468;
+  --contract-rule: rgba(27, 35, 51, 0.17);
+  --contract-accent: #1f4fa3;
+
   position: relative;
   overflow: hidden;
   margin: 0 auto;
   max-width: 860px;
   border-radius: 4px;
-  border: 1px solid #d8d2c2;
-  background:
-    linear-gradient(180deg, #fdfcf7 0%, #f7f4ea 100%);
+  border: 1px solid #d9d3c4;
+  background: linear-gradient(180deg, #fdfcf8 0%, #f7f4ec 100%);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.28),
     0 18px 46px rgba(0, 0, 0, 0.45);
-  color: #1c2331;
-  font-family: 'Times New Roman', 'Georgia', serif;
+  color: var(--contract-ink);
+  font-family: var(--contract-serif);
+  font-size: 15px;
+  line-height: 1.68;
+  /* Ohne diese drei Angaben rendern Serifen je nach Browser unterschiedlich
+     dick und wirken „ausgefranst“ — damit bleibt der Grauwert konsistent. */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .contract-paper::before {
@@ -684,16 +702,16 @@ select option:hover {
   background-repeat: no-repeat;
   background-position: center 46%;
   background-size: min(58%, 420px);
-  opacity: 0.055;
+  opacity: 0.05;
   pointer-events: none;
 }
 
 .contract-paper::after {
-  /* Feiner Rahmen innerhalb des Blattes – typisch für Urkunden/Verträge. */
+  /* Feiner Rahmen innerhalb des Blattes – typisch für Urkunden und Verträge. */
   content: '';
   position: absolute;
   inset: 14px;
-  border: 1px solid rgba(28, 35, 49, 0.16);
+  border: 1px solid var(--contract-rule);
   border-radius: 2px;
   pointer-events: none;
 }
@@ -704,7 +722,7 @@ select option:hover {
 }
 
 .contract-body {
-  padding: 44px 54px 52px;
+  padding: 46px 58px 54px;
 }
 
 @media (max-width: 640px) {
@@ -713,6 +731,7 @@ select option:hover {
   }
 }
 
+/* ── Briefkopf ── */
 .contract-letterhead {
   display: flex;
   align-items: center;
@@ -722,75 +741,87 @@ select option:hover {
 }
 
 .contract-letterhead img {
-  width: 58px;
-  height: 58px;
+  width: 56px;
+  height: 56px;
+  flex: none;
   object-fit: contain;
 }
 
 .contract-letterhead-title {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-family: var(--contract-sans);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1.3;
   color: #17233a;
-  line-height: 1.25;
 }
 
 .contract-letterhead-sub {
-  margin-top: 2px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.18em;
+  margin-top: 3px;
+  font-family: var(--contract-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.17em;
   text-transform: uppercase;
-  color: #6b5a2e;
+  color: #7b6a3a;
 }
 
+/* ── Titelblock ── */
 .contract-doc-title {
-  margin-top: 30px;
+  margin-top: 34px;
   text-align: center;
-  font-size: 27px;
+  font-family: var(--contract-serif);
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1.2;
   color: #17233a;
+  /* Letterspacing hängt hinter dem letzten Buchstaben — ohne Ausgleich wirkt
+     der zentrierte Titel nach links verschoben. */
+  text-indent: 0.1em;
 }
 
 .contract-doc-subtitle {
-  margin-top: 6px;
+  margin-top: 8px;
   text-align: center;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
+  font-family: var(--contract-sans);
+  font-size: 11px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #7a8296;
+  color: #8b93a4;
 }
 
+/* ── Kopfdaten ── */
 .contract-meta {
   margin-top: 26px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px 18px;
-  border-top: 1px solid rgba(28, 35, 49, 0.18);
-  border-bottom: 1px solid rgba(28, 35, 49, 0.18);
-  padding: 14px 0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  gap: 12px 20px;
+  border-top: 1px solid var(--contract-rule);
+  border-bottom: 1px solid var(--contract-rule);
+  padding: 15px 0;
+  font-family: var(--contract-sans);
 }
 
 .contract-meta dt {
   font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #8a8264;
+  color: #8b8256;
 }
 
 .contract-meta dd {
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 3px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #1c2331;
+  line-height: 1.35;
+  color: var(--contract-ink);
 }
 
+/* ── Fließtext ── */
 .contract-section {
   margin-top: 26px;
 }
@@ -801,137 +832,314 @@ select option:hover {
 }
 
 .contract-clause-heading {
-  font-size: 14.5px;
+  margin-bottom: 5px;
+  font-family: var(--contract-serif);
+  font-size: 15.5px;
   font-weight: 700;
   color: #17233a;
 }
 
 .contract-prose {
-  font-size: 14.5px;
-  line-height: 1.72;
-  color: #22293a;
+  font-size: 15px;
+  line-height: 1.68;
+  color: var(--contract-ink);
+  /* Blocksatz NUR zusammen mit Silbentrennung — ohne sie reißt deutscher Text
+     Löcher zwischen die Wörter. Die Trennung greift außerdem nur, wenn am
+     Element eine Sprache hängt; die setzt <article lang="de"> in der Komponente. */
   text-align: justify;
+  -webkit-hyphens: auto;
   hyphens: auto;
+  hyphenate-limit-chars: 7 3 3;
+  /* Verhindert ein einzelnes Wort in der letzten Zeile. */
+  text-wrap: pretty;
+  overflow-wrap: break-word;
 }
 
-.contract-prose p + p {
+.contract-prose > * + * {
   margin-top: 10px;
 }
+
+.contract-prose h1,
+.contract-prose h2,
+.contract-prose h3,
+.contract-prose h4,
+.contract-prose h5,
+.contract-prose h6 {
+  margin-top: 16px;
+  font-family: var(--contract-serif);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: left;
+  color: #17233a;
+}
+
+.contract-prose h1 { font-size: 19px; }
+.contract-prose h2 { font-size: 17px; }
+.contract-prose h3 { font-size: 15.5px; }
+.contract-prose h4,
+.contract-prose h5,
+.contract-prose h6 { font-size: 15px; }
 
 .contract-prose strong {
   font-weight: 700;
   color: #101725;
 }
 
-.contract-prose ul,
-.contract-prose ol {
-  margin: 8px 0 0 22px;
-  list-style: revert;
+.contract-prose em {
+  font-style: italic;
 }
 
+.contract-prose ul,
+.contract-prose ol {
+  margin-left: 1.35em;
+  padding-left: 0;
+  /* Aufzählungen linksbündig: im Blocksatz zerfasern kurze Punkte sonst. */
+  text-align: left;
+}
+
+.contract-prose ul { list-style: disc outside; }
+.contract-prose ol { list-style: decimal outside; }
+
 .contract-prose li + li {
-  margin-top: 4px;
+  margin-top: 5px;
+}
+
+.contract-prose li::marker {
+  color: var(--contract-ink-soft);
+}
+
+.contract-prose blockquote {
+  margin-left: 0;
+  border-left: 2px solid var(--contract-rule);
+  padding-left: 14px;
+  color: var(--contract-ink-soft);
+  font-style: italic;
+  text-align: left;
+}
+
+.contract-prose hr {
+  border: 0;
+  border-top: 1px solid var(--contract-rule);
+  margin: 18px 0;
 }
 
 .contract-prose code {
-  font-family: 'Consolas', monospace;
-  font-size: 0.86em;
-  background: rgba(28, 35, 49, 0.07);
-  padding: 1px 4px;
+  font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', monospace;
+  font-size: 0.85em;
+  background: rgba(27, 35, 51, 0.06);
+  padding: 1px 5px;
   border-radius: 3px;
 }
 
+.contract-prose a {
+  color: var(--contract-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contract-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--contract-sans);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.contract-prose th,
+.contract-prose td {
+  border: 1px solid var(--contract-rule);
+  padding: 6px 9px;
+  vertical-align: top;
+}
+
+.contract-prose th {
+  background: rgba(27, 35, 51, 0.05);
+  font-weight: 600;
+}
+
+/* ── Unterschriftsblock ── */
 .contract-divider {
-  margin-top: 30px;
+  margin-top: 32px;
   border: 0;
-  border-top: 1px solid rgba(28, 35, 49, 0.18);
-}
-
-.contract-signature-grid {
-  margin-top: 34px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 30px;
-}
-
-.contract-signature-line {
-  border-top: 1px solid #1c2331;
-  padding-top: 6px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #58607a;
-}
-
-.contract-signature-name {
-  font-family: 'Segoe Script', 'Brush Script MT', 'Times New Roman', cursive;
-  font-size: 26px;
-  line-height: 1.1;
-  color: #14306b;
-  min-height: 34px;
-  padding-bottom: 2px;
-  overflow-wrap: anywhere;
+  border-top: 1px solid var(--contract-rule);
 }
 
 .contract-place-date {
   margin-top: 30px;
-  font-size: 14.5px;
-  color: #22293a;
+  font-size: 15px;
+  color: var(--contract-ink);
 }
 
-/* Stempel: leicht schräg, wie mit einem echten Stempelkissen aufgedrückt. */
+.contract-signature-grid {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px;
+}
+
+/*
+ * Bewusst KEINE Handschrift-Schriftart: „Brush Script“ & Co. sind nicht überall
+ * installiert, und die generische Familie `cursive` landet je nach System bei
+ * Comic Sans. Eine kursive Antiqua sieht auf jedem Gerät gleich und wertig aus.
+ */
+.contract-signature-name {
+  min-height: 38px;
+  padding-bottom: 3px;
+  font-family: var(--contract-serif);
+  font-size: 25px;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.25;
+  color: #16305f;
+  overflow-wrap: anywhere;
+}
+
+.contract-signature-line {
+  border-top: 1px solid var(--contract-ink);
+  padding-top: 7px;
+  font-family: var(--contract-sans);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--contract-ink-soft);
+}
+
+/* ── Formularfelder auf dem Papier ── */
+.contract-field-label {
+  display: block;
+  font-family: var(--contract-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8b8256;
+}
+
+.contract-field-hint {
+  margin-top: 2px;
+  font-family: var(--contract-sans);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--contract-ink-soft);
+}
+
+.contract-field-value {
+  margin-top: 4px;
+  min-height: 22px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.3);
+  padding-bottom: 3px;
+  font-size: 15px;
+  color: var(--contract-ink);
+}
+
+.contract-field-input {
+  width: 100%;
+  margin-top: 5px;
+  border: 1px solid #bab3a2;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 7px 10px;
+  font-family: var(--contract-serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--contract-ink);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.contract-field-input::placeholder {
+  color: #a49c88;
+  font-style: italic;
+}
+
+.contract-field-input:focus {
+  border-color: var(--contract-accent);
+  box-shadow: 0 0 0 3px rgba(31, 79, 163, 0.12);
+}
+
+/* Eingabefeld für die Unterschrift – gleiche Anmutung wie die gesetzte Unterschrift. */
+.contract-signature-input {
+  font-size: 21px;
+  font-style: italic;
+  letter-spacing: 0.015em;
+  color: #16305f;
+}
+
+.contract-field-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--contract-ink);
+}
+
+.contract-field-checkbox input {
+  margin-top: 4px;
+  height: 15px;
+  width: 15px;
+  flex: none;
+  accent-color: var(--contract-accent);
+}
+
+.contract-field-required {
+  color: #9e1e1e;
+}
+
+/* ── Stempel und Vermerke ── */
 .contract-stamp {
   position: absolute;
-  right: 46px;
-  bottom: 74px;
+  right: 48px;
+  bottom: 76px;
   z-index: 2;
   display: flex;
-  height: 138px;
-  width: 138px;
-  transform: rotate(-14deg);
+  height: 140px;
+  width: 140px;
+  transform: rotate(-13deg);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  border: 3px double #1f4fa3;
+  gap: 3px;
+  border: 3px double var(--contract-accent);
   border-radius: 50%;
-  color: #1f4fa3;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--contract-accent);
+  font-family: var(--contract-sans);
   text-align: center;
-  opacity: 0.72;
+  opacity: 0.7;
   pointer-events: none;
 }
 
 .contract-stamp-top {
-  font-size: 8.5px;
+  max-width: 108px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
 .contract-stamp-main {
   font-size: 14px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 .contract-stamp-date {
   font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 @media (max-width: 640px) {
   .contract-stamp {
     right: 16px;
-    bottom: 24px;
+    bottom: 22px;
     height: 104px;
     width: 104px;
   }
-  .contract-stamp-main {
-    font-size: 11px;
-  }
+  .contract-stamp-main { font-size: 11px; }
+  .contract-stamp-top { max-width: 82px; font-size: 7px; }
 }
 
 /* Entwurfs-/Ungültig-Hinweis quer über das Blatt. */
@@ -943,12 +1151,12 @@ select option:hover {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--contract-sans);
   font-size: clamp(38px, 9vw, 82px);
   font-weight: 800;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(158, 30, 30, 0.14);
+  color: rgba(158, 30, 30, 0.13);
   transform: rotate(-22deg);
 }
 
@@ -960,8 +1168,12 @@ select option:hover {
     display: none !important;
   }
   .contract-paper {
-    box-shadow: none;
-    border: 0;
     max-width: none;
+    border: 0;
+    box-shadow: none;
+  }
+  .contract-field-input {
+    border-color: transparent transparent rgba(27, 35, 51, 0.4);
+    background: transparent;
   }
 }

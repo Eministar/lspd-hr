@@ -1,4 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import type { CurrentUser } from '@/lib/auth'
+import { isDiscordContractAuditor } from '@/lib/discord-integration'
+import { hasAnyPermission } from '@/lib/permissions'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import {
   CONTRACT_PLACE,
@@ -60,12 +63,74 @@ export async function loadContractByToken(token: string) {
 }
 
 /**
+ * Wie jemand auf einen Vertragslink zugreifen darf.
+ *
+ * - `signer`  — der Officer selbst: darf ausfüllen, unterschreiben, ablehnen
+ * - `auditor` — Aufsichtsrolle oder HR: darf den Vertrag nur einsehen
+ */
+export type ContractLinkAccess = 'signer' | 'auditor'
+
+export type ContractAccessResult =
+  | { ok: true; access: ContractLinkAccess }
+  | { ok: false; status: number; message: string }
+
+/**
+ * Entscheidet, ob und wie ein eingeloggter Nutzer diesen Vertrag sehen darf.
+ *
+ * Der Link allein reicht nie: entweder gehört der Discord-Account zum Vertrag,
+ * oder er hat eine Prüfrolle bzw. das Recht, Verträge im Dashboard zu sehen.
+ */
+export async function resolveContractAccess(
+  contract: Pick<ContractLinkRecord, 'signerDiscordId'>,
+  user: CurrentUser | null,
+): Promise<ContractAccessResult> {
+  if (!user) {
+    return {
+      ok: false,
+      status: 401,
+      message: 'Bitte melde dich mit Discord an, um diesen Vertrag zu öffnen.',
+    }
+  }
+
+  if (contract.signerDiscordId && user.discordId === contract.signerDiscordId) {
+    return { ok: true, access: 'signer' }
+  }
+
+  // HR sieht Verträge ohnehin im Dashboard — dann darf der Link nicht strenger sein.
+  if (hasAnyPermission(user, ['contracts:view', 'contracts:manage'])) {
+    return { ok: true, access: 'auditor' }
+  }
+
+  if (await isDiscordContractAuditor(user.discordId)) {
+    return { ok: true, access: 'auditor' }
+  }
+
+  if (!contract.signerDiscordId) {
+    return {
+      ok: false,
+      status: 409,
+      message:
+        'Für diesen Vertrag ist keine Discord-ID hinterlegt. Bitte melde dich bei der Personalabteilung.',
+    }
+  }
+
+  return {
+    ok: false,
+    status: 403,
+    message: 'Dieser Vertrag gehört zu einem anderen Discord-Account.',
+  }
+}
+
+/**
  * Bereitet den Vertrag für die Anzeige auf: Ort und Datum werden erst hier
  * eingesetzt, damit auf einem noch offenen Vertrag immer das aktuelle Datum
  * steht. Ein unterschriebener Vertrag friert stattdessen das Unterschriftsdatum
  * ein.
  */
-export async function serializeContractDocument(contract: ContractLinkRecord) {
+export async function serializeContractDocument(
+  contract: ContractLinkRecord,
+  access: ContractLinkAccess = 'signer',
+) {
   const documentDate = contract.signedAt ?? new Date()
   const resolve = (value: string | null | undefined) =>
     value ? applyContractDatePlaceholders(value, documentDate) : ''
@@ -79,6 +144,7 @@ export async function serializeContractDocument(contract: ContractLinkRecord) {
   return {
     id: contract.id,
     token: contract.token,
+    access,
     title: contract.title,
     status: contract.status,
     content: resolve(contract.content),

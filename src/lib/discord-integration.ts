@@ -83,6 +83,8 @@ export type DiscordConfig = {
   authLoginRoleIds: string[]
   applicantRoleIds: string[]
   adminRoleIds: string[]
+  /// Rollen, die JEDEN Arbeitsvertrag über dessen Link einsehen dürfen (nur lesend).
+  contractAuditorRoleIds: string[]
   authGroupRoleMap: Record<string, string[]>
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
@@ -187,6 +189,7 @@ export const DISCORD_SETTING_KEYS = {
   authLoginRoleIds: 'discord.authLoginRoleIds',
   applicantRoleIds: 'discord.applicantRoleIds',
   adminRoleIds: 'discord.adminRoleIds',
+  contractAuditorRoleIds: 'discord.contractAuditorRoleIds',
   authGroupRoleMap: 'discord.authGroupRoleMap',
   legacyAuthRoleGroupMap: 'discord.authRoleGroupMap',
   rankRoleMap: 'discord.rankRoleMap',
@@ -321,6 +324,25 @@ export async function isDiscordUserAdmin(discordId: string | null | undefined): 
   return config.adminRoleIds.some((roleId) => roleSet.has(roleId))
 }
 
+/**
+ * Darf dieser Discord-Account JEDEN Arbeitsvertrag einsehen (nur lesend)?
+ *
+ * Gedacht für Aufsichts-/Prüfstellen: mit dem Vertragslink UND der passenden
+ * Discord-Rolle ist jeder Vertrag einsehbar, ohne dass die Personen einen
+ * Dashboard-Zugang brauchen. Die Rollen werden — wie beim Admin-Check — live
+ * aus Discord gelesen, damit ein Rollenentzug sofort greift.
+ */
+export async function isDiscordContractAuditor(discordId: string | null | undefined): Promise<boolean> {
+  const id = snowflake(discordId)
+  if (!id) return false
+  const config = await getDiscordConfig()
+  if (config.contractAuditorRoleIds.length === 0) return false
+  const roles = await getDiscordMemberRoleIds(id, config.guildId)
+  if (!roles) return false
+  const roleSet = new Set(roles)
+  return config.contractAuditorRoleIds.some((roleId) => roleSet.has(roleId))
+}
+
 function botToken() {
   return process.env.DISCORD_BOT_TOKEN?.trim() || process.env.LSPD_DISCORD_BOT_TOKEN?.trim() || ''
 }
@@ -435,6 +457,14 @@ function envApplicantRoleIds(): string[] {
   const raw =
     process.env.DISCORD_APPLICANT_ROLE_IDS?.trim() ||
     process.env.LSPD_DISCORD_APPLICANT_ROLE_IDS?.trim() ||
+    ''
+  return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+}
+
+function envContractAuditorRoleIds(): string[] {
+  const raw =
+    process.env.DISCORD_CONTRACT_AUDITOR_ROLE_IDS?.trim() ||
+    process.env.LSPD_DISCORD_CONTRACT_AUDITOR_ROLE_IDS?.trim() ||
     ''
   return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
 }
@@ -701,6 +731,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   const dbLoginRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.authLoginRoleIds], []))
   const dbApplicantRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.applicantRoleIds], []))
   const dbAdminRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], []))
+  const envContractAuditorRoles = cleanRoleIds(envContractAuditorRoleIds())
+  const dbContractAuditorRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.contractAuditorRoleIds], []))
 
   return {
     guildId: envFirst(envGuildId(), map[DISCORD_SETTING_KEYS.guildId]),
@@ -721,6 +753,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     authLoginRoleIds: Array.from(new Set([...envLoginRoles, ...dbLoginRoles])),
     applicantRoleIds: Array.from(new Set([...envApplicantRoles, ...dbApplicantRoles])),
     adminRoleIds: Array.from(new Set([...envAdminRoles, ...dbAdminRoles])),
+    contractAuditorRoleIds: Array.from(new Set([...envContractAuditorRoles, ...dbContractAuditorRoles])),
     authGroupRoleMap: normalizeAuthGroupRoleMap(
       parseJson(map[DISCORD_SETTING_KEYS.authGroupRoleMap], {}),
       parseJson(map[DISCORD_SETTING_KEYS.legacyAuthRoleGroupMap], {}),
@@ -753,6 +786,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.authLoginRoleIds !== undefined) data[DISCORD_SETTING_KEYS.authLoginRoleIds] = JSON.stringify(cleanRoleIds(input.authLoginRoleIds))
   if (input.applicantRoleIds !== undefined) data[DISCORD_SETTING_KEYS.applicantRoleIds] = JSON.stringify(cleanRoleIds(input.applicantRoleIds))
   if (input.adminRoleIds !== undefined) data[DISCORD_SETTING_KEYS.adminRoleIds] = JSON.stringify(cleanRoleIds(input.adminRoleIds))
+  if (input.contractAuditorRoleIds !== undefined) data[DISCORD_SETTING_KEYS.contractAuditorRoleIds] = JSON.stringify(cleanRoleIds(input.contractAuditorRoleIds))
   if (input.authGroupRoleMap !== undefined) data[DISCORD_SETTING_KEYS.authGroupRoleMap] = JSON.stringify(cleanGroupRoleMap(input.authGroupRoleMap))
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
   if (input.trainingRoleMap !== undefined) data[DISCORD_SETTING_KEYS.trainingRoleMap] = JSON.stringify(cleanRoleMap(input.trainingRoleMap))

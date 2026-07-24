@@ -19,6 +19,10 @@ function clientIp(req: NextRequest) {
   return (forwarded || req.headers.get('x-real-ip') || '').slice(0, 64) || null
 }
 
+/**
+ * Unterschreiben darf ausschließlich der Officer selbst. Prüfrollen und HR
+ * haben über denselben Link nur Leserecht — sie dürfen hier also nicht durch.
+ */
 async function authorizeSigner(token: string) {
   const contract = await loadContractByToken(token)
   if (!contract) return { error: notFound('Vertrag') }
@@ -31,7 +35,9 @@ async function authorizeSigner(token: string) {
     return { error: error('Für diesen Vertrag ist keine Discord-ID hinterlegt.', 409) }
   }
   if (user.discordId !== contract.signerDiscordId) {
-    return { error: error('Dieser Vertrag gehört zu einem anderen Discord-Account.', 403) }
+    return {
+      error: error('Nur der Officer selbst kann diesen Vertrag unterschreiben.', 403),
+    }
   }
 
   return { contract, user }

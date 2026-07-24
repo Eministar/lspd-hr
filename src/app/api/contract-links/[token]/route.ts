@@ -2,13 +2,20 @@ import { NextRequest } from 'next/server'
 import { success, error, notFound } from '@/lib/api-response'
 import { getCurrentUser } from '@/lib/auth'
 import { normalizeLinkToken } from '@/lib/contracts'
-import { loadContractByToken, serializeContractDocument } from '@/lib/contract-links'
+import {
+  loadContractByToken,
+  resolveContractAccess,
+  serializeContractDocument,
+} from '@/lib/contract-links'
 
 /**
- * Öffentlicher Vertragslink. Der Vertrag selbst wird erst herausgegeben, wenn
- * der eingeloggte Discord-Account zum Vertrag gehört — der Link allein reicht
- * nicht. Ohne Login wird bewusst 401 mit Kontext geliefert, damit die Seite
- * einen Discord-Login-Button zeigen kann statt einer nackten Fehlermeldung.
+ * Vertragslink.
+ *
+ * Der Link allein gewährt keinen Zugriff: entweder gehört der eingeloggte
+ * Discord-Account zum Vertrag (dann darf er unterschreiben), oder er hat eine
+ * Prüfrolle bzw. HR-Recht (dann nur Einsicht). Ohne Login wird bewusst 401 mit
+ * Kontext geliefert, damit die Seite einen Discord-Login-Button zeigen kann
+ * statt einer nackten Fehlermeldung.
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -20,22 +27,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     if (!contract) return notFound('Vertrag')
 
     const user = await getCurrentUser()
-    if (!user) {
-      return error('Bitte melde dich mit Discord an, um deinen Vertrag zu öffnen.', 401)
-    }
+    const access = await resolveContractAccess(contract, user)
+    if (!access.ok) return error(access.message, access.status)
 
-    if (!contract.signerDiscordId) {
-      return error(
-        'Für diesen Vertrag ist keine Discord-ID hinterlegt. Bitte melde dich bei der Personalabteilung.',
-        409,
-      )
-    }
-
-    if (user.discordId !== contract.signerDiscordId) {
-      return error('Dieser Vertrag gehört zu einem anderen Discord-Account.', 403)
-    }
-
-    return success(await serializeContractDocument(contract))
+    return success(await serializeContractDocument(contract, access.access))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     return error(msg, 500)

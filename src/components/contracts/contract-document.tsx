@@ -53,6 +53,10 @@ export function ContractDocument({
 
   return (
     <article
+      // `lang` ist hier funktional, nicht kosmetisch: ohne Sprachangabe macht
+      // der Browser keine Silbentrennung, und der Blocksatz reißt dann Löcher
+      // zwischen die Wörter.
+      lang="de"
       className="contract-paper"
       style={{ ['--contract-watermark' as string]: 'url(/shield.webp)' }}
     >

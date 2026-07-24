@@ -63,6 +63,7 @@ interface DiscordConfigResponse {
     commandRoleIds: string[]
     authLoginRoleIds: string[]
     applicantRoleIds: string[]
+    contractAuditorRoleIds: string[]
     authGroupRoleMap: Record<string, string[]>
     rankRoleMap: Record<string, string>
     trainingRoleMap: Record<string, string>
@@ -141,6 +142,7 @@ export default function SettingsPage() {
     commandRoleIds: [],
     authLoginRoleIds: [],
     applicantRoleIds: [],
+    contractAuditorRoleIds: [],
     authGroupRoleMap: {},
     rankRoleMap: {},
     trainingRoleMap: {},
@@ -298,7 +300,7 @@ export default function SettingsPage() {
     }
   }
 
-  const addRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds', roleId: string) => {
+  const addRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds' | 'contractAuditorRoleIds', roleId: string) => {
     if (!roleId) return
     setDiscordForm((prev) => ({
       ...prev,
@@ -306,7 +308,7 @@ export default function SettingsPage() {
     }))
   }
 
-  const removeRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds', roleId: string) => {
+  const removeRole = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds' | 'contractAuditorRoleIds', roleId: string) => {
     setDiscordForm((prev) => ({
       ...prev,
       [field]: prev[field].filter((id) => id !== roleId),
@@ -363,7 +365,7 @@ export default function SettingsPage() {
     return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
   }
 
-  const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds') => {
+  const renderRolePicker = (field: 'employeeRoleIds' | 'commandRoleIds' | 'authLoginRoleIds' | 'applicantRoleIds' | 'contractAuditorRoleIds') => {
     const selected = discordForm[field]
     const options = [
       { value: '', label: 'Rolle hinzufügen' },
@@ -708,6 +710,13 @@ export default function SettingsPage() {
                 {renderRolePicker('applicantRoleIds')}
                 <p className="text-[11px] text-[#5c728a] mt-1.5">
                   Mitglieder mit mindestens einer dieser Rollen dürfen das Bewerberportal öffnen, erhalten dadurch aber keine Dashboard-Rechte.
+                </p>
+              </div>
+              <div>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Vertragseinsicht</p>
+                {renderRolePicker('contractAuditorRoleIds')}
+                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                  Mitglieder mit mindestens einer dieser Rollen dürfen jeden Arbeitsvertrag über dessen Link einsehen (nur lesend, ohne Dashboard-Rechte). Unterschreiben kann weiterhin nur der Officer selbst.
                 </p>
               </div>
               <div>

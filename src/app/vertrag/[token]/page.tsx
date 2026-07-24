@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import {
   AlertTriangle,
   CheckCircle2,
+  Eye,
   FileSignature,
   Loader2,
   Lock,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 import { ContractDocument, type ContractDocumentData } from '@/components/contracts/contract-document'
 import {
   formatContractDate,
@@ -24,6 +26,8 @@ import {
 interface ContractPayload extends ContractDocumentData {
   id: string
   token: string
+  /** 'signer' = der Officer selbst, 'auditor' = Einsicht über Prüfrolle/HR. */
+  access: 'signer' | 'auditor'
   fields: ContractField[]
   values: ContractValues
   declinedAt: string | null
@@ -84,7 +88,10 @@ export default function ContractSigningPage() {
   }, [load])
 
   const contract = state.kind === 'ready' ? state.contract : null
-  const editable = contract ? contract.status === 'DRAFT' || contract.status === 'SENT' : false
+  // Prüfer sehen denselben Vertrag, dürfen aber nichts daran ändern.
+  const editable = contract
+    ? contract.access === 'signer' && (contract.status === 'DRAFT' || contract.status === 'SENT')
+    : false
 
   const missingRequired = useMemo(() => {
     if (!contract || !editable) return []
@@ -213,6 +220,21 @@ export default function ContractSigningPage() {
         </Button>
       </div>
 
+      {signedContract.access === 'auditor' && (
+        <div className="contract-no-print mb-5 rounded-[14px] border border-[#1e3a5c]/55 bg-[#0a1a33]/60 p-4">
+          <div className="flex items-start gap-3">
+            <Eye size={18} className="mt-0.5 shrink-0 text-[#93c5fd]" />
+            <div>
+              <p className="text-[13px] font-semibold text-white">Einsicht</p>
+              <p className="mt-1 text-[12.5px] leading-5 text-[#8ea4bd]">
+                Du siehst diesen Vertrag über deine Berechtigung zur Vertragseinsicht. Ändern oder
+                unterschreiben kann ihn ausschließlich der Officer selbst.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editable && (
         <div className="contract-no-print mb-5 rounded-[14px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
           <div className="flex items-start gap-3">
@@ -283,7 +305,7 @@ export default function ContractSigningPage() {
         </div>
       )}
 
-      {signedContract.status === 'SIGNED' && (
+      {signedContract.status === 'SIGNED' && signedContract.access === 'signer' && (
         <div className="contract-no-print mt-5 flex items-start gap-3 rounded-[14px] border border-[#1d4230]/60 bg-[#0d2419]/70 p-4">
           <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[#86efac]" />
           <div>
@@ -301,10 +323,15 @@ export default function ContractSigningPage() {
 }
 
 function StatusLine({ contract }: { contract: ContractPayload }) {
+  // Für Prüfer neutral formulieren — „deine Unterschrift“ wäre dort falsch.
+  const pending = contract.access === 'signer'
+    ? 'Warten auf deine Unterschrift'
+    : 'Noch nicht unterschrieben'
+
   const labels: Record<ContractStatusValue, string> = {
-    DRAFT: 'Warten auf deine Unterschrift',
-    SENT: 'Warten auf deine Unterschrift',
-    SIGNED: `Unterschrieben am ${formatContractDate(contract.signedAt)}`,
+    DRAFT: pending,
+    SENT: pending,
+    SIGNED: `Unterschrieben am ${formatContractDate(contract.signedAt)} von ${contract.signedName ?? '—'}`,
     DECLINED: `Abgelehnt am ${formatContractDate(contract.declinedAt)}`,
     CANCELLED: 'Von der Personalabteilung zurückgezogen',
   }
@@ -378,9 +405,6 @@ function ContractFieldsSection({
   )
 }
 
-const paperInputClass =
-  'w-full rounded-[3px] border border-[#b9b2a0] bg-white/70 px-2.5 py-1.5 text-[14px] text-[#1c2331] outline-none transition-colors placeholder:text-[#9a937f] focus:border-[#1f4fa3]'
-
 function ContractFieldRow({
   field,
   value,
@@ -395,21 +419,19 @@ function ContractFieldRow({
   const textValue = typeof value === 'string' ? value : ''
 
   if (field.type === 'CHECKBOX') {
-    const checked = value === true
     return (
-      <label className="flex items-start gap-2.5 text-[14px] text-[#22293a]">
+      <label className="contract-field-checkbox">
         <input
           type="checkbox"
-          checked={checked}
+          checked={value === true}
           disabled={!editable}
           onChange={(event) => onChange(event.target.checked)}
-          className="mt-1 h-[15px] w-[15px] accent-[#1f4fa3]"
         />
         <span>
           {field.label}
-          {field.required && <span className="text-[#9e1e1e]"> *</span>}
+          {field.required && <span className="contract-field-required"> *</span>}
           {field.description && (
-            <span className="mt-0.5 block text-[12px] text-[#6b7285]">{field.description}</span>
+            <span className="contract-field-hint block">{field.description}</span>
           )}
         </span>
       </label>
@@ -418,22 +440,14 @@ function ContractFieldRow({
 
   return (
     <div>
-      <label className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a8264]">
+      <label className="contract-field-label">
         {field.label}
-        {field.required && <span className="text-[#9e1e1e]"> *</span>}
+        {field.required && <span className="contract-field-required"> *</span>}
       </label>
-      {field.description && (
-        <p className="mt-0.5 text-[12px] text-[#6b7285]">{field.description}</p>
-      )}
+      {field.description && <p className="contract-field-hint">{field.description}</p>}
 
       {!editable ? (
-        <p
-          className={
-            field.type === 'SIGNATURE'
-              ? 'contract-signature-name mt-1'
-              : 'mt-1 border-b border-[#b9b2a0] pb-1 text-[14.5px] text-[#1c2331]'
-          }
-        >
+        <p className={field.type === 'SIGNATURE' ? 'contract-signature-name' : 'contract-field-value'}>
           {field.type === 'DATE' ? formatContractDate(textValue) || '—' : textValue || '—'}
         </p>
       ) : field.type === 'LONG_TEXT' ? (
@@ -442,7 +456,7 @@ function ContractFieldRow({
           onChange={(event) => onChange(event.target.value)}
           rows={3}
           placeholder={field.placeholder ?? ''}
-          className={`${paperInputClass} mt-1 resize-none`}
+          className="contract-field-input resize-none"
         />
       ) : (
         <input
@@ -450,11 +464,7 @@ function ContractFieldRow({
           value={textValue}
           onChange={(event) => onChange(event.target.value)}
           placeholder={field.placeholder ?? ''}
-          className={`${paperInputClass} mt-1 ${
-            field.type === 'SIGNATURE'
-              ? 'font-[Segoe_Script,Brush_Script_MT,cursive] text-[22px] text-[#14306b]'
-              : ''
-          }`}
+          className={cn('contract-field-input', field.type === 'SIGNATURE' && 'contract-signature-input')}
         />
       )}
     </div>
