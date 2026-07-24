@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { buildFormSubmitterHash, stripCorrectAnswersFromQuestion } from '@/lib/form-tests'
 import {
@@ -8,6 +8,7 @@ import {
   isFormTestSessionWriteConflict,
   securityEventCount,
 } from '@/lib/form-test-sessions'
+import { FORM_LINK_ERRORS, closeStaleFormTestSessions, resolveFormLink } from '@/lib/form-links'
 
 const sessionSelect = {
   id: true,
@@ -21,14 +22,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     const user = await requireAuth()
     const { token } = await params
 
-    const test = await prisma.formTest.findUnique({
-      where: { shareToken: token },
-      include: {
-        questions: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
-      },
-    })
-    if (!test) return notFound('Test')
-    if (test.status !== 'ACTIVE') return error('Dieser Link ist nicht aktiv', 403)
+    const lookup = await resolveFormLink(token)
+    if (!lookup.ok) {
+      const details = FORM_LINK_ERRORS[lookup.reason]
+      return error(details.message, details.status)
+    }
+    const test = lookup.test
+
+    // Verwaiste Sitzungen aufräumen, BEVOR eine neue gesucht wird — sonst
+    // blockiert eine vergessene Sitzung den erneuten Einstieg in den Test.
+    await closeStaleFormTestSessions(user.id)
 
     const submitterHash = buildFormSubmitterHash(test.id, user.id)
     const existingResponse = await prisma.formResponse.findFirst({
@@ -68,19 +71,32 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
         return error('Die Zeit für diesen Test ist abgelaufen', 403)
       }
 
-      session = activeSession
-        ? activeSession
-        : await prisma.formTestSession.create({
-            data: {
-              testId: test.id,
-              userId: user.id,
-              lastSeenAt: now,
-              expiresAt: test.timeLimitMinutes
-                ? new Date(now.getTime() + test.timeLimitMinutes * 60 * 1000)
-                : null,
-            },
-            select: sessionSelect,
+      if (activeSession) {
+        // Lebenszeichen setzen: solange die Seite offen ist (und dabei still
+        // nachlädt), gilt die Sitzung als aktiv und wird nicht als verwaist
+        // abgeräumt.
+        try {
+          await prisma.formTestSession.updateMany({
+            where: { id: activeSession.id, completedAt: null },
+            data: { lastSeenAt: now },
           })
+        } catch (e: unknown) {
+          if (!isFormTestSessionWriteConflict(e)) throw e
+        }
+        session = activeSession
+      } else {
+        session = await prisma.formTestSession.create({
+          data: {
+            testId: test.id,
+            userId: user.id,
+            lastSeenAt: now,
+            expiresAt: test.timeLimitMinutes
+              ? new Date(now.getTime() + test.timeLimitMinutes * 60 * 1000)
+              : null,
+          },
+          select: sessionSelect,
+        })
+      }
     }
 
     return success({

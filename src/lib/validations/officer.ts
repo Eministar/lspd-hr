@@ -32,6 +32,10 @@ export const createOfficerSchema = z.object({
   unit: z.string().trim().min(1).nullable().optional(),
   units: z.array(z.string().trim().min(1)).nullable().optional(),
   flag: z.enum(OFFICER_FLAG_VALUES).nullable().optional(),
+  /** Bewerbung, aus der dieser Officer hervorgeht (wird verknüpft). */
+  applicationId: z.string().trim().min(1).nullable().optional(),
+  /** Vorlage für den Vertrag; leer = Standardvorlage. */
+  contractTemplateId: z.string().trim().min(1).nullable().optional(),
 })
 
 export const updateOfficerSchema = createOfficerSchema.partial()

@@ -40,6 +40,8 @@ import {
   penalGradeLabel,
   resolveSanctionPenalty,
 } from '@/lib/sanction-catalog'
+import { CONTRACT_STATUS_META, type ContractStatusValue } from '@/lib/contracts'
+import { Badge } from '@/components/ui/badge'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
@@ -135,6 +137,32 @@ interface OfficerDetail {
     upcoming: AbsenceNotice[]
     recent: AbsenceNotice[]
   }
+  contracts?: OfficerContract[]
+  jobApplication?: LinkedApplication | null
+}
+interface OfficerContract {
+  id: string
+  title: string
+  status: ContractStatusValue
+  token: string
+  sentAt: string | null
+  sentVia: string | null
+  sendCount: number
+  lastSendError: string | null
+  signedAt: string | null
+  signedName: string | null
+  declinedAt: string | null
+  declineReason: string | null
+  createdAt: string
+  template: { id: string; name: string } | null
+}
+interface LinkedApplication {
+  id: string
+  applicantDisplayName: string
+  status: string
+  statusText: string
+  submittedAt: string
+  discordId: string
 }
 interface AbsenceNotice {
   id: string
@@ -285,6 +313,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canTerminate = hasPermission(user, 'terminations:manage')
   const canSanction = hasPermission(user, 'sanctions:manage')
   const canManageNotes = hasPermission(user, 'notes:manage')
+  const canManageContracts = hasPermission(user, 'contracts:manage')
+  const canViewContracts = canManageContracts || hasPermission(user, 'contracts:view')
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
   const { data: units } = useFetch<Unit[]>(canManageOfficerUnits ? '/api/units?active=true' : null)
@@ -309,6 +339,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const [newBadgeNumber, setNewBadgeNumber] = useState('')
   const [rankChangeNote, setRankChangeNote] = useState('')
   const [noteForm, setNoteForm] = useState({ title: '', content: '' })
+  const [contractBusy, setContractBusy] = useState(false)
   const [absenceEndsAt, setAbsenceEndsAt] = useState(dateAfterDays(3))
   const [absenceReason, setAbsenceReason] = useState('')
   const [form, setForm] = useState<OfficerForm>(EMPTY_OFFICER_FORM)
@@ -444,6 +475,47 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     setSanctionModal(false)
     setEditingSanction(null)
     setSanctionForm(EMPTY_SANCTION_FORM)
+  }
+
+  /** Erstellt einen Arbeitsvertrag aus der Standardvorlage und versendet ihn. */
+  const handleCreateContract = async () => {
+    setContractBusy(true)
+    try {
+      await execute('/api/contracts', {
+        method: 'POST',
+        body: JSON.stringify({ officerId: id, applicationId: officer?.jobApplication?.id ?? null }),
+      })
+      addToast({ type: 'success', title: 'Vertrag erstellt und versendet' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setContractBusy(false)
+    }
+  }
+
+  /** „Vertragsnachricht senden“ — schickt den persönlichen Link erneut per DM. */
+  const handleSendContractMessage = async (contractId: string) => {
+    setContractBusy(true)
+    try {
+      await execute(`/api/contracts/${contractId}/send`, { method: 'POST' })
+      addToast({ type: 'success', title: 'Vertragsnachricht gesendet' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Versand fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setContractBusy(false)
+    }
+  }
+
+  const handleCopyContractLink = async (token: string) => {
+    const url = `${window.location.origin}/vertrag/${token}`
+    try {
+      await navigator.clipboard.writeText(url)
+      addToast({ type: 'success', title: 'Vertragslink kopiert' })
+    } catch {
+      addToast({ type: 'error', title: 'Kopieren fehlgeschlagen', message: url })
+    }
   }
 
   const handleSanction = async () => {
@@ -1034,6 +1106,22 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {canViewContracts && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.105 }}
+              className="glass-panel-elevated rounded-[14px] p-5">
+              <ContractSection
+                contracts={officer.contracts ?? []}
+                application={officer.jobApplication ?? null}
+                officerHasDiscordId={Boolean(officer.discordId)}
+                canManage={canManageContracts}
+                busy={contractBusy}
+                onCreate={handleCreateContract}
+                onSend={handleSendContractMessage}
+                onCopyLink={handleCopyContractLink}
+              />
             </motion.div>
           )}
 
@@ -1637,6 +1725,153 @@ function SanctionCard({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Arbeitsvertrag + zugehörige Bewerbung auf der Personalakte.
+ *
+ * Ein unterschriebener Vertrag ist Voraussetzung für die Einstellung — solange
+ * er offen ist, steht „Vertragsnachricht senden“ prominent bereit, damit HR den
+ * Link jederzeit erneut zustellen kann.
+ */
+function ContractSection({
+  contracts,
+  application,
+  officerHasDiscordId,
+  canManage,
+  busy,
+  onCreate,
+  onSend,
+  onCopyLink,
+}: {
+  contracts: OfficerContract[]
+  application: LinkedApplication | null
+  officerHasDiscordId: boolean
+  canManage: boolean
+  busy: boolean
+  onCreate: () => void
+  onSend: (contractId: string) => void
+  onCopyLink: (token: string) => void
+}) {
+  const openContract = contracts.find((c) => c.status === 'DRAFT' || c.status === 'SENT') ?? null
+  const signedContract = contracts.find((c) => c.status === 'SIGNED') ?? null
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-[13.5px] font-semibold text-[#eee]">Arbeitsvertrag</h3>
+        {canManage && !openContract && !signedContract && (
+          <Button size="sm" onClick={onCreate} loading={busy}>
+            <Send size={13} strokeWidth={1.75} />
+            Unterschrift beantragen
+          </Button>
+        )}
+      </div>
+
+      {!signedContract && (
+        <div className="mb-3 rounded-[10px] border border-[#7f1d1d]/50 bg-[#2a1620]/50 px-3 py-2.5">
+          <p className="text-[12.5px] font-semibold text-[#fca5a5]">
+            Einstellung noch nicht abgeschlossen
+          </p>
+          <p className="mt-1 text-[11.5px] leading-5 text-[#f3b7b7]">
+            {contracts.length === 0
+              ? 'Für diesen Mitarbeiter liegt kein Arbeitsvertrag vor. Beantrage die Unterschrift — der Officer bekommt seinen persönlichen Link per Discord-DM (oder im Vertrags-Channel).'
+              : 'Der Arbeitsvertrag ist noch nicht unterschrieben. Erst mit Unterschrift gilt der Mitarbeiter als vollständig eingestellt.'}
+          </p>
+        </div>
+      )}
+
+      {application && (
+        <div className="mb-3 rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/45 px-3 py-2.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8ea4bd]">
+            Zugehörige Bewerbung
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Link
+              href="/hr?tab=applications"
+              className="text-[13px] font-medium text-white hover:text-[#d4af37]"
+            >
+              {application.applicantDisplayName}
+            </Link>
+            <span className="text-[11.5px] text-[#6b8299]">
+              eingereicht {formatDate(application.submittedAt)}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[11.5px] text-[#8ea4bd]">{application.statusText}</p>
+        </div>
+      )}
+
+      {contracts.length === 0 ? (
+        !officerHasDiscordId ? (
+          <p className="text-[12.5px] leading-5 text-[#8ea4bd]">
+            Ohne hinterlegte Discord-ID kann keine DM zugestellt werden — die Aufforderung landet
+            dann im Vertrags-Channel.
+          </p>
+        ) : null
+      ) : (
+        <div className="space-y-2.5">
+          {contracts.map((contract) => {
+            const meta = CONTRACT_STATUS_META[contract.status]
+            const isOpen = contract.status === 'DRAFT' || contract.status === 'SENT'
+            return (
+              <div
+                key={contract.id}
+                className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/45 p-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[13px] font-medium text-[#eee]">{contract.title}</p>
+                      <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
+                    </div>
+                    <p className="mt-1 text-[11.5px] text-[#8ea4bd]">
+                      {contract.status === 'SIGNED'
+                        ? `Unterschrieben am ${formatDateTime(contract.signedAt)} von ${contract.signedName ?? '—'}`
+                        : contract.status === 'DECLINED'
+                          ? `Abgelehnt am ${formatDateTime(contract.declinedAt)}${contract.declineReason ? ` · ${contract.declineReason}` : ''}`
+                          : contract.sentAt
+                            ? `Gesendet ${formatDateTime(contract.sentAt)} · ${contract.sentVia === 'channel' ? 'im Channel (DM nicht möglich)' : 'per DM'} · ${contract.sendCount}× versendet`
+                            : 'Noch nicht versendet'}
+                    </p>
+                    {contract.lastSendError && (
+                      <p className="mt-1 text-[11.5px] text-[#fca5a5]">{contract.lastSendError}</p>
+                    )}
+                  </div>
+
+                  {canManage && (
+                    <div className="flex shrink-0 flex-wrap gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onCopyLink(contract.token)}
+                        aria-label="Persönlichen Vertragslink kopieren"
+                      >
+                        <Download size={13} strokeWidth={1.75} />
+                        Link
+                      </Button>
+                      {isOpen && (
+                        <Button size="sm" variant="outline" onClick={() => onSend(contract.id)} loading={busy}>
+                          <Send size={13} strokeWidth={1.75} />
+                          Vertragsnachricht senden
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!signedContract && openContract && (
+        <p className="mt-3 rounded-[10px] border border-[#4a3a12]/50 bg-[#302712]/40 px-3 py-2 text-[11.5px] leading-5 text-[#d8c68c]">
+          Jeder Officer hat seinen eigenen Vertragslink — „Vertragsnachricht senden“ stellt ihn
+          erneut per Discord-DM zu.
+        </p>
+      )}
+    </>
   )
 }
 

@@ -1,23 +1,25 @@
 import { prisma } from '@/lib/prisma'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
+import { activeSessionWhere, closeStaleFormTestSessions } from '@/lib/form-links'
 
 export async function GET() {
   try {
     const user = await requireAuth()
     const now = new Date()
+
+    // Zuerst aufräumen: abgelaufene und verwaiste Sitzungen dürfen niemanden
+    // im „Du hast gerade einen Test laufen“-Zustand festhalten.
+    await closeStaleFormTestSessions(user.id, now)
+
     const session = await prisma.formTestSession.findFirst({
       where: {
         userId: user.id,
-        completedAt: null,
         test: {
           status: 'ACTIVE',
           kind: 'TEST',
         },
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: now } },
-        ],
+        ...activeSessionWhere(now),
       },
       orderBy: { startedAt: 'desc' },
       select: {

@@ -29,15 +29,45 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     !loading && user ? '/api/form-test-sessions/active' : null,
   )
   const visitorOnly = Boolean(user && !user.permissions.some((permission) => permission !== 'password:change'))
+  // Ein geteilter Testlink (/form-tests/<token>) ist bewusst KEINE reguläre
+  // Dashboard-Seite: Bewerber und frisch eingeladene Officer haben oft noch
+  // gar keine Rechte. Vorher landeten genau die im Besucherportal und konnten
+  // ihren Test nie öffnen. Die Manage-Ansichten bleiben ausgenommen.
+  const isSharedFormTestLink = /^\/form-tests\/(?!manage(?:\/|$))[^/]+\/?$/.test(pathname)
 
   useEffect(() => {
-    if (!loading && !activeSessionLoading && visitorOnly) {
+    if (!loading && !activeSessionLoading && visitorOnly && !isSharedFormTestLink) {
       router.replace('/besucherportal')
     }
-  }, [activeSessionLoading, loading, router, visitorOnly])
+  }, [activeSessionLoading, isSharedFormTestLink, loading, router, visitorOnly])
 
   if (loading) return <PageLoader />
   if (!user) {
+    // Wer einen geteilten Testlink öffnet, ohne eingeloggt zu sein, hat keine
+    // „kaputte Sitzung“ — er war nie angemeldet. Statt des Recovery-Screens
+    // bekommt er den Login mit Rücksprung auf genau diesen Link.
+    if (isSharedFormTestLink) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-[#061426] px-4 py-10">
+          <section className="glass-panel-elevated w-full max-w-md rounded-[14px] border border-[#1e3a5c]/45 p-7 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#d4af37]/30 bg-[#d4af37]/12 text-[#d4af37]">
+              <ShieldAlert size={26} />
+            </div>
+            <h1 className="text-[19px] font-semibold text-white">Anmeldung erforderlich</h1>
+            <p className="mx-auto mt-2 max-w-sm text-[13px] leading-5 text-[#8ea4bd]">
+              Melde dich mit Discord an, um diesen Test zu öffnen. Danach landest du automatisch
+              wieder hier.
+            </p>
+            <div className="mt-5 flex justify-center">
+              <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
+                <Button>Zur Anmeldung</Button>
+              </Link>
+            </div>
+          </section>
+        </main>
+      )
+    }
+
     return (
       <SessionRecoveryScreen
         message={authError}
@@ -47,7 +77,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     )
   }
   if (activeSessionLoading) return <PageLoader />
-  if (visitorOnly) return <PageLoader />
+
+  // Nutzer ohne Dashboard-Rechte bekommen den Test ohne Seitenleiste — die
+  // hätte für sie ohnehin keinen Inhalt.
+  if (visitorOnly) {
+    if (!isSharedFormTestLink) return <PageLoader />
+    return (
+      <main className="min-h-screen bg-[#061426] px-3 pb-10 pt-6 sm:px-6 lg:px-8">{children}</main>
+    )
+  }
 
   const activeTestPath = activeSession ? `/form-tests/${activeSession.shareToken}` : ''
   if (activeSession && pathname !== activeTestPath) {

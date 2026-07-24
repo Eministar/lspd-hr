@@ -8,6 +8,7 @@ import { queueDiscordWebhookEvent } from './discord-webhook'
 import {
   actionRow,
   componentMessage,
+  linkButton,
   markdownHeader,
   markdownMeta,
   markdownQuote,
@@ -70,6 +71,8 @@ export type DiscordConfig = {
   sanctionsChannelId: string
   dutyStatusChannelId: string
   dutyAdminLogChannelId: string
+  /// Fallback-Channel für Vertragsnachrichten, wenn die DM nicht zustellbar ist.
+  contractsChannelId: string
   dutyStatusMessageId: string
   absenceStatusChannelId: string
   absenceStatusMessageId: string
@@ -173,6 +176,7 @@ export const DISCORD_SETTING_KEYS = {
   sanctionsChannelId: 'discord.sanctionsChannelId',
   dutyStatusChannelId: 'discord.dutyStatusChannelId',
   dutyAdminLogChannelId: 'discord.dutyAdminLogChannelId',
+  contractsChannelId: 'discord.contractsChannelId',
   dutyStatusMessageId: 'discord.dutyStatusMessageId',
   absenceStatusChannelId: 'discord.absenceStatusChannelId',
   absenceStatusMessageId: 'discord.absenceStatusMessageId',
@@ -383,6 +387,14 @@ function envDutyAdminLogChannelId() {
   return (
     process.env.DISCORD_DUTY_ADMIN_LOG_CHANNEL_ID?.trim() ||
     process.env.LSPD_DISCORD_DUTY_ADMIN_LOG_CHANNEL_ID?.trim() ||
+    ''
+  )
+}
+
+function envContractsChannelId() {
+  return (
+    process.env.DISCORD_CONTRACTS_CHANNEL_ID?.trim() ||
+    process.env.LSPD_DISCORD_CONTRACTS_CHANNEL_ID?.trim() ||
     ''
   )
 }
@@ -698,6 +710,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     sanctionsChannelId: envFirst(envSanctionsChannelId(), map[DISCORD_SETTING_KEYS.sanctionsChannelId]),
     dutyStatusChannelId: envFirst(envDutyStatusChannelId(), map[DISCORD_SETTING_KEYS.dutyStatusChannelId]),
     dutyAdminLogChannelId: envFirst(envDutyAdminLogChannelId(), map[DISCORD_SETTING_KEYS.dutyAdminLogChannelId]),
+    contractsChannelId: envFirst(envContractsChannelId(), map[DISCORD_SETTING_KEYS.contractsChannelId]),
     dutyStatusMessageId: map[DISCORD_SETTING_KEYS.dutyStatusMessageId] || '',
     absenceStatusChannelId: envFirst(envAbsenceStatusChannelId(), map[DISCORD_SETTING_KEYS.absenceStatusChannelId]),
     absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
@@ -729,6 +742,7 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.sanctionsChannelId !== undefined) data[DISCORD_SETTING_KEYS.sanctionsChannelId] = input.sanctionsChannelId.trim()
   if (input.dutyStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusChannelId] = input.dutyStatusChannelId.trim()
   if (input.dutyAdminLogChannelId !== undefined) data[DISCORD_SETTING_KEYS.dutyAdminLogChannelId] = input.dutyAdminLogChannelId.trim()
+  if (input.contractsChannelId !== undefined) data[DISCORD_SETTING_KEYS.contractsChannelId] = input.contractsChannelId.trim()
   if (input.dutyStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.dutyStatusMessageId] = input.dutyStatusMessageId.trim()
   if (input.absenceStatusChannelId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusChannelId] = input.absenceStatusChannelId.trim()
   if (input.absenceStatusMessageId !== undefined) data[DISCORD_SETTING_KEYS.absenceStatusMessageId] = input.absenceStatusMessageId.trim()
@@ -1495,6 +1509,141 @@ export async function sendDiscordHrEvent(event: DiscordHrEventInput): Promise<Di
   const payload = await buildDiscordHrEventPayload(event, config)
   const message = await postChannelMessage(channelId, payload)
   return { channelId, messageId: message.id }
+}
+
+/* ── Vertragsnachrichten (DM mit Channel-Fallback) ───────────────── */
+
+export type DiscordContractMessageInput = {
+  discordId: string | null | undefined
+  officerName: string
+  badgeNumber?: string | null
+  rankName?: string | null
+  contractTitle: string
+  contractUrl: string
+  /** true = Erinnerung an einen bereits versendeten Vertrag. */
+  reminder?: boolean
+  /** Zusätzlicher Hinweistext der HR-Abteilung. */
+  note?: string | null
+}
+
+export type DiscordContractMessageResult = {
+  delivered: boolean
+  /** 'dm' = private Nachricht, 'channel' = öffentlicher Fallback-Channel. */
+  via: 'dm' | 'channel' | null
+  channelId: string | null
+  messageId: string | null
+  error: string | null
+}
+
+/**
+ * Discord erlaubt keinen direkten POST an einen User — man muss erst einen
+ * DM-Channel öffnen. Der Aufruf schlägt fehl, wenn der Bot mit dem User keinen
+ * gemeinsamen Server hat.
+ */
+async function openDirectMessageChannel(discordId: string) {
+  const channel = await discordFetch<{ id: string }>('/users/@me/channels', {
+    method: 'POST',
+    body: JSON.stringify({ recipient_id: discordId }),
+  })
+  return channel.id
+}
+
+/** Discord-Fehlercode 50007: „Cannot send messages to this user“ (DMs zu). */
+function isClosedDirectMessage(error: unknown) {
+  return error instanceof DiscordApiError && (error.code === 50007 || error.status === 403)
+}
+
+function buildContractMessagePayload(input: DiscordContractMessageInput, options: { mentionUser: boolean }) {
+  const heading = input.reminder ? 'Erinnerung: Arbeitsvertrag' : 'Arbeitsvertrag unterschreiben'
+  const rows: Array<{ label: string; value: string }> = []
+  if (input.badgeNumber) rows.push({ label: 'Dienstnummer', value: `\`${input.badgeNumber}\`` })
+  if (input.rankName) rows.push({ label: 'Vorgesehener Rang', value: input.rankName })
+  rows.push({ label: 'Vertrag', value: input.contractTitle })
+
+  const mentionId = options.mentionUser ? snowflake(input.discordId) : ''
+
+  return componentMessage(
+    [
+      ...markdownTextDisplays([
+        markdownHeader('📝', heading, input.officerName),
+        mentionId ? `<@${mentionId}>` : null,
+        markdownQuote(
+          'Damit deine Einstellung abgeschlossen werden kann, musst du den Arbeitsvertrag noch lesen, ausfüllen und unterschreiben. Der Link unten gehört nur dir – bitte nicht weitergeben.',
+        ),
+        input.note ? markdownQuote(input.note) : null,
+        markdownRows(rows),
+        markdownMeta(['Ohne unterschriebenen Vertrag kann die Einstellung nicht abgeschlossen werden']),
+      ]),
+      actionRow([linkButton('Vertrag öffnen & unterschreiben', input.contractUrl)]),
+    ],
+    mentionId ? { allowedMentions: { users: [mentionId] } } : undefined,
+  )
+}
+
+/**
+ * Schickt die Vertragsnachricht per DM. Ist keine DM möglich (DMs geschlossen,
+ * kein gemeinsamer Server, keine Discord-ID), wird stattdessen im konfigurierten
+ * Vertrags-Channel gepostet und der Officer dort erwähnt — die Aufforderung geht
+ * also nie verloren.
+ */
+export async function sendDiscordContractMessage(
+  input: DiscordContractMessageInput,
+): Promise<DiscordContractMessageResult> {
+  const empty: DiscordContractMessageResult = {
+    delivered: false,
+    via: null,
+    channelId: null,
+    messageId: null,
+    error: null,
+  }
+
+  if (!botToken()) {
+    return { ...empty, error: 'Discord Bot-Token fehlt' }
+  }
+
+  const config = await getDiscordConfig()
+  const discordId = snowflake(input.discordId)
+  let dmError: string | null = null
+
+  if (discordId) {
+    try {
+      const channelId = await openDirectMessageChannel(discordId)
+      const message = await postChannelMessage(channelId, buildContractMessagePayload(input, { mentionUser: false }))
+      return { delivered: true, via: 'dm', channelId, messageId: message.id, error: null }
+    } catch (error) {
+      dmError = error instanceof Error ? error.message : 'DM fehlgeschlagen'
+      if (!isClosedDirectMessage(error) && !isUnknownDiscordMember(error)) {
+        console.warn('[DiscordIntegration] Vertrags-DM fehlgeschlagen, versuche Channel-Fallback:', dmError)
+      }
+    }
+  } else {
+    dmError = 'Officer hat keine hinterlegte Discord-ID'
+  }
+
+  const fallbackChannelId = config.contractsChannelId || config.announcementsChannelId
+  if (!fallbackChannelId) {
+    return {
+      ...empty,
+      error: `${dmError ?? 'DM nicht möglich'} — und es ist kein Vertrags-/Ankündigungs-Channel als Fallback konfiguriert`,
+    }
+  }
+
+  try {
+    const message = await postChannelMessage(
+      fallbackChannelId,
+      buildContractMessagePayload(input, { mentionUser: Boolean(discordId) }),
+    )
+    return {
+      delivered: true,
+      via: 'channel',
+      channelId: fallbackChannelId,
+      messageId: message.id,
+      error: dmError,
+    }
+  } catch (error) {
+    const channelError = error instanceof Error ? error.message : 'Channel-Nachricht fehlgeschlagen'
+    return { ...empty, error: `${dmError ?? 'DM nicht möglich'} / ${channelError}` }
+  }
 }
 
 export async function editDiscordHrEventMessage(

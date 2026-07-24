@@ -12,7 +12,7 @@ import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FileSignature } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
@@ -30,11 +30,40 @@ interface Unit {
   name: string
 }
 
+interface LinkableApplication {
+  id: string
+  applicantDisplayName: string
+  discordId: string
+  discordUsername: string | null
+  discordGlobalName: string | null
+  status: string
+  submittedAt: string
+}
+
+interface ContractTemplateOption {
+  id: string
+  name: string
+  isDefault: boolean
+}
+
+function formatApplicationDate(value: string) {
+  return new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+/** Zerlegt „Vorname Nachname“ aus der Bewerbung in die beiden Formularfelder. */
+function splitApplicantName(value: string) {
+  const parts = value.replace(/\s+/g, ' ').trim().split(' ')
+  if (parts.length < 2) return { firstName: parts[0] ?? '', lastName: '' }
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
 export default function NewOfficerPage() {
   const router = useRouter()
   const { addToast } = useToast()
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
   const { data: units } = useFetch<Unit[]>('/api/units?active=true')
+  const { data: applications } = useFetch<LinkableApplication[]>('/api/applications/linkable')
+  const { data: contractTemplates } = useFetch<ContractTemplateOption[]>('/api/contract-templates?active=true')
   const { execute, loading } = useApi()
   const { user } = useAuth()
   const canCreate = hasPermission(user, 'officers:write')
@@ -48,6 +77,8 @@ export default function NewOfficerPage() {
     notes: '',
     units: [] as string[],
     hireDate: new Date().toISOString().split('T')[0],
+    applicationId: '',
+    contractTemplateId: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,12 +101,21 @@ export default function NewOfficerPage() {
     }
 
     try {
-      const payload = { ...form, discordId: did || null }
+      const payload = {
+        ...form,
+        discordId: did || null,
+        applicationId: form.applicationId || null,
+        contractTemplateId: form.contractTemplateId || null,
+      }
       await execute('/api/officers', {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      addToast({ type: 'success', title: 'Officer erstellt' })
+      addToast({
+        type: 'success',
+        title: 'Officer erstellt',
+        message: 'Der Arbeitsvertrag wurde zur Unterschrift verschickt.',
+      })
       router.push('/officers')
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : 'Unbekannter Fehler' })
@@ -83,6 +123,25 @@ export default function NewOfficerPage() {
   }
 
   const update = (key: string, value: string | string[]) => setForm(prev => ({ ...prev, [key]: value }))
+
+  /**
+   * Bewerbung auswählen: übernimmt Name und Discord-ID aus der Bewerbung, aber
+   * nur in noch leere Felder — bereits eingetippte Angaben bleiben erhalten.
+   */
+  const selectApplication = (applicationId: string) => {
+    const application = applications?.find((item) => item.id === applicationId)
+    setForm((prev) => {
+      if (!application) return { ...prev, applicationId }
+      const { firstName, lastName } = splitApplicantName(application.applicantDisplayName)
+      return {
+        ...prev,
+        applicationId,
+        firstName: prev.firstName || firstName,
+        lastName: prev.lastName || lastName,
+        discordId: prev.discordId || application.discordId,
+      }
+    })
+  }
 
   if (!canCreate) return <UnauthorizedContent />
 
@@ -103,6 +162,26 @@ export default function NewOfficerPage() {
 
       <div className="glass-panel-elevated rounded-[14px] p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-5">
+          {(applications?.length ?? 0) > 0 && (
+            <div className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
+              <Select
+                id="applicationId"
+                label="Zugehörige Bewerbung"
+                value={form.applicationId}
+                onValueChange={selectApplication}
+                options={(applications ?? []).map((application) => ({
+                  value: application.id,
+                  label: `${application.applicantDisplayName} · ${formatApplicationDate(application.submittedAt)}`,
+                }))}
+                placeholder="Keine Bewerbung verknüpfen"
+              />
+              <p className="mt-1.5 text-[11.5px] text-[#8ea4bd]">
+                Verknüpft die Personalakte mit der Bewerbung. Name und Discord-ID werden – sofern
+                noch leer – automatisch übernommen.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               id="firstName"
@@ -168,6 +247,39 @@ export default function NewOfficerPage() {
             rows={3}
             placeholder="Optional"
           />
+
+          <div className="rounded-[12px] border border-[#4a3a12]/45 bg-[#302712]/30 p-3.5">
+            <div className="flex items-start gap-2.5">
+              <FileSignature size={16} className="mt-0.5 shrink-0 text-[#d4af37]" />
+              <div>
+                <p className="text-[13px] font-semibold text-white">
+                  Arbeitsvertrag wird automatisch versendet
+                </p>
+                <p className="mt-1 text-[11.5px] leading-5 text-[#d8c68c]">
+                  Der Officer bekommt seinen persönlichen Vertragslink als Discord-DM; ist keine DM
+                  möglich, wird die Aufforderung im Vertrags-Channel gepostet.{' '}
+                  <strong className="font-semibold text-[#f0dfa8]">
+                    Die Einstellung gilt erst als abgeschlossen, wenn der Vertrag unterschrieben ist.
+                  </strong>
+                </p>
+              </div>
+            </div>
+            {(contractTemplates?.length ?? 0) > 1 && (
+              <div className="mt-3">
+                <Select
+                  id="contractTemplateId"
+                  label="Vertragsvorlage"
+                  value={form.contractTemplateId}
+                  onValueChange={(value) => update('contractTemplateId', value)}
+                  options={(contractTemplates ?? []).map((template) => ({
+                    value: template.id,
+                    label: template.isDefault ? `${template.name} (Standard)` : template.name,
+                  }))}
+                  placeholder="Standardvorlage verwenden"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Link href="/officers">

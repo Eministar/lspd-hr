@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { cleanFormText } from '@/lib/form-tests'
 import { isFormTestSessionWriteConflict, recordFormTestSessionSecurityEvent } from '@/lib/form-test-sessions'
+import { findFormTestByToken } from '@/lib/form-links'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -18,12 +19,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const input = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {}
     const type = cleanFormText(input.type, 80) || 'unknown'
 
-    const test = await prisma.formTest.findUnique({
-      where: { shareToken: token },
-      select: { id: true, kind: true, status: true },
-    })
-    if (!test) return notFound('Test')
-    if (test.kind !== 'TEST' || test.status !== 'ACTIVE') return success({ recorded: false })
+    // Sicherheitsereignisse sind reine Telemetrie: ein unbekannter oder
+    // inaktiver Test darf hier keinen Fehler erzeugen, sonst spammt die
+    // offene Testseite den Nutzer mit Fehlermeldungen zu.
+    const test = await findFormTestByToken(token)
+    if (!test || test.kind !== 'TEST' || test.status !== 'ACTIVE') {
+      return success({ recorded: false })
+    }
 
     const now = new Date()
     const session = await prisma.formTestSession.findFirst({

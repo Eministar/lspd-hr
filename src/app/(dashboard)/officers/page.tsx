@@ -17,7 +17,7 @@ import {
   rectIntersection,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag, MessageCircle, CircleSlash } from 'lucide-react'
+import { Search, Plus, ChevronDown, Users, Check, StickyNote, GripVertical, Flag, MessageCircle, CircleSlash, FileSignature } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -99,6 +99,12 @@ interface Officer {
     checked: boolean
     inGuild: boolean
   }
+  contract?: {
+    signed: boolean
+    pending: boolean
+    missing: boolean
+    blocksOnboarding: boolean
+  } | null
   trainings: OfficerTraining[]
 }
 
@@ -164,6 +170,36 @@ function DiscordMemberBadge({ officer, compact = false }: { officer: Pick<Office
     >
       <Icon size={compact ? 10 : 11} strokeWidth={2} />
       {label}
+    </span>
+  )
+}
+
+/**
+ * Zeigt an, dass der Arbeitsvertrag noch aussteht. Ohne Unterschrift gilt die
+ * Einstellung nicht als abgeschlossen — das muss in der Liste sofort auffallen,
+ * damit niemand durchrutscht.
+ */
+function ContractBadge({ officer, compact = false }: { officer: Pick<Officer, 'contract'>; compact?: boolean }) {
+  const contract = officer.contract
+  if (!contract || contract.signed) return null
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-[6px] border font-medium whitespace-nowrap',
+        compact ? 'px-1.5 py-[2px] text-[10.5px]' : 'px-2 py-[3px] text-[11.5px]',
+        contract.missing
+          ? 'border-[#7f1d1d]/55 bg-[#2a1212]/70 text-[#fca5a5]'
+          : 'border-[#4a3a12]/55 bg-[#241d0c]/70 text-[#d4af37]',
+      )}
+      title={
+        contract.missing
+          ? 'Kein Arbeitsvertrag vorhanden — Unterschrift beantragen'
+          : 'Arbeitsvertrag versendet, aber noch nicht unterschrieben'
+      }
+    >
+      <FileSignature size={compact ? 10 : 11} strokeWidth={2} />
+      {contract.missing ? 'Kein Vertrag' : 'Vertrag offen'}
     </span>
   )
 }
@@ -349,6 +385,7 @@ function DraggableOfficerRow({
       </td>
       <td className="px-2 py-2.5 whitespace-nowrap">
         <DiscordMemberBadge officer={officer} compact />
+        <ContractBadge officer={officer} compact />
       </td>
       <td className="px-2 py-2.5 text-[12px] text-[#8ea4bd]" title={officer.lastOnline ? formatDateTime(officer.lastOnline) : 'Nie online gewesen'}>
         {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
@@ -435,6 +472,7 @@ function MobileOfficerCard({
         </span>
         <div className="col-span-2 flex items-center gap-2">
           <DiscordMemberBadge officer={officer} compact />
+        <ContractBadge officer={officer} compact />
           <span className="text-[11.5px] text-[#8ea4bd]">
             Zuletzt online: {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
           </span>

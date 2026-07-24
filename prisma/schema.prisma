@@ -133,6 +133,14 @@ enum PressReleaseStatus {
   ARCHIVED
 }
 
+enum ContractStatus {
+  DRAFT
+  SENT
+  SIGNED
+  DECLINED
+  CANCELLED
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -194,6 +202,9 @@ model User {
   pressReleasesUpdated     PressRelease[]        @relation("PressReleaseUpdater")
   ordnungenCreated         Ordnung[]             @relation("OrdnungCreator")
   unitAssignments          UserUnitAssignment[]
+  contractTemplatesCreated ContractTemplate[]    @relation("ContractTemplateCreator")
+  contractsCreated         Contract[]            @relation("ContractCreator")
+  contractsSigned          Contract[]            @relation("ContractSigner")
 }
 
 model UserGroupMembership {
@@ -438,9 +449,14 @@ model JobApplication {
   reviewedAt           DateTime?
   reviewedById         String?
   reviewedBy           User?                @relation("JobApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  /// Officer, der aus dieser Bewerbung eingestellt wurde. Wird beim Anlegen des
+  /// Officers gesetzt und macht Bewerbung ↔ Personalakte gegenseitig auffindbar.
+  officerId            String?              @unique
+  officer              Officer?             @relation("OfficerJobApplication", fields: [officerId], references: [id], onDelete: SetNull)
   updatedAt            DateTime             @updatedAt
 
-  answers JobApplicationAnswer[]
+  answers   JobApplicationAnswer[]
+  contracts Contract[]             @relation("JobApplicationContracts")
 
   @@index([status, updatedAt])
   @@index([submittedAt])
@@ -523,6 +539,8 @@ model Officer {
   patrolAssignments PatrolAssignment[]    @relation("PatrolAssigned")
   patrolSessions    PatrolSession[]       @relation("PatrolSessionOfficer")
   dispatchCenters   DispatchCenterState[] @relation("DispatchCenterOfficer")
+  contracts         Contract[]
+  jobApplication    JobApplication?       @relation("OfficerJobApplication")
 
   @@index([badgeNumber])
 }
@@ -1061,4 +1079,92 @@ model Ordnung {
   updatedAt   DateTime @updatedAt
 
   @@index([categoryId])
+}
+
+/// Wiederverwendbare Vertragsvorlage (z. B. Arbeitsvertrag). Der Inhalt ist
+/// Markdown mit Platzhaltern (`{{vorname}}`, `{{dienstnummer}}`, …), die beim
+/// Erstellen eines Vertrags gegen die Officer-Daten aufgelöst werden.
+model ContractTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  /// Präambel des Dokuments (Markdown, oberhalb der Regelungen).
+  content     String   @db.Text
+  /// ContractClause[] — einzeln bearbeitbare Regelungen (§ 1, § 2, …).
+  clauses     Json     @default("[]")
+  /// Abschlusstext unterhalb der Regelungen (Markdown).
+  closing     String?  @db.Text
+  /// ContractField[] — Felder, die der Unterzeichner ausfüllt (inkl. Unterschrift).
+  fields      Json     @default("[]")
+  active      Boolean  @default(true)
+  /// Vorlage, die beim Anlegen eines Officers automatisch verwendet wird.
+  isDefault   Boolean  @default(false)
+  createdById String?
+  createdBy   User?    @relation("ContractTemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contracts Contract[]
+
+  @@index([active, updatedAt])
+  @@index([createdById])
+}
+
+/// Ein konkreter Vertrag für genau einen Officer. `content`/`fields` sind
+/// Snapshots der Vorlage zum Erstellungszeitpunkt — spätere Änderungen an der
+/// Vorlage dürfen einen bereits versendeten oder unterschriebenen Vertrag nicht
+/// nachträglich verändern.
+model Contract {
+  id            String            @id @default(cuid())
+  templateId    String?
+  template      ContractTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  officerId     String
+  officer       Officer           @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   JobApplication?   @relation("JobApplicationContracts", fields: [applicationId], references: [id], onDelete: SetNull)
+
+  title   String
+  content String  @db.Text
+  clauses Json    @default("[]")
+  closing String? @db.Text
+  fields  Json    @default("[]")
+  /// Vom Unterzeichner eingetragene Werte: `{ [fieldId]: string | boolean }`.
+  values  Json?
+
+  status ContractStatus @default(DRAFT)
+  /// Persönlicher Link-Token — jeder Officer bekommt seinen eigenen Vertragslink.
+  token  String         @unique
+
+  /// Discord-ID, die unterschreiben darf (Snapshot des Officers bei Erstellung).
+  signerDiscordId String?
+
+  sentAt        DateTime?
+  /// 'dm' | 'channel' — wie die letzte Vertragsnachricht zugestellt wurde.
+  sentVia       String?
+  sentChannelId String?
+  sentMessageId String?
+  sendCount     Int       @default(0)
+  lastSendError String?   @db.Text
+
+  signedAt        DateTime?
+  signedName      String?
+  signedByUserId  String?
+  signedBy        User?     @relation("ContractSigner", fields: [signedByUserId], references: [id], onDelete: SetNull)
+  signedIp        String?   @db.VarChar(64)
+  signedUserAgent String?   @db.VarChar(200)
+
+  declinedAt    DateTime?
+  declineReason String?   @db.Text
+
+  createdById String?
+  createdBy   User?    @relation("ContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([officerId, createdAt])
+  @@index([status, updatedAt])
+  @@index([applicationId])
+  @@index([templateId])
+  @@index([createdById])
+  @@index([signedByUserId])
 }

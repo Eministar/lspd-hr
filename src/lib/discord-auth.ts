@@ -188,6 +188,58 @@ export async function syncDiscordApplicantProfile(user: DiscordApiUser) {
   })
 }
 
+/**
+ * Login ausschließlich zum Unterschreiben eines Arbeitsvertrags.
+ *
+ * Neueinsteiger haben oft weder Dashboard- noch Bewerber-Rolle — sie könnten
+ * ihren eigenen Vertrag sonst gar nicht öffnen. Deshalb reicht hier die
+ * Mitgliedschaft auf dem konfigurierten Discord-Server. Der so angelegte User
+ * bekommt bewusst KEINE Gruppen und KEINE Rechte; die eigentliche Berechtigung
+ * entsteht erst dadurch, dass die Discord-ID zum Vertrag passt.
+ */
+export async function syncDiscordContractSignerProfile(user: DiscordApiUser) {
+  const member = await getDiscordGuildMember(user.id)
+  if (!member) throw new DiscordAuthError('Du bist auf dem konfigurierten Discord-Server nicht vorhanden')
+
+  return upsertDiscordContractSigner({
+    user,
+    roles: member.roles ?? [],
+    nick: member.nick,
+    avatar: member.avatar,
+  })
+}
+
+export async function upsertDiscordContractSigner(profile: DiscordMemberProfile) {
+  const existing = await prisma.user.findFirst({ where: { discordId: profile.user.id }, select: { id: true } })
+  const username = await uniqueUsername(profile, existing?.id)
+
+  const data = {
+    username,
+    displayName: profileDisplayName(profile),
+    discordId: profile.user.id,
+    discordUsername: profile.user.username,
+    discordGlobalName: profile.user.global_name ?? null,
+    discordAvatar: profile.user.avatar ?? null,
+    discordDiscriminator: profile.user.discriminator ?? null,
+    lastLoginAt: new Date(),
+  }
+
+  if (existing) {
+    // Wichtig: bestehende Gruppen/Rechte NICHT anfassen — ein Officer, der sich
+    // über den Vertragslink einloggt, darf sein Dashboard nicht verlieren.
+    return prisma.user.update({ where: { id: existing.id }, data })
+  }
+
+  return prisma.user.create({
+    data: {
+      ...data,
+      passwordHash: null,
+      permissions: [],
+      groupId: null,
+    },
+  })
+}
+
 export async function upsertDiscordUser(profile: DiscordMemberProfile) {
   const config = await getDiscordConfig()
   if (!hasLoginRole(profile.roles, config.authLoginRoleIds, config.authGroupRoleMap)) {

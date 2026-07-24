@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
-import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { success, error, unauthorized } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { buildFormSubmitterHash, calculateResponseScore, normalizeSubmittedAnswers } from '@/lib/form-tests'
 import { completeFormTestSessionById, isFormTestSessionWriteConflict } from '@/lib/form-test-sessions'
+import { FORM_LINK_ERRORS, resolveFormLink } from '@/lib/form-links'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
@@ -13,14 +14,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const { token } = await params
     const body = await req.json()
 
-    const test = await prisma.formTest.findUnique({
-      where: { shareToken: token },
-      include: {
-        questions: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
-      },
-    })
-    if (!test) return notFound('Test')
-    if (test.status !== 'ACTIVE') return error('Dieser Link ist nicht aktiv', 403)
+    const lookup = await resolveFormLink(token)
+    if (!lookup.ok) {
+      const details = FORM_LINK_ERRORS[lookup.reason]
+      return error(details.message, details.status)
+    }
+    const test = lookup.test
     if (test.questions.length === 0) return error('Dieser Test hat keine Fragen')
 
     const submitterHash = buildFormSubmitterHash(test.id, user.id)

@@ -277,11 +277,20 @@ export default function FormTestLinkPage() {
   if (!data) {
     return (
       <div className="mx-auto max-w-3xl">
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-16 text-center">
+        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 px-6 py-16 text-center">
           <FileQuestion size={30} className="mx-auto mb-3 text-[#4a6585]" />
           <p className="text-[14px] font-semibold text-white">Test nicht verfügbar</p>
-          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
+          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-5 text-[#8ea4bd]">
             {loadError ?? 'Der Link ist nicht aktiv oder nicht verfügbar.'}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => void refetch()}>
+              Erneut versuchen
+            </Button>
+          </div>
+          <p className="mx-auto mt-4 max-w-md text-[11.5px] leading-5 text-[#6b8299]">
+            Tipp: Der Link muss vollständig kopiert werden — angehängte Satzzeichen oder ein
+            abgeschnittenes Ende machen ihn ungültig. Hilft das nicht, fordere den Link neu an.
           </p>
         </div>
       </div>

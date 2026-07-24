@@ -20,6 +20,7 @@ import {
 } from '@/lib/discord-integration'
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
+import { loadContractSummaries, queueContractForNewOfficer } from '@/lib/contract-service'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -80,6 +81,7 @@ export async function GET(req: NextRequest) {
   }
   const discordMembers = cachedDiscordMembers ?? []
   const discordMemberIds = new Set(discordMembers.map((member) => member.user?.id).filter(Boolean))
+  const contractSummaries = await loadContractSummaries(officers.map((officer) => officer.id))
 
   return success(officers.map((officer) => {
     const discordId = validDiscordId(officer.discordId)
@@ -89,6 +91,7 @@ export async function GET(req: NextRequest) {
         checked: canCheckDiscordMembers && cachedDiscordMembers !== null && !!discordId,
         inGuild: !!discordId && discordMemberIds.has(discordId),
       },
+      contract: contractSummaries.get(officer.id) ?? null,
     }
   }))
 }
@@ -126,6 +129,16 @@ export async function POST(req: NextRequest) {
     if (did) {
       const existingDiscord = await prisma.officer.findFirst({ where: { discordId: did } })
       if (existingDiscord) return error('Discord-ID bereits vergeben')
+    }
+
+    const applicationId = parsed.data.applicationId ?? null
+    if (applicationId) {
+      const application = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+        select: { id: true, officerId: true },
+      })
+      if (!application) return error('Bewerbung nicht gefunden')
+      if (application.officerId) return error('Diese Bewerbung ist bereits mit einem Officer verknüpft')
     }
 
     const unitKeys = normalizeUnitKeys(parsed.data.units ?? (parsed.data.unit ? [parsed.data.unit] : []))
@@ -172,6 +185,13 @@ export async function POST(req: NextRequest) {
       newValue: `${officer.firstName} ${officer.lastName} (${officer.badgeNumber})`,
     })
 
+    if (applicationId) {
+      await prisma.jobApplication.update({
+        where: { id: applicationId },
+        data: { officerId: officer.id },
+      })
+    }
+
     await syncLinkedUserDisplayNameForOfficer(officer)
     queueOfficerRoleSync(officer.id)
     queueDiscordHrEvent({
@@ -181,7 +201,24 @@ export async function POST(req: NextRequest) {
       actor: user,
     })
 
-    return success(officer, 201)
+    // Arbeitsvertrag ist Pflicht: JEDER neue Mitarbeiter bekommt automatisch
+    // seinen persönlichen Vertragslink per Discord-DM (mit Channel-Fallback).
+    // Die Einstellung gilt erst mit unterschriebenem Vertrag als abgeschlossen —
+    // deshalb gibt es hier bewusst kein Opt-out. Schlägt die Zustellung fehl,
+    // wird das am Vertrag protokolliert und HR kann erneut senden.
+    const contract = await queueContractForNewOfficer({
+      officer,
+      templateId: parsed.data.contractTemplateId ?? null,
+      applicationId,
+      createdById: user.id,
+      req,
+    })
+
+    return success({
+      ...officer,
+      contractId: contract?.id ?? null,
+      contractCreated: Boolean(contract),
+    }, 201)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Discord-ID bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'

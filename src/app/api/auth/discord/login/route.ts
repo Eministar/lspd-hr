@@ -16,16 +16,33 @@ function baseUrl(req: NextRequest) {
   return `${proto}://${host}`
 }
 
+const LOGIN_MODES = ['application', 'contract'] as const
+
+/**
+ * Nur app-interne Pfade zulassen — ein offener Redirect würde den Login-Flow
+ * zum Weiterleiten auf fremde Seiten missbrauchbar machen.
+ */
+function safeRedirectPath(value: string | null) {
+  if (!value) return ''
+  if (!value.startsWith('/') || value.startsWith('//')) return ''
+  return value.slice(0, 300)
+}
+
 export async function GET(req: NextRequest) {
   const config = await getDiscordConfig()
   const clientId = config.applicationId
   const state = crypto.randomUUID()
   const remember = req.nextUrl.searchParams.get('remember') === '1'
-  const mode = req.nextUrl.searchParams.get('mode') === 'application' ? 'application' : 'dashboard'
+  const modeParam = req.nextUrl.searchParams.get('mode')
+  const mode = (LOGIN_MODES as readonly string[]).includes(modeParam ?? '')
+    ? (modeParam as (typeof LOGIN_MODES)[number])
+    : 'dashboard'
+  const redirectPath = safeRedirectPath(req.nextUrl.searchParams.get('redirect'))
   const redirectUri = `${baseUrl(req)}/api/auth/discord/callback`
 
   if (!clientId) {
-    const url = new URL(mode === 'application' ? '/bewerbung' : '/login', baseUrl(req))
+    const fallbackPath = redirectPath || (mode === 'application' ? '/bewerbung' : '/login')
+    const url = new URL(fallbackPath, baseUrl(req))
     url.searchParams.set('error', 'Discord Application-ID ist nicht konfiguriert')
     return NextResponse.redirect(url)
   }
@@ -46,6 +63,13 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 5,
   })
   cookieStore.set('discord-oauth-mode', mode, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 5,
+  })
+  cookieStore.set('discord-oauth-redirect', redirectPath, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

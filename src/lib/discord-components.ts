@@ -31,6 +31,16 @@ export function container(components: DiscordMessageComponent[]): DiscordMessage
   }
 }
 
+/** Link-Button (Style 5). Braucht keine Interaction — öffnet nur eine URL. */
+export function linkButton(label: string, url: string): DiscordMessageComponent {
+  return {
+    type: 2,
+    style: 5,
+    label: label.slice(0, 80),
+    url,
+  }
+}
+
 export function componentMessage(
   components: DiscordMessageComponent[],
   options?: { allowedMentions?: Record<string, unknown> },

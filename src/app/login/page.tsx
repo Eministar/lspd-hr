@@ -10,9 +10,18 @@ import { Button } from '@/components/ui/button'
 
 const REMEMBER_KEY = 'lspd-discord-remember-login'
 
+/** Nur app-interne Pfade weiterreichen — kein offener Redirect. */
+function safeRedirect(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return ''
+  return value
+}
+
 export default function LoginPage() {
   const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
+  // Wer über einen geteilten Link (z. B. einen Testlink) hier landet, soll nach
+  // dem Login wieder dort ankommen und nicht auf dem Dashboard-Start.
+  const [redirect, setRedirect] = useState('')
 
   useEffect(() => {
     const saved = window.localStorage.getItem(REMEMBER_KEY)
@@ -20,11 +29,14 @@ export default function LoginPage() {
 
     const params = new URLSearchParams(window.location.search)
     setError(params.get('error') ?? '')
+    setRedirect(safeRedirect(params.get('redirect')))
   }, [])
 
   const startDiscordLogin = () => {
     window.localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0')
-    window.location.href = `/api/auth/discord/login?remember=${remember ? '1' : '0'}`
+    const query = new URLSearchParams({ remember: remember ? '1' : '0' })
+    if (redirect) query.set('redirect', redirect)
+    window.location.href = `/api/auth/discord/login?${query.toString()}`
   }
 
   return (

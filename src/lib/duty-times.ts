@@ -10,8 +10,6 @@ import {
 } from '@/lib/player-online'
 
 const MS_PER_MINUTE = 60_000
-const MS_PER_HOUR = 60 * MS_PER_MINUTE
-const MS_PER_DAY = 24 * MS_PER_HOUR
 
 type DurationSession = {
   clockInAt: Date
@@ -49,7 +47,14 @@ export function startOfCurrentWeek(date = new Date()) {
 }
 
 export function endOfWeek(weekStart: Date) {
-  return new Date(weekStart.getTime() + 7 * MS_PER_DAY)
+  // Über Kalendertage rechnen statt über Millisekunden: bei der Zeitumstellung
+  // hat eine Woche 167 bzw. 169 Stunden. Mit `+ 7 * MS_PER_DAY` läge das
+  // Wochenende in diesen beiden Wochen im Jahr eine Stunde daneben, wodurch
+  // Dienstzeiten am Rand der falschen Woche zugeordnet würden.
+  const end = new Date(weekStart)
+  end.setDate(end.getDate() + 7)
+  end.setHours(0, 0, 0, 0)
+  return end
 }
 
 export function sessionDurationMs(session: DurationSession, now = new Date()) {
@@ -80,10 +85,21 @@ function latestDate(dates: Array<Date | null | undefined>) {
   return new Date(Math.max(...timestamps))
 }
 
+/** Kalendertag-genauer Versatz — anders als `+ n * MS_PER_DAY` auch über die Zeitumstellung hinweg korrekt. */
+function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  result.setHours(0, 0, 0, 0)
+  return result
+}
+
 function dailyPlaytime(sessions: PlaytimeSessionRow[], weekStart: Date, now: Date) {
   return Array.from({ length: 7 }, (_, index) => {
-    const start = new Date(weekStart.getTime() + index * MS_PER_DAY)
-    const end = new Date(start.getTime() + MS_PER_DAY)
+    // Tagesgrenzen über den Kalender bestimmen: an den Umstellungstagen hat ein
+    // Tag 23 bzw. 25 Stunden, sonst rutschen die Balken um eine Stunde und die
+    // Wochentags-Beschriftung passt nicht mehr zum gezeigten Zeitraum.
+    const start = addDays(weekStart, index)
+    const end = addDays(weekStart, index + 1)
     const durationMs = sessions.reduce((total, session) => (
       total + clippedPlaytimeDurationMs(session, start, end, now)
     ), 0)
@@ -337,7 +353,7 @@ export async function getOfficerPlaytimeReport(officerId: string, options?: { no
   if (options?.sync !== false) await syncOfficerPlayerPlaytime(officerId, { now })
   const weekStart = startOfCurrentWeek(now)
   const weekEnd = endOfWeek(weekStart)
-  const chartStart = new Date(weekStart.getTime() - 6 * MS_PER_DAY)
+  const chartStart = addDays(weekStart, -6)
 
   const sessions = await prisma.playtimeSession.findMany({
     where: {

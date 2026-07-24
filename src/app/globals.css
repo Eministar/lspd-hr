@@ -654,3 +654,314 @@ select option:hover {
 .markdown-document tbody tr:hover {
   background: rgba(16, 37, 66, 0.45);
 }
+
+/* ─── Arbeitsvertrag: Dokumentenansicht ───
+   Der Vertrag wird bewusst IMMER als helles Papier gerendert – auch im dunklen
+   Dashboard. Ein Vertrag soll wie ein echtes Dokument wirken und nicht wie eine
+   weitere UI-Karte. Deshalb hier feste Farben statt Theme-Variablen. */
+.contract-paper {
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+  max-width: 860px;
+  border-radius: 4px;
+  border: 1px solid #d8d2c2;
+  background:
+    linear-gradient(180deg, #fdfcf7 0%, #f7f4ea 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 18px 46px rgba(0, 0, 0, 0.45);
+  color: #1c2331;
+  font-family: 'Times New Roman', 'Georgia', serif;
+}
+
+.contract-paper::before {
+  /* Wasserzeichen: großes, sehr blasses Wappen mittig hinter dem Text. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--contract-watermark, none);
+  background-repeat: no-repeat;
+  background-position: center 46%;
+  background-size: min(58%, 420px);
+  opacity: 0.055;
+  pointer-events: none;
+}
+
+.contract-paper::after {
+  /* Feiner Rahmen innerhalb des Blattes – typisch für Urkunden/Verträge. */
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(28, 35, 49, 0.16);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.contract-paper > * {
+  position: relative;
+  z-index: 1;
+}
+
+.contract-body {
+  padding: 44px 54px 52px;
+}
+
+@media (max-width: 640px) {
+  .contract-body {
+    padding: 28px 22px 34px;
+  }
+}
+
+.contract-letterhead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 2px solid #17233a;
+  padding-bottom: 14px;
+}
+
+.contract-letterhead img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.contract-letterhead-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #17233a;
+  line-height: 1.25;
+}
+
+.contract-letterhead-sub {
+  margin-top: 2px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b5a2e;
+}
+
+.contract-doc-title {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #17233a;
+}
+
+.contract-doc-subtitle {
+  margin-top: 6px;
+  text-align: center;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7a8296;
+}
+
+.contract-meta {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 18px;
+  border-top: 1px solid rgba(28, 35, 49, 0.18);
+  border-bottom: 1px solid rgba(28, 35, 49, 0.18);
+  padding: 14px 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.contract-meta dt {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8264;
+}
+
+.contract-meta dd {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c2331;
+}
+
+.contract-section {
+  margin-top: 26px;
+}
+
+.contract-clause {
+  margin-top: 22px;
+  break-inside: avoid;
+}
+
+.contract-clause-heading {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #17233a;
+}
+
+.contract-prose {
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: #22293a;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.contract-prose p + p {
+  margin-top: 10px;
+}
+
+.contract-prose strong {
+  font-weight: 700;
+  color: #101725;
+}
+
+.contract-prose ul,
+.contract-prose ol {
+  margin: 8px 0 0 22px;
+  list-style: revert;
+}
+
+.contract-prose li + li {
+  margin-top: 4px;
+}
+
+.contract-prose code {
+  font-family: 'Consolas', monospace;
+  font-size: 0.86em;
+  background: rgba(28, 35, 49, 0.07);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.contract-divider {
+  margin-top: 30px;
+  border: 0;
+  border-top: 1px solid rgba(28, 35, 49, 0.18);
+}
+
+.contract-signature-grid {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 30px;
+}
+
+.contract-signature-line {
+  border-top: 1px solid #1c2331;
+  padding-top: 6px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #58607a;
+}
+
+.contract-signature-name {
+  font-family: 'Segoe Script', 'Brush Script MT', 'Times New Roman', cursive;
+  font-size: 26px;
+  line-height: 1.1;
+  color: #14306b;
+  min-height: 34px;
+  padding-bottom: 2px;
+  overflow-wrap: anywhere;
+}
+
+.contract-place-date {
+  margin-top: 30px;
+  font-size: 14.5px;
+  color: #22293a;
+}
+
+/* Stempel: leicht schräg, wie mit einem echten Stempelkissen aufgedrückt. */
+.contract-stamp {
+  position: absolute;
+  right: 46px;
+  bottom: 74px;
+  z-index: 2;
+  display: flex;
+  height: 138px;
+  width: 138px;
+  transform: rotate(-14deg);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 3px double #1f4fa3;
+  border-radius: 50%;
+  color: #1f4fa3;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  text-align: center;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.contract-stamp-top {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.contract-stamp-main {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contract-stamp-date {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 640px) {
+  .contract-stamp {
+    right: 16px;
+    bottom: 24px;
+    height: 104px;
+    width: 104px;
+  }
+  .contract-stamp-main {
+    font-size: 11px;
+  }
+}
+
+/* Entwurfs-/Ungültig-Hinweis quer über das Blatt. */
+.contract-void-mark {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(38px, 9vw, 82px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(158, 30, 30, 0.14);
+  transform: rotate(-22deg);
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .contract-no-print {
+    display: none !important;
+  }
+  .contract-paper {
+    box-shadow: none;
+    border: 0;
+    max-width: none;
+  }
+}

@@ -5,13 +5,22 @@ import { success, error, unauthorized , forbidden } from '@/lib/api-response'
 import { actionsForGroup, allGroupedActions } from '@/lib/audit-log-groups'
 import type { Prisma } from '@/generated/prisma/client'
 
+function clampNumber(raw: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(raw ?? '', 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+
 export async function GET(req: NextRequest) {
   try {
     await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['logs:view'])
 
     const { searchParams } = new URL(req.url)
-    const take = parseInt(searchParams.get('take') || '50')
-    const skip = parseInt(searchParams.get('skip') || '0')
+    // `parseInt` liefert bei Müll NaN — das würde Prisma mit einem 500er
+    // quittieren. Zusätzlich wird `take` gedeckelt, damit ein einzelner Aufruf
+    // nicht das komplette Protokoll (und damit den Speicher) zieht.
+    const take = clampNumber(searchParams.get('take'), 50, 1, 500)
+    const skip = clampNumber(searchParams.get('skip'), 0, 0, Number.MAX_SAFE_INTEGER)
     const group = searchParams.get('group')?.trim() || ''
     const search = searchParams.get('search')?.trim() || ''
 
