@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
-  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint, Newspaper,
+  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint, Newspaper, Gavel,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -37,6 +37,7 @@ const mainNav: NavItem[] = [
   { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
   { name: 'Streifenboard', href: '/patrol-board', icon: ClipboardList, permission: 'patrol-board:view' },
   { name: 'Officers', href: '/officers', icon: Users, permission: 'officers:view' },
+  { name: 'Anzeigen', href: '/anzeigen', icon: Gavel, permission: 'reports:view' },
   { name: 'Up-/D-Rank-Listen', href: '/promotions', icon: ArrowUpDown, permission: 'rank-changes:view' },
   { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },

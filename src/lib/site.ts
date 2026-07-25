@@ -34,3 +34,12 @@ export function resolveBaseUrl(req?: { url: string; headers: Headers }) {
 export function contractUrl(baseUrl: string, token: string) {
   return `${baseUrl.replace(/\/$/, '')}/vertrag/${token}`
 }
+
+/**
+ * Link zu einem Versetzungsantrag. Anders als der Vertragslink ist dieser
+ * bewusst ohne Anmeldung erreichbar — die entgegennehmende Behörde hat keinen
+ * Account im Dashboard.
+ */
+export function transferRequestUrl(baseUrl: string, token: string) {
+  return `${baseUrl.replace(/\/$/, '')}/versetzung/${token}`
+}

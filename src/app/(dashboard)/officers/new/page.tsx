@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -60,6 +60,9 @@ export default function NewOfficerPage() {
   const { user } = useAuth()
   const canCreate = hasPermission(user, 'officers:write')
 
+  /** Werte, die zuletzt aus einer Bewerbung übernommen wurden. */
+  const autofilledRef = useRef<{ firstName: string; lastName: string; discordId: string } | null>(null)
+
   const [form, setForm] = useState({
     badgeNumber: '',
     firstName: '',
@@ -117,22 +120,40 @@ export default function NewOfficerPage() {
   const update = (key: string, value: string | string[]) => setForm(prev => ({ ...prev, [key]: value }))
 
   /**
-   * Bewerbung auswählen: übernimmt Name und Discord-ID aus der Bewerbung, aber
-   * nur in noch leere Felder — bereits eingetippte Angaben bleiben erhalten.
+   * Bewerbung auswählen: übernimmt Name und Discord-ID aus der Bewerbung.
+   *
+   * Beim Wechsel auf eine andere Bewerbung werden die zuvor übernommenen Werte
+   * ersetzt — sonst blieben die Daten des vorherigen Bewerbers stehen. Von Hand
+   * eingetippte Angaben bleiben erhalten: überschrieben wird nur, was leer ist
+   * oder exakt aus der vorherigen Bewerbung stammt.
    */
   const selectApplication = (applicationId: string) => {
-    const application = applications?.find((item) => item.id === applicationId)
+    const application = applications?.find((item) => item.id === applicationId) ?? null
+    const incoming = application
+      ? {
+          ...splitApplicantName(application.applicantDisplayName),
+          discordId: application.discordId,
+        }
+      : { firstName: '', lastName: '', discordId: '' }
+
     setForm((prev) => {
-      if (!application) return { ...prev, applicationId }
-      const { firstName, lastName } = splitApplicantName(application.applicantDisplayName)
+      const previous = autofilledRef.current
+      // Überschrieben wird nur, was leer ist oder unverändert aus der zuvor
+      // gewählten Bewerbung stammt — Handeingaben bleiben stehen.
+      const takeOver = (current: string, previousAuto: string, next: string) => (
+        !current.trim() || current === previousAuto ? next : current
+      )
+
       return {
         ...prev,
         applicationId,
-        firstName: prev.firstName || firstName,
-        lastName: prev.lastName || lastName,
-        discordId: prev.discordId || application.discordId,
+        firstName: takeOver(prev.firstName, previous?.firstName ?? '', incoming.firstName),
+        lastName: takeOver(prev.lastName, previous?.lastName ?? '', incoming.lastName),
+        discordId: takeOver(prev.discordId, previous?.discordId ?? '', incoming.discordId),
       }
     })
+
+    autofilledRef.current = application ? incoming : null
   }
 
   if (!canCreate) return <UnauthorizedContent />
@@ -152,87 +173,93 @@ export default function NewOfficerPage() {
         }
       />
 
-      <div className="glass-panel-elevated rounded-[14px] p-6 max-w-2xl">
+      <div className="glass-panel-elevated mx-auto w-full max-w-6xl rounded-[14px] p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
-          {(applications?.length ?? 0) > 0 && (
-            <div className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
-              <ApplicationPicker
-                applications={applications ?? []}
-                value={form.applicationId}
-                onChange={selectApplication}
+          {/* Zwei Spalten: links die Stammdaten, rechts Bewerbung, Units und
+              Vertrag. Einspaltig wurde das Formular unnötig schmal und lang. */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  id="firstName"
+                  label="Vorname"
+                  value={form.firstName}
+                  onChange={(e) => update('firstName', e.target.value)}
+                  required
+                />
+                <Input
+                  id="lastName"
+                  label="Nachname"
+                  value={form.lastName}
+                  onChange={(e) => update('lastName', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  id="badgeNumber"
+                  label="Dienstnummer"
+                  value={form.badgeNumber}
+                  onChange={(e) => update('badgeNumber', e.target.value)}
+                  placeholder="Automatisch nach Rang"
+                />
+                <Select
+                  id="rankId"
+                  label="Rang"
+                  value={form.rankId}
+                  onChange={(e) => update('rankId', e.target.value)}
+                  options={ranks?.map(r => ({ value: r.id, label: r.name })) || []}
+                  placeholder="Rang auswählen"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  id="discordId"
+                  label="Discord-ID"
+                  value={form.discordId}
+                  onChange={(e) => update('discordId', e.target.value)}
+                  placeholder="Optional (Snowflake)"
+                  className="font-mono"
+                />
+                <DateField
+                  id="hireDate"
+                  label="Einstellungsdatum"
+                  value={form.hireDate}
+                  onChange={(v) => update('hireDate', v)}
+                />
+              </div>
+
+              <Textarea
+                id="notes"
+                label="Notizen"
+                value={form.notes}
+                onChange={(e) => update('notes', e.target.value)}
+                rows={4}
+                placeholder="Optional"
               />
-              <p className="mt-1.5 text-[11.5px] text-[#8ea4bd]">
-                Nur angenommene Bewerbungen, die noch nicht eingestellt wurden. Name und Discord-ID
-                werden – sofern noch leer – automatisch übernommen.
-              </p>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              id="firstName"
-              label="Vorname"
-              value={form.firstName}
-              onChange={(e) => update('firstName', e.target.value)}
-              required
-            />
-            <Input
-              id="lastName"
-              label="Nachname"
-              value={form.lastName}
-              onChange={(e) => update('lastName', e.target.value)}
-              required
-            />
+            <div className="space-y-5">
+              {(applications?.length ?? 0) > 0 && (
+                <div className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
+                  <ApplicationPicker
+                    applications={applications ?? []}
+                    value={form.applicationId}
+                    onChange={selectApplication}
+                  />
+                  <p className="mt-1.5 text-[11.5px] leading-4 text-[#8ea4bd]">
+                    Nur angenommene Bewerbungen, die noch nicht eingestellt wurden. Name und
+                    Discord-ID werden automatisch übernommen.
+                  </p>
+                </div>
+              )}
+
+              <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              id="badgeNumber"
-              label="Dienstnummer"
-              value={form.badgeNumber}
-              onChange={(e) => update('badgeNumber', e.target.value)}
-              placeholder="Automatisch nach Rang"
-            />
-            <Select
-              id="rankId"
-              label="Rang"
-              value={form.rankId}
-              onChange={(e) => update('rankId', e.target.value)}
-              options={ranks?.map(r => ({ value: r.id, label: r.name })) || []}
-              placeholder="Rang auswählen"
-              required
-            />
-          </div>
-
-          <div className="max-w-xl">
-            <Input
-              id="discordId"
-              label="Discord-ID"
-              value={form.discordId}
-              onChange={(e) => update('discordId', e.target.value)}
-              placeholder="Optional (Snowflake)"
-              className="font-mono"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DateField
-              id="hireDate"
-              label="Einstellungsdatum"
-              value={form.hireDate}
-              onChange={(v) => update('hireDate', v)}
-            />
-            <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
-          </div>
-
-          <Textarea
-            id="notes"
-            label="Notizen"
-            value={form.notes}
-            onChange={(e) => update('notes', e.target.value)}
-            rows={3}
-            placeholder="Optional"
-          />
 
           <div className="rounded-[12px] border border-[#4a3a12]/45 bg-[#302712]/30 p-3.5">
             <div className="flex items-start gap-2.5">

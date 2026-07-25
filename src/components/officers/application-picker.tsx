@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
+import { stripApplicationCaseNumber } from '@/lib/application-case-number'
 
 export interface LinkableApplication {
   id: string
@@ -69,15 +70,20 @@ export function ApplicationPicker({ applications, value, onChange }: Application
           onSelect={() => onChange('')}
         />
 
-        {filtered.map((application) => (
-          <PickerRow
-            key={application.id}
-            label={application.caseNumber ?? 'Ohne Aktenzeichen'}
-            meta={`${application.applicantDisplayName} · eingereicht ${formatDate(application.submittedAt)}`}
-            selected={value === application.id}
-            onSelect={() => onChange(application.id)}
-          />
-        ))}
+        {filtered.map((application) => {
+          // Der Anzeigename trägt das Aktenzeichen bereits — sonst stünde es
+          // in beiden Zeilen.
+          const name = stripApplicationCaseNumber(application.applicantDisplayName)
+          return (
+            <PickerRow
+              key={application.id}
+              label={application.caseNumber ? `${application.caseNumber} · ${name}` : name}
+              meta={`eingereicht ${formatDate(application.submittedAt)}`}
+              selected={value === application.id}
+              onSelect={() => onChange(application.id)}
+            />
+          )
+        })}
 
         {filtered.length === 0 && (
           <p className="px-2 py-3 text-center text-[12px] text-[#6b8299]">

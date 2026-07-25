@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle2, ClipboardList, FileText, MessageSquareText, Save, Search, UserRound, XCircle } from 'lucide-react'
+import { CheckCircle2, ClipboardList, FileText, MessageSquareText, RefreshCw, Save, Search, UserRound, XCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { Button } from '@/components/ui/button'
@@ -110,6 +110,7 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [syncing, setSyncing] = useState(false)
   // Merkt sich die zuletzt in die Editierfelder geladene Bewerbung. Der stille
   // Live-Refetch (useFetch) liefert `selected` als NEUES Objekt mit gleicher id —
   // ohne diesen Ref würden Status-Text/interne Notiz bei jedem Refetch aus den
@@ -159,6 +160,58 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
     }
   }, [applications])
 
+  /**
+   * Setzt Anzeigename und Discord-Nickname neu. Nötig für Bewerbungen, deren
+   * Aktenzeichen nachträglich vergeben wurde — das Wartungsskript fasst Discord
+   * bewusst nicht an.
+   */
+  const syncNickname = async () => {
+    if (!selected) return
+    setSyncing(true)
+    try {
+      const result = await execute(
+        `/api/applications/${selected.id}/sync-nickname`,
+        { method: 'POST' },
+      ) as { displayName: string; nickname: string; message: string } | null
+      addToast({
+        type: result?.nickname === 'synced' ? 'success' : 'warning',
+        title: result?.displayName ?? 'Name aktualisiert',
+        message: result?.message ?? '',
+      })
+      await refetch()
+    } catch (e) {
+      addToast({ type: 'error', title: 'Umbenennen fehlgeschlagen', message: e instanceof Error ? e.message : '' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const syncAllNicknames = async () => {
+    if (!confirm('Alle Bewerber auf „Aktenzeichen | Name“ umbenennen? Das ändert auch die Discord-Nicknames.')) return
+    setSyncing(true)
+    try {
+      const result = await execute('/api/applications/sync-nicknames', { method: 'POST' }) as {
+        processed: number
+        counts: Record<string, number>
+      } | null
+      const counts = result?.counts ?? {}
+      addToast({
+        type: 'success',
+        title: `${counts.synced ?? 0} von ${result?.processed ?? 0} umbenannt`,
+        message: [
+          counts['missing-permissions'] ? `${counts['missing-permissions']}× Bot-Rolle zu niedrig` : '',
+          counts['not-member'] ? `${counts['not-member']}× nicht auf dem Server` : '',
+          counts.skipped ? `${counts.skipped}× ohne Discord-ID` : '',
+        ].filter(Boolean).join(' · '),
+      })
+      await refetch()
+    } catch (e) {
+      addToast({ type: 'error', title: 'Umbenennen fehlgeschlagen', message: e instanceof Error ? e.message : '' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const updateApplication = async (patch?: Partial<Pick<ApplicationRow, 'status' | 'statusText' | 'internalNote'>>) => {
     if (!selected) return
     const nextStatus = patch?.status ?? status
@@ -189,6 +242,12 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
       <PageHeader
         title="Bewerbungen"
         description="Eingereichte Bewerbungen prüfen, Antworten auswerten und den sichtbaren Bewerbungsstatus setzen."
+        action={canManage ? (
+          <Button variant="secondary" size="sm" onClick={syncAllNicknames} loading={syncing}>
+            <RefreshCw size={13} />
+            Alle Discord-Namen setzen
+          </Button>
+        ) : undefined}
       />
 
       {error && (
@@ -270,7 +329,12 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
 
           {selected && (
             <section className="space-y-4">
-              <ApplicationDetailHeader application={selected} />
+              <ApplicationDetailHeader
+                application={selected}
+                canManage={canManage}
+                syncing={syncing}
+                onSyncNickname={syncNickname}
+              />
 
               <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
                 <div className="mb-3 flex items-center gap-2">
@@ -415,7 +479,17 @@ function ApplicationListItem({
   )
 }
 
-function ApplicationDetailHeader({ application }: { application: ApplicationRow }) {
+function ApplicationDetailHeader({
+  application,
+  canManage,
+  syncing,
+  onSyncNickname,
+}: {
+  application: ApplicationRow
+  canManage: boolean
+  syncing: boolean
+  onSyncNickname: () => void
+}) {
   const meta = JOB_APPLICATION_STATUS_META[application.status]
 
   return (
@@ -442,12 +516,20 @@ function ApplicationDetailHeader({ application }: { application: ApplicationRow 
             <p className="mt-2 max-w-2xl text-[13px] leading-5 text-[#dbe6f3]">{application.statusText}</p>
           </div>
         </div>
-        <div className="shrink-0 rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/55 px-3 py-2">
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#4a6585]">Review</p>
-          <p className="mt-1 text-[12px] text-[#b7c5d8]">
-            {application.reviewedBy ? application.reviewedBy.displayName : 'Noch offen'}
-          </p>
-          {application.reviewedAt && <p className="mt-0.5 text-[11px] text-[#6b8299]">{formatDateTime(application.reviewedAt)}</p>}
+        <div className="flex shrink-0 flex-col items-start gap-2">
+          <div className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/55 px-3 py-2">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#4a6585]">Review</p>
+            <p className="mt-1 text-[12px] text-[#b7c5d8]">
+              {application.reviewedBy ? application.reviewedBy.displayName : 'Noch offen'}
+            </p>
+            {application.reviewedAt && <p className="mt-0.5 text-[11px] text-[#6b8299]">{formatDateTime(application.reviewedAt)}</p>}
+          </div>
+          {canManage && (
+            <Button variant="outline" size="sm" onClick={onSyncNickname} loading={syncing}>
+              <RefreshCw size={13} />
+              Discord-Name setzen
+            </Button>
+          )}
         </div>
       </div>
     </div>

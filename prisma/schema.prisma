@@ -205,6 +205,12 @@ model User {
   contractTemplatesCreated ContractTemplate[]    @relation("ContractTemplateCreator")
   contractsCreated         Contract[]            @relation("ContractCreator")
   contractsSigned          Contract[]            @relation("ContractSigner")
+  personFilesCreated       PersonFile[]          @relation("PersonFileCreator")
+  reportsRecorded          Report[]              @relation("ReportRecorder")
+  reportUpdatesAuthored    ReportUpdate[]        @relation("ReportUpdateAuthor")
+  transferRequestsCreated  TransferRequest[]     @relation("TransferRequestCreator")
+  transferRequestsSignedHr TransferRequest[]     @relation("TransferRequestHrSigner")
+  transferRequestsSignedOf TransferRequest[]     @relation("TransferRequestOfficerSigner")
 }
 
 model UserGroupMembership {
@@ -222,16 +228,16 @@ model UserGroupMembership {
 }
 
 model Unit {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  name      String
-  color     String   @default("#d4af37")
-  sortOrder Int      @default(0)
-  active    Boolean  @default(true)
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  color       String   @default("#d4af37")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
   /// Zusätzliche Rechte, die diese Unit ihren Mitgliedern gewährt (analog UserGroup.permissions).
-  permissions Json   @default("[]")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  permissions Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userAssignments UserUnitAssignment[]
 }
@@ -507,25 +513,25 @@ model PressRelease {
 }
 
 model Officer {
-  id          String        @id @default(cuid())
-  badgeNumber String
+  id               String        @id @default(cuid())
+  badgeNumber      String
   /// Discord-Snowflake (nur Dashboard / Verknüpfung; ohne Bot-Anbindung)
-  discordId   String?       @unique
-  firstName   String
-  lastName    String
-  rankId      String
-  rank        Rank          @relation(fields: [rankId], references: [id])
-  status      OfficerStatus @default(ACTIVE)
-  unit        String?
-  units       Json?
-  flag        OfficerFlag?
+  discordId        String?       @unique
+  firstName        String
+  lastName         String
+  rankId           String
+  rank             Rank          @relation(fields: [rankId], references: [id])
+  status           OfficerStatus @default(ACTIVE)
+  unit             String?
+  units            Json?
+  flag             OfficerFlag?
   /// Uprank-Sperre: blockiert Beförderungen (Aufstieg). Degradierungen bleiben erlaubt.
-  promotionBlocked Boolean  @default(false)
-  notes       String?
-  hireDate    DateTime      @default(now())
-  lastOnline  DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  promotionBlocked Boolean       @default(false)
+  notes            String?
+  hireDate         DateTime      @default(now())
+  lastOnline       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   trainings         OfficerTraining[]
   promotionLogs     PromotionLog[]
@@ -545,6 +551,7 @@ model Officer {
   dispatchCenters   DispatchCenterState[] @relation("DispatchCenterOfficer")
   contracts         Contract[]
   jobApplication    JobApplication?       @relation("OfficerJobApplication")
+  transferRequests  TransferRequest[]     @relation("OfficerTransferRequests")
 
   @@index([badgeNumber])
 }
@@ -1063,24 +1070,24 @@ model OrdnungCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ordnungen   Ordnung[]
+  ordnungen Ordnung[]
 }
 
 model Ordnung {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String          @id @default(cuid())
+  slug        String          @unique
   title       String
-  description String   @db.Text
+  description String          @db.Text
   buttonLabel String
-  icon        String   @default("FileText")
-  content     String   @db.Text
+  icon        String          @default("FileText")
+  content     String          @db.Text
   categoryId  String
   category    OrdnungCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  sortOrder   Int      @default(0)
+  sortOrder   Int             @default(0)
   createdById String?
-  createdBy   User?    @relation("OrdnungCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdBy   User?           @relation("OrdnungCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@index([categoryId])
 }
@@ -1171,4 +1178,181 @@ model Contract {
   @@index([templateId])
   @@index([createdById])
   @@index([signedByUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Anzeigen & Personenakten
+// ---------------------------------------------------------------------------
+
+enum ReportStatus {
+  RECORDED
+  IN_REVIEW
+  FORWARDED
+  IN_COURT
+  CLOSED
+  DISMISSED
+}
+
+/// Personenakte. Jede Person, die als Anzeigenerstatter oder als Angezeigter
+/// auftaucht, bekommt genau eine Akte — dort laufen Stammdaten, Bilder und alle
+/// Anzeigen zusammen. Einsehbar für alle mit `reports:view` (PD und FJD).
+model PersonFile {
+  id             String    @id @default(cuid())
+  /// Aktenzeichen der Person, z. B. "PA-0001".
+  fileNumber     String    @unique @db.VarChar(24)
+  firstName      String
+  lastName       String
+  birthDate      DateTime?
+  phone          String?   @db.VarChar(40)
+  address        String?
+  /// Bild des Personalausweises.
+  idCardImageUrl String?   @db.VarChar(500)
+  /// Lichtbild der Person.
+  photoUrl       String?   @db.VarChar(500)
+  notes          String?   @db.Text
+  /// Zur Fahndung ausgeschrieben.
+  wanted         Boolean   @default(false)
+
+  createdById String?
+  createdBy   User?    @relation("PersonFileCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reportsAsSuspect     Report[] @relation("ReportSuspect")
+  reportsAsComplainant Report[] @relation("ReportComplainant")
+
+  @@index([lastName, firstName])
+  @@index([createdById])
+  @@index([wanted, updatedAt])
+}
+
+/// Eine aufgenommene Anzeige.
+model Report {
+  id          String       @id @default(cuid())
+  /// Aktenzeichen der Anzeige, z. B. "AZ-0001".
+  caseNumber  String       @unique @db.VarChar(24)
+  /// Tatvorwurf.
+  charge      String       @db.Text
+  /// Sachverhalt / Schilderung.
+  description String       @db.Text
+  incidentAt  DateTime?
+  location    String?
+  status      ReportStatus @default(RECORDED)
+
+  /// Anzeigenerstatter (Antragsteller).
+  complainantId String?
+  complainant   PersonFile? @relation("ReportComplainant", fields: [complainantId], references: [id], onDelete: SetNull)
+  /// Angezeigter (Beschuldigter).
+  suspectId     String?
+  suspect       PersonFile? @relation("ReportSuspect", fields: [suspectId], references: [id], onDelete: SetNull)
+
+  /// Weitere Beweisbilder: `[{ id, url, label }]`.
+  attachments Json @default("[]")
+
+  /// Aufnehmender Beamter.
+  recordedById   String?
+  recordedBy     User?   @relation("ReportRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  /// Anzeigename des aufnehmenden Beamten zum Zeitpunkt der Aufnahme.
+  recordedByName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  updates ReportUpdate[]
+
+  @@index([status, updatedAt])
+  @@index([suspectId])
+  @@index([complainantId])
+  @@index([recordedById])
+  @@index([createdAt])
+}
+
+/// Verlaufseintrag einer Anzeige: Statuswechsel und/oder Vermerk.
+model ReportUpdate {
+  id       String        @id @default(cuid())
+  reportId String
+  report   Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  status   ReportStatus?
+  note     String        @db.Text
+
+  authorId   String?
+  author     User?    @relation("ReportUpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  authorName String?
+  createdAt  DateTime @default(now())
+
+  @@index([reportId, createdAt])
+  @@index([authorId])
+}
+
+// ---------------------------------------------------------------------------
+// Versetzungsanträge
+// ---------------------------------------------------------------------------
+
+enum TransferRequestStatus {
+  DRAFT
+  SENT
+  IN_SIGNING
+  COMPLETED
+  DECLINED
+  CANCELLED
+}
+
+/// Versetzungsantrag als Dokument mit drei Unterschriften: LSPD (HR), der
+/// Beamte selbst und die entgegennehmende Behörde. Wird über einen Link
+/// ausgefüllt, der bewusst auch ohne Login geöffnet werden kann.
+model TransferRequest {
+  id            String @id @default(cuid())
+  token         String @unique
+  /// Aktenzeichen des Antrags, z. B. "VA-0001".
+  requestNumber String @unique @db.VarChar(24)
+
+  officerId       String?
+  officer         Officer? @relation("OfficerTransferRequests", fields: [officerId], references: [id], onDelete: SetNull)
+  /// Snapshots des Beamten zum Erstellungszeitpunkt.
+  officerName     String
+  badgeNumber     String?
+  rankName        String?
+  /// Discord-ID, die als Beamter unterschreiben darf.
+  signerDiscordId String?
+
+  title   String
+  content String  @db.Text
+  clauses Json    @default("[]")
+  closing String? @db.Text
+  fields  Json    @default("[]")
+  /// Vom Antragsteller eingetragene Werte: `{ [fieldId]: string | boolean }`.
+  values  Json?
+
+  /// Entgegennehmende Behörde (Ziel der Versetzung).
+  targetAuthority String?
+
+  status TransferRequestStatus @default(DRAFT)
+
+  hrSignedName     String?
+  hrSignedAt       DateTime?
+  hrSignedByUserId String?
+  hrSignedBy       User?     @relation("TransferRequestHrSigner", fields: [hrSignedByUserId], references: [id], onDelete: SetNull)
+
+  officerSignedName     String?
+  officerSignedAt       DateTime?
+  officerSignedByUserId String?
+  officerSignedBy       User?     @relation("TransferRequestOfficerSigner", fields: [officerSignedByUserId], references: [id], onDelete: SetNull)
+
+  authoritySignedName String?
+  authoritySignedRole String?
+  authoritySignedAt   DateTime?
+  authoritySignedIp   String?   @db.VarChar(64)
+
+  sentAt        DateTime?
+  declinedAt    DateTime?
+  declineReason String?   @db.Text
+
+  createdById String?
+  createdBy   User?    @relation("TransferRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([officerId])
+  @@index([createdById])
 }

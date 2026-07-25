@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { setDiscordMemberNickname } from '@/lib/discord-integration'
+import { pickApplicantName } from '@/lib/job-applications'
 import {
   buildApplicantDisplayName,
   formatApplicationCaseNumber,
   parseApplicationCaseNumber,
+  stripApplicationCaseNumber,
 } from '@/lib/application-case-number'
 
 const MAX_CASE_NUMBER_ATTEMPTS = 5
@@ -80,4 +82,68 @@ export async function applyApplicantIdentity(input: {
   })
 
   return { caseNumber, displayName, nickname: nickname.status }
+}
+
+export type NicknameSyncStatus = 'synced' | 'skipped' | 'not-member' | 'missing-permissions' | 'failed'
+
+export const NICKNAME_STATUS_MESSAGES: Record<NicknameSyncStatus, string> = {
+  synced: 'Discord-Nickname wurde gesetzt.',
+  skipped: 'Übersprungen — keine Discord-ID hinterlegt oder der Bot ist nicht konfiguriert.',
+  'not-member': 'Der Bewerber ist nicht (mehr) Mitglied des Discord-Servers.',
+  'missing-permissions': 'Discord verweigert die Umbenennung: Die Bot-Rolle muss über der Rolle des Mitglieds stehen (Serverinhaber lassen sich nie umbenennen).',
+  failed: 'Discord hat die Umbenennung abgelehnt. Details stehen im Server-Log.',
+}
+
+/**
+ * Stellt Anzeigename und Discord-Nickname einer bestehenden Bewerbung wieder
+ * her. Wird gebraucht, weil Bewerbungen aus der Zeit vor dem Aktenzeichen ihr
+ * Kürzel per Wartungsskript bekommen haben — und das fasst Discord bewusst
+ * nicht an. Fehlt das Aktenzeichen noch, wird es hier nachgeholt.
+ */
+export async function refreshApplicantIdentity(applicationId: string) {
+  const application = await prisma.jobApplication.findUnique({
+    where: { id: applicationId },
+    select: {
+      id: true,
+      caseNumber: true,
+      applicantId: true,
+      applicantDisplayName: true,
+      discordId: true,
+      answers: {
+        orderBy: { sortOrder: 'asc' },
+        select: { questionId: true, questionTitle: true, value: true },
+      },
+    },
+  })
+  if (!application) return null
+
+  const caseNumber = application.caseNumber ?? await assignApplicationCaseNumber(application.id)
+  const name = pickApplicantName(application.answers)
+    || stripApplicationCaseNumber(application.applicantDisplayName)
+  const displayName = buildApplicantDisplayName(caseNumber, name)
+
+  if (displayName !== application.applicantDisplayName) {
+    await prisma.$transaction([
+      prisma.jobApplication.update({
+        where: { id: application.id },
+        data: { applicantDisplayName: displayName },
+      }),
+      prisma.user.update({
+        where: { id: application.applicantId },
+        data: { displayName },
+      }),
+    ])
+  }
+
+  const nickname = await setDiscordMemberNickname(application.discordId, displayName).catch((error) => {
+    console.error('[Applications] Discord-Nickname konnte nicht gesetzt werden:', error)
+    return { status: 'failed' as const }
+  })
+
+  return {
+    caseNumber,
+    displayName,
+    nickname: nickname.status as NicknameSyncStatus,
+    message: NICKNAME_STATUS_MESSAGES[nickname.status as NicknameSyncStatus],
+  }
 }
