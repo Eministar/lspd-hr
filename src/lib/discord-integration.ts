@@ -1125,6 +1125,40 @@ async function syncOfficerDiscordMember(
   return { status: 'synced' as const }
 }
 
+/**
+ * Setzt den Server-Nickname eines Mitglieds — genutzt, wenn ein Bewerber auf
+ * „Aktenzeichen | Name“ umbenannt wird. Fehler werden bewusst nur protokolliert:
+ * eine zu niedrige Bot-Rolle darf die Bewerbung nicht scheitern lassen.
+ */
+export async function setDiscordMemberNickname(discordId: string | null | undefined, nickname: string) {
+  const config = await getDiscordConfig()
+  if (!config.guildId || !botToken()) return { status: 'skipped' as const }
+
+  const memberId = snowflake(discordId)
+  if (!memberId) return { status: 'skipped' as const }
+  if (memberPermissionBlocked(memberId)) return { status: 'missing-permissions' as const }
+
+  const nick = truncate(nickname.replace(/\s+/g, ' ').trim(), 32)
+  if (!nick) return { status: 'skipped' as const }
+
+  try {
+    await discordFetch<void>(`/guilds/${config.guildId}/members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nick }),
+    })
+    return { status: 'synced' as const }
+  } catch (err) {
+    if (isMissingDiscordPermissions(err)) {
+      blockMemberPermissions(memberId)
+      console.warn(`[DiscordIntegration] Nickname für ${memberId} nicht gesetzt: Rollen-Hierarchie oder Serverinhaber.`)
+      return { status: 'missing-permissions' as const }
+    }
+    if (isUnknownDiscordMember(err)) return { status: 'not-member' as const }
+    console.error('[DiscordIntegration] Nickname setzen fehlgeschlagen:', err)
+    return { status: 'failed' as const }
+  }
+}
+
 export async function addDiscordRoleToMember(discordId: string, roleId: string) {
   const config = await getDiscordConfig()
   if (!config.guildId || !botToken()) return

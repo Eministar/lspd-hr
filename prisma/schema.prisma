@@ -435,6 +435,10 @@ model FormAnswer {
 
 model JobApplication {
   id                   String               @id @default(cuid())
+  /// Aktenzeichen der Bewerbung (z. B. "BW-0001"). Wird beim Einreichen
+  /// vergeben und ist die Kennung, unter der HR die Bewerbung sucht. Optional,
+  /// weil Bewerbungen aus der Zeit vor dieser Funktion noch keins haben.
+  caseNumber           String?              @unique @db.VarChar(24)
   applicantId          String               @unique
   applicant            User                 @relation("JobApplicationApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
   discordId            String

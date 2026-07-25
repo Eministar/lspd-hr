@@ -31,6 +31,7 @@ interface PortalApplicationAnswer {
 
 interface PortalApplication {
   id: string
+  caseNumber: string | null
   status: JobApplicationStatusValue
   statusText: string
   submittedAt: string
@@ -123,7 +124,9 @@ export default function ApplicationPortalPage() {
       addToast({ type: 'success', title: 'Bewerbung eingereicht' })
       setFormOpen(false)
       setAnswers({})
-      await refetch()
+      // Der Anzeigename trägt jetzt das Aktenzeichen — ohne refreshUser zeigt
+      // die Kopfzeile weiter den alten Namen.
+      await Promise.all([refetch(), refreshUser().catch(() => undefined)])
     } catch (e) {
       addToast({ type: 'error', title: 'Bewerbung konnte nicht gespeichert werden', message: e instanceof Error ? e.message : '' })
     } finally {
@@ -308,6 +311,20 @@ function ApplicationStatusView({ application, user }: { application: PortalAppli
             <div className="min-w-0">
               <h1 className="text-[22px] font-semibold leading-tight text-white">Deine Bewerbung ist eingereicht</h1>
               <p className="mt-2 text-[14px] leading-6 text-[#dbe6f3]">{application.statusText}</p>
+              {application.caseNumber && (
+                <div className="mt-4 rounded-[12px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-3">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#d4af37]/80">
+                    Dein Aktenzeichen
+                  </p>
+                  <p className="mt-1 font-mono text-[20px] font-semibold tracking-wide text-[#d4af37]">
+                    {application.caseNumber}
+                  </p>
+                  <p className="mt-1.5 text-[12px] leading-5 text-[#d8c68c]">
+                    Nenne dieses Aktenzeichen bei jeder Rückfrage. Dein Name wurde dafür auf
+                    „{application.caseNumber} | Vorname Nachname“ umgestellt.
+                  </p>
+                </div>
+              )}
               <p className="mt-3 text-[12.5px] text-[#8ea4bd]">Eingereicht {formatDateTime(application.submittedAt)}</p>
             </div>
           </div>

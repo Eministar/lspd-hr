@@ -5,6 +5,7 @@ import { getApplicationFormConfig } from '@/lib/job-application-settings'
 
 const applicationSelect = {
   id: true,
+  caseNumber: true,
   status: true,
   statusText: true,
   submittedAt: true,

@@ -9,6 +9,8 @@ import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader } from '@/components/layout/page-header'
 import { UnitMultiSelect } from '@/components/officers/unit-multi-select'
+import { ApplicationPicker, type LinkableApplication } from '@/components/officers/application-picker'
+import { stripApplicationCaseNumber } from '@/lib/application-case-number'
 import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
@@ -30,29 +32,19 @@ interface Unit {
   name: string
 }
 
-interface LinkableApplication {
-  id: string
-  applicantDisplayName: string
-  discordId: string
-  discordUsername: string | null
-  discordGlobalName: string | null
-  status: string
-  submittedAt: string
-}
-
 interface ContractTemplateOption {
   id: string
   name: string
   isDefault: boolean
 }
 
-function formatApplicationDate(value: string) {
-  return new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-/** Zerlegt „Vorname Nachname“ aus der Bewerbung in die beiden Formularfelder. */
+/**
+ * Zerlegt „Vorname Nachname“ aus der Bewerbung in die beiden Formularfelder.
+ * Der Anzeigename trägt das Aktenzeichen („BW-0001 | Max Mustermann“), das hier
+ * abgeschnitten wird.
+ */
 function splitApplicantName(value: string) {
-  const parts = value.replace(/\s+/g, ' ').trim().split(' ')
+  const parts = stripApplicationCaseNumber(value).split(' ')
   if (parts.length < 2) return { firstName: parts[0] ?? '', lastName: '' }
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
 }
@@ -164,20 +156,14 @@ export default function NewOfficerPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {(applications?.length ?? 0) > 0 && (
             <div className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
-              <Select
-                id="applicationId"
-                label="Zugehörige Bewerbung"
+              <ApplicationPicker
+                applications={applications ?? []}
                 value={form.applicationId}
-                onValueChange={selectApplication}
-                options={(applications ?? []).map((application) => ({
-                  value: application.id,
-                  label: `${application.applicantDisplayName} · ${formatApplicationDate(application.submittedAt)}`,
-                }))}
-                placeholder="Keine Bewerbung verknüpfen"
+                onChange={selectApplication}
               />
               <p className="mt-1.5 text-[11.5px] text-[#8ea4bd]">
-                Verknüpft die Personalakte mit der Bewerbung. Name und Discord-ID werden – sofern
-                noch leer – automatisch übernommen.
+                Nur angenommene Bewerbungen, die noch nicht eingestellt wurden. Name und Discord-ID
+                werden – sofern noch leer – automatisch übernommen.
               </p>
             </div>
           )}

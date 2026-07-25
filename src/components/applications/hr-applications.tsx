@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle2, ClipboardList, FileText, MessageSquareText, Save, UserRound, XCircle } from 'lucide-react'
+import { CheckCircle2, ClipboardList, FileText, MessageSquareText, Save, Search, UserRound, XCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { useApi } from '@/hooks/use-api'
 import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/components/ui/toast'
 import { cn, formatDateTime } from '@/lib/utils'
+import { stripApplicationCaseNumber } from '@/lib/application-case-number'
 import {
   JOB_APPLICATION_STATUSES,
   JOB_APPLICATION_STATUS_META,
@@ -30,6 +31,7 @@ interface ApplicationAnswer {
 
 interface ApplicationRow {
   id: string
+  caseNumber: string | null
   applicantId: string
   discordId: string
   discordUsername: string | null
@@ -56,6 +58,41 @@ const statusOptions = JOB_APPLICATION_STATUSES.map((status) => ({
   label: JOB_APPLICATION_STATUS_META[status].label,
 }))
 
+/** „Offen“ = noch keine Entscheidung gefallen. */
+const OPEN_STATUSES: JobApplicationStatusValue[] = ['SUBMITTED', 'IN_REVIEW', 'HR_INTERVIEW']
+
+type StatusFilter = 'ALL' | 'OPEN' | JobApplicationStatusValue
+
+const filterOptions: { value: StatusFilter; label: string }[] = [
+  { value: 'OPEN', label: 'Offen' },
+  { value: 'ALL', label: 'Alle' },
+  ...JOB_APPLICATION_STATUSES.map((status) => ({
+    value: status as StatusFilter,
+    label: JOB_APPLICATION_STATUS_META[status].shortLabel,
+  })),
+]
+
+function matchesStatusFilter(application: ApplicationRow, filter: StatusFilter) {
+  if (filter === 'ALL') return true
+  if (filter === 'OPEN') return OPEN_STATUSES.includes(application.status)
+  return application.status === filter
+}
+
+/** Durchsuchbar über Aktenzeichen, Name und Discord-Kennungen. */
+function applicationHaystack(application: ApplicationRow) {
+  return [
+    application.caseNumber,
+    application.applicantDisplayName,
+    application.discordId,
+    application.discordUsername,
+    application.discordGlobalName,
+    application.applicant?.username,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
 function discordAvatarUrl(application: Pick<ApplicationRow, 'discordId' | 'discordAvatar'>) {
   if (!application.discordId || !application.discordAvatar) return null
   const ext = application.discordAvatar.startsWith('a_') ? 'gif' : 'png'
@@ -71,13 +108,25 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
   const [statusText, setStatusText] = useState('')
   const [internalNote, setInternalNote] = useState('')
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   // Merkt sich die zuletzt in die Editierfelder geladene Bewerbung. Der stille
   // Live-Refetch (useFetch) liefert `selected` als NEUES Objekt mit gleicher id —
   // ohne diesen Ref würden Status-Text/interne Notiz bei jedem Refetch aus den
   // Serverdaten überschrieben und laufende Eingaben gingen verloren.
   const loadedApplicationIdRef = useRef<string | null>(null)
 
-  const selected = useMemo(() => applications?.find((item) => item.id === selectedId) ?? applications?.[0] ?? null, [applications, selectedId])
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return (applications ?? []).filter((application) => (
+      matchesStatusFilter(application, statusFilter) &&
+      (!query || applicationHaystack(application).includes(query))
+    ))
+  }, [applications, search, statusFilter])
+
+  // Die Auswahl folgt der gefilterten Liste — sonst zeigt das Detail eine
+  // Bewerbung, die links gar nicht mehr sichtbar ist.
+  const selected = useMemo(() => filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null, [filtered, selectedId])
 
   useEffect(() => {
     if (selected && selected.id !== selectedId) setSelectedId(selected.id)
@@ -163,14 +212,47 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
           <p className="mt-1 text-[12.5px] text-[#8ea4bd]">Neue Abgaben erscheinen automatisch in dieser Liste.</p>
         </section>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[330px_1fr]">
-          <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[330px_1fr]">
+          <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 lg:sticky lg:top-4">
             <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Bewerbungseingang</p>
-              <span className="text-[10.5px] text-[#536b86]">{applications?.length ?? 0}</span>
+              <span className="text-[10.5px] text-[#536b86]">
+                {filtered.length}
+                {filtered.length !== (applications?.length ?? 0) && ` / ${applications?.length ?? 0}`}
+              </span>
             </div>
-            <div className="max-h-[690px] overflow-y-auto p-1.5">
-              {applications?.map((application) => (
+
+            <div className="space-y-2 border-b border-[#18385f]/45 px-2.5 py-2.5">
+              <div className="relative">
+                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Aktenzeichen oder Name suchen"
+                  className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setStatusFilter(option.value)}
+                    className={cn(
+                      'rounded-[7px] border px-2 py-1 text-[11px] font-medium transition-colors',
+                      statusFilter === option.value
+                        ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
+                        : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="max-h-[min(690px,calc(100vh-260px))] min-h-[240px] overflow-y-auto p-1.5">
+              {filtered.map((application) => (
                 <ApplicationListItem
                   key={application.id}
                   application={application}
@@ -178,6 +260,11 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
                   onSelect={() => setSelectedId(application.id)}
                 />
               ))}
+              {filtered.length === 0 && (
+                <p className="px-3 py-8 text-center text-[12px] text-[#6b8299]">
+                  Keine Bewerbung passt zu Suche und Filter.
+                </p>
+              )}
             </div>
           </aside>
 
@@ -312,7 +399,14 @@ function ApplicationListItem({
       <div className="flex items-start gap-2.5">
         <ApplicantAvatar application={application} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-white">{application.applicantDisplayName}</p>
+          {application.caseNumber && (
+            <p className="truncate font-mono text-[11px] font-semibold tracking-wide text-[#d4af37]">
+              {application.caseNumber}
+            </p>
+          )}
+          <p className="truncate text-[13px] font-semibold text-white">
+            {stripApplicationCaseNumber(application.applicantDisplayName)}
+          </p>
           <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">Eingereicht {formatDateTime(application.submittedAt)}</p>
         </div>
         <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
@@ -332,9 +426,16 @@ function ApplicationDetailHeader({ application }: { application: ApplicationRow 
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant={meta.variant}>{meta.label}</Badge>
+              {application.caseNumber && (
+                <span className="rounded-[6px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-[#d4af37]">
+                  {application.caseNumber}
+                </span>
+              )}
               <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(application.updatedAt)}</span>
             </div>
-            <h2 className="truncate text-[19px] font-semibold text-white">{application.applicantDisplayName}</h2>
+            <h2 className="truncate text-[19px] font-semibold text-white">
+              {stripApplicationCaseNumber(application.applicantDisplayName)}
+            </h2>
             <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
               {application.discordGlobalName || application.discordUsername || application.discordId}
             </p>
@@ -356,19 +457,21 @@ function ApplicationDetailHeader({ application }: { application: ApplicationRow 
 function ApplicantAvatar({ application, size }: { application: ApplicationRow; size: 'sm' | 'lg' }) {
   const avatarUrl = discordAvatarUrl(application)
   const className = size === 'lg' ? 'h-14 w-14 text-[17px]' : 'h-9 w-9 text-[12px]'
+  // Ohne Aktenzeichen-Präfix, sonst trägt jeder Bewerber ein „B“ als Initiale.
+  const name = stripApplicationCaseNumber(application.applicantDisplayName)
   if (avatarUrl) {
     return (
       <span
         className={cn('shrink-0 rounded-full bg-cover bg-center ring-1 ring-[#d4af37]/25', className)}
         style={{ backgroundImage: `url(${avatarUrl})` }}
-        aria-label={application.applicantDisplayName}
+        aria-label={name}
       />
     )
   }
 
   return (
     <div className={cn('flex shrink-0 items-center justify-center rounded-full bg-[#d4af37]/90 font-bold text-[#071b33]', className)}>
-      {application.applicantDisplayName ? application.applicantDisplayName.charAt(0).toUpperCase() : <UserRound size={14} />}
+      {name ? name.charAt(0).toUpperCase() : <UserRound size={14} />}
     </div>
   )
 }

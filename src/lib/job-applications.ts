@@ -694,6 +694,42 @@ export function normalizeApplicationAnswers(
   return { normalized, errors }
 }
 
+/** Standard-Frage, aus der der IC-Name des Bewerbers stammt. */
+export const APPLICANT_NAME_QUESTION_ID = 'vollstaendiger_name_ic'
+
+interface AnswerForName {
+  questionId: string
+  questionTitle?: string | null
+  textValue?: string | null
+  value?: unknown
+}
+
+function looksLikeNameQuestion(answer: AnswerForName) {
+  const haystack = `${answer.questionId} ${answer.questionTitle ?? ''}`.toLowerCase()
+  if (haystack.includes('discord') || haystack.includes('username')) return false
+  return haystack.includes('name')
+}
+
+/**
+ * Liest den IC-Namen aus den Bewerbungsantworten. Das Formular ist frei
+ * konfigurierbar, deshalb wird nach der Standard-Frage-ID gesucht und erst
+ * danach auf „irgendeine Namensfrage“ zurückgefallen.
+ */
+export function pickApplicantName(answers: AnswerForName[]) {
+  const candidates = [
+    answers.find((answer) => answer.questionId === APPLICANT_NAME_QUESTION_ID),
+    ...answers.filter(looksLikeNameQuestion),
+  ]
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const text = applicationAnswerText(candidate).replace(/\s+/g, ' ').trim()
+    if (text) return text.slice(0, 80)
+  }
+
+  return ''
+}
+
 export function applicationAnswerText(answer: {
   textValue?: string | null
   value?: unknown

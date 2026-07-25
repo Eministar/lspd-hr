@@ -18,6 +18,7 @@ const expectedImportCounts = {
   sanctions: 3,
 }
 const { normalizeBadgeNumbers } = require('./normalize-badge-numbers')
+const { backfillApplicationCaseNumbers } = require('./backfill-application-case-numbers')
 
 function runPrisma(args, label) {
   const result = spawnSync(process.execPath, [prismaCli, ...args], {
@@ -111,6 +112,12 @@ async function main() {
 
   const prisma = loadPrisma()
   try {
+    // Vor allen weiteren Zweigen: Bewerbungen ohne Aktenzeichen nachziehen.
+    const caseNumbers = await backfillApplicationCaseNumbers(prisma)
+    if (caseNumbers.assigned > 0) {
+      console.log(`[DB] Aktenzeichen vergeben: ${caseNumbers.assigned} von ${caseNumbers.total} Bewerbungen.`)
+    }
+
     const marker = await prisma.systemSetting.findUnique({
       where: { key: importMarkerKey },
     })

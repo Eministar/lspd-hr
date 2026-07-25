@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock, FileQuestion, Send, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock, FileQuestion, PlayCircle, Send, ShieldAlert } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { Button } from '@/components/ui/button'
@@ -53,6 +53,8 @@ interface FormLinkPayload {
   timeLimitMinutes: number | null
   anonymousResponses: boolean
   questions: FormQuestion[]
+  questionCount: number
+  started: boolean
   existingResponse: ExistingResponse | null
   sessionStartedAt: string | null
   sessionExpiresAt: string | null
@@ -75,6 +77,7 @@ export default function FormTestLinkPage() {
   const token = paramToken(params.token)
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [starting, setStarting] = useState(false)
   const [focusWarning, setFocusWarning] = useState(false)
   const [screenshotCover, setScreenshotCover] = useState(false)
   const [windowObscured, setWindowObscured] = useState(false)
@@ -86,7 +89,10 @@ export default function FormTestLinkPage() {
   const { execute } = useApi()
   const { addToast } = useToast()
   const { user } = useAuth()
-  const isActiveTest = data?.kind === 'TEST' && !data.existingResponse
+  // Nur ein wirklich gestarteter Test ist "aktiv": vorher gibt es weder Uhr
+  // noch Fragen, also auch keinen Testmodus mit Sperren und Wasserzeichen.
+  const isActiveTest = data?.kind === 'TEST' && !data.existingResponse && data.started
+  const needsStart = data?.kind === 'TEST' && !data.existingResponse && !data.started
   const timeExpired = isActiveTest && remainingMs !== null && remainingMs <= 0
 
   const watermarkStyle = useMemo<React.CSSProperties | undefined>(() => {
@@ -251,6 +257,18 @@ export default function FormTestLinkPage() {
     setAnswers((current) => ({ ...current, [questionId]: value }))
   }
 
+  const startTest = async () => {
+    setStarting(true)
+    try {
+      await execute(`/api/form-links/${token}/start`, { method: 'POST' })
+      await refetch()
+    } catch (e) {
+      addToast({ type: 'error', title: 'Test konnte nicht gestartet werden', message: e instanceof Error ? e.message : '' })
+    } finally {
+      setStarting(false)
+    }
+  }
+
   const submit = async () => {
     if (!data) return
     if (timeExpired) {
@@ -318,6 +336,61 @@ export default function FormTestLinkPage() {
               {data.existingResponse.score ?? '-'} / {data.existingResponse.maxScore} Punkte
             </Badge>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  if (needsStart) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <PageHeader title={data.title} description={data.description ?? undefined} eyebrow="Test" />
+
+        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-6">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-4 py-3">
+              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">
+                <ClipboardCheck size={13} className="text-[#d4af37]" />
+                Umfang
+              </div>
+              <p className="mt-1.5 text-[14px] font-semibold text-white">{data.questionCount} Frage(n)</p>
+            </div>
+            <div className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-4 py-3">
+              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">
+                <Clock size={13} className="text-[#d4af37]" />
+                Zeitlimit
+              </div>
+              <p className="mt-1.5 text-[14px] font-semibold text-white">
+                {data.timeLimitMinutes ? `${data.timeLimitMinutes} Minuten` : 'Kein Zeitlimit'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[12px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
+            <div className="flex items-start gap-3">
+              <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[#d4af37]" />
+              <div>
+                <p className="text-[13px] font-semibold text-white">Vor dem Start lesen</p>
+                <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-[#d8c68c]">
+                  <li>
+                    {data.timeLimitMinutes
+                      ? `Die Zeit läuft ab dem Klick auf „Test starten“ — ${data.timeLimitMinutes} Minuten, auch wenn du die Seite schließt.`
+                      : 'Der Test beginnt erst mit dem Klick auf „Test starten“.'}
+                  </li>
+                  <li>Kopieren, Einfügen, Drucken, Rechtsklick und Tabwechsel werden blockiert oder protokolliert.</li>
+                  <li>Jeder Screenshot trägt sichtbar deinen Namen und deine Discord-ID.</li>
+                  <li>Andere Dashboard-Seiten bleiben bis zur Abgabe gesperrt. Es gibt nur einen Versuch.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <Button onClick={startTest} loading={starting} disabled={data.questionCount === 0}>
+              <PlayCircle size={15} />
+              Test starten
+            </Button>
+          </div>
         </div>
       </div>
     )

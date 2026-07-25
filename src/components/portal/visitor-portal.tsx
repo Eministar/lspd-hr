@@ -48,6 +48,7 @@ interface PublicPressRelease {
 
 interface PortalApplication {
   id: string
+  caseNumber: string | null
   status: JobApplicationStatusValue
   statusText: string
   submittedAt: string
@@ -388,9 +389,14 @@ function ApplicationStatus({ application }: { application: PortalApplication }) 
   const meta = JOB_APPLICATION_STATUS_META[application.status]
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <BadgeCheck size={15} className="text-[#d4af37]" />
         <Badge variant={meta.variant}>{meta.label}</Badge>
+        {application.caseNumber && (
+          <span className="rounded-[6px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-[#d4af37]">
+            {application.caseNumber}
+          </span>
+        )}
       </div>
       <p className="text-[12.5px] leading-5 text-[#dbe6f3]">{application.statusText}</p>
       <p className="mt-2 text-[10.5px] text-[#536b86]">Aktualisiert {formatDateTime(application.updatedAt)}</p>

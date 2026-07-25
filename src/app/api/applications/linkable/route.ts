@@ -13,14 +13,17 @@ export async function GET(req: NextRequest) {
   try {
     await requirePermission(['officers:write', 'hr:view', 'contracts:manage'])
 
-    // Standard: nur noch nicht verknüpfte Bewerbungen. `all=true` zeigt auch
-    // bereits verknüpfte, damit eine falsche Zuordnung korrigiert werden kann.
+    // Standard: nur angenommene Bewerbungen, die noch nicht eingestellt sind —
+    // genau die, aus denen eine Personalakte entsteht. Abgelehnte und bereits
+    // verknüpfte gehören nicht in die Auswahl. `all=true` hebt den Filter auf,
+    // damit eine falsche Zuordnung korrigiert werden kann.
     const includeLinked = req.nextUrl.searchParams.get('all') === 'true'
 
     const applications = await prisma.jobApplication.findMany({
-      where: includeLinked ? {} : { officerId: null },
+      where: includeLinked ? {} : { officerId: null, status: 'ACCEPTED' },
       select: {
         id: true,
+        caseNumber: true,
         applicantDisplayName: true,
         discordId: true,
         discordUsername: true,

@@ -7,8 +7,10 @@ import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import {
   APPLICATION_DEFAULT_STATUS_TEXT,
   normalizeApplicationAnswers,
+  pickApplicantName,
 } from '@/lib/job-applications'
 import { getApplicationFormConfig } from '@/lib/job-application-settings'
+import { applyApplicantIdentity } from '@/lib/application-identity'
 
 export async function GET() {
   try {
@@ -87,7 +89,21 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return success(application, 201)
+    // Ab hier trägt der Bewerber sein Aktenzeichen: "BW-0001 | Vorname Nachname"
+    // — in der Bewerbung, im Dashboard-Anzeigenamen und als Discord-Nickname.
+    const { caseNumber, displayName } = await applyApplicantIdentity({
+      applicationId: application.id,
+      userId: user.id,
+      discordId: user.discordId,
+      applicantName: pickApplicantName(normalized) || user.displayName,
+    })
+
+    return success({
+      ...application,
+      caseNumber,
+      applicantDisplayName: displayName,
+      applicant: { ...application.applicant, displayName },
+    }, 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

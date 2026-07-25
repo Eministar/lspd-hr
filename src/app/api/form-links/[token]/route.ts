@@ -59,6 +59,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
       securityEvents: unknown
     } | null = null
 
+    // Wichtig: Das blosse Oeffnen des Links startet den Test NICHT. Die Sitzung
+    // (und damit die Uhr) entsteht erst ueber POST .../start, sonst laeuft die
+    // Zeit schon, waehrend der Officer die Startseite noch liest.
     if (!existingResponse && test.kind === 'TEST') {
       const now = new Date()
       const activeSession = await prisma.formTestSession.findFirst({
@@ -84,24 +87,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
           if (!isFormTestSessionWriteConflict(e)) throw e
         }
         session = activeSession
-      } else {
-        session = await prisma.formTestSession.create({
-          data: {
-            testId: test.id,
-            userId: user.id,
-            lastSeenAt: now,
-            expiresAt: test.timeLimitMinutes
-              ? new Date(now.getTime() + test.timeLimitMinutes * 60 * 1000)
-              : null,
-          },
-          select: sessionSelect,
-        })
       }
     }
 
+    // Umfragen und bereits laufende Tests liefern die Fragen; ein noch nicht
+    // gestarteter Test gibt nur die Eckdaten heraus, damit sich niemand die
+    // Fragen ohne laufende Uhr ansehen kann.
+    const started = test.kind !== 'TEST' || session !== null
+
     return success({
       ...test,
-      questions: test.questions.map(stripCorrectAnswersFromQuestion),
+      started,
+      questionCount: test.questions.length,
+      questions: started ? test.questions.map(stripCorrectAnswersFromQuestion) : [],
       existingResponse: existingResponse
         ? {
             ...existingResponse,
