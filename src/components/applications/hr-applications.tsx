@@ -101,6 +101,9 @@ function discordAvatarUrl(application: Pick<ApplicationRow, 'discordId' | 'disco
 
 export function HrApplications({ canManage }: HrApplicationsProps) {
   const { data: applications, loading, error, refetch } = useFetch<ApplicationRow[]>('/api/applications')
+  const { data: nicknameQueue, refetch: refetchPending } = useFetch<{ total: number; pending: number }>(
+    canManage ? '/api/applications/sync-nicknames' : null,
+  )
   const { execute } = useApi()
   const { addToast } = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -111,6 +114,7 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [syncing, setSyncing] = useState(false)
+  const [syncProgress, setSyncProgress] = useState<{ done: number; remaining: number } | null>(null)
   // Merkt sich die zuletzt in die Editierfelder geladene Bewerbung. Der stille
   // Live-Refetch (useFetch) liefert `selected` als NEUES Objekt mit gleicher id —
   // ohne diesen Ref würden Status-Text/interne Notiz bei jedem Refetch aus den
@@ -186,29 +190,56 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
     }
   }
 
-  const syncAllNicknames = async () => {
-    if (!confirm('Alle Bewerber auf „Aktenzeichen | Name“ umbenennen? Das ändert auch die Discord-Nicknames.')) return
+  /**
+   * Benennt ALLE Bewerber um. Der Server arbeitet in Häppchen (Discord
+   * limitiert Nickname-Änderungen), deshalb wird hier so lange nachgefasst, bis
+   * nichts mehr offen ist.
+   */
+  const syncAllNicknames = async (force = false) => {
+    const question = force
+      ? 'Wirklich ALLE Bewerber erneut umbenennen — auch die, die schon dran waren?'
+      : 'Alle Bewerber auf „Aktenzeichen | Name“ umbenennen? Das ändert auch die Discord-Nicknames.'
+    if (!confirm(question)) return
+
     setSyncing(true)
+    const totals: Record<string, number> = {}
+    let processed = 0
+
     try {
-      const result = await execute('/api/applications/sync-nicknames', { method: 'POST' }) as {
-        processed: number
-        counts: Record<string, number>
-      } | null
-      const counts = result?.counts ?? {}
+      // Sicherheitsnetz gegen eine Endlosschleife, falls der Server wider
+      // Erwarten nie auf 0 herunterzählt.
+      for (let round = 0; round < 200; round += 1) {
+        const result = await execute('/api/applications/sync-nicknames', {
+          method: 'POST',
+          body: JSON.stringify({ force: force && round === 0 }),
+        }) as { processed: number; remaining: number; counts: Record<string, number> } | null
+
+        if (!result) break
+        processed += result.processed
+        for (const [key, value] of Object.entries(result.counts)) {
+          totals[key] = (totals[key] ?? 0) + value
+        }
+
+        setSyncProgress({ done: processed, remaining: result.remaining })
+        if (result.remaining === 0 || result.processed === 0) break
+      }
+
       addToast({
         type: 'success',
-        title: `${counts.synced ?? 0} von ${result?.processed ?? 0} umbenannt`,
+        title: `${totals.synced ?? 0} von ${processed} Bewerbern umbenannt`,
         message: [
-          counts['missing-permissions'] ? `${counts['missing-permissions']}× Bot-Rolle zu niedrig` : '',
-          counts['not-member'] ? `${counts['not-member']}× nicht auf dem Server` : '',
-          counts.skipped ? `${counts.skipped}× ohne Discord-ID` : '',
-        ].filter(Boolean).join(' · '),
+          totals['missing-permissions'] ? `${totals['missing-permissions']}× Bot-Rolle zu niedrig` : '',
+          totals['not-member'] ? `${totals['not-member']}× nicht auf dem Server` : '',
+          totals.skipped ? `${totals.skipped}× ohne Discord-ID` : '',
+          totals.failed ? `${totals.failed}× von Discord abgelehnt` : '',
+        ].filter(Boolean).join(' · ') || 'Alle Bewerber sind auf dem aktuellen Stand.',
       })
-      await refetch()
+      await Promise.all([refetch(), refetchPending()])
     } catch (e) {
       addToast({ type: 'error', title: 'Umbenennen fehlgeschlagen', message: e instanceof Error ? e.message : '' })
     } finally {
       setSyncing(false)
+      setSyncProgress(null)
     }
   }
 
@@ -243,10 +274,21 @@ export function HrApplications({ canManage }: HrApplicationsProps) {
         title="Bewerbungen"
         description="Eingereichte Bewerbungen prüfen, Antworten auswerten und den sichtbaren Bewerbungsstatus setzen."
         action={canManage ? (
-          <Button variant="secondary" size="sm" onClick={syncAllNicknames} loading={syncing}>
-            <RefreshCw size={13} />
-            Alle Discord-Namen setzen
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {syncProgress && (
+              <span className="text-[11.5px] text-[#d4af37]">
+                {syncProgress.done} umbenannt · {syncProgress.remaining} offen
+              </span>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => void syncAllNicknames(false)} loading={syncing}>
+              <RefreshCw size={13} />
+              Alle Discord-Namen setzen
+              {(nicknameQueue?.pending ?? 0) > 0 && !syncing && ` (${nicknameQueue?.pending})`}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => void syncAllNicknames(true)} disabled={syncing}>
+              Erneut für alle
+            </Button>
+          </div>
         ) : undefined}
       />
 

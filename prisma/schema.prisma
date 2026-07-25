@@ -445,6 +445,10 @@ model JobApplication {
   /// vergeben und ist die Kennung, unter der HR die Bewerbung sucht. Optional,
   /// weil Bewerbungen aus der Zeit vor dieser Funktion noch keins haben.
   caseNumber           String?              @unique @db.VarChar(24)
+  /// Zeitpunkt des letzten Umbenennungsversuchs (Anzeigename + Discord-Nickname).
+  /// Gesetzt wird er auch bei einem Fehlschlag — sonst würde der Sammellauf
+  /// ewig an denselben Bewerbern hängen bleiben.
+  nicknameSyncedAt     DateTime?
   applicantId          String               @unique
   applicant            User                 @relation("JobApplicationApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
   discordId            String

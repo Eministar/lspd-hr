@@ -68,7 +68,7 @@ export async function applyApplicantIdentity(input: {
   await prisma.$transaction([
     prisma.jobApplication.update({
       where: { id: input.applicationId },
-      data: { applicantDisplayName: displayName },
+      data: { applicantDisplayName: displayName, nicknameSyncedAt: new Date() },
     }),
     prisma.user.update({
       where: { id: input.userId },
@@ -138,6 +138,13 @@ export async function refreshApplicantIdentity(applicationId: string) {
   const nickname = await setDiscordMemberNickname(application.discordId, displayName).catch((error) => {
     console.error('[Applications] Discord-Nickname konnte nicht gesetzt werden:', error)
     return { status: 'failed' as const }
+  })
+
+  // Versuch protokollieren — auch wenn Discord ihn abgelehnt hat. Sonst läuft
+  // der Sammellauf endlos gegen dieselben Bewerber.
+  await prisma.jobApplication.update({
+    where: { id: application.id },
+    data: { nicknameSyncedAt: new Date() },
   })
 
   return {
