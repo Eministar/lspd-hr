@@ -18,16 +18,19 @@ export async function GET(req: NextRequest) {
 
   const type = req.nextUrl.searchParams.get('type') || undefined
 
+  // Gemischte Listen enthalten beide Richtungen und werden deshalb bei jedem Typfilter
+  // mitgeliefert, damit ältere API-Konsumenten mit ?type=... nichts verpassen.
   const lists = await prisma.rankChangeList.findMany({
-    where: type ? { type } : undefined,
+    where: type ? { type: { in: [type, 'MIXED'] } } : undefined,
     include: {
       createdBy: { select: { displayName: true } },
       entries: {
         include: {
           officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
-          currentRank: { select: { name: true, color: true } },
-          proposedRank: { select: { name: true, color: true, badgeMin: true, badgeMax: true } },
+          currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
+          proposedRank: { select: { id: true, name: true, color: true, sortOrder: true, badgeMin: true, badgeMax: true } },
           createdBy: { select: { id: true, displayName: true } },
+          executedBy: { select: { id: true, displayName: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -61,13 +64,15 @@ export async function POST(req: NextRequest) {
 
     const { name, description, type } = body
     if (!name?.trim()) return error('Name ist erforderlich')
-    if (type && !['PROMOTION', 'DEMOTION'].includes(type)) return error('Ungültiger Typ')
+    // Up- und D-Ranks laufen über dieselbe Liste. `type` wird nur noch für Altbestände
+    // akzeptiert; die Richtung ergibt sich pro Eintrag aus dem Rangvergleich.
+    if (type && !['PROMOTION', 'DEMOTION', 'MIXED'].includes(type)) return error('Ungültiger Typ')
 
     const list = await prisma.rankChangeList.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        type: type || 'PROMOTION',
+        type: type || 'MIXED',
         createdById: user.id,
       },
       include: {

@@ -18,6 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const list = await prisma.rankChangeList.findUnique({ where: { id } })
     if (!list) return error('Liste nicht gefunden', 404)
     if (list.status === 'COMPLETED') return error('Liste ist bereits abgeschlossen')
+    if (list.submissionsClosed) return error('Einreichungen für diese Liste sind geschlossen')
 
     const officer = await prisma.officer.findUnique({ where: { id: officerId }, include: { rank: true } })
     if (!officer) return error('Officer nicht gefunden')

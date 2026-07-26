@@ -114,10 +114,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       await prisma.rankChangeListEntry.update({
         where: { id: entry.id },
-        data: { executed: true, executedAt: new Date() },
+        data: { executed: true, executedAt: new Date(), executedById: user.id },
       })
 
-      const action = list.type === 'DEMOTION' ? 'Degradierung' : 'Beförderung'
+      // Richtung pro Eintrag: kleinerer sortOrder = höherer Rang = Beförderung.
+      const action = entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'Degradierung' : 'Beförderung'
       await createAuditLog({
         action: 'OFFICER_PROMOTED',
         userId: user.id,

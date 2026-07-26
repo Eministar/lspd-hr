@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpDown, Plus } from 'lucide-react'
+import { ArrowUpDown, Plus, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -17,9 +17,14 @@ import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
-import { RankChangeListCard } from '@/components/rank-changes/rank-change-list-card'
-
-type RankChangeType = 'PROMOTION' | 'DEMOTION'
+import {
+  RankChangeListCard,
+  entryDirection,
+  sortEntriesByRank,
+  type RankChangeDirection,
+  type RankChangeEntry,
+  type RankChangeList,
+} from '@/components/rank-changes/rank-change-list-card'
 
 interface Rank { id: string; name: string; sortOrder: number; color: string }
 interface Officer {
@@ -32,39 +37,10 @@ interface Officer {
   status: string
 }
 
-interface ListEntry {
-  id: string
-  officer: { id: string; firstName: string; lastName: string; badgeNumber: string }
-  currentRank: { name: string; color: string }
-  proposedRank: { name: string; color: string }
-  newBadgeNumber: string | null
-  note: string | null
-  executed: boolean
-  executedAt: string | null
-  createdBy: { id: string; displayName: string } | null
-}
+type StatusFilter = '' | 'open' | 'executed'
 
-interface RankChangeList {
-  id: string
-  name: string
-  description: string | null
-  type: RankChangeType | string
-  status: string
-  createdBy: { displayName: string } | null
-  createdAt: string
-  entries: ListEntry[]
-}
-
-function normalizedType(value: string): RankChangeType {
-  return value === 'DEMOTION' ? 'DEMOTION' : 'PROMOTION'
-}
-
-function typeLabel(type: RankChangeType) {
-  return type === 'DEMOTION' ? 'D-Rank' : 'Up-Rank'
-}
-
-function actionLabel(type: RankChangeType) {
-  return type === 'DEMOTION' ? 'Degradierung' : 'Beförderung'
+function actionLabel(direction: RankChangeDirection) {
+  return direction === 'DEMOTION' ? 'Degradierung' : 'Beförderung'
 }
 
 export default function RankChangeListsPage() {
@@ -81,13 +57,21 @@ export default function RankChangeListsPage() {
 
   const [createModal, setCreateModal] = useState(false)
   const [addEntryListId, setAddEntryListId] = useState<string | null>(null)
-  const [executeEntry, setExecuteEntry] = useState<{ listId: string; entryId: string; name: string; type: RankChangeType } | null>(null)
+  const [executeEntry, setExecuteEntry] = useState<{ listId: string; entryId: string; name: string; direction: RankChangeDirection } | null>(null)
   const [undoEntry, setUndoEntry] = useState<{ listId: string; entryId: string; name: string } | null>(null)
   const [expandedLists, setExpandedLists] = useState<Set<string>>(new Set())
 
-  const [listForm, setListForm] = useState({ name: '', description: '', type: 'PROMOTION' as RankChangeType })
+  const [listForm, setListForm] = useState({ name: '', description: '' })
   const [entryForm, setEntryForm] = useState({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
   const [officerSearch, setOfficerSearch] = useState('')
+
+  const [search, setSearch] = useState('')
+  const [directionFilter, setDirectionFilter] = useState<'' | RankChangeDirection>('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
+  const [rankFilter, setRankFilter] = useState('')
+  const [submitterFilter, setSubmitterFilter] = useState('')
+
+  const rows = useMemo(() => lists ?? [], [lists])
 
   const activeOfficers = officers?.filter((officer) => officer.status !== 'TERMINATED') || []
   const filteredOfficers = activeOfficers.filter((officer) => {
@@ -101,20 +85,86 @@ export default function RankChangeListsPage() {
     )
   })
   const selectedOfficer = activeOfficers.find((officer) => officer.id === entryForm.officerId)
-  const entryList = lists?.find((list) => list.id === addEntryListId) ?? null
-  const entryType = normalizedType(entryList?.type ?? 'PROMOTION')
 
+  // Gemischte Listen: jeder Rang außer dem aktuellen ist wählbar, die Richtung
+  // ergibt sich aus dem Rangvergleich.
   const getTargetRanks = () => {
     if (!selectedOfficer || !ranks) return []
-    return ranks.filter((rank) => (
-      entryType === 'DEMOTION'
-        ? rank.sortOrder > selectedOfficer.rank.sortOrder
-        : rank.sortOrder < selectedOfficer.rank.sortOrder
-    ))
+    return [...ranks]
+      .filter((rank) => rank.id !== selectedOfficer.rankId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+  }
+  const selectedTargetRank = ranks?.find((rank) => rank.id === entryForm.proposedRankId)
+  const entryDirectionPreview: RankChangeDirection | null = selectedOfficer && selectedTargetRank
+    ? (selectedTargetRank.sortOrder > selectedOfficer.rank.sortOrder ? 'DEMOTION' : 'PROMOTION')
+    : null
+
+  // Ränge und Einreicher für die Filter-Dropdowns aus den vorhandenen Einträgen ableiten.
+  const { rankOptions, submitterOptions } = useMemo(() => {
+    const rankMap = new Map<string, { id: string; name: string; sortOrder: number }>()
+    const submitterMap = new Map<string, string>()
+    for (const list of rows) {
+      for (const entry of list.entries) {
+        for (const rank of [entry.currentRank, entry.proposedRank]) {
+          if (rank.id && !rankMap.has(rank.id)) rankMap.set(rank.id, { id: rank.id, name: rank.name, sortOrder: rank.sortOrder })
+        }
+        if (entry.createdBy) submitterMap.set(entry.createdBy.id, entry.createdBy.displayName)
+      }
+    }
+    return {
+      rankOptions: [...rankMap.values()].sort((a, b) => a.sortOrder - b.sortOrder).map((rank) => ({ value: rank.id, label: rank.name })),
+      submitterOptions: [...submitterMap.entries()]
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'de')),
+    }
+  }, [rows])
+
+  const filterActive = Boolean(search.trim() || directionFilter || statusFilter || rankFilter || submitterFilter)
+
+  const matchesFilters = useMemo(() => (entry: RankChangeEntry) => {
+    if (directionFilter && entryDirection(entry) !== directionFilter) return false
+    if (statusFilter === 'open' && entry.executed) return false
+    if (statusFilter === 'executed' && !entry.executed) return false
+    if (rankFilter && entry.currentRank.id !== rankFilter && entry.proposedRank.id !== rankFilter) return false
+    if (submitterFilter && entry.createdBy?.id !== submitterFilter) return false
+    const query = search.trim().toLowerCase()
+    if (!query) return true
+    const haystack = [
+      entry.officer.firstName,
+      entry.officer.lastName,
+      entry.officer.badgeNumber,
+      entry.newBadgeNumber ?? '',
+      entry.currentRank.name,
+      entry.proposedRank.name,
+      entry.note ?? '',
+      entry.createdBy?.displayName ?? '',
+      entry.executedBy?.displayName ?? '',
+    ].join(' ').toLowerCase()
+    return haystack.includes(query)
+  }, [directionFilter, statusFilter, rankFilter, submitterFilter, search])
+
+  const visibleLists = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return rows
+      .map((list) => {
+        const matchingEntries = sortEntriesByRank(list.entries.filter(matchesFilters))
+        // Ein Treffer im Listennamen hält die Liste sichtbar, auch wenn kein Eintrag passt.
+        const listNameMatches = Boolean(query) && list.name.toLowerCase().includes(query)
+        return { list, entries: matchingEntries, listNameMatches }
+      })
+      .filter(({ entries, listNameMatches }) => !filterActive || entries.length > 0 || listNameMatches)
+  }, [rows, matchesFilters, filterActive, search])
+
+  const resetFilters = () => {
+    setSearch('')
+    setDirectionFilter('')
+    setStatusFilter('')
+    setRankFilter('')
+    setSubmitterFilter('')
   }
 
   const openCreateModal = () => {
-    setListForm({ name: '', description: '', type: 'PROMOTION' })
+    setListForm({ name: '', description: '' })
     setCreateModal(true)
   }
 
@@ -136,7 +186,7 @@ export default function RankChangeListsPage() {
       })
       addToast({ type: 'success', title: 'Liste erstellt' })
       setCreateModal(false)
-      setListForm({ name: '', description: '', type: 'PROMOTION' })
+      setListForm({ name: '', description: '' })
       const created = result as { id: string } | null
       if (created) setExpandedLists((prev) => new Set([...prev, created.id]))
       await refetch()
@@ -149,6 +199,20 @@ export default function RankChangeListsPage() {
     try {
       await execute(`/api/rank-change-lists/${id}`, { method: 'DELETE' })
       addToast({ type: 'success', title: 'Liste gelöscht' })
+      await refetch()
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
+    }
+  }
+
+  const handleToggleSubmissions = async (list: RankChangeList) => {
+    const closing = !list.submissionsClosed
+    try {
+      await execute(`/api/rank-change-lists/${list.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ submissionsClosed: closing }),
+      })
+      addToast({ type: 'success', title: closing ? 'Einreichungen geschlossen' : 'Einreichungen wieder geöffnet' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -190,7 +254,7 @@ export default function RankChangeListsPage() {
         method: 'POST',
         body: JSON.stringify({ entryId: executeEntry.entryId }),
       }) as { executed: number } | null
-      addToast({ type: 'success', title: `${result?.executed ?? 0} ${actionLabel(executeEntry.type)} durchgeführt` })
+      addToast({ type: 'success', title: `${result?.executed ?? 0} ${actionLabel(executeEntry.direction)} durchgeführt` })
       setExecuteEntry(null)
       await refetch()
     } catch (err) {
@@ -216,18 +280,18 @@ export default function RankChangeListsPage() {
   if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
-  const rows = lists ?? []
-  const promotionLists = rows.filter((list) => normalizedType(list.type) === 'PROMOTION').length
-  const demotionLists = rows.filter((list) => normalizedType(list.type) === 'DEMOTION').length
-  const totalEntries = rows.reduce((sum, list) => sum + list.entries.length, 0)
-  const executedEntries = rows.reduce((sum, list) => sum + list.entries.filter((entry) => entry.executed).length, 0)
-  const pendingEntries = totalEntries - executedEntries
+  const allEntries = rows.flatMap((list) => list.entries)
+  const promotionEntries = allEntries.filter((entry) => entryDirection(entry) === 'PROMOTION').length
+  const demotionEntries = allEntries.length - promotionEntries
+  const executedEntries = allEntries.filter((entry) => entry.executed).length
+  const pendingEntries = allEntries.length - executedEntries
+  const visibleEntryCount = visibleLists.reduce((sum, { entries }) => sum + entries.length, 0)
 
   return (
     <div>
       <PageHeader
         title="Up-/D-Rank-Listen"
-        description="Beförderungen und Degradierungen werden ab sofort gemeinsam als Rangänderungslisten geführt."
+        description="Beförderungen und Degradierungen werden gemeinsam in einer Liste geführt und nach Rang sortiert."
         action={canManage ? (
           <Button size="sm" onClick={openCreateModal}>
             <Plus size={14} strokeWidth={2} />
@@ -238,10 +302,71 @@ export default function RankChangeListsPage() {
 
       {rows.length > 0 && (
         <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <RankChangeStat label="Up-Rank-Listen" value={promotionLists} tone="text-[#34d399]" />
-          <RankChangeStat label="D-Rank-Listen" value={demotionLists} tone="text-[#f87171]" />
+          <RankChangeStat label="Up-Ranks" value={promotionEntries} tone="text-[#34d399]" />
+          <RankChangeStat label="D-Ranks" value={demotionEntries} tone="text-[#f87171]" />
           <RankChangeStat label="Durchgeführt" value={executedEntries} tone="text-[#dbe6f3]" />
           <RankChangeStat label="Offen" value={pendingEntries} tone="text-[#fbbf24]" />
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="glass-panel-elevated mb-4 rounded-[14px] border border-[#1e3a5c]/45 p-3.5">
+          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-5">
+            <div className="relative">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Name, DN, Rang, Notiz..."
+                className="h-[38px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-9 pr-3 text-[13.5px] text-[#edf4fb] placeholder:text-[#4a6585] transition-all duration-150 focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)] focus:outline-none"
+              />
+            </div>
+            <Select
+              value={directionFilter}
+              onValueChange={(value) => setDirectionFilter(value as '' | RankChangeDirection)}
+              placeholder="Alle Typen"
+              options={[
+                { value: '', label: 'Alle Typen' },
+                { value: 'PROMOTION', label: 'Up-Rank' },
+                { value: 'DEMOTION', label: 'D-Rank' },
+              ]}
+            />
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+              placeholder="Alle Status"
+              options={[
+                { value: '', label: 'Alle Status' },
+                { value: 'open', label: 'Offen' },
+                { value: 'executed', label: 'Durchgeführt' },
+              ]}
+            />
+            <Select
+              value={rankFilter}
+              onValueChange={setRankFilter}
+              placeholder="Alle Ränge"
+              options={[{ value: '', label: 'Alle Ränge' }, ...rankOptions]}
+            />
+            <Select
+              value={submitterFilter}
+              onValueChange={setSubmitterFilter}
+              placeholder="Alle Einreicher"
+              options={[{ value: '', label: 'Alle Einreicher' }, ...submitterOptions]}
+            />
+          </div>
+          {filterActive && (
+            <div className="mt-2.5 flex items-center justify-between gap-3">
+              <p className="text-[11.5px] text-[#8ea4bd]">
+                {visibleEntryCount} von {allEntries.length} Einträgen · {visibleLists.length} Liste{visibleLists.length === 1 ? '' : 'n'}
+              </p>
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11.5px] font-semibold text-[#8ea4bd] transition-colors hover:bg-[#0f2340] hover:text-white"
+              >
+                <X size={12} /> Filter zurücksetzen
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -251,7 +376,7 @@ export default function RankChangeListsPage() {
             <ArrowUpDown size={26} className="text-[#d4af37]" />
           </div>
           <p className="mb-1 text-[14px] font-semibold text-white">Noch keine Rangänderungslisten</p>
-          <p className="mb-4 text-[12.5px] text-[#8ea4bd]">Erstelle eine Liste für Up-Ranks oder D-Ranks.</p>
+          <p className="mb-4 text-[12.5px] text-[#8ea4bd]">Erstelle eine Liste für Up- und D-Ranks.</p>
           {canManage && (
             <Button size="sm" onClick={openCreateModal}>
               <Plus size={13} />
@@ -261,39 +386,50 @@ export default function RankChangeListsPage() {
         </div>
       )}
 
+      {rows.length > 0 && visibleLists.length === 0 && (
+        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-12 text-center">
+          <p className="mb-1 text-[13.5px] font-semibold text-white">Keine Treffer</p>
+          <p className="mb-4 text-[12.5px] text-[#8ea4bd]">Keine Einträge passen zu Suche und Filter.</p>
+          <Button size="sm" variant="secondary" onClick={resetFilters}>Filter zurücksetzen</Button>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {rows.map((list, index) => {
-          const listType = normalizedType(list.type)
-          return (
-            <motion.div
-              key={list.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-            >
-              <RankChangeListCard
-                list={list}
-                variant={listType === 'DEMOTION' ? 'demotion' : 'promotion'}
-                expanded={expandedLists.has(list.id)}
-                onToggle={() => toggleExpand(list.id)}
-                canExecute={canExecute}
-                canManage={canManage}
-                canDelete={canDeleteLists}
-                emptyText={`Noch keine Officers in dieser ${typeLabel(listType)}-Liste`}
-                addLabel="+ Officer hinzufügen"
-                onExecute={(entry) => setExecuteEntry({ listId: list.id, entryId: entry.id, name: `${entry.officer.firstName} ${entry.officer.lastName}`, type: listType })}
-                onUndo={listType === 'PROMOTION' ? (entry) => setUndoEntry({ listId: list.id, entryId: entry.id, name: `${entry.officer.firstName} ${entry.officer.lastName}` }) : undefined}
-                onRemove={(entryId) => handleRemoveEntry(list.id, entryId)}
-                onAddEntry={() => {
-                  setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
-                  setOfficerSearch('')
-                  setAddEntryListId(list.id)
-                }}
-                onDelete={() => handleDeleteList(list.id)}
-              />
-            </motion.div>
-          )
-        })}
+        {visibleLists.map(({ list, entries }, index) => (
+          <motion.div
+            key={list.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.03 }}
+          >
+            <RankChangeListCard
+              list={list}
+              entries={entries}
+              filtered={filterActive}
+              // Bei aktiver Suche/Filterung werden Treffer direkt aufgeklappt.
+              expanded={filterActive || expandedLists.has(list.id)}
+              onToggle={() => toggleExpand(list.id)}
+              canExecute={canExecute}
+              canManage={canManage}
+              canDelete={canDeleteLists}
+              onExecute={(entry) => setExecuteEntry({
+                listId: list.id,
+                entryId: entry.id,
+                name: `${entry.officer.firstName} ${entry.officer.lastName}`,
+                direction: entryDirection(entry),
+              })}
+              onUndo={(entry) => setUndoEntry({ listId: list.id, entryId: entry.id, name: `${entry.officer.firstName} ${entry.officer.lastName}` })}
+              onRemove={(entryId) => handleRemoveEntry(list.id, entryId)}
+              onAddEntry={() => {
+                setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+                setOfficerSearch('')
+                setAddEntryListId(list.id)
+              }}
+              onToggleSubmissions={() => handleToggleSubmissions(list)}
+              onDelete={() => handleDeleteList(list.id)}
+            />
+          </motion.div>
+        ))}
       </div>
 
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Neue Rangänderungsliste" size="sm">
@@ -305,15 +441,9 @@ export default function RankChangeListsPage() {
             required
             placeholder="z.B. Rangänderungen Juli 2026"
           />
-          <Select
-            label="Typ"
-            value={listForm.type}
-            onValueChange={(value) => setListForm({ ...listForm, type: normalizedType(value) })}
-            options={[
-              { value: 'PROMOTION', label: 'Up-Rank' },
-              { value: 'DEMOTION', label: 'D-Rank' },
-            ]}
-          />
+          <p className="text-[12px] text-[#8ea4bd]">
+            Up-Ranks und D-Ranks kommen in dieselbe Liste — die Richtung ergibt sich automatisch aus dem gewählten Zielrang.
+          </p>
           <Textarea
             label="Beschreibung (optional)"
             value={listForm.description}
@@ -328,7 +458,7 @@ export default function RankChangeListsPage() {
         </div>
       </Modal>
 
-      <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title={`Officer zur ${typeLabel(entryType)}-Liste hinzufügen`} size="md">
+      <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title="Officer zur Rangänderungsliste hinzufügen" size="md">
         <div className="space-y-4">
           <Input
             label="Officer suchen"
@@ -355,12 +485,20 @@ export default function RankChangeListsPage() {
                 </p>
               </div>
               <Select
-                label={entryType === 'DEMOTION' ? 'Neuer Rang (niedriger)' : 'Neuer Rang (höher)'}
+                label="Neuer Rang"
                 value={entryForm.proposedRankId}
                 onChange={(event) => setEntryForm({ ...entryForm, proposedRankId: event.target.value })}
-                options={getTargetRanks().map((rank) => ({ value: rank.id, label: rank.name }))}
+                options={getTargetRanks().map((rank) => ({
+                  value: rank.id,
+                  label: `${rank.name} — ${rank.sortOrder > selectedOfficer.rank.sortOrder ? 'D-Rank' : 'Up-Rank'}`,
+                }))}
                 placeholder="Rang wählen..."
               />
+              {entryDirectionPreview && (
+                <p className={`text-[12px] ${entryDirectionPreview === 'DEMOTION' ? 'text-[#f87171]' : 'text-[#34d399]'}`}>
+                  Wird als {entryDirectionPreview === 'DEMOTION' ? 'Degradierung (D-Rank)' : 'Beförderung (Up-Rank)'} eingetragen.
+                </p>
+              )}
               <Input
                 label="Neue DN (optional)"
                 value={entryForm.newBadgeNumber}
@@ -368,10 +506,10 @@ export default function RankChangeListsPage() {
                 placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`}
               />
               <Input
-                label={entryType === 'DEMOTION' ? 'Grund (optional)' : 'Notiz (optional)'}
+                label={entryDirectionPreview === 'DEMOTION' ? 'Grund (optional)' : 'Notiz (optional)'}
                 value={entryForm.note}
                 onChange={(event) => setEntryForm({ ...entryForm, note: event.target.value })}
-                placeholder={entryType === 'DEMOTION' ? 'Grund für D-Rank...' : 'Optional'}
+                placeholder={entryDirectionPreview === 'DEMOTION' ? 'Grund für D-Rank...' : 'Optional'}
               />
             </>
           )}
@@ -382,13 +520,13 @@ export default function RankChangeListsPage() {
         </div>
       </Modal>
 
-      <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title={`${executeEntry ? actionLabel(executeEntry.type) : 'Rangänderung'} ausführen`}>
+      <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title={`${executeEntry ? actionLabel(executeEntry.direction) : 'Rangänderung'} ausführen`}>
         <p className="mb-5 text-[13px] text-[#888]">
           Die Rangänderung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
-          <Button size="sm" variant={executeEntry?.type === 'DEMOTION' ? 'danger' : 'primary'} onClick={handleExecuteEntry}>Durchführen</Button>
+          <Button size="sm" variant={executeEntry?.direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={handleExecuteEntry}>Durchführen</Button>
         </div>
       </Modal>
 

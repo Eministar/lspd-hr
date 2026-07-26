@@ -195,6 +195,7 @@ interface RankChangeList {
   name: string
   type: string
   status: string
+  submissionsClosed: boolean
 }
 
 const EMPTY_OFFICER_FORM: OfficerForm = {
@@ -318,10 +319,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
   const { data: units } = useFetch<Unit[]>(canManageOfficerUnits ? '/api/units?active=true' : null)
-  const { data: promotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=PROMOTION' : null)
-  const { data: demotionLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists?type=DEMOTION' : null)
-  const draftPromotionLists = promotionLists?.filter(l => l.status === 'DRAFT') ?? []
-  const draftDemotionLists = demotionLists?.filter(l => l.status === 'DRAFT') ?? []
+  // Up- und D-Ranks laufen über dieselben Listen; auswählbar sind offene Listen,
+  // deren Einreichungen noch nicht geschlossen wurden.
+  const { data: rankChangeLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists' : null)
+  const openRankChangeLists = rankChangeLists?.filter(l => l.status === 'DRAFT' && !l.submissionsClosed) ?? []
 
   const [editingMode, setEditingMode] = useState<'full' | 'units' | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -1188,7 +1189,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     <TrendingUp size={15} strokeWidth={1.75} /> Befördern
                   </button>
                 )}
-                {canRankChange && officer.status !== 'TERMINATED' && draftPromotionLists.length > 0 && (
+                {canRankChange && officer.status !== 'TERMINATED' && openRankChangeLists.length > 0 && (
                   <button onClick={() => openAddToListModal('PROMOTION')}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <ListPlus size={15} strokeWidth={1.75} /> Zur Up-Rank-Liste
@@ -1200,7 +1201,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     <TrendingDown size={15} strokeWidth={1.75} /> Degradieren
                   </button>
                 )}
-                {canRankChange && officer.status !== 'TERMINATED' && draftDemotionLists.length > 0 && (
+                {canRankChange && officer.status !== 'TERMINATED' && openRankChangeLists.length > 0 && (
                   <button onClick={() => openAddToListModal('DEMOTION')}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
                     <ListPlus size={15} strokeWidth={1.75} /> Zur D-Rank-Liste
@@ -1470,11 +1471,12 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
           <Select
-            label={addToListModal === 'PROMOTION' ? 'Up-Rank-Liste' : 'D-Rank-Liste'}
+            label="Rangänderungsliste"
             value={addToListId}
             onChange={(e) => setAddToListId(e.target.value)}
-            options={(addToListModal === 'PROMOTION' ? draftPromotionLists : draftDemotionLists).map(l => ({ value: l.id, label: l.name }))}
-            placeholder="Liste wählen..."
+            options={openRankChangeLists.map(l => ({ value: l.id, label: l.name }))}
+            placeholder={openRankChangeLists.length > 0 ? 'Liste wählen...' : 'Keine offene Liste'}
+            disabled={openRankChangeLists.length === 0}
           />
           <Select
             label={addToListModal === 'PROMOTION' ? 'Neuer Rang (höher)' : 'Neuer Rang (niedriger)'}

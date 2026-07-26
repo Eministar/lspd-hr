@@ -34,7 +34,9 @@ export async function undoPromotionListEntry(
   })
 
   if (!entry) return { ok: false, message: 'Eintrag nicht gefunden', status: 404 }
-  if (entry.list.type !== 'PROMOTION') {
+  // Listen sind gemischt, deshalb zählt die Richtung des Eintrags:
+  // kleinerer sortOrder = höherer Rang = Beförderung.
+  if (entry.proposedRank.sortOrder >= entry.currentRank.sortOrder) {
     return { ok: false, message: 'Nur Beförderungen können hier rückgängig gemacht werden' }
   }
   if (!entry.executed) return { ok: false, message: 'Eintrag wurde noch nicht durchgeführt' }
@@ -101,6 +103,7 @@ export async function undoPromotionListEntry(
       data: {
         executed: false,
         executedAt: null,
+        executedById: null,
       },
     })
 

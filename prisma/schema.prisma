@@ -179,6 +179,7 @@ model User {
   auditLogs                AuditLog[]            @relation("AuditUser")
   createdLists             RankChangeList[]      @relation("ListCreator")
   rankChangeEntriesCreated RankChangeListEntry[] @relation("EntryCreator")
+  rankChangeEntriesExecuted RankChangeListEntry[] @relation("EntryExecutor")
   taskListsCreated         TaskList[]            @relation("TaskListCreator")
   tasksCreated             Task[]                @relation("TaskCreator")
   calendarEventsCreated    CalendarEvent[]       @relation("CalendarEventCreator")
@@ -826,8 +827,14 @@ model RankChangeList {
   id          String   @id @default(cuid())
   name        String
   description String?
-  type        String   @default("PROMOTION") // PROMOTION or DEMOTION
+  /// Legacy: Listen sind seit der Zusammenlegung gemischt ("MIXED"). Alte Listen behalten
+  /// PROMOTION/DEMOTION, der Typ wird aber nur noch pro Eintrag aus der Rangrichtung abgeleitet.
+  type        String   @default("MIXED")
   status      String   @default("DRAFT") // DRAFT, COMPLETED
+  /// Gesperrte Liste: keine neuen Einreichungen mehr, offene Einträge bleiben durchführbar.
+  /// Bewusst getrennt von `status`, damit eine Rücknahme (status -> DRAFT) die Sperre nicht aufhebt.
+  submissionsClosed Boolean   @default(false)
+  closedAt          DateTime?
   createdById String?
   createdBy   User?    @relation("ListCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
@@ -850,6 +857,8 @@ model RankChangeListEntry {
   note           String?
   executed       Boolean        @default(false)
   executedAt     DateTime?
+  executedById   String?
+  executedBy     User?          @relation("EntryExecutor", fields: [executedById], references: [id], onDelete: SetNull)
   createdById    String?
   createdBy      User?          @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt      DateTime       @default(now())

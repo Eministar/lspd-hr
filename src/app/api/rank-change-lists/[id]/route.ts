@@ -24,6 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           createdBy: { select: { id: true, displayName: true } },
+          executedBy: { select: { id: true, displayName: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -40,7 +41,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
 
-    const { name, description, status } = body
+    const { name, description, status, submissionsClosed } = body
+
+    if (status !== undefined && !['DRAFT', 'COMPLETED'].includes(status)) return error('Ungültiger Status')
+    if (submissionsClosed !== undefined && typeof submissionsClosed !== 'boolean') {
+      return error('submissionsClosed muss ein Boolean sein')
+    }
 
     const list = await prisma.rankChangeList.update({
       where: { id },
@@ -48,6 +54,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ...(name !== undefined && { name: name.trim() }),
         ...(description !== undefined && { description: description?.trim() || null }),
         ...(status !== undefined && { status }),
+        ...(submissionsClosed !== undefined && {
+          submissionsClosed,
+          closedAt: submissionsClosed ? new Date() : null,
+        }),
       },
     })
 

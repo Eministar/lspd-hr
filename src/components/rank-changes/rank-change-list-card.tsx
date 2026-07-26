@@ -2,21 +2,24 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronDown, Play, Undo2, X } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Lock, LockOpen, Play, Undo2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
+export type RankChangeDirection = 'PROMOTION' | 'DEMOTION'
+
 export interface RankChangeEntry {
     id: string
     officer: { id: string; firstName: string; lastName: string; badgeNumber: string }
-    currentRank: { name: string; color: string }
-    proposedRank: { name: string; color: string }
+    currentRank: { id: string; name: string; color: string; sortOrder: number }
+    proposedRank: { id: string; name: string; color: string; sortOrder: number }
     newBadgeNumber: string | null
     note: string | null
     executed: boolean
     executedAt: string | null
     createdBy: { id: string; displayName: string } | null
+    executedBy: { id: string; displayName: string } | null
 }
 
 export interface RankChangeList {
@@ -25,9 +28,35 @@ export interface RankChangeList {
     description: string | null
     type: string
     status: string
+    submissionsClosed: boolean
+    closedAt: string | null
     createdBy: { displayName: string } | null
     createdAt: string
     entries: RankChangeEntry[]
+}
+
+/** Kleinerer sortOrder = höherer Rang, also ist ein Aufstieg eine Beförderung. */
+export function entryDirection(entry: Pick<RankChangeEntry, 'currentRank' | 'proposedRank'>): RankChangeDirection {
+    return entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'DEMOTION' : 'PROMOTION'
+}
+
+/** Sortiert nach Zielrang (höchster zuerst), dann aktueller Rang, dann Nachname. */
+export function sortEntriesByRank<T extends Pick<RankChangeEntry, 'currentRank' | 'proposedRank' | 'officer'>>(entries: T[]): T[] {
+    return [...entries].sort((a, b) => (
+        a.proposedRank.sortOrder - b.proposedRank.sortOrder
+        || a.currentRank.sortOrder - b.currentRank.sortOrder
+        || a.officer.lastName.localeCompare(b.officer.lastName, 'de')
+    ))
+}
+
+export const DIRECTION_ACCENT: Record<RankChangeDirection, string> = {
+    PROMOTION: '#34d399',
+    DEMOTION: '#f87171',
+}
+
+export const DIRECTION_LABEL: Record<RankChangeDirection, string> = {
+    PROMOTION: 'Up-Rank',
+    DEMOTION: 'D-Rank',
 }
 
 function initials(first: string, last: string) {
@@ -46,34 +75,61 @@ function RankPill({ name, color }: { name: string; color: string }) {
     )
 }
 
+function DirectionPill({ direction }: { direction: RankChangeDirection }) {
+    const accent = DIRECTION_ACCENT[direction]
+    const Icon = direction === 'PROMOTION' ? ArrowUpRight : ArrowDownRight
+    return (
+        <span
+            className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+            style={{ borderColor: `${accent}40`, backgroundColor: `${accent}18`, color: accent }}
+        >
+            <Icon size={11} strokeWidth={2.5} />
+            {DIRECTION_LABEL[direction]}
+        </span>
+    )
+}
+
 interface RankChangeListCardProps {
     list: RankChangeList
+    /** Bereits gefilterte und sortierte Einträge; leer = kein Treffer im aktiven Filter. */
+    entries: RankChangeEntry[]
+    /** true, wenn Suche/Filter aktiv sind — steuert den Leertext. */
+    filtered: boolean
     expanded: boolean
     onToggle: () => void
-    variant: 'promotion' | 'demotion'
     canExecute: boolean
     canManage: boolean
     onExecute: (entry: RankChangeEntry) => void
-    onUndo?: (entry: RankChangeEntry) => void
+    onUndo: (entry: RankChangeEntry) => void
     onRemove: (entryId: string) => void
     onAddEntry: () => void
+    onToggleSubmissions: () => void
     onDelete: () => void
     canDelete: boolean
-    emptyText: string
-    addLabel: string
     footerActions?: ReactNode
 }
 
 export function RankChangeListCard({
-                                       list, expanded, onToggle, variant, canExecute, canManage, onExecute, onUndo, onRemove, onAddEntry, onDelete, canDelete, emptyText, addLabel,
+                                       list, entries, filtered, expanded, onToggle, canExecute, canManage, onExecute, onUndo, onRemove, onAddEntry, onToggleSubmissions, onDelete, canDelete,
                                    }: RankChangeListCardProps) {
     const total = list.entries.length
     const executed = list.entries.filter((e) => e.executed).length
     const pending = total - executed
-    const isDraft = list.status === 'DRAFT'
-    const accent = variant === 'promotion' ? '#34d399' : '#f87171'
-    const typeLabel = variant === 'promotion' ? 'Up-Rank' : 'D-Rank'
+    const promotions = list.entries.filter((e) => entryDirection(e) === 'PROMOTION').length
+    const demotions = total - promotions
+    const isCompleted = list.status === 'COMPLETED'
+    const isClosed = list.submissionsClosed
+    const canAddEntries = !isCompleted && !isClosed
     const progress = total > 0 ? Math.round((executed / total) * 100) : 0
+    const accent = isCompleted ? '#8ea4bd' : '#d4af37'
+
+    const statusLabel = isCompleted ? 'Abgeschlossen' : isClosed ? 'Geschlossen' : 'Offen'
+    const statusTone = isCompleted
+        ? 'bg-[#34d399]/14 text-[#34d399]'
+        : isClosed
+            ? 'bg-[#8ea4bd]/14 text-[#b7c5d8]'
+            : 'bg-[#fbbf24]/14 text-[#fbbf24]'
+    const statusDot = isCompleted ? 'bg-[#34d399]' : isClosed ? 'bg-[#b7c5d8]' : 'bg-[#fbbf24]'
 
     return (
         <div className="glass-panel-elevated rounded-[14px] overflow-hidden border border-[#1e3a5c]/45 transition-colors hover:border-[#234568]">
@@ -85,19 +141,28 @@ export function RankChangeListCard({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[14px] font-semibold text-white">{list.name}</span>
-                        <span
-                            className="inline-flex items-center rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
-                            style={{ borderColor: `${accent}40`, backgroundColor: `${accent}18`, color: accent }}
-                        >
-                            {typeLabel}
+                        {promotions > 0 && (
+                            <span
+                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+                                style={{ borderColor: '#34d39940', backgroundColor: '#34d39918', color: '#34d399' }}
+                            >
+                                <ArrowUpRight size={11} strokeWidth={2.5} />
+                                {promotions} Up-Rank
+                            </span>
+                        )}
+                        {demotions > 0 && (
+                            <span
+                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+                                style={{ borderColor: '#f8717140', backgroundColor: '#f8717118', color: '#f87171' }}
+                            >
+                                <ArrowDownRight size={11} strokeWidth={2.5} />
+                                {demotions} D-Rank
+                            </span>
+                        )}
+                        <span className={cn('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide', statusTone)}>
+                            <span className={cn('h-1.5 w-1.5 rounded-full', statusDot)} />
+                            {statusLabel}
                         </span>
-                        <span className={cn(
-                            'inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide',
-                            isDraft ? 'bg-[#fbbf24]/14 text-[#fbbf24]' : 'bg-[#34d399]/14 text-[#34d399]',
-                        )}>
-              <span className={cn('h-1.5 w-1.5 rounded-full', isDraft ? 'bg-[#fbbf24]' : 'bg-[#34d399]')} />
-                            {isDraft ? 'Entwurf' : 'Abgeschlossen'}
-            </span>
                     </div>
                     <p className="text-[11.5px] text-[#8ea4bd] mt-1">
                         {formatDate(list.createdAt)} · {list.createdBy?.displayName ?? 'Gelöscht'}
@@ -115,7 +180,7 @@ export function RankChangeListCard({
                             </div>
                         </div>
                     )}
-                    {pending > 0 && isDraft && (
+                    {pending > 0 && !isCompleted && (
                         <span className="text-[10.5px] font-semibold text-[#fbbf24] bg-[#fbbf24]/12 px-2 py-1 rounded-[6px]">
               {pending} offen
             </span>
@@ -125,90 +190,110 @@ export function RankChangeListCard({
 
             {expanded && (
                 <div className="px-5 pb-4 border-t border-[#18385f]/40">
-                    {list.entries.length > 0 ? (
+                    {entries.length > 0 ? (
                         <div className="space-y-1.5 my-3">
-                            {list.entries.map((entry) => (
-                                <div
-                                    key={entry.id}
-                                    className={cn(
-                                        'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border transition-colors',
-                                        entry.executed
-                                            ? 'bg-[#0a1f30]/60 border-[#18385f]/30 opacity-80'
-                                            : 'bg-[#0f2340]/70 border-[#1e3a5c]/40 hover:border-[#234568]',
-                                    )}
-                                >
+                            {entries.map((entry) => {
+                                const direction = entryDirection(entry)
+                                return (
                                     <div
-                                        className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold border"
-                                        style={{
-                                            borderColor: `${entry.proposedRank.color}55`,
-                                            backgroundColor: `${entry.proposedRank.color}18`,
-                                            color: entry.proposedRank.color,
-                                        }}
+                                        key={entry.id}
+                                        className={cn(
+                                            'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border transition-colors',
+                                            entry.executed
+                                                ? 'bg-[#0a1f30]/60 border-[#18385f]/30 opacity-80'
+                                                : 'bg-[#0f2340]/70 border-[#1e3a5c]/40 hover:border-[#234568]',
+                                        )}
                                     >
-                                        {initials(entry.officer.firstName, entry.officer.lastName)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-white hover:text-[#d4af37] transition-colors">
-                                                {entry.officer.firstName} {entry.officer.lastName}
-                                            </Link>
-                                            <span className="text-[11px] text-[#8ea4bd]">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
-                                            {entry.newBadgeNumber && (
-                                                <span className="text-[10.5px] text-[#8ea4bd]">
+                                        <div
+                                            className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold border"
+                                            style={{
+                                                borderColor: `${entry.proposedRank.color}55`,
+                                                backgroundColor: `${entry.proposedRank.color}18`,
+                                                color: entry.proposedRank.color,
+                                            }}
+                                        >
+                                            {initials(entry.officer.firstName, entry.officer.lastName)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-white hover:text-[#d4af37] transition-colors">
+                                                    {entry.officer.firstName} {entry.officer.lastName}
+                                                </Link>
+                                                <span className="text-[11px] text-[#8ea4bd]">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
+                                                {entry.newBadgeNumber && (
+                                                    <span className="text-[10.5px] text-[#8ea4bd]">
                           → <span className="text-[#d4af37]">#{displayBadgeNumber(entry.newBadgeNumber)}</span>
                         </span>
+                                                )}
+                                                <DirectionPill direction={direction} />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                <RankPill name={entry.currentRank.name} color={entry.currentRank.color} />
+                                                <ArrowRight size={11} className="text-[#536b86]" />
+                                                <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />
+                                            </div>
+                                            {entry.note && (
+                                                <p className="text-[11px] text-[#b7c5d8] mt-1.5 italic">„{entry.note}“</p>
                                             )}
+                                            <p className="text-[10.5px] text-[#536b86] mt-1">
+                                                Eingereicht von <span className="text-[#7e93ab]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
+                                                {entry.executed && (
+                                                    <>
+                                                        {' · '}Durchgeführt
+                                                        {entry.executedAt && <> am {formatDate(entry.executedAt)}</>}
+                                                        {' von '}
+                                                        <span className="text-[#7e93ab]">{entry.executedBy?.displayName ?? 'Unbekannt'}</span>
+                                                    </>
+                                                )}
+                                            </p>
                                         </div>
-                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                            <RankPill name={entry.currentRank.name} color={entry.currentRank.color} />
-                                            <ArrowRight size={11} className="text-[#536b86]" />
-                                            <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />
-                                        </div>
-                                        {entry.note && (
-                                            <p className="text-[11px] text-[#b7c5d8] mt-1.5 italic">„{entry.note}“</p>
-                                        )}
-                                        <p className="text-[10.5px] text-[#536b86] mt-1">
-                                            Eingereicht von <span className="text-[#7e93ab]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
-                                            {entry.executed && entry.executedAt && <> · Durchgeführt am {formatDate(entry.executedAt)}</>}
-                                        </p>
-                                    </div>
-                                    {entry.executed ? (
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        {entry.executed ? (
+                                            <div className="flex items-center gap-2 shrink-0">
                       <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#34d399] bg-[#34d399]/12 px-2 py-1 rounded-[6px]">
                         ✓ Durchgeführt
                       </span>
-                                            {canExecute && onUndo && (
-                                                <Button variant="secondary" size="sm" onClick={() => onUndo(entry)}>
-                                                    <Undo2 size={12} /> Rückgängig
+                                                {canExecute && direction === 'PROMOTION' && (
+                                                    <Button variant="secondary" size="sm" onClick={() => onUndo(entry)}>
+                                                        <Undo2 size={12} /> Rückgängig
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ) : canExecute ? (
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button size="sm" variant={direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={() => onExecute(entry)}>
+                                                    <Play size={12} /> Durchführen
                                                 </Button>
-                                            )}
-                                        </div>
-                                    ) : isDraft && canExecute ? (
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <Button size="sm" variant={variant === 'demotion' ? 'danger' : 'primary'} onClick={() => onExecute(entry)}>
-                                                <Play size={12} /> Durchführen
-                                            </Button>
-                                            <button
-                                                onClick={() => onRemove(entry.id)}
-                                                className="p-1.5 rounded-[6px] hover:bg-[#321218]/60 text-[#536b86] hover:text-[#fca5a5] transition-colors"
-                                                title="Entfernen"
-                                            >
-                                                <X size={13} />
-                                            </button>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            ))}
+                                                {canManage && (
+                                                    <button
+                                                        onClick={() => onRemove(entry.id)}
+                                                        className="p-1.5 rounded-[6px] hover:bg-[#321218]/60 text-[#536b86] hover:text-[#fca5a5] transition-colors"
+                                                        title="Entfernen"
+                                                    >
+                                                        <X size={13} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )
+                            })}
                         </div>
                     ) : (
-                        <p className="text-[12px] text-[#536b86] italic py-3">{emptyText}</p>
+                        <p className="text-[12px] text-[#536b86] italic py-3">
+                            {filtered ? 'Keine Einträge passen zu Suche und Filter' : 'Noch keine Officers in dieser Liste'}
+                        </p>
                     )}
 
-                    {((isDraft && canManage) || canDelete) && (
-                        <div className="flex gap-1.5 pt-1">
-                            {isDraft && canManage && (
+                    {(canManage || canDelete) && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            {canManage && canAddEntries && (
                                 <Button variant="secondary" size="sm" onClick={onAddEntry}>
-                                    {addLabel}
+                                    + Officer hinzufügen
+                                </Button>
+                            )}
+                            {canManage && !isCompleted && (
+                                <Button variant="secondary" size="sm" onClick={onToggleSubmissions}>
+                                    {isClosed ? <><LockOpen size={12} /> Einreichungen öffnen</> : <><Lock size={12} /> Einreichungen schließen</>}
                                 </Button>
                             )}
                             {canDelete && (
@@ -217,6 +302,11 @@ export function RankChangeListCard({
                                 </Button>
                             )}
                         </div>
+                    )}
+                    {isClosed && !isCompleted && (
+                        <p className="text-[11px] text-[#8ea4bd] pt-2">
+                            Einreichungen geschlossen{list.closedAt ? ` am ${formatDate(list.closedAt)}` : ''} — offene Einträge können weiterhin durchgeführt werden.
+                        </p>
                     )}
                 </div>
             )}
