@@ -359,6 +359,15 @@ export const ENDPOINTS: EndpointSpec[] = [
 
   // ============ Sanctions ============
   {
+    id: 'list-sanctions',
+    method: 'GET',
+    path: '/sanctions',
+    category: 'Sanctions',
+    summary: 'Sanktionen auflisten',
+    description:
+      'Liefert die 1000 neuesten Sanktionen inkl. Officer und Aussteller, neueste zuerst. Erfordert nur eine gültige Authentifizierung — kein zusätzlicher Scope.',
+  },
+  {
     id: 'create-sanction',
     method: 'POST',
     path: '/sanctions',

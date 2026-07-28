@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requirePermission } from '@/lib/auth'
+import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import {
@@ -14,6 +14,46 @@ import {
   sanctionInclude,
   syncSanctionDiscordMessage,
 } from '@/lib/sanctions'
+
+/** Obergrenze der Liste — die Seite filtert clientseitig, der Payload bleibt so beschränkt. */
+const SANCTION_LIST_LIMIT = 1000
+
+/**
+ * Departmentweite Sanktionsliste für die Übersichtsseite.
+ *
+ * Bewusst ohne Permission-Check: jeder eingeloggte Officer darf offene
+ * Sanktionen einsehen. Ausstellen und Verwalten bleiben auf `sanctions:manage`
+ * (siehe POST hier und PATCH/DELETE in `[id]/route.ts`).
+ */
+export async function GET() {
+  try {
+    await requireAuth()
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Serverfehler'
+    if (msg === 'Unauthorized') return unauthorized()
+    return error(msg, 500)
+  }
+
+  const sanctions = await prisma.sanction.findMany({
+    include: {
+      officer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          badgeNumber: true,
+          status: true,
+          rank: { select: { name: true, color: true } },
+        },
+      },
+      issuedBy: { select: { displayName: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: SANCTION_LIST_LIMIT,
+  })
+
+  return success(sanctions)
+}
 
 export async function POST(req: NextRequest) {
   try {

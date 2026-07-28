@@ -40,6 +40,8 @@ const mainNav: NavItem[] = [
   { name: 'Anzeigen', href: '/anzeigen', icon: Gavel, permission: 'reports:view' },
   { name: 'Up-/D-Rank-Listen', href: '/promotions', icon: ArrowUpDown, permission: 'rank-changes:view' },
   { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
+  // Ohne `permission`: Sanktionen sind für jeden eingeloggten Officer einsehbar.
+  { name: 'Sanktionen', href: '/sanktionen', icon: Gavel },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
   { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
 ]
