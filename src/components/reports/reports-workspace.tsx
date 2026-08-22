@@ -684,7 +684,7 @@ function ReportListItem({
 
   return (
     <Link
-      href={`/anzeigen/${report.id}`}
+      href={`/anzeigen/intern/${report.id}`}
       className={cn(
         'block w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
         active ? 'border-[#d4af37]/35 bg-[#d4af37]/12' : 'border-transparent hover:bg-[#102542]/60',

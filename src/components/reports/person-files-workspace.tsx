@@ -414,7 +414,7 @@ function ReportTable({
             return (
               <Link
                 key={report.id}
-                href={`/anzeigen/${report.id}`}
+                href={`/anzeigen/intern/${report.id}`}
                 className="block rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3 transition-colors hover:border-[#d4af37]/30 hover:bg-[#102542]/60"
               >
                 <div className="mb-1 flex flex-wrap items-center gap-2">
