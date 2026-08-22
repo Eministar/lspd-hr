@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       include: rankChangeEntryInclude(),
     })
     if (!entry) return error('Rangänderung nicht gefunden', 404)
-    if (entry.createdById === user.id || hasPermission(user, 'rank-changes:manage')) {
+    if (entry.createdById === user.id || hasPermission(user, 'rank-changes:full-access')) {
       return error('Du kannst diesen Eintrag direkt bearbeiten', 403)
     }
     if (entry.executed || entry.list.status === 'COMPLETED') {

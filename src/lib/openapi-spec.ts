@@ -505,7 +505,7 @@ export const ENDPOINTS: EndpointSpec[] = [
     path: '/rank-change-entries/{id}',
     category: 'Promotions',
     summary: 'Rangänderung bearbeiten',
-    description: 'Direkte Bearbeitung durch den Ersteller oder mit `rank-changes:manage`; die vorige Fassung wird versioniert.',
+    description: 'Direkte Bearbeitung durch den Ersteller oder mit `rank-changes:full-access`; die vorige Fassung wird versioniert.',
     scope: 'rank-changes:view',
     params: [{ name: 'id', in: 'path', required: true, description: 'Eintrags-ID', schema: { type: 'string' } }],
   },

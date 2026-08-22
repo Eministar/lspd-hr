@@ -4,6 +4,7 @@ import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
 import { getDutyTimesSnapshot } from '@/lib/duty-times'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 const boardInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -19,6 +20,7 @@ const boardInclude = {
               badgeNumber: true,
               firstName: true,
               lastName: true,
+              discordId: true,
               rank: { select: { id: true, name: true, color: true, sortOrder: true } },
             },
           },
@@ -32,7 +34,10 @@ function isRookieRank(rankName: string | null | undefined) {
   return rankName?.trim().toLowerCase() === 'rookie'
 }
 
-function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { rank: { name: string } } }> }> }>(board: T) {
+function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { discordId?: string | null; rank: { name: string } } }> }> }>(
+  board: T,
+  avatarUrls: ReadonlyMap<string, string>,
+) {
   return {
     ...board,
     patrols: board.patrols.map((patrol) => ({
@@ -42,6 +47,7 @@ function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { 
         officer: {
           ...member.officer,
           isRookie: isRookieRank(member.officer.rank.name),
+          avatarUrl: officerAvatarUrl(member.officer, avatarUrls),
         },
       })),
     })),
@@ -70,11 +76,17 @@ export async function GET() {
       }),
       getDutyTimesSnapshot(new Date(), { sync: false }),
       prisma.dispatchCenterState.findMany({
-        include: { officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } } },
+        include: { officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, discordId: true } } },
       }),
     ])
 
-    const decoratedBoards = boards.map(decorateBoard)
+    const linkedOfficers = [
+      ...boards.flatMap((board) => board.patrols.flatMap((patrol) => patrol.members.map((member) => member.officer))),
+      ...dutySnapshot.rows,
+      ...dispatchCenters.flatMap((center) => center.officer ? [center.officer] : []),
+    ]
+    const avatarUrls = await resolveOfficerAvatarUrls(linkedOfficers)
+    const decoratedBoards = boards.map((board) => decorateBoard(board, avatarUrls))
     const activeDutyOfficers = dutySnapshot.activeRows.map((officer) => ({
       id: officer.id,
       badgeNumber: officer.badgeNumber,
@@ -84,6 +96,7 @@ export async function GET() {
       isRookie: isRookieRank(officer.rank.name),
       activeSince: officer.activePlaySession?.startedAt ?? null,
       playerName: officer.currentPlayer?.name ?? officer.activePlaySession?.playerName ?? null,
+      avatarUrl: officerAvatarUrl(officer, avatarUrls),
     }))
 
     return success({
@@ -91,7 +104,13 @@ export async function GET() {
       boards: decoratedBoards,
       activeDutyOfficers,
       syncedAt: dutySnapshot.sync.checkedAt,
-      dispatchCenters,
+      dispatchCenters: dispatchCenters.map((center) => ({
+        ...center,
+        officer: center.officer ? {
+          ...center.officer,
+          avatarUrl: officerAvatarUrl(center.officer, avatarUrls),
+        } : null,
+      })),
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
@@ -134,7 +153,7 @@ export async function POST(req: NextRequest) {
       details: title,
     })
 
-    return success(decorateBoard(board), 201)
+    return success(decorateBoard(board, new Map()), 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

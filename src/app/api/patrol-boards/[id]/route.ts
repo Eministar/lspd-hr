@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { createAuditLog } from '@/lib/audit'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 const boardInclude = {
   createdBy: { select: { id: true, displayName: true } },
@@ -18,6 +19,7 @@ const boardInclude = {
               badgeNumber: true,
               firstName: true,
               lastName: true,
+              discordId: true,
               rank: { select: { id: true, name: true, color: true, sortOrder: true } },
             },
           },
@@ -42,7 +44,9 @@ function isRookieRank(rankName: string | null | undefined) {
   return rankName?.trim().toLowerCase() === 'rookie'
 }
 
-function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { rank: { name: string } } }> }> }>(board: T) {
+async function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { discordId?: string | null; rank: { name: string } } }> }> }>(board: T) {
+  const officers = board.patrols.flatMap((patrol) => patrol.members.map((member) => member.officer))
+  const avatarUrls = await resolveOfficerAvatarUrls(officers)
   return {
     ...board,
     patrols: board.patrols.map((patrol) => ({
@@ -52,6 +56,7 @@ function decorateBoard<T extends { patrols: Array<{ members: Array<{ officer: { 
         officer: {
           ...member.officer,
           isRookie: isRookieRank(member.officer.rank.name),
+          avatarUrl: officerAvatarUrl(member.officer, avatarUrls),
         },
       })),
     })),
@@ -105,7 +110,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       include: boardInclude,
     })
     if (!board) return notFound('Streifenliste')
-    return success(decorateBoard(board))
+    return success(await decorateBoard(board))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -203,7 +208,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       details: updated.title,
     })
 
-    return success(decorateBoard(updated))
+    return success(await decorateBoard(updated))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

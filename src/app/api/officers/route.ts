@@ -21,6 +21,7 @@ import {
 import { runOfficerStatusAutomation } from '@/lib/absence-status'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 import { queueContractForNewOfficer } from '@/lib/contract-service'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -81,11 +82,13 @@ export async function GET(req: NextRequest) {
   }
   const discordMembers = cachedDiscordMembers ?? []
   const discordMemberIds = new Set(discordMembers.map((member) => member.user?.id).filter(Boolean))
+  const avatarUrls = await resolveOfficerAvatarUrls(officers)
 
   return success(officers.map((officer) => {
     const discordId = validDiscordId(officer.discordId)
     return {
       ...withOfficerTrainingRows(officer, trainings),
+      avatarUrl: officerAvatarUrl(officer, avatarUrls),
       discordMember: {
         checked: canCheckDiscordMembers && cachedDiscordMembers !== null && !!discordId,
         inGuild: !!discordId && discordMemberIds.has(discordId),

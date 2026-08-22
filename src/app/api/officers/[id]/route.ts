@@ -27,6 +27,7 @@ import { getOfficerAbsenceReport, runOfficerStatusAutomation } from '@/lib/absen
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 function validDiscordId(value: string | null | undefined) {
   const id = value?.trim()
@@ -156,8 +157,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     getOfficerAbsenceReport(id),
     canCheckDiscordMembers && discordId ? getDiscordGuildMember(discordId) : Promise.resolve(null),
   ])
+  const avatarUrls = await resolveOfficerAvatarUrls([officerWithTrainingRows])
   return success({
     ...officerWithTrainingRows,
+    avatarUrl: officerAvatarUrl(officerWithTrainingRows, avatarUrls),
     hiredBy,
     dutyTime,
     playtime,

@@ -11,6 +11,7 @@ import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { cn, formatDateTime } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface PatrolOfficer {
   firstName: string
   lastName: string
   badgeNumber: string | null
+  avatarUrl: string | null
   rank: PatrolRank
   isRookie?: boolean
 }
@@ -113,10 +115,6 @@ function formatDuration(seconds: number): string {
 
 function officerName(officer: Pick<PatrolOfficer, 'firstName' | 'lastName'>): string {
   return `${officer.firstName} ${officer.lastName}`
-}
-
-function initials(officer: Pick<PatrolOfficer, 'firstName' | 'lastName'>): string {
-  return `${officer.firstName[0] ?? ''}${officer.lastName[0] ?? ''}`.toUpperCase()
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -358,12 +356,7 @@ export default function PatrolBoardPage() {
                           key={member.id}
                           className="flex items-center gap-2.5 rounded-[8px] border border-[#18385f]/30 bg-[#0a1e38]/70 px-2.5 py-2"
                         >
-                          <div
-                            className="avatar-initials"
-                            style={{ width: 26, height: 26, fontSize: 10 }}
-                          >
-                            {initials(member.officer)}
-                          </div>
+                          <OfficerAvatar officer={member.officer} size="xs" ringColor={member.officer.rank.color} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[12.5px] font-medium text-white">
                               {member.officer.badgeNumber && (

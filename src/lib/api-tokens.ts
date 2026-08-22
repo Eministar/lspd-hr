@@ -210,7 +210,7 @@ export interface RequestLike {
 function effectiveScopesForUser(token: ApiTokenRecord, userPermissions: Permission[]): Permission[] {
   if (token.scopes.length === 0) return userPermissions
   const userSet = new Set(userPermissions)
-  return token.scopes.filter((scope) => userSet.has(scope))
+  return normalizePermissions(token.scopes).filter((scope) => userSet.has(scope))
 }
 
 /**

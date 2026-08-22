@@ -16,7 +16,7 @@ export async function DELETE(
       select: { id: true, authorId: true },
     })
     if (!comment) return error('Kommentar nicht gefunden', 404)
-    if (comment.authorId !== user.id && !hasPermission(user, 'rank-changes:manage')) {
+    if (comment.authorId !== user.id && !hasPermission(user, 'rank-changes:full-access')) {
       return error('Keine Berechtigung', 403)
     }
     await prisma.rankChangeEntryComment.delete({ where: { id: comment.id } })

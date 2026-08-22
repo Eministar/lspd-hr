@@ -30,7 +30,7 @@ export async function PATCH(
     })
     if (!proposal) return error('Änderungsvorschlag nicht gefunden', 404)
     const entry = proposal.entry
-    const elevated = hasPermission(user, 'rank-changes:manage')
+    const elevated = hasPermission(user, 'rank-changes:full-access')
     if (entry.createdById !== user.id && !elevated) return error('Keine Berechtigung', 403)
     if (proposal.status !== 'PENDING') return error('Dieser Vorschlag wurde bereits geprüft', 409)
 

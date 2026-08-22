@@ -45,6 +45,7 @@ import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber, formatBadgeNumber } from '@/lib/badge-number'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 
 interface Training {
   id: string
@@ -95,6 +96,7 @@ interface Officer {
   hireDate: string
   lastOnline: string | null
   discordId: string | null
+  avatarUrl: string | null
   discordMember?: {
     checked: boolean
     inGuild: boolean
@@ -306,14 +308,17 @@ function DraggableOfficerRow({
         {displayBadgeNumber(officer.badgeNumber)}
       </td>
       <td className="px-3 py-2.5 align-middle min-w-0 overflow-hidden">
-        <Link
-          href={`/officers/${officer.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="block text-[13px] font-medium text-[#eee] hover:text-[#d4af37] transition-colors truncate"
-          title={`${officer.firstName} ${officer.lastName}`}
-        >
-          {officer.firstName} {officer.lastName}
-        </Link>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank.color} />
+          <Link
+            href={`/officers/${officer.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate text-[13px] font-medium text-[#eee] transition-colors hover:text-[#d4af37]"
+            title={`${officer.firstName} ${officer.lastName}`}
+          >
+            {officer.firstName} {officer.lastName}
+          </Link>
+        </div>
       </td>
       {allTrainings.map((t) => {
         const ot = officer.trainings.find((x) => x.trainingId === t.id)
@@ -400,16 +405,19 @@ function MobileOfficerCard({
         />
       )}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <span className="block font-mono text-[11px] text-[#b7c5d8] mb-1">
-            {displayBadgeNumber(officer.badgeNumber)}
-          </span>
-          <Link
-            href={`/officers/${officer.id}`}
-            className="block text-[14px] font-semibold text-[#eee] hover:text-[#d4af37] transition-colors truncate"
-          >
-            {officer.firstName} {officer.lastName}
-          </Link>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <OfficerAvatar officer={officer} ringColor={officer.rank.color} />
+          <div className="min-w-0">
+            <span className="mb-1 block font-mono text-[11px] text-[#b7c5d8]">
+              {displayBadgeNumber(officer.badgeNumber)}
+            </span>
+            <Link
+              href={`/officers/${officer.id}`}
+              className="block truncate text-[14px] font-semibold text-[#eee] transition-colors hover:text-[#d4af37]"
+            >
+              {officer.firstName} {officer.lastName}
+            </Link>
+          </div>
         </div>
         <div className="shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
           <FlagButton

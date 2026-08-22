@@ -129,13 +129,14 @@ export function rankChangeEntryInclude() {
         firstName: true,
         lastName: true,
         badgeNumber: true,
+        discordId: true,
         promotionBlocked: true,
         rank: { select: { id: true, name: true, color: true, sortOrder: true } },
       },
     },
     currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
     proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
-    createdBy: { select: { id: true, displayName: true, discordId: true } },
-    executedBy: { select: { id: true, displayName: true } },
+    createdBy: { select: { id: true, displayName: true, discordId: true, discordAvatar: true, discordDiscriminator: true } },
+    executedBy: { select: { id: true, displayName: true, discordId: true, discordAvatar: true, discordDiscriminator: true } },
   } as const
 }

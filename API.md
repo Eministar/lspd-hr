@@ -131,7 +131,8 @@ curl https://deine-domain/api/users/by-discord/123456789012345678 \
 | `unit-leadership:manage` | Unit-Leitung: Officer-Units zuweisen |
 | `sanctions:manage` | Sanktionen ausstellen |
 | `rank-changes:view` | Beförderungen/Degradierungen ansehen |
-| `rank-changes:manage` | Beförderungen/Degradierungen |
+| `rank-changes:manage` | Rangänderungen verwalten |
+| `rank-changes:full-access` | Rangänderungen – Vollzugriff (fremde Einträge bearbeiten und Vorschläge prüfen) |
 | `rank-change-lists:execute` | Beförderungen/Degradierungen durchführen |
 | `rank-change-lists:delete` | Beförderungs-/Degradierungslisten löschen |
 | `academy:view` | Academy ansehen |

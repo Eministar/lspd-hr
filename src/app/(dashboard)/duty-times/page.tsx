@@ -13,6 +13,7 @@ import { useAuth } from '@/context/auth-context'
 import { cn, formatDateTime, formatRelativeTime } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 
 type ApiStatus = 'online' | 'offline' | 'ignored-job' | 'not-linked' | 'not-configured' | 'error'
 
@@ -40,6 +41,7 @@ interface DutyOfficer {
   firstName: string
   lastName: string
   discordId: string | null
+  avatarUrl: string | null
   status: string
   rank: { name: string; color: string; sortOrder: number }
   activeSession: { id: string; clockInAt: string; currentDurationMs: number } | null
@@ -99,10 +101,6 @@ function formatDuration(ms: number) {
 
 function officerName(officer: DutyOfficer) {
   return `${officer.firstName} ${officer.lastName}`
-}
-
-function initials(officer: { firstName: string; lastName: string }) {
-  return `${officer.firstName[0] ?? ''}${officer.lastName[0] ?? ''}`.toUpperCase()
 }
 
 function statusLabel(status: ApiStatus) {
@@ -237,7 +235,7 @@ export default function DutyTimesPage() {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="avatar-initials">{initials(officer)}</div>
+                                <OfficerAvatar officer={officer} />
                                 <div className="min-w-0">
                                   <p className="truncate text-[13px] font-semibold text-white">{officerName(officer)}</p>
                                   <p className="text-[11px] text-[#7089a5] font-mono">#{displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}</p>
@@ -301,7 +299,7 @@ export default function DutyTimesPage() {
                         className="rounded-[12px] border border-[#22c55e]/15 bg-gradient-to-br from-[#0a1e38]/85 to-[#052e1b]/40 p-4 hover:border-[#22c55e]/30 transition-colors"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="avatar-initials">{initials(officer)}</div>
+                        <OfficerAvatar officer={officer} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <Link href={`/officers/${officer.id}`} className="text-[14px] font-semibold text-white transition-colors hover:text-[#d4af37]">
@@ -352,7 +350,7 @@ export default function DutyTimesPage() {
             {data.rows.map((officer) => (
                 <div key={officer.id} className="grid grid-cols-1 gap-3 py-3 first:pt-0 last:pb-0 xl:grid-cols-[minmax(0,1fr)_260px_420px] xl:items-center">
                   <div className="min-w-0 flex items-start gap-3">
-                    <div className="avatar-initials" style={{ width: 30, height: 30, fontSize: 11 }}>{initials(officer)}</div>
+                    <OfficerAvatar officer={officer} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link href={`/officers/${officer.id}`} className="text-[13px] font-medium text-white transition-colors hover:text-[#d4af37]">

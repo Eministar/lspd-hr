@@ -18,6 +18,7 @@ export const PERMISSIONS = [
   'sanctions:manage',
   'rank-changes:view',
   'rank-changes:manage',
+  'rank-changes:full-access',
   'rank-change-lists:execute',
   'rank-change-lists:delete',
   'academy:view',
@@ -80,7 +81,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'probations:manage': 'Probezeiten verwalten',
   'sanctions:manage': 'Sanktionen ausstellen',
   'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
-  'rank-changes:manage': 'Rangänderungen verwalten (Vollzugriff)',
+  'rank-changes:manage': 'Rangänderungen verwalten',
+  'rank-changes:full-access': 'Rangänderungen – Vollzugriff',
   'rank-change-lists:delete': 'Beförderungs-/Degradierungslisten löschen',
   'rank-change-lists:execute': 'Beförderungen/Degradierungen durchführen',
   'academy:view': 'Recruitment & Training ansehen',
@@ -142,6 +144,17 @@ const IMPLIED_PERMISSIONS: Partial<Record<Permission, Permission[]>> = {
   'sanctions:manage': ['officers:view'],
   // Backward-compatibility: managing rank changes should include ability to execute rank-change-lists
   'rank-changes:manage': ['rank-changes:view', 'officers:view', 'ranks:view', 'rank-change-lists:execute'],
+  // Vollzugriff ist bewusst ein eigenes Recht: fremde Einträge direkt bearbeiten,
+  // alle Vorschläge prüfen und Kommentare moderieren. Implikationen stehen hier
+  // vollständig, da normalizePermissions nur eine Ebene auflöst.
+  'rank-changes:full-access': [
+    'rank-changes:view',
+    'rank-changes:manage',
+    'officers:view',
+    'ranks:view',
+    'rank-change-lists:execute',
+    'rank-change-lists:delete',
+  ],
   'rank-change-lists:execute': ['rank-changes:view', 'officers:view', 'ranks:view'],
   'academy:manage': ['academy:view', 'officers:view'],
   'press:manage': ['press:view'],

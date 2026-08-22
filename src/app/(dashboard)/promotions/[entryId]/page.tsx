@@ -27,6 +27,7 @@ import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/components/ui/toast'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
@@ -37,7 +38,7 @@ import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import type { RankChangeVoteSummary, RankChangeVoteValue } from '@/lib/rank-change-votes'
 
-type Person = { id: string; displayName: string; discordId: string | null }
+type Person = { id: string; displayName: string; discordId: string | null; avatarUrl: string | null }
 type Rank = { id: string; name: string; color: string; sortOrder: number }
 type Snapshot = {
   proposedRank?: Rank
@@ -92,6 +93,8 @@ type DetailPayload = {
       firstName: string
       lastName: string
       badgeNumber: string
+      discordId: string | null
+      avatarUrl: string | null
       rank: Rank
     }
     currentRank: Rank
@@ -116,10 +119,6 @@ type DetailPayload = {
 
 type FormMode = 'edit' | 'proposal'
 type EntryForm = { proposedRankId: string; newBadgeNumber: string; note: string; reason: string }
-
-function initials(first: string, last: string) {
-  return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase()
-}
 
 function RankTag({ rank }: { rank: Rank }) {
   return (
@@ -315,12 +314,7 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
         <div className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: accent }} />
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-4">
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] border text-[15px] font-bold"
-              style={{ color: entry.proposedRank.color, borderColor: `${entry.proposedRank.color}55`, backgroundColor: `${entry.proposedRank.color}18` }}
-            >
-              {initials(entry.officer.firstName, entry.officer.lastName)}
-            </div>
+            <OfficerAvatar officer={entry.officer} size="lg" ringColor={entry.proposedRank.color} />
             <div className="min-w-0">
               <div className="mb-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-[10.5px] font-semibold uppercase tracking-[0.13em]" style={{ color: accent }}>
@@ -448,9 +442,14 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
                 const canDelete = item.authorId === data.currentUserId || data.permissions.canModerateComments
                 return (
                   <div key={item.id} className="group flex gap-3 rounded-[10px] border border-[#18385f]/45 bg-[#091b31]/45 p-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#17375f]/65 text-[11px] font-bold text-[#b7c5d8]">
-                      {(personName(item.author)[0] ?? '?').toUpperCase()}
-                    </div>
+                    <span
+                      role="img"
+                      aria-label={`Discord-Profilbild von ${personName(item.author)}`}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#4a6585]/60 bg-[#17375f]/65 bg-cover bg-center text-[#8ea4bd]"
+                      style={{ backgroundImage: item.author?.avatarUrl ? `url(${item.author.avatarUrl})` : undefined }}
+                    >
+                      {!item.author?.avatarUrl && <UserRound size={14} aria-hidden />}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11.5px] font-semibold text-[#edf4fb]">{personName(item.author)}</p>

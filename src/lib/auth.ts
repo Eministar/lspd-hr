@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies, headers } from 'next/headers'
 import { prisma } from './prisma'
-import { hasAnyPermission, resolveEffectivePermissions, intersectPermissions, PERMISSIONS, type Permission } from './permissions'
+import { hasAnyPermission, resolveEffectivePermissions, intersectPermissions, normalizePermissions, PERMISSIONS, type Permission } from './permissions'
 import { storedDiscordAvatarUrl } from './discord-auth'
 import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
@@ -359,7 +359,7 @@ async function loadUserPermissions(userId: string): Promise<Permission[]> {
 }
 
 function effectiveTokenScopes(raw: unknown, userPermissions: Permission[]): Permission[] {
-  const explicit = Array.isArray(raw) ? (raw as Permission[]) : []
+  const explicit = normalizePermissions(raw)
   if (explicit.length === 0) return userPermissions
   const userSet = new Set(userPermissions)
   return explicit.filter((s) => userSet.has(s))

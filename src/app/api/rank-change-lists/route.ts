@@ -6,6 +6,7 @@ import { resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
 import { summarizeRankChangeVotes } from '@/lib/rank-change-votes'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 export async function GET(req: NextRequest) {
   let currentUser
@@ -28,12 +29,13 @@ export async function GET(req: NextRequest) {
       createdBy: { select: { displayName: true } },
       entries: {
         include: {
-          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, discordId: true } },
           currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true, badgeMin: true, badgeMax: true } },
           createdBy: { select: { id: true, displayName: true } },
           executedBy: { select: { id: true, displayName: true } },
           votes: { select: { userId: true, value: true } },
+          _count: { select: { comments: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -57,12 +59,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const avatarUrls = await resolveOfficerAvatarUrls(lists.flatMap((list) => list.entries.map((entry) => entry.officer)))
   const listsWithVoteSummaries = lists.map((list) => ({
     ...list,
     entries: list.entries.map((entry) => {
-      const { votes, ...entryWithoutVotes } = entry
+      const { votes, _count, ...entryWithoutVotes } = entry
       return {
         ...entryWithoutVotes,
+        officer: {
+          ...entry.officer,
+          avatarUrl: officerAvatarUrl(entry.officer, avatarUrls),
+        },
+        commentCount: _count.comments,
         voteSummary: summarizeRankChangeVotes(votes, currentUser.id),
       }
     }),

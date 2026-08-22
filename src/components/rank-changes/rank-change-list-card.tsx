@@ -2,8 +2,9 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Lock, LockOpen, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Lock, LockOpen, MessageSquare, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import type { RankChangeVoteSummary, RankChangeVoteValue } from '@/lib/rank-change-votes'
@@ -12,7 +13,7 @@ export type RankChangeDirection = 'PROMOTION' | 'DEMOTION'
 
 export interface RankChangeEntry {
     id: string
-    officer: { id: string; firstName: string; lastName: string; badgeNumber: string }
+    officer: { id: string; firstName: string; lastName: string; badgeNumber: string; discordId: string | null; avatarUrl: string | null }
     currentRank: { id: string; name: string; color: string; sortOrder: number }
     proposedRank: { id: string; name: string; color: string; sortOrder: number }
     newBadgeNumber: string | null
@@ -22,6 +23,7 @@ export interface RankChangeEntry {
     createdBy: { id: string; displayName: string } | null
     executedBy: { id: string; displayName: string } | null
     voteSummary: RankChangeVoteSummary
+    commentCount: number
 }
 
 export interface RankChangeList {
@@ -59,10 +61,6 @@ export const DIRECTION_ACCENT: Record<RankChangeDirection, string> = {
 export const DIRECTION_LABEL: Record<RankChangeDirection, string> = {
     PROMOTION: 'Up-Rank',
     DEMOTION: 'D-Rank',
-}
-
-function initials(first: string, last: string) {
-    return (first[0] ?? '').toUpperCase() + (last[0] ?? '').toUpperCase()
 }
 
 function RankPill({ name, color }: { name: string; color: string }) {
@@ -255,16 +253,7 @@ export function RankChangeListCard({
                                                 : 'bg-[#0f2340]/70 border-[#1e3a5c]/40 hover:border-[#234568]',
                                         )}
                                     >
-                                        <div
-                                            className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold border"
-                                            style={{
-                                                borderColor: `${entry.proposedRank.color}55`,
-                                                backgroundColor: `${entry.proposedRank.color}18`,
-                                                color: entry.proposedRank.color,
-                                            }}
-                                        >
-                                            {initials(entry.officer.firstName, entry.officer.lastName)}
-                                        </div>
+                                        <OfficerAvatar officer={entry.officer} ringColor={entry.proposedRank.color} />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-white hover:text-[#d4af37] transition-colors">
@@ -304,7 +293,11 @@ export function RankChangeListCard({
                                                 className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#234568]/70 bg-[#102542]/70 px-2.5 text-[11.5px] font-medium text-[#b7c5d8] transition-colors hover:border-[#d4af37]/45 hover:text-[#f3d77a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40"
                                                 title="Eintrag, Kommentare und Vorschläge öffnen"
                                             >
-                                                Details <ChevronRight size={13} />
+                                                Details
+                                                <span className="inline-flex items-center gap-1 rounded-[5px] bg-[#07182c]/65 px-1.5 py-0.5 text-[10.5px] tabular-nums text-[#8ea4bd]">
+                                                    <MessageSquare size={11} /> {entry.commentCount}
+                                                </span>
+                                                <ChevronRight size={13} />
                                             </Link>
                                             <EntryVoteControls
                                                 summary={entry.voteSummary}

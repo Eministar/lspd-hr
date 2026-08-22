@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { summarizeRankChangeVotes } from '@/lib/rank-change-votes'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let currentUser
@@ -22,12 +23,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       createdBy: { select: { displayName: true } },
       entries: {
         include: {
-          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, status: true } },
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true, discordId: true, status: true } },
           currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           createdBy: { select: { id: true, displayName: true } },
           executedBy: { select: { id: true, displayName: true } },
           votes: { select: { userId: true, value: true } },
+          _count: { select: { comments: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -35,12 +37,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!list) return error('Liste nicht gefunden', 404)
+  const avatarUrls = await resolveOfficerAvatarUrls(list.entries.map((entry) => entry.officer))
   return success({
     ...list,
     entries: list.entries.map((entry) => {
-      const { votes, ...entryWithoutVotes } = entry
+      const { votes, _count, ...entryWithoutVotes } = entry
       return {
         ...entryWithoutVotes,
+        officer: {
+          ...entry.officer,
+          avatarUrl: officerAvatarUrl(entry.officer, avatarUrls),
+        },
+        commentCount: _count.comments,
         voteSummary: summarizeRankChangeVotes(votes, currentUser.id),
       }
     }),

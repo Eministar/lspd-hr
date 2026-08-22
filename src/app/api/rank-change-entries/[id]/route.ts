@@ -11,8 +11,31 @@ import {
   snapshotsEqual,
   validateRankChangeDesiredState,
 } from '@/lib/rank-change-entry'
+import { officerAvatarUrl, resolveOfficerAvatarUrls } from '@/lib/officer-avatar'
+import { storedDiscordAvatarUrl } from '@/lib/discord-auth'
 
-const personSelect = { id: true, displayName: true, discordId: true } as const
+const personSelect = {
+  id: true,
+  displayName: true,
+  discordId: true,
+  discordAvatar: true,
+  discordDiscriminator: true,
+} as const
+
+function publicPerson(person: {
+  id: string
+  displayName: string
+  discordId: string | null
+  discordAvatar: string | null
+  discordDiscriminator: string | null
+} | null) {
+  return person ? {
+    id: person.id,
+    displayName: person.displayName,
+    discordId: person.discordId,
+    avatarUrl: storedDiscordAvatarUrl(person),
+  } : null
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -48,18 +71,35 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     ])
     if (!entry) return error('Rangänderung nicht gefunden', 404)
 
-    const elevated = hasPermission(user, 'rank-changes:manage')
+    const elevated = hasPermission(user, 'rank-changes:full-access')
     const isCreator = entry.createdById === user.id
     const mutable = !entry.executed && entry.list.status !== 'COMPLETED'
+    const avatarUrls = await resolveOfficerAvatarUrls([entry.officer])
 
     return success({
       entry: {
         ...entry,
+        officer: {
+          ...entry.officer,
+          avatarUrl: officerAvatarUrl(entry.officer, avatarUrls),
+        },
+        createdBy: publicPerson(entry.createdBy),
+        executedBy: publicPerson(entry.executedBy),
         votes: undefined,
+        comments: entry.comments.map((comment) => ({
+          ...comment,
+          author: publicPerson(comment.author),
+        })),
         voteSummary: summarizeRankChangeVotes(entry.votes, user.id),
         proposals: entry.proposals.map((proposal) => ({
           ...proposal,
+          author: publicPerson(proposal.author),
+          reviewedBy: publicPerson(proposal.reviewedBy),
           isStale: proposal.baseRevision !== entry.revision,
+        })),
+        history: entry.history.map((record) => ({
+          ...record,
+          actor: publicPerson(record.actor),
         })),
       },
       ranks,
@@ -91,7 +131,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     if (!entry) return error('Rangänderung nicht gefunden', 404)
 
-    const elevated = hasPermission(user, 'rank-changes:manage')
+    const elevated = hasPermission(user, 'rank-changes:full-access')
     if (entry.createdById !== user.id && !elevated) return error('Du kannst diesen Eintrag nur als Änderung vorschlagen', 403)
     if (entry.executed || entry.list.status === 'COMPLETED') return error('Dieser Eintrag kann nicht mehr bearbeitet werden', 409)
 

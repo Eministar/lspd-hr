@@ -33,6 +33,7 @@ import { hasPermission } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import {
   PENAL_GRADES,
   SANCTION_CATALOG,
@@ -72,6 +73,7 @@ interface OfficerNote {
 }
 interface OfficerDetail {
   id: string
+  avatarUrl: string | null
   badgeNumber: string
   firstName: string
   lastName: string
@@ -726,6 +728,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}`}
         action={
           <div className="flex gap-1.5 flex-wrap">
+            <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank?.color} className="mr-1" />
             <Link href="/officers">
               <Button variant="ghost" size="sm"><ArrowLeft size={15} strokeWidth={1.75} /> Zurück</Button>
             </Link>
