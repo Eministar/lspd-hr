@@ -130,7 +130,7 @@ export async function undoPromotionListEntry(
   queueDiscordHrEvent({
     type: 'update',
     title: `Beförderung rückgängig: ${entry.officer.firstName} ${entry.officer.lastName}`,
-    description: `Beförderung via Liste **${entry.list.name}** wurde rückgängig gemacht.`,
+    description: `Die zuvor im Rahmen der Liste **${entry.list.name}** vorgenommene Beförderung wurde zurückgenommen.`,
     officer: {
       ...entry.officer,
       badgeNumber: restoreBadgeNumber,

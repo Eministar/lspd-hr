@@ -53,7 +53,7 @@ export function componentMessage(
 }
 
 export function markdownHeader(icon: string, title: string, subject?: string | null) {
-  return `# \`${icon}\` ${title}${subject ? ` · ${subject}` : ''}`
+  return `# ${icon} ${title}${subject ? ` · ${subject}` : ''}`
 }
 
 export function markdownRows(rows: Array<{ label: string; value: string | null | undefined }>) {

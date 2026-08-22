@@ -202,7 +202,7 @@ export default function SettingsPage() {
   const publishDutyEmbed = async () => {
     try {
       await execute('/api/duty-times/discord-message', { method: 'POST' })
-      addToast({ type: 'success', title: 'Dienstzeiten-Embed aktualisiert' })
+      addToast({ type: 'success', title: 'Discord-Dienststatus aktualisiert' })
       discordInitialized.current = false
       await refetchDiscord()
     } catch (err) {
@@ -213,7 +213,7 @@ export default function SettingsPage() {
   const publishAbsenceEmbed = async () => {
     try {
       await execute('/api/absences/discord-message', { method: 'POST' })
-      addToast({ type: 'success', title: 'Abmeldungs-Embed aktualisiert' })
+      addToast({ type: 'success', title: 'Discord-Abmeldungen aktualisiert' })
       discordInitialized.current = false
       await refetchDiscord()
     } catch (err) {
@@ -626,7 +626,7 @@ export default function SettingsPage() {
                     options={channelOptions}
                 />
                 <p className="text-[11px] text-[#5c728a] mt-1.5">
-                  Channel für manuelle Changelog-Embeds. Leer lassen, um den Ankündigungs-Channel zu nutzen.
+                  Channel für Update-Mitteilungen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
                 </p>
               </div>
               <div className="sm:col-span-2">
@@ -681,7 +681,7 @@ export default function SettingsPage() {
                     options={roleOptions}
                 />
                 <p className="text-[11px] text-[#5c728a] mt-1.5">
-                  Diese Rolle wird in Sanktions-Embeds als Human Resources erwähnt.
+                  Diese Rolle wird in Mitteilungen zu Sanktionen als Human Resources erwähnt.
                 </p>
               </div>
               <div className="sm:col-span-2">

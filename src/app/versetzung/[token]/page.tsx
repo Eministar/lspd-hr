@@ -6,12 +6,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   FileSignature,
-  Loader2,
   Lock,
   Printer,
   Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PdCloudLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { TransferDocument, type TransferDocumentData } from '@/components/transfers/transfer-document'
@@ -196,7 +196,7 @@ export default function TransferRequestPage() {
     return (
       <Shell>
         <div className="flex flex-col items-center gap-3 py-24 text-[#8ea4bd]">
-          <Loader2 size={26} className="animate-spin text-[#d4af37]" />
+          <PdCloudLoader />
           <p className="text-[13px]">Antrag wird geladen…</p>
         </div>
       </Shell>

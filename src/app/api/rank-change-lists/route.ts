@@ -5,10 +5,12 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { summarizeRankChangeVotes } from '@/lib/rank-change-votes'
 
 export async function GET(req: NextRequest) {
+  let currentUser
   try {
-    await requirePermission('rank-changes:view')
+    currentUser = await requirePermission('rank-changes:view')
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -31,6 +33,7 @@ export async function GET(req: NextRequest) {
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true, badgeMin: true, badgeMax: true } },
           createdBy: { select: { id: true, displayName: true } },
           executedBy: { select: { id: true, displayName: true } },
+          votes: { select: { userId: true, value: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -54,7 +57,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return success(lists)
+  const listsWithVoteSummaries = lists.map((list) => ({
+    ...list,
+    entries: list.entries.map((entry) => {
+      const { votes, ...entryWithoutVotes } = entry
+      return {
+        ...entryWithoutVotes,
+        voteSummary: summarizeRankChangeVotes(votes, currentUser.id),
+      }
+    }),
+  }))
+
+  return success(listsWithVoteSummaries)
 }
 
 export async function POST(req: NextRequest) {

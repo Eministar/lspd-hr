@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     queueDiscordHrEvent({
       type: 'update',
       title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
-      description: 'Officer wurde über das Dashboard abgemeldet.',
+      description: 'Für den genannten Zeitraum liegt eine Abmeldung vor.',
       officer: result.officer,
       actor: user,
       fields: [

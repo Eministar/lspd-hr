@@ -111,7 +111,7 @@ function sanctionDiscordFields(sanction: SanctionWithRelations): DiscordField[] 
   const fields: DiscordField[] = [
     { name: 'Grund', value: sanction.reason, inline: false },
     {
-      name: 'Penal Grade',
+      name: 'Einstufung',
       value: `\`${sanction.penalGrade}\` · ${penalGradeLabel(sanction.penalGrade)}`,
       inline: true,
     },
@@ -133,7 +133,7 @@ export async function syncSanctionDiscordMessage(
   const event = {
     type: 'sanction' as const,
     title: `Sanktion: ${sanctionOfficerName(sanction)}`,
-    description: options?.description,
+    description: [options?.description, options?.note].filter(Boolean).join('\n') || undefined,
     officer: snapshot,
     actor: sanction.issuedBy ?? undefined,
     fields: sanctionDiscordFields(sanction),
@@ -159,7 +159,7 @@ export async function syncSanctionDiscordMessage(
     }
     return message
   } catch (error) {
-    console.error('[Sanctions] Discord-Embed konnte nicht synchronisiert werden:', error)
+    console.error('[Sanctions] Discord-Mitteilung konnte nicht synchronisiert werden:', error)
     return null
   }
 }

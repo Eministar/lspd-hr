@@ -41,7 +41,10 @@ export const AUDIT_LOG_GROUPS = {
   },
   system: {
     label: 'System & API',
-    actions: ['API_TOKEN_CREATED', 'API_TOKEN_REVOKED', 'API_TOKEN_HARD_DELETED', 'API_TOKENS_LIMIT_UPDATED'],
+    actions: [
+      'API_TOKEN_CREATED', 'API_TOKEN_REVOKED', 'API_TOKEN_HARD_DELETED', 'API_TOKENS_LIMIT_UPDATED',
+      'CHANGE_UNDONE', 'CHANGE_REDONE',
+    ],
   },
 } as const
 

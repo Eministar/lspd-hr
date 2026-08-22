@@ -120,9 +120,7 @@ export async function POST(req: NextRequest) {
     queueDiscordHrEvent({
       type: 'promotion',
       title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
-      description: note
-        ? `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} durchgeführt.\n*Notiz:* ${note}`
-        : `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} erfolgreich durchgeführt.`,
+      description: note ? `**Anmerkung:** ${note}` : undefined,
       officer: updatedOfficer,
       actor: user,
       fields: [

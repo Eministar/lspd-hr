@@ -8,6 +8,8 @@ import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
 import { resolveUserDisplayName } from './user-display-name'
 import { officerUnitKeys } from './officer-units'
+import { activateChangeTracking } from './change-history-context'
+import { describeTrackedChange, pathHasExternalSideEffects } from './change-history-tracking'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
@@ -81,6 +83,38 @@ function extractBearer(authorization: string | null | undefined): string | null 
   return match ? match[1] : null
 }
 
+async function attachRequestedChangeTracking(
+  auth: CurrentAuth,
+  headerStore: { get(name: string): string | null },
+): Promise<CurrentAuth> {
+  const changeSetId = headerStore.get('x-change-set-id')?.trim() ?? ''
+  if (!/^[a-zA-Z0-9_-]{16,64}$/.test(changeSetId)) return auth
+
+  const method = (headerStore.get('x-change-method') || 'PATCH').toUpperCase().slice(0, 10)
+  const path = (headerStore.get('x-change-path') || '/api').slice(0, 2_000)
+  const existing = await prisma.changeSet.findUnique({
+    where: { id: changeSetId },
+    select: { userId: true, status: true },
+  })
+
+  if (existing && (existing.userId !== auth.user.id || existing.status !== 'PENDING')) return auth
+  if (!existing) {
+    await prisma.changeSet.create({
+      data: {
+        id: changeSetId,
+        userId: auth.user.id,
+        method,
+        path,
+        label: describeTrackedChange(method, path),
+        hasExternalSideEffects: pathHasExternalSideEffects(path),
+      },
+    })
+  }
+
+  activateChangeTracking({ changeSetId, userId: auth.user.id })
+  return auth
+}
+
 /**
  * Authentifiziert aus Cookie ODER `Authorization: Bearer lspd_…`.
  * Liefert `null`, wenn nichts Authentifiziertes gefunden wurde.
@@ -136,7 +170,7 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
 
       if (!effectiveUser) return null
 
-      return {
+      return attachRequestedChangeTracking({
         kind: 'api',
         user: effectiveUser,
         api: {
@@ -147,7 +181,7 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
           scopes: effectiveScopes,
         },
         impersonation,
-      }
+      }, headerStore)
     }
     return null
   }
@@ -157,7 +191,7 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
     const payload = verifyToken(cookieToken)
     if (payload) {
       const user = await loadUserForAuth(payload.userId)
-      if (user) return { kind: 'cookie', user }
+      if (user) return attachRequestedChangeTracking({ kind: 'cookie', user }, headerStore)
     }
   }
 

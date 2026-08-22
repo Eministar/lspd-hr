@@ -94,7 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     queueDiscordHrEvent({
       type: 'promotion',
       title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
-      description: `${targetRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Roster-Verschiebung.`,
+      description: 'Die Dienstgradänderung wurde im Rahmen der aktuellen Personalplanung vorgenommen.',
       officer: updatedWithTrainingRows,
       actor: user,
       fields: [

@@ -327,9 +327,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           : rankChanged
             ? 'Rang geändert'
             : 'Unit-Zuordnung geändert',
-        description: unitsChanged
-          ? 'Die organisatorische Zuordnung wurde im HR-Panel aktualisiert.'
-          : 'Der Rang wurde im HR-Panel aktualisiert.',
+        description: 'Die neue dienstliche Einordnung gilt ab sofort.',
         officer: updated,
         actor: user,
         fields: [

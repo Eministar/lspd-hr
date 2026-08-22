@@ -70,7 +70,6 @@ export async function POST(req: NextRequest) {
     queueDiscordHrEvent({
       type: 'termination',
       title: `Kündigung: ${officer.firstName} ${officer.lastName}`,
-      description: 'Dienstverhältnis beendet. Zugeordnete LSPD-Rollen wurden entfernt.',
       officer,
       actor: user,
       fields: [

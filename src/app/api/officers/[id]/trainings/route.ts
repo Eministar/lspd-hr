@@ -130,7 +130,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       queueDiscordHrEvent({
         type: 'training',
         title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
-        description: 'Ausbildungsstand wurde aktualisiert.',
         officer: officerWithTrainingRows,
         actor: user,
         trainingChanges,

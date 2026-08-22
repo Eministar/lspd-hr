@@ -8,6 +8,19 @@ import { isTaskModule, taskModuleOrNull, requireCalendarModuleManage, requireCal
 const EVENT_TYPES = new Set(['TRAINING', 'MEETING', 'ACADEMY', 'EXAM', 'HR_DEADLINE', 'SRU_TRAINING', 'SRU_OPERATION', 'AIR_SUPPORT_TRAINING', 'AIR_SUPPORT_OPERATION', 'OTHER'])
 type CalendarEventTypeValue = 'TRAINING' | 'MEETING' | 'ACADEMY' | 'EXAM' | 'HR_DEADLINE' | 'SRU_TRAINING' | 'SRU_OPERATION' | 'AIR_SUPPORT_TRAINING' | 'AIR_SUPPORT_OPERATION' | 'OTHER'
 
+const EVENT_TYPE_LABELS: Record<CalendarEventTypeValue, string> = {
+  TRAINING: 'Training',
+  MEETING: 'Besprechung',
+  ACADEMY: 'Recruitment & Training',
+  EXAM: 'Prüfung',
+  HR_DEADLINE: 'HR-Frist',
+  SRU_TRAINING: 'S.R.U.-Training',
+  SRU_OPERATION: 'S.R.U.-Einsatz',
+  AIR_SUPPORT_TRAINING: 'Air-Support-Training',
+  AIR_SUPPORT_OPERATION: 'Air-Support-Einsatz',
+  OTHER: 'Sonstiges',
+}
+
 function eventType(value: string): CalendarEventTypeValue | null {
   return EVENT_TYPES.has(value) ? value as CalendarEventTypeValue : null
 }
@@ -112,11 +125,11 @@ export async function POST(req: NextRequest) {
       queueDiscordHrEvent({
         type: 'update',
         title: `Termin: ${event.title}`,
-        description: description || 'Neuer Termin im HR-Kalender.',
+        description: description || 'Wir möchten Sie über den nachfolgend aufgeführten Termin informieren.',
         officer: event.officer ?? undefined,
         actor: user,
         fields: [
-          { name: 'Art', value: event.type, inline: true },
+          { name: 'Art', value: EVENT_TYPE_LABELS[event.type], inline: true },
           { name: 'Start', value: startsAt.toLocaleString('de-DE'), inline: true },
           ...(endsAt ? [{ name: 'Ende', value: endsAt.toLocaleString('de-DE'), inline: true }] : []),
           ...(location ? [{ name: 'Ort', value: location, inline: true }] : []),

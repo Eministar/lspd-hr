@@ -146,8 +146,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         type: 'promotion',
         title: `${action}: ${entry.officer.firstName} ${entry.officer.lastName}`,
         description: entry.note
-          ? `${action} via Liste **${list.name}**.\n*Notiz:* ${entry.note}`
-          : `${action} via Liste **${list.name}**.`,
+          ? `Die ${action.toLocaleLowerCase('de-DE')} wurde im Rahmen der Liste **${list.name}** vorgenommen.\n\n**Anmerkung:** ${entry.note}`
+          : `Die ${action.toLocaleLowerCase('de-DE')} wurde im Rahmen der Liste **${list.name}** vorgenommen.`,
         officer: {
           ...entry.officer,
           badgeNumber: entry.newBadgeNumber || entry.officer.badgeNumber,

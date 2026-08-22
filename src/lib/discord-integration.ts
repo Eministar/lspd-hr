@@ -11,7 +11,6 @@ import {
   linkButton,
   markdownHeader,
   markdownMeta,
-  markdownQuote,
   markdownRows,
   markdownTextDisplays,
 } from './discord-components'
@@ -1361,13 +1360,11 @@ function cleanUpdateLines(lines: string[] | undefined) {
     .filter(Boolean)
 }
 
-function updateDiffBlock(name: string, prefix: '+' | '!' | '-', lines: string[]): string | null {
+function updateAnnouncementBlock(name: string, lines: string[]): string | null {
   const cleaned = cleanUpdateLines(lines)
   if (cleaned.length === 0) return null
-  const value = cleaned.map((line) => `${prefix} ${line}`).join('\n')
-  const maxContentLength = 3000 - '```diff\n\n```'.length
-  const content = truncate(value, maxContentLength)
-  return `### ${name}\n\`\`\`diff\n${content}\n\`\`\``
+  const content = truncate(cleaned.map((line) => `- ${line}`).join('\n'), 3000)
+  return `### ${name}\n${content}`
 }
 
 export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnouncementInput) {
@@ -1380,9 +1377,9 @@ export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnounce
   if (!title) throw new Error('Titel ist erforderlich')
 
   const blocks = [
-    updateDiffBlock('Neu', '+', input.added ?? []),
-    updateDiffBlock('Geändert', '!', input.changed ?? []),
-    updateDiffBlock('Entfernt', '-', input.removed ?? []),
+    updateAnnouncementBlock('Neue Funktionen', input.added ?? []),
+    updateAnnouncementBlock('Verbesserungen', input.changed ?? []),
+    updateAnnouncementBlock('Nicht mehr enthalten', input.removed ?? []),
   ].filter((block): block is string => Boolean(block))
 
   if (blocks.length === 0) {
@@ -1396,9 +1393,11 @@ export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnounce
 
   return postChannelMessage(channelId, componentMessage(markdownTextDisplays([
     markdownHeader('📢', truncate(title, 240), version ? `v${version.replace(/^v/i, '')}` : null),
-    note ? markdownQuote(note) : null,
+    'Sehr geehrte Kolleginnen und Kollegen,\n\nmit diesem Update stehen die nachfolgenden Neuerungen und Verbesserungen zur Verfügung.',
+    note || null,
     ...blocks,
-    markdownMeta([`Gesendet von ${actorLabel}`, discordTimestamp(now, 'f')]),
+    'Mit freundlichen Grüßen\n**Systemadministration**\nLos Santos Police Department',
+    markdownMeta([input.actor ? `Im Auftrag: ${actorLabel}` : null, discordTimestamp(now, 'f')]),
   ])))
 }
 
@@ -1457,12 +1456,16 @@ function trainingRoleValue(config: DiscordConfig, change: DiscordTrainingChange)
   return roleId ? `<@&${roleId}>` : change.label
 }
 
-function trainingStatusLabel(completed: boolean) {
-  return completed ? '✅' : '❌'
-}
-
 function trainingChangeLine(change: DiscordTrainingChange, config: DiscordConfig) {
-  return `- ${trainingRoleValue(config, change)}: \`${trainingStatusLabel(change.previousCompleted ?? false)} → ${trainingStatusLabel(change.completed)}\``
+  const previous = change.previousCompleted ?? false
+  const wording = change.completed
+    ? previous
+      ? 'ist weiterhin als abgeschlossen vermerkt'
+      : 'wurde als erfolgreich abgeschlossen eingetragen'
+    : previous
+      ? 'wird nicht mehr als abgeschlossen geführt'
+      : 'ist derzeit noch nicht abgeschlossen'
+  return `- ${trainingRoleValue(config, change)} ${wording}.`
 }
 
 async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig) {
@@ -1482,29 +1485,52 @@ async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig)
     const roleId = snowflake(config.unitRoleMap[key])
     return roleId ? `<@&${roleId}>` : `**${namesByKey.get(key) ?? key}**`
   }
-  const unitCount = (count: number) => `${count} ${count === 1 ? 'Unit' : 'Units'}`
-  const unitLines = (unitKeys: string[]) => unitKeys.map((key, index) => (
-    `\`${String(index + 1).padStart(2, '0')}\` ${unitLabel(key)}`
-  ))
-  const changeLines = (unitKeys: string[], prefix: '+' | '-') => unitKeys.map((key) => `${prefix} ${unitLabel(key)}`)
-  const section = (title: string, lines: string[], empty: string) => [
-    `**${title}**`,
-    ...(lines.length > 0 ? lines : [empty]).map((line) => `> ${line}`),
-  ].join('\n')
+  const list = (unitKeys: string[]) => unitKeys.map(unitLabel).join(', ')
+  const details = [
+    added.length ? `- **Neu zugeordnet:** ${list(added)}` : null,
+    removed.length ? `- **Nicht mehr zugeordnet:** ${list(removed)}` : null,
+    `- **Aktuelle Zuordnung:** ${change.current.length ? list(change.current) : 'keine Unit'}`,
+  ].filter((line): line is string => Boolean(line))
 
-  const deltaSections = added.length > 0 || removed.length > 0
-    ? [
-        section('Hinzugefügt', changeLines(added, '+'), 'Keine neuen Units'),
-        section('Entfernt', changeLines(removed, '-'), 'Keine entfernten Units'),
-      ]
-    : [section('Änderung', [], 'Keine Änderung an den Units')]
+  return `### Organisatorische Zuordnung\n${details.join('\n')}`
+}
 
-  return [
-    '### Unit-Zuordnung',
-    `\`${unitCount(change.previous.length)}\` vorher → \`${unitCount(change.current.length)}\` aktuell`,
-    ...deltaSections,
-    section('Aktuelle Zuordnung', unitLines(change.current), 'Keine Unit'),
-  ].join('\n\n')
+function polishedEventDescription(value: string | undefined) {
+  if (!value?.trim()) return ''
+  return value
+    .replace(/\bvia Discord-Command\b/gi, '')
+    .replace(/\bvia Discord\b/gi, '')
+    .replace(/\bvia Roster-Verschiebung\b/gi, 'im Rahmen der Dienstplanung')
+    .replace(/\bvia Liste\b/gi, 'im Rahmen der Liste')
+    .replace(/\büber das Dashboard\b/gi, '')
+    .replace(/\büber Discord\b/gi, '')
+    .replace(/\bim HR-Panel\b/gi, '')
+    .replace(/Zugeordnete LSPD-Rollen wurden entfernt\.?/gi, '')
+    .replace(/\s+([.,;:!?])/g, '$1')
+    .replace(/\(\s*\)/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim()
+}
+
+function officialEventIntroduction(type: keyof typeof EVENT_META, name: string) {
+  const subject = name ? ` **${name}**` : ''
+  switch (type) {
+    case 'hire':
+      return `wir freuen uns, bekannt geben zu dürfen, dass${subject} den Dienst beim Los Santos Police Department aufgenommen hat. Wir heißen das neue Mitglied herzlich willkommen und wünschen einen erfolgreichen Start.`
+    case 'promotion':
+      return `hiermit informieren wir über eine Änderung des Dienstgrades von${subject}. Die maßgeblichen Angaben finden Sie nachfolgend.`
+    case 'training':
+      return `der Ausbildungsstand von${subject} wurde aktualisiert. Die dokumentierte Änderung ist nachfolgend aufgeführt.`
+    case 'units':
+      return `die organisatorische Zuordnung von${subject} wurde angepasst. Die aktuelle Einteilung finden Sie nachfolgend.`
+    case 'sanction':
+      return `hiermit wird die nachfolgende dienstrechtliche Maßnahme gegenüber${subject} bekannt gegeben. Wir bitten um Beachtung der aufgeführten Vorgaben und Fristen.`
+    case 'termination':
+      return `hiermit teilen wir mit, dass das Dienstverhältnis von${subject} beendet wurde. Die maßgeblichen Angaben sind nachfolgend aufgeführt.`
+    case 'update':
+      return `hiermit informieren wir über eine aktuelle Personalangelegenheit${subject ? ` zu${subject}` : ''}.`
+  }
 }
 
 async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: DiscordConfig) {
@@ -1527,7 +1553,8 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
-    rows.push({ label: 'Officer', value: mention(officer.discordId) })
+    const linkedOfficer = snowflake(officer.discordId) ? mention(officer.discordId) : `**${officerDisplayName}**`
+    rows.push({ label: 'Name', value: linkedOfficer })
     rows.push({ label: 'Dienstnummer', value: `\`${dn}\`` })
     rows.push({ label: 'Rang', value: rankValue })
     if (event.type === 'hire') {
@@ -1540,7 +1567,7 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
   }
 
   const trainingBlock = event.type === 'training' && event.trainingChanges?.length
-    ? `### Ausbildungen\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
+    ? `### Dokumentierter Ausbildungsstand\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
     : null
   const unitsBlock = event.unitChange
     ? await unitChangeBlock(event.unitChange, config)
@@ -1551,17 +1578,28 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
   )
   const pingLine = mentionIds.length ? mentionIds.map((id) => `<@${id}>`).join(' ') : null
   const allowedMentions = mentionIds.length ? { users: mentionIds } : undefined
+  const salutation = event.type === 'sanction' && mentionIds.length === 1
+    ? `Guten Tag <@${mentionIds[0]}>,`
+    : 'Sehr geehrte Kolleginnen und Kollegen,'
+  const description = polishedEventDescription(event.description)
+  const letter = [
+    salutation,
+    officialEventIntroduction(event.type, officerDisplayName),
+    description || null,
+  ].filter((part): part is string => Boolean(part)).join('\n\n')
+  const closing = 'Mit freundlichen Grüßen\n**Human Resources Department**\nLos Santos Police Department'
 
   return componentMessage(
     markdownTextDisplays([
       markdownHeader(meta.icon, customHeading, headingSubject),
-      pingLine,
-      event.description ? markdownQuote(event.description) : null,
-      rows.length ? markdownRows(rows) : null,
+      event.type === 'sanction' ? null : pingLine,
+      letter,
+      rows.length ? `### Angaben zur Mitteilung\n${markdownRows(rows)}` : null,
       trainingBlock,
       unitsBlock,
+      closing,
       markdownMeta([
-        `${event.type === 'sanction' ? 'Ausgestellt' : 'Bearbeitet'} von ${actorLabel}`,
+        event.actor ? `Im Auftrag: ${actorLabel}` : null,
         discordTimestamp(now, 'f'),
       ]),
     ]),
@@ -1622,25 +1660,28 @@ function isClosedDirectMessage(error: unknown) {
 }
 
 function buildContractMessagePayload(input: DiscordContractMessageInput, options: { mentionUser: boolean }) {
-  const heading = input.reminder ? 'Erinnerung: Arbeitsvertrag' : 'Arbeitsvertrag unterschreiben'
+  const heading = input.reminder ? 'Erinnerung zu Ihrem Arbeitsvertrag' : 'Ihr Arbeitsvertrag'
   const rows: Array<{ label: string; value: string }> = []
   if (input.badgeNumber) rows.push({ label: 'Dienstnummer', value: `\`${input.badgeNumber}\`` })
   if (input.rankName) rows.push({ label: 'Vorgesehener Rang', value: input.rankName })
   rows.push({ label: 'Vertrag', value: input.contractTitle })
 
   const mentionId = options.mentionUser ? snowflake(input.discordId) : ''
+  const recipient = mentionId ? `<@${mentionId}>` : `**${input.officerName}**`
+  const introduction = input.reminder
+    ? 'wir möchten Sie freundlich daran erinnern, den bereitgestellten Arbeitsvertrag zu prüfen und zu unterschreiben. Erst danach kann Ihre Einstellung vollständig abgeschlossen werden.'
+    : 'für den Abschluss Ihrer Einstellung haben wir Ihren persönlichen Arbeitsvertrag vorbereitet. Bitte lesen Sie das Dokument sorgfältig, ergänzen Sie die erforderlichen Angaben und unterzeichnen Sie es anschließend.'
 
   return componentMessage(
     [
       ...markdownTextDisplays([
-        markdownHeader('📝', heading, input.officerName),
-        mentionId ? `<@${mentionId}>` : null,
-        markdownQuote(
-          'Damit deine Einstellung abgeschlossen werden kann, musst du den Arbeitsvertrag noch lesen, ausfüllen und unterschreiben. Der Link unten gehört nur dir – bitte nicht weitergeben.',
-        ),
-        input.note ? markdownQuote(input.note) : null,
+        markdownHeader('📝', heading),
+        `Guten Tag ${recipient},\n\n${introduction}`,
+        input.note ? `**Zusätzlicher Hinweis:** ${input.note}` : null,
+        '### Angaben zum Vertrag',
         markdownRows(rows),
-        markdownMeta(['Ohne unterschriebenen Vertrag kann die Einstellung nicht abgeschlossen werden']),
+        'Mit freundlichen Grüßen\n**Human Resources Department**\nLos Santos Police Department',
+        markdownMeta(['Dieser Link ist persönlich und darf nicht weitergegeben werden']),
       ]),
       actionRow([linkButton('Vertrag öffnen & unterschreiben', input.contractUrl)]),
     ],
@@ -1773,23 +1814,21 @@ async function dutyStatusPayload() {
 
   const summary = markdownRows([
     { label: 'Im Dienst', value: `\`${snapshot.activeCount}\`` },
-    { label: 'Spielzeit diese Woche', value: `\`${formatDuration(snapshot.totalWeekDurationMs)}\`` },
+    { label: 'Dienstzeit dieser Woche', value: `\`${formatDuration(snapshot.totalWeekDurationMs)}\`` },
   ])
   const listParts: string[] = []
 
   if (visible.length === 0) {
-    listParts.push('> Niemand ist aktuell als Police online.')
+    listParts.push('> Derzeit ist niemand im Dienst.')
   } else {
     const lines = visible.map((row, index) => {
       const num = String(index + 1).padStart(2, '0')
       const active = row.activePlaySession
-      const player = row.currentPlayer
       const since = active?.startedAt ? discordTimestamp(active.startedAt, 'R') : '—'
       const current = formatDuration(active?.currentDurationMs ?? 0)
       const dn = bracketedServiceNumber(officerBadge(row), prefix)
-      const ping = player?.ping !== null && player?.ping !== undefined ? `  \`${player.ping}ms\`` : ''
       return [
-        `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}  ·  **${current}**${ping}`,
+        `\`${num}\`  **${officerName(row)}**  ·  ${row.rank.name}  ·  **${current}**`,
         `> \`${dn}\`  ·  ${mention(row.discordId)}  ·  seit ${since}`,
       ].join('\n')
     })
@@ -1800,9 +1839,9 @@ async function dutyStatusPayload() {
   return componentMessage(markdownTextDisplays([
     markdownHeader('🚓', 'Dienststatus'),
     summary,
-    '### Aktive Police-Spieler',
+    '### Aktuell im Dienst',
     ...listParts,
-    markdownMeta(['Automatisch aktualisiert']),
+    markdownMeta([`Stand ${discordTimestamp(new Date(), 'f')}`]),
   ]))
 }
 
@@ -1870,9 +1909,9 @@ async function absenceStatusPayload() {
     ...markdownTextDisplays([
       markdownHeader('🌴', 'Abmeldungen'),
       markdownRows([{ label: 'Aktiv', value: `\`${absences.length}\`` }]),
-      '### Abgemeldete Officers',
+      '### Aktuelle Abmeldungen',
       ...listParts,
-      markdownMeta(['Automatisch aktualisiert']),
+      markdownMeta([`Stand ${discordTimestamp(new Date(), 'f')}`]),
     ]),
     actionRow([
           { type: 2, style: 1, custom_id: 'lspd_absence_create', label: 'Abmelden' },
@@ -1972,7 +2011,7 @@ export function queueDiscordHrEvent(event: Parameters<typeof sendDiscordHrEvent>
 export function queueDiscordDutyStatusUpdate() {
   ensureAbsenceExpiryChecker()
   void syncDiscordDutyStatusMessage().catch((error) => {
-    console.error('[DiscordIntegration] Dienstzeiten-Embed fehlgeschlagen:', error)
+    console.error('[DiscordIntegration] Dienststatus-Nachricht fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
       title: 'Discord-Dienstzeiten-Panel fehlgeschlagen',
       severity: 'error',
@@ -1985,7 +2024,7 @@ export function queueDiscordDutyStatusUpdate() {
 export function queueDiscordAbsenceStatusUpdate() {
   ensureAbsenceExpiryChecker()
   void syncDiscordAbsenceStatusMessage().catch((error) => {
-    console.error('[DiscordIntegration] Abmeldungs-Embed fehlgeschlagen:', error)
+    console.error('[DiscordIntegration] Abmeldungsnachricht fehlgeschlagen:', error)
     queueDiscordWebhookEvent({
       title: 'Discord-Abmeldungs-Panel fehlgeschlagen',
       severity: 'error',

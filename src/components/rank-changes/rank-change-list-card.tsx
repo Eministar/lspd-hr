@@ -2,10 +2,11 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Lock, LockOpen, Play, Undo2, X } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Lock, LockOpen, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import type { RankChangeVoteSummary, RankChangeVoteValue } from '@/lib/rank-change-votes'
 
 export type RankChangeDirection = 'PROMOTION' | 'DEMOTION'
 
@@ -20,6 +21,7 @@ export interface RankChangeEntry {
     executedAt: string | null
     createdBy: { id: string; displayName: string } | null
     executedBy: { id: string; displayName: string } | null
+    voteSummary: RankChangeVoteSummary
 }
 
 export interface RankChangeList {
@@ -89,6 +91,53 @@ function DirectionPill({ direction }: { direction: RankChangeDirection }) {
     )
 }
 
+function EntryVoteControls({
+                               summary,
+                               disabled,
+                               loading,
+                               onVote,
+                           }: {
+    summary: RankChangeVoteSummary
+    disabled: boolean
+    loading: boolean
+    onVote: (vote: RankChangeVoteValue) => void
+}) {
+    const buttons: { vote: RankChangeVoteValue; count: number; label: string; icon: typeof ThumbsUp }[] = [
+        { vote: 'UP', count: summary.upvotes, label: 'Upvote', icon: ThumbsUp },
+        { vote: 'DOWN', count: summary.downvotes, label: 'Downvote', icon: ThumbsDown },
+    ]
+
+    return (
+        <div className="inline-flex shrink-0 items-center gap-1 rounded-[8px] border border-[#1e3a5c]/55 bg-[#091b31]/70 p-1" aria-label="Abstimmung">
+            {buttons.map(({ vote, count, label, icon: Icon }) => {
+                const active = summary.currentUserVote === vote
+                const isUpvote = vote === 'UP'
+                return (
+                    <button
+                        key={vote}
+                        type="button"
+                        onClick={() => onVote(vote)}
+                        disabled={disabled || loading}
+                        aria-pressed={active}
+                        aria-label={`${label}: ${count} Stimme${count === 1 ? '' : 'n'}`}
+                        title={active ? `${label} entfernen` : `${label} abgeben`}
+                        className={cn(
+                            'inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-[6px] px-2 text-[11.5px] font-semibold tabular-nums transition-colors',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 disabled:cursor-not-allowed disabled:opacity-55',
+                            active && isUpvote && 'bg-[#34d399]/18 text-[#6ee7b7]',
+                            active && !isUpvote && 'bg-[#f87171]/18 text-[#fca5a5]',
+                            !active && 'text-[#7e93ab] hover:bg-[#17375f]/70 hover:text-white',
+                        )}
+                    >
+                        <Icon size={13} strokeWidth={active ? 2.5 : 2} />
+                        {count}
+                    </button>
+                )
+            })}
+        </div>
+    )
+}
+
 interface RankChangeListCardProps {
     list: RankChangeList
     /** Bereits gefilterte und sortierte Einträge; leer = kein Treffer im aktiven Filter. */
@@ -106,11 +155,13 @@ interface RankChangeListCardProps {
     onToggleSubmissions: () => void
     onDelete: () => void
     canDelete: boolean
+    onVote: (entry: RankChangeEntry, vote: RankChangeVoteValue) => void
+    votingEntryIds: ReadonlySet<string>
     footerActions?: ReactNode
 }
 
 export function RankChangeListCard({
-                                       list, entries, filtered, expanded, onToggle, canExecute, canManage, onExecute, onUndo, onRemove, onAddEntry, onToggleSubmissions, onDelete, canDelete,
+                                       list, entries, filtered, expanded, onToggle, canExecute, canManage, onExecute, onUndo, onRemove, onAddEntry, onToggleSubmissions, onDelete, canDelete, onVote, votingEntryIds,
                                    }: RankChangeListCardProps) {
     const total = list.entries.length
     const executed = list.entries.filter((e) => e.executed).length
@@ -198,7 +249,7 @@ export function RankChangeListCard({
                                     <div
                                         key={entry.id}
                                         className={cn(
-                                            'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border transition-colors',
+                                            'flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-[10px] border transition-colors',
                                             entry.executed
                                                 ? 'bg-[#0a1f30]/60 border-[#18385f]/30 opacity-80'
                                                 : 'bg-[#0f2340]/70 border-[#1e3a5c]/40 hover:border-[#234568]',
@@ -247,33 +298,41 @@ export function RankChangeListCard({
                                                 )}
                                             </p>
                                         </div>
-                                        {entry.executed ? (
-                                            <div className="flex items-center gap-2 shrink-0">
+                                        <div className="ml-auto flex shrink-0 items-center gap-2">
+                                            <EntryVoteControls
+                                                summary={entry.voteSummary}
+                                                disabled={entry.executed || isCompleted}
+                                                loading={votingEntryIds.has(entry.id)}
+                                                onVote={(vote) => onVote(entry, vote)}
+                                            />
+                                            {entry.executed ? (
+                                                <div className="flex items-center gap-2 shrink-0">
                       <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#34d399] bg-[#34d399]/12 px-2 py-1 rounded-[6px]">
                         ✓ Durchgeführt
                       </span>
-                                                {canExecute && direction === 'PROMOTION' && (
-                                                    <Button variant="secondary" size="sm" onClick={() => onUndo(entry)}>
-                                                        <Undo2 size={12} /> Rückgängig
+                                                    {canExecute && direction === 'PROMOTION' && (
+                                                        <Button variant="secondary" size="sm" onClick={() => onUndo(entry)}>
+                                                            <Undo2 size={12} /> Rückgängig
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ) : canExecute ? (
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <Button size="sm" variant={direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={() => onExecute(entry)}>
+                                                        <Play size={12} /> Durchführen
                                                     </Button>
-                                                )}
-                                            </div>
-                                        ) : canExecute ? (
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                <Button size="sm" variant={direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={() => onExecute(entry)}>
-                                                    <Play size={12} /> Durchführen
-                                                </Button>
-                                                {canManage && (
-                                                    <button
-                                                        onClick={() => onRemove(entry.id)}
-                                                        className="p-1.5 rounded-[6px] hover:bg-[#321218]/60 text-[#536b86] hover:text-[#fca5a5] transition-colors"
-                                                        title="Entfernen"
-                                                    >
-                                                        <X size={13} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ) : null}
+                                                    {canManage && (
+                                                        <button
+                                                            onClick={() => onRemove(entry.id)}
+                                                            className="p-1.5 rounded-[6px] hover:bg-[#321218]/60 text-[#536b86] hover:text-[#fca5a5] transition-colors"
+                                                            title="Entfernen"
+                                                        >
+                                                            <X size={13} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : null}
+                                        </div>
                                     </div>
                                 )
                             })}

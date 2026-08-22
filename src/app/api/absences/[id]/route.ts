@@ -30,7 +30,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     queueDiscordHrEvent({
       type: 'update',
       title: `Abmeldung beendet: ${cancelled.officer.firstName} ${cancelled.officer.lastName}`,
-      description: 'Die Abmeldung wurde im Dashboard beendet.',
+      description: 'Die Abmeldung wurde beendet. Der reguläre Dienststatus gilt wieder.',
       officer: cancelled.officer,
       actor: user,
       fields: [

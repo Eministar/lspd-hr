@@ -2,10 +2,12 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
+import { summarizeRankChangeVotes } from '@/lib/rank-change-votes'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let currentUser
   try {
-    await requirePermission('rank-changes:view')
+    currentUser = await requirePermission('rank-changes:view')
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
           createdBy: { select: { id: true, displayName: true } },
           executedBy: { select: { id: true, displayName: true } },
+          votes: { select: { userId: true, value: true } },
         },
         orderBy: { createdAt: 'asc' },
       },
@@ -32,7 +35,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   if (!list) return error('Liste nicht gefunden', 404)
-  return success(list)
+  return success({
+    ...list,
+    entries: list.entries.map((entry) => {
+      const { votes, ...entryWithoutVotes } = entry
+      return {
+        ...entryWithoutVotes,
+        voteSummary: summarizeRankChangeVotes(votes, currentUser.id),
+      }
+    }),
+  })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

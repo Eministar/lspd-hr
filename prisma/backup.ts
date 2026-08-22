@@ -23,8 +23,13 @@ type SnapshotData = {
   terminations: unknown[]
   notes: unknown[]
   auditLogs: unknown[]
+  changeSets: unknown[]
+  changeSetSnapshots: unknown[]
+  changeSetTargets: unknown[]
+  changeSetEntries: unknown[]
   rankChangeLists: unknown[]
   rankChangeListEntries: unknown[]
+  rankChangeVotes: unknown[]
   systemSettings: unknown[]
   taskLists: unknown[]
   tasks: unknown[]
@@ -62,11 +67,16 @@ const TABLES: { key: SnapshotKey; delegateNames: readonly string[] }[] = [
   { key: 'terminations', delegateNames: ['termination'] },
   { key: 'notes', delegateNames: ['note'] },
   { key: 'auditLogs', delegateNames: ['auditLog', 'auditlog'] },
+  { key: 'changeSets', delegateNames: ['changeSet', 'changeset'] },
+  { key: 'changeSetSnapshots', delegateNames: ['changeSetSnapshot', 'changesetsnapshot'] },
+  { key: 'changeSetTargets', delegateNames: ['changeSetTarget', 'changesettarget'] },
+  { key: 'changeSetEntries', delegateNames: ['changeSetEntry', 'changesetentry'] },
   { key: 'rankChangeLists', delegateNames: ['rankChangeList', 'rankchangelist'] },
   {
     key: 'rankChangeListEntries',
     delegateNames: ['rankChangeListEntry', 'rankchangelistentry', 'rankchangeentry'],
   },
+  { key: 'rankChangeVotes', delegateNames: ['rankChangeVote', 'rankchangevote'] },
   { key: 'systemSettings', delegateNames: ['systemSetting', 'systemsetting'] },
   { key: 'taskLists', delegateNames: ['taskList', 'tasklist'] },
   { key: 'tasks', delegateNames: ['task'] },

@@ -180,6 +180,7 @@ model User {
   createdLists             RankChangeList[]      @relation("ListCreator")
   rankChangeEntriesCreated RankChangeListEntry[] @relation("EntryCreator")
   rankChangeEntriesExecuted RankChangeListEntry[] @relation("EntryExecutor")
+  rankChangeVotes          RankChangeVote[]
   taskListsCreated         TaskList[]            @relation("TaskListCreator")
   tasksCreated             Task[]                @relation("TaskCreator")
   calendarEventsCreated    CalendarEvent[]       @relation("CalendarEventCreator")
@@ -212,6 +213,7 @@ model User {
   transferRequestsCreated  TransferRequest[]     @relation("TransferRequestCreator")
   transferRequestsSignedHr TransferRequest[]     @relation("TransferRequestHrSigner")
   transferRequestsSignedOf TransferRequest[]     @relation("TransferRequestOfficerSigner")
+  changeSets               ChangeSet[]
 }
 
 model UserGroupMembership {
@@ -823,6 +825,61 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
+model ChangeSet {
+  id                     String    @id
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label                  String
+  method                 String
+  path                   String    @db.Text
+  status                 String    @default("PENDING") // PENDING, APPLIED, UNDONE
+  hasExternalSideEffects Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  committedAt            DateTime?
+  undoneAt               DateTime?
+
+  snapshots ChangeSetSnapshot[]
+  targets   ChangeSetTarget[]
+  entries   ChangeSetEntry[]
+
+  @@index([userId, status, createdAt])
+}
+
+model ChangeSetSnapshot {
+  changeSetId String
+  changeSet   ChangeSet @relation(fields: [changeSetId], references: [id], onDelete: Cascade)
+  model       String
+  before      Json
+
+  @@id([changeSetId, model])
+}
+
+model ChangeSetTarget {
+  changeSetId String
+  changeSet   ChangeSet @relation(fields: [changeSetId], references: [id], onDelete: Cascade)
+  model       String
+  keyHash     String
+  recordKey   Json
+  before      Json
+
+  @@id([changeSetId, model, keyHash])
+}
+
+model ChangeSetEntry {
+  id          String    @id @default(cuid())
+  changeSetId String
+  changeSet   ChangeSet @relation(fields: [changeSetId], references: [id], onDelete: Cascade)
+  model       String
+  keyHash     String
+  recordKey   Json
+  before      Json
+  after       Json
+  sortOrder   Int
+
+  @@unique([changeSetId, model, keyHash])
+  @@index([changeSetId, sortOrder])
+}
+
 model RankChangeList {
   id          String   @id @default(cuid())
   name        String
@@ -862,8 +919,23 @@ model RankChangeListEntry {
   createdById    String?
   createdBy      User?          @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt      DateTime       @default(now())
+  votes          RankChangeVote[]
 
   @@unique([listId, officerId])
+}
+
+model RankChangeVote {
+  id        String              @id @default(cuid())
+  entryId   String
+  entry     RankChangeListEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([entryId, userId])
+  @@index([userId])
 }
 
 model SystemSetting {

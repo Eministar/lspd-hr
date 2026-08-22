@@ -471,6 +471,25 @@ export const ENDPOINTS: EndpointSpec[] = [
     },
   },
   {
+    id: 'vote-rank-change-entry',
+    method: 'PATCH',
+    path: '/rank-change-lists/{id}/entries/{entryId}/vote',
+    category: 'Promotions',
+    summary: 'Für Rangänderung abstimmen',
+    description: 'Setzt oder entfernt die eigene Up-/Down-Stimme für einen noch offenen Up- oder D-Rank.',
+    scope: 'rank-changes:view',
+    params: [
+      { name: 'id', in: 'path', required: true, description: 'Listen-ID', schema: { type: 'string' } },
+      { name: 'entryId', in: 'path', required: true, description: 'Eintrags-ID', schema: { type: 'string' } },
+    ],
+    body: {
+      description: 'Gewünschte eigene Stimme',
+      fields: [
+        { name: 'vote', type: 'string | null', required: true, description: 'UP, DOWN oder null zum Entfernen', enumValues: ['UP', 'DOWN'] },
+      ],
+    },
+  },
+  {
     id: 'execute-rank-change-list',
     method: 'POST',
     path: '/rank-change-lists/{id}/execute',
@@ -1238,6 +1257,33 @@ export const ENDPOINTS: EndpointSpec[] = [
     params: [{ name: 'id', in: 'path', required: true, description: 'Token-ID', schema: { type: 'string' } }],
   },
 
+  // ============ Change History ============
+  {
+    id: 'get-change-history',
+    method: 'GET',
+    path: '/change-history',
+    category: 'Change History',
+    summary: 'Undo-/Redo-Status abrufen',
+    description: 'Liefert die nächste rückgängig machbare und die nächste wiederholbare Änderung des angemeldeten Benutzers.',
+  },
+  {
+    id: 'undo-change',
+    method: 'POST',
+    path: '/change-history/undo',
+    category: 'Change History',
+    summary: 'Letzte Änderung rückgängig machen',
+    description: 'Stellt den Datenbankzustand vor der letzten eigenen Änderung wieder her. Bei zwischenzeitlich veränderten Daten wird mit `409 Conflict` abgebrochen.',
+    notes: ['Bereits versendete Discord-Nachrichten und andere externe Nebenwirkungen können nicht zurückgerufen werden.'],
+  },
+  {
+    id: 'redo-change',
+    method: 'POST',
+    path: '/change-history/redo',
+    category: 'Change History',
+    summary: 'Änderung wiederholen',
+    description: 'Wendet die zuletzt rückgängig gemachte eigene Änderung erneut an. Bei einem Konflikt wird nichts verändert.',
+  },
+
   // ============ Public ============
   {
     id: 'public-officers',
@@ -1414,6 +1460,7 @@ function buildOpenApiPaths(): Record<string, Record<string, unknown>> {
         '401': { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         '403': { description: 'Forbidden — fehlende Scopes', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         '404': { description: 'Not Found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        '409': { description: 'Conflict — Daten wurden zwischenzeitlich verändert', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         '500': { description: 'Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
       },
     }

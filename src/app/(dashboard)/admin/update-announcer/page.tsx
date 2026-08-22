@@ -48,7 +48,7 @@ export default function UpdateAnnouncerPage() {
 
   return (
     <div>
-      <PageHeader title="Update senden" description="Changelog-Embed im Discord Update-Channel veröffentlichen" />
+      <PageHeader title="Update senden" description="Eine verständliche Update-Mitteilung im Discord-Channel veröffentlichen" />
 
       <div className="max-w-4xl">
         <div className="glass-panel-elevated rounded-[14px] p-5">

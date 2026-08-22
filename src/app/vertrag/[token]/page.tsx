@@ -7,12 +7,12 @@ import {
   CheckCircle2,
   Eye,
   FileSignature,
-  Loader2,
   Lock,
   Printer,
   ShieldX,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PdCloudLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { ContractDocument, type ContractDocumentData } from '@/components/contracts/contract-document'
@@ -160,7 +160,7 @@ export default function ContractSigningPage() {
     return (
       <Shell>
         <div className="flex flex-col items-center gap-3 py-24 text-[#8ea4bd]">
-          <Loader2 size={26} className="animate-spin text-[#d4af37]" />
+          <PdCloudLoader />
           <p className="text-[13px]">Vertrag wird geladen…</p>
         </div>
       </Shell>

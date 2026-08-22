@@ -64,6 +64,8 @@ const actionLabels: Record<string, string> = {
   API_TOKEN_REVOKED: 'API-Token widerrufen',
   API_TOKEN_HARD_DELETED: 'API-Token gelöscht',
   API_TOKENS_LIMIT_UPDATED: 'API-Limit geändert',
+  CHANGE_UNDONE: 'Änderung rückgängig',
+  CHANGE_REDONE: 'Änderung wiederholt',
 }
 
 const groupChipStyles: Record<AuditLogGroupKey | 'other', string> = {

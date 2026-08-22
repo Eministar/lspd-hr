@@ -17,6 +17,7 @@ import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 import { displayBadgeNumber } from '@/lib/badge-number'
+import type { RankChangeVoteSummary, RankChangeVoteValue } from '@/lib/rank-change-votes'
 import {
   RankChangeListCard,
   entryDirection,
@@ -49,7 +50,7 @@ export default function RankChangeListsPage() {
   const canManage = hasPermission(user, 'rank-changes:manage')
   const canExecute = hasPermission(user, 'rank-change-lists:execute')
   const canDeleteLists = hasPermission(user, 'rank-change-lists:delete')
-  const { data: lists, loading, refetch } = useFetch<RankChangeList[]>(canView ? '/api/rank-change-lists' : null)
+  const { data: lists, loading, refetch, setData: setLists } = useFetch<RankChangeList[]>(canView ? '/api/rank-change-lists' : null)
   const { data: officers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
   const { data: ranks } = useFetch<Rank[]>(canManage ? '/api/ranks' : null)
   const { execute } = useApi()
@@ -60,6 +61,7 @@ export default function RankChangeListsPage() {
   const [executeEntry, setExecuteEntry] = useState<{ listId: string; entryId: string; name: string; direction: RankChangeDirection } | null>(null)
   const [undoEntry, setUndoEntry] = useState<{ listId: string; entryId: string; name: string } | null>(null)
   const [expandedLists, setExpandedLists] = useState<Set<string>>(new Set())
+  const [votingEntryIds, setVotingEntryIds] = useState<Set<string>>(new Set())
 
   const [listForm, setListForm] = useState({ name: '', description: '' })
   const [entryForm, setEntryForm] = useState({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
@@ -247,6 +249,38 @@ export default function RankChangeListsPage() {
     }
   }
 
+  const handleVote = async (listId: string, entry: RankChangeEntry, vote: RankChangeVoteValue) => {
+    if (votingEntryIds.has(entry.id)) return
+    const nextVote = entry.voteSummary.currentUserVote === vote ? null : vote
+    setVotingEntryIds((current) => new Set(current).add(entry.id))
+
+    try {
+      const summary = await execute(`/api/rank-change-lists/${listId}/entries/${entry.id}/vote`, {
+        method: 'PATCH',
+        body: JSON.stringify({ vote: nextVote }),
+      }) as RankChangeVoteSummary | null
+
+      if (summary) {
+        setLists((current) => current?.map((list) => (
+          list.id !== listId
+            ? list
+            : {
+                ...list,
+                entries: list.entries.map((row) => row.id === entry.id ? { ...row, voteSummary: summary } : row),
+              }
+        )) ?? null)
+      }
+    } catch (err) {
+      addToast({ type: 'error', title: 'Abstimmung fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setVotingEntryIds((current) => {
+        const next = new Set(current)
+        next.delete(entry.id)
+        return next
+      })
+    }
+  }
+
   const handleExecuteEntry = async () => {
     if (!executeEntry) return
     try {
@@ -427,6 +461,8 @@ export default function RankChangeListsPage() {
               }}
               onToggleSubmissions={() => handleToggleSubmissions(list)}
               onDelete={() => handleDeleteList(list.id)}
+              onVote={(entry, vote) => handleVote(list.id, entry, vote)}
+              votingEntryIds={votingEntryIds}
             />
           </motion.div>
         ))}

@@ -6,7 +6,7 @@ export async function POST() {
   try {
     await requirePermission('settings:manage')
     await syncDiscordDutyStatusMessage({ forceCreate: true })
-    return success({ message: 'Dienstzeiten-Embed aktualisiert' })
+    return success({ message: 'Discord-Dienststatus aktualisiert' })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

@@ -347,7 +347,8 @@ Status ändern (z. B. `PAID`, `ESCALATED`).
 Beförderungs-Historie.
 
 ### `GET /api/rank-change-lists` 🔒 `rank-changes:view`
-Drafts und abgeschlossene Listen.
+Drafts und abgeschlossene Listen. Jeder Eintrag enthält `voteSummary` mit
+`upvotes`, `downvotes` und `currentUserVote` (`UP`, `DOWN` oder `null`).
 
 ### `POST /api/rank-change-lists` 🔒 `rank-changes:manage`
 ```json
@@ -362,6 +363,12 @@ Drafts und abgeschlossene Listen.
   "newBadgeNumber": "2345",
   "note": "..."
 }
+```
+
+### `PATCH /api/rank-change-lists/{id}/entries/{entryId}/vote` 🔒 `rank-changes:view`
+Setzt die eigene Stimme auf einem offenen Up- oder D-Rank. Mit `null` wird sie entfernt.
+```json
+{ "vote": "UP" }
 ```
 
 ### `POST /api/rank-change-lists/{id}/execute` 🔒 `rank-change-lists:execute`
@@ -750,6 +757,21 @@ Liefert das aktuelle Token-Limit pro Benutzer.
 ```json
 { "maxPerUser": "unlimited" }
 ```
+
+---
+
+## Änderungshistorie
+
+### `GET /api/change-history` 🔒
+Liefert die nächste eigene Änderung für Rückgängig und Wiederholen.
+
+### `POST /api/change-history/undo` 🔒
+Macht die letzte eigene Datenänderung rückgängig. Falls die betroffenen Daten inzwischen anderweitig geändert wurden, antwortet die API mit `409 Conflict` und verändert nichts.
+
+### `POST /api/change-history/redo` 🔒
+Wiederholt die zuletzt rückgängig gemachte eigene Datenänderung.
+
+> Bereits versendete Discord-Nachrichten, Uploads und andere externe Nebenwirkungen können nicht zurückgerufen werden. Der wiederhergestellte Datenbankzustand wird jedoch erneut mit den relevanten Discord-Rollen und Statusanzeigen synchronisiert.
 
 ---
 

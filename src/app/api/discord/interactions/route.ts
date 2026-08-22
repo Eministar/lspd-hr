@@ -543,9 +543,7 @@ async function performPromotion(options: DiscordOption[] | undefined, actor: Ret
   queueDiscordHrEvent({
     type: 'promotion',
     title: `Rangänderung: ${officer.firstName} ${officer.lastName}`,
-    description: note
-      ? `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Discord-Command.\n*Notiz:* ${note}`
-      : `${newRank.sortOrder < officer.rank.sortOrder ? 'Beförderung' : 'Rangänderung'} via Discord-Command.`,
+    description: note ? `**Anmerkung:** ${note}` : undefined,
     officer: updated,
     actor,
     fields: [
@@ -582,7 +580,6 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
   queueDiscordHrEvent({
     type: 'training',
     title: `Ausbildung aktualisiert: ${officer.firstName} ${officer.lastName}`,
-    description: 'Ausbildungsstand wurde via Discord aktualisiert.',
     officer,
     actor,
     trainingChanges: [{
@@ -620,7 +617,7 @@ async function performUnit(options: DiscordOption[] | undefined, actor: ReturnTy
   queueDiscordHrEvent({
     type: 'units',
     title: `Unit-Zuordnung: ${officer.firstName} ${officer.lastName}`,
-    description: `Unit-Zuordnung via Discord-Command (${action}).`,
+    description: 'Die neue organisatorische Zuordnung gilt ab sofort.',
     officer: updated,
     actor,
     unitChange: { previous: current, current: next },
@@ -657,7 +654,6 @@ async function performTermination(options: DiscordOption[] | undefined, actor: R
   queueDiscordHrEvent({
     type: 'termination',
     title: `Kündigung: ${officer.firstName} ${officer.lastName}`,
-    description: 'Dienstverhältnis beendet. Zugeordnete LSPD-Rollen wurden entfernt.',
     officer,
     actor,
     fields: [{ name: 'Grund', value: reason, inline: false }],
@@ -706,7 +702,7 @@ async function performAbsence(
   queueDiscordHrEvent({
     type: 'update',
     title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
-    description: 'Officer wurde über Discord abgemeldet.',
+    description: 'Für den genannten Zeitraum liegt eine Abmeldung vor.',
     officer: result.officer,
     actor,
     fields: [
@@ -812,7 +808,7 @@ async function performAbsenceModal(interaction: DiscordInteraction) {
   queueDiscordHrEvent({
     type: 'update',
     title: `Abmeldung: ${officer.firstName} ${officer.lastName}`,
-    description: 'Officer wurde über Discord abgemeldet.',
+    description: 'Für den genannten Zeitraum liegt eine Abmeldung vor.',
     officer: result.officer,
     actor,
     fields: [
@@ -850,7 +846,7 @@ async function performAbsenceCancel(interaction: DiscordInteraction) {
   queueDiscordHrEvent({
     type: 'update',
     title: `Abmeldung beendet: ${updated.officer.firstName} ${updated.officer.lastName}`,
-    description: 'Officer hat die eigene Abmeldung über Discord beendet.',
+    description: 'Die Abmeldung wurde beendet. Der reguläre Dienststatus gilt wieder.',
     officer: updated.officer,
     actor,
   })

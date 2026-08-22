@@ -1,5 +1,6 @@
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
+import { completeMutationCapture, prepareMutationCapture, type SnapshotClient } from './change-history-tracking'
 
 // Server können je nach generiertem Prisma-Client camelCase oder lowercase Delegates typisieren.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,11 +15,21 @@ type PrismaClientCompat = PrismaClient & {
   promotionlog: CompatDelegate
   auditLog: CompatDelegate
   auditlog: CompatDelegate
+  changeSet: CompatDelegate
+  changeset: CompatDelegate
+  changeSetSnapshot: CompatDelegate
+  changesetsnapshot: CompatDelegate
+  changeSetTarget: CompatDelegate
+  changesettarget: CompatDelegate
+  changeSetEntry: CompatDelegate
+  changesetentry: CompatDelegate
   rankChangeList: CompatDelegate
   rankchangelist: CompatDelegate
   rankChangeListEntry: CompatDelegate
   rankchangelistentry: CompatDelegate
   rankchangeentry: CompatDelegate
+  rankChangeVote: CompatDelegate
+  rankchangevote: CompatDelegate
   systemSetting: CompatDelegate
   systemsetting: CompatDelegate
   taskList: CompatDelegate
@@ -58,11 +69,21 @@ const delegateAliases: Record<string, string> = {
   promotionlog: 'promotionLog',
   auditLog: 'auditlog',
   auditlog: 'auditLog',
+  changeSet: 'changeset',
+  changeset: 'changeSet',
+  changeSetSnapshot: 'changesetsnapshot',
+  changesetsnapshot: 'changeSetSnapshot',
+  changeSetTarget: 'changesettarget',
+  changesettarget: 'changeSetTarget',
+  changeSetEntry: 'changesetentry',
+  changesetentry: 'changeSetEntry',
   rankChangeList: 'rankchangelist',
   rankchangelist: 'rankChangeList',
   rankChangeListEntry: 'rankchangelistentry',
   rankchangelistentry: 'rankChangeListEntry',
   rankchangeentry: 'rankChangeListEntry',
+  rankChangeVote: 'rankchangevote',
+  rankchangevote: 'rankChangeVote',
   systemSetting: 'systemsetting',
   systemsetting: 'systemSetting',
   taskList: 'tasklist',
@@ -95,6 +116,7 @@ const delegateAliases: Record<string, string> = {
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  prismaTracked: PrismaClient | undefined
   prismaCompat: PrismaClientCompat | undefined
 }
 
@@ -171,7 +193,30 @@ function createPrismaCompatClient(client: PrismaClient): PrismaClientCompat {
   }) as PrismaClientCompat
 }
 
+function createTrackedPrismaClient(baseClient: PrismaClient): PrismaClient {
+  const snapshotClient = baseClient as unknown as SnapshotClient
+  return baseClient.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const capture = await prepareMutationCapture({
+            client: snapshotClient,
+            model,
+            operation,
+            args,
+          })
+          const result = await query(args)
+          await completeMutationCapture(snapshotClient, capture, result)
+          return result
+        },
+      },
+    },
+  }) as unknown as PrismaClient
+}
+
 /** Ein Client pro Node-Prozess (auch in Production), damit keine Verbindungsfluten entstehen. */
 const prismaClient = globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient())
+const trackedPrismaClient = globalForPrisma.prismaTracked
+  ?? (globalForPrisma.prismaTracked = createTrackedPrismaClient(prismaClient))
 export const prisma =
-  globalForPrisma.prismaCompat ?? (globalForPrisma.prismaCompat = createPrismaCompatClient(prismaClient))
+  globalForPrisma.prismaCompat ?? (globalForPrisma.prismaCompat = createPrismaCompatClient(trackedPrismaClient))
