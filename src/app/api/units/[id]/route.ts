@@ -2,13 +2,15 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { sanitizePermissions } from '@/lib/permissions'
+import { automaticPermissionsForRoleNames, sanitizePermissions } from '@/lib/permissions'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth(['ADMIN'], ['units:manage'])
     const { id } = await params
     const body = await req.json()
+    const existing = await prisma.unit.findUnique({ where: { id } })
+    if (!existing) return notFound('Unit')
 
     const data: Record<string, unknown> = {}
     if (typeof body.name === 'string') {
@@ -19,7 +21,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (typeof body.color === 'string' && body.color) data.color = body.color
     if (typeof body.sortOrder === 'number') data.sortOrder = body.sortOrder
     if (typeof body.active === 'boolean') data.active = body.active
-    if (Array.isArray(body.permissions)) data.permissions = sanitizePermissions(body.permissions)
+    if (Array.isArray(body.permissions)) {
+      data.permissions = Array.from(new Set([
+        ...sanitizePermissions(body.permissions),
+        ...automaticPermissionsForRoleNames([
+          existing.key,
+          typeof data.name === 'string' ? data.name : existing.name,
+        ]),
+      ]))
+    }
 
     const unit = await prisma.unit.update({ where: { id }, data })
     return success(unit)

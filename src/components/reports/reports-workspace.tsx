@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   CalendarClock,
   FileText,
@@ -71,7 +72,6 @@ export interface ReportRow {
 interface ReportsWorkspaceProps {
   canManage: boolean
   canDelete: boolean
-  onOpenPerson: (personId: string) => void
 }
 
 type StatusFilter = 'ALL' | 'OPEN' | ReportStatusValue
@@ -125,7 +125,7 @@ function reportHaystack(report: ReportRow) {
     .toLowerCase()
 }
 
-export function ReportsWorkspace({ canManage, canDelete, onOpenPerson }: ReportsWorkspaceProps) {
+export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps) {
   const { data: reports, loading, error: loadError, refetch } = useFetch<ReportRow[]>('/api/reports')
   const { data: people, refetch: refetchPeople } = useFetch<PersonSummary[]>('/api/person-files')
   const { execute } = useApi()
@@ -270,7 +270,6 @@ export function ReportsWorkspace({ canManage, canDelete, onOpenPerson }: Reports
                   key={report.id}
                   report={report}
                   active={activeId === report.id}
-                  onSelect={() => setSelectedId(report.id)}
                 />
               ))}
               {filtered.length === 0 && (
@@ -287,7 +286,6 @@ export function ReportsWorkspace({ canManage, canDelete, onOpenPerson }: Reports
               reportId={activeId}
               canManage={canManage}
               canDelete={canDelete}
-              onOpenPerson={onOpenPerson}
               onChanged={() => void refetch()}
               onDeleted={() => { setSelectedId(null); void refetch() }}
             />
@@ -377,22 +375,20 @@ export function ReportsWorkspace({ canManage, canDelete, onOpenPerson }: Reports
   )
 }
 
-function ReportDetail({
+export function ReportDetail({
   reportId,
   canManage,
   canDelete,
-  onOpenPerson,
   onChanged,
   onDeleted,
 }: {
   reportId: string
   canManage: boolean
   canDelete: boolean
-  onOpenPerson: (personId: string) => void
   onChanged: () => void
   onDeleted: () => void
 }) {
-  const { data: report, loading, refetch } = useFetch<ReportRow>(`/api/reports/${reportId}`)
+  const { data: report, loading, error, refetch } = useFetch<ReportRow>(`/api/reports/${reportId}`)
   const { execute } = useApi()
   const { addToast } = useToast()
   const [status, setStatus] = useState<ReportStatusValue>('RECORDED')
@@ -401,7 +397,7 @@ function ReportDetail({
 
   useEffect(() => {
     if (report) setStatus(report.status)
-  }, [report?.id, report?.status])
+  }, [report])
 
   const addUpdate = async () => {
     if (!report) return
@@ -436,7 +432,8 @@ function ReportDetail({
     }
   }
 
-  if (loading || !report) return <EmptyState title="Vorgang wird geladen…" hint="" />
+  if (loading) return <EmptyState title="Vorgang wird geladen…" hint="" />
+  if (error || !report) return <EmptyState title="Anzeige nicht gefunden" hint={error || 'Der Vorgang ist nicht mehr vorhanden.'} />
 
   const meta = REPORT_STATUS_META[report.status]
   const attachments = report.attachments ?? []
@@ -480,13 +477,11 @@ function ReportDetail({
         <PersonCard
           title="Anzeigenerstatter"
           person={report.complainant}
-          onOpen={onOpenPerson}
           showIdCard
         />
         <PersonCard
           title="Angezeigter"
           person={report.suspect}
-          onOpen={onOpenPerson}
         />
       </div>
 
@@ -572,12 +567,10 @@ function ReportDetail({
 function PersonCard({
   title,
   person,
-  onOpen,
   showIdCard,
 }: {
   title: string
   person: PersonSummary | null
-  onOpen: (personId: string) => void
   showIdCard?: boolean
 }) {
   return (
@@ -608,9 +601,12 @@ function PersonCard({
             </a>
           )}
 
-          <Button variant="secondary" size="sm" className="mt-3" onClick={() => onOpen(person.id)}>
+          <Link
+            href={`/anzeigen/akten/${person.id}`}
+            className="mt-3 inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-[#17375f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40"
+          >
             Akte öffnen
-          </Button>
+          </Link>
         </>
       ) : (
         <p className="py-3 text-[12.5px] text-[#6b8299]">Keine Person hinterlegt.</p>
@@ -680,20 +676,17 @@ function AttachmentEditor({
 function ReportListItem({
   report,
   active,
-  onSelect,
 }: {
   report: ReportRow
   active: boolean
-  onSelect: () => void
 }) {
   const meta = REPORT_STATUS_META[report.status]
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <Link
+      href={`/anzeigen/${report.id}`}
       className={cn(
-        'w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
+        'block w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
         active ? 'border-[#d4af37]/35 bg-[#d4af37]/12' : 'border-transparent hover:bg-[#102542]/60',
       )}
     >
@@ -711,7 +704,7 @@ function ReportListItem({
         </div>
         <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
       </div>
-    </button>
+    </Link>
   )
 }
 

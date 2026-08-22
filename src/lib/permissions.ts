@@ -213,6 +213,33 @@ export function resolvePermissions(groupPermissions?: unknown): Permission[] {
   return normalizePermissions(groupPermissions)
 }
 
+/**
+ * Feste Rechte für Rollen/Units, deren Zugriff nicht von einer optionalen
+ * Checkbox in der Administration abhängen darf.
+ */
+export function automaticPermissionsForRoleNames(
+  names: Iterable<string | null | undefined>,
+): Permission[] {
+  for (const name of names) {
+    const normalized = (name ?? '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, ' ')
+      .trim()
+
+    const words = normalized.split(' ').filter(Boolean)
+    if (
+      words.includes('FJD') ||
+      (words.includes('FACH') && words.includes('JUSTIZDIENST'))
+    ) {
+      return ['reports:view']
+    }
+  }
+
+  return []
+}
+
 export function resolveEffectivePermissions(userPermissions?: unknown, groupPermissions?: unknown | unknown[]): Permission[] {
   const groupPermissionList = Array.isArray(groupPermissions) && groupPermissions.some(Array.isArray)
     ? groupPermissions.flatMap((permissions) => sanitizePermissions(permissions))

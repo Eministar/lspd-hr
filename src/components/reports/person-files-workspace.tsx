@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { IdCard, Phone, Plus, Save, ScrollText, Search, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
@@ -175,10 +176,9 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
 
             <div className="max-h-[min(680px,calc(100vh-280px))] min-h-[220px] overflow-y-auto p-1.5">
               {filtered.map((person) => (
-                <button
+                <Link
                   key={person.id}
-                  type="button"
-                  onClick={() => onSelect(person.id)}
+                  href={`/anzeigen/akten/${person.id}`}
                   className={cn(
                     'flex w-full items-start gap-2.5 rounded-[9px] border px-3 py-2.5 text-left transition-colors',
                     activeId === person.id
@@ -193,7 +193,7 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
                     <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">{person.phone || 'Keine Telefonnummer'}</p>
                   </div>
                   {person.wanted && <Badge variant="danger">Fahndung</Badge>}
-                </button>
+                </Link>
               ))}
               {filtered.length === 0 && (
                 <p className="px-3 py-8 text-center text-[12px] text-[#6b8299]">Keine Akte gefunden.</p>
@@ -236,7 +236,7 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
   )
 }
 
-function PersonFileDetailView({
+export function PersonFileDetailView({
   personId,
   canManage,
   canDelete,
@@ -249,7 +249,7 @@ function PersonFileDetailView({
   onChanged: () => void
   onDeleted: () => void
 }) {
-  const { data: person, loading, refetch } = useFetch<PersonFileDetail>(`/api/person-files/${personId}`)
+  const { data: person, loading, error, refetch } = useFetch<PersonFileDetail>(`/api/person-files/${personId}`)
   const { execute } = useApi()
   const { addToast } = useToast()
   const [form, setForm] = useState<PersonForm>(EMPTY_FORM)
@@ -269,7 +269,7 @@ function PersonFileDetailView({
       notes: person.notes ?? '',
       wanted: person.wanted,
     })
-  }, [person?.id, person?.updatedAt])
+  }, [person])
 
   const save = async () => {
     if (!person) return
@@ -304,7 +304,8 @@ function PersonFileDetailView({
     }
   }
 
-  if (loading || !person) return <EmptyState title="Akte wird geladen…" hint="" />
+  if (loading) return <EmptyState title="Akte wird geladen…" hint="" />
+  if (error || !person) return <EmptyState title="Personenakte nicht gefunden" hint={error || 'Die Akte ist nicht mehr vorhanden.'} />
 
   return (
     <section className="space-y-4">
@@ -411,14 +412,18 @@ function ReportTable({
           {reports.map((report) => {
             const meta = REPORT_STATUS_META[report.status]
             return (
-              <div key={report.id} className="rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3">
+              <Link
+                key={report.id}
+                href={`/anzeigen/${report.id}`}
+                className="block rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3 transition-colors hover:border-[#d4af37]/30 hover:bg-[#102542]/60"
+              >
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span className="font-mono text-[11px] font-semibold text-[#d4af37]">{report.caseNumber}</span>
                   <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
                   <span className="text-[11px] text-[#536b86]">{formatDateTime(report.createdAt)}</span>
                 </div>
                 <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{report.charge}</p>
-              </div>
+              </Link>
             )
           })}
         </div>

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission, type CurrentUser } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
-import { hasPermission, sanitizePermissions } from '@/lib/permissions'
+import { automaticPermissionsForRoleNames, hasPermission, sanitizePermissions } from '@/lib/permissions'
 import { getManagedUnitKeysForUser, hasOfficerWriteAccess } from '@/lib/unit-leadership'
 
 function createUnitKey(name: string) {
@@ -44,7 +44,13 @@ export async function GET(req: NextRequest) {
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 
-  return success(units)
+  return success(units.map((unit) => ({
+    ...unit,
+    permissions: Array.from(new Set([
+      ...sanitizePermissions(unit.permissions),
+      ...automaticPermissionsForRoleNames([unit.key, unit.name]),
+    ])),
+  })))
 }
 
 export async function POST(req: NextRequest) {
@@ -65,7 +71,10 @@ export async function POST(req: NextRequest) {
         color: typeof body.color === 'string' && body.color ? body.color : '#d4af37',
         sortOrder: typeof body.sortOrder === 'number' ? body.sortOrder : 0,
         active: typeof body.active === 'boolean' ? body.active : true,
-        permissions: sanitizePermissions(body.permissions),
+        permissions: Array.from(new Set([
+          ...sanitizePermissions(body.permissions),
+          ...automaticPermissionsForRoleNames([key, name]),
+        ])),
       },
     })
 

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies, headers } from 'next/headers'
 import { prisma } from './prisma'
-import { hasAnyPermission, resolveEffectivePermissions, intersectPermissions, normalizePermissions, PERMISSIONS, type Permission } from './permissions'
+import { automaticPermissionsForRoleNames, hasAnyPermission, resolveEffectivePermissions, intersectPermissions, normalizePermissions, PERMISSIONS, type Permission } from './permissions'
 import { storedDiscordAvatarUrl } from './discord-auth'
 import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
@@ -216,12 +216,13 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
 
   const directAssignments = await prisma.userUnitAssignment.findMany({
     where: { userId, unit: { active: true } },
-    select: { unit: { select: { id: true, permissions: true } } },
+    select: { unit: { select: { id: true, key: true, name: true, permissions: true } } },
   })
   for (const assignment of directAssignments) {
     if (!seenUnitIds.has(assignment.unit.id)) {
       seenUnitIds.add(assignment.unit.id)
       unitPermsLists.push(assignment.unit.permissions)
+      unitPermsLists.push(automaticPermissionsForRoleNames([assignment.unit.key, assignment.unit.name]))
     }
   }
 
@@ -234,12 +235,13 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
     if (keys.length > 0) {
       const units = await prisma.unit.findMany({
         where: { key: { in: keys }, active: true },
-        select: { id: true, permissions: true },
+        select: { id: true, key: true, name: true, permissions: true },
       })
       for (const unit of units) {
         if (!seenUnitIds.has(unit.id)) {
           seenUnitIds.add(unit.id)
           unitPermsLists.push(unit.permissions)
+          unitPermsLists.push(automaticPermissionsForRoleNames([unit.key, unit.name]))
         }
       }
     }
@@ -273,7 +275,11 @@ async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | nul
   const unitPerms = await loadUserUnitPermissions({ userId: user.id, discordId: user.discordId })
   const permissions = resolveEffectivePermissions(
     user.permissions,
-    [...groups.map((g) => g.permissions), ...unitPerms],
+    [
+      ...groups.map((g) => g.permissions),
+      automaticPermissionsForRoleNames(groups.map((g) => g.name)),
+      ...unitPerms,
+    ],
   )
   const displayName = await resolveUserDisplayName(user)
 
@@ -314,7 +320,11 @@ async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {
   const unitPerms = await loadUserUnitPermissions({ userId: user.id, discordId: user.discordId })
   let effectivePermissions = resolveEffectivePermissions(
     user.permissions,
-    [...groups.map((g) => g.permissions), ...unitPerms],
+    [
+      ...groups.map((g) => g.permissions),
+      automaticPermissionsForRoleNames(groups.map((g) => g.name)),
+      ...unitPerms,
+    ],
   )
   const groupList = groups.map((g) => ({ id: g.id, name: g.name }))
 
@@ -347,14 +357,21 @@ async function loadUserPermissions(userId: string): Promise<Permission[]> {
     select: {
       discordId: true,
       permissions: true,
-      groupMemberships: { select: { group: { select: { permissions: true } } } },
+      group: { select: { name: true, permissions: true } },
+      groupMemberships: { select: { group: { select: { name: true, permissions: true } } } },
     },
   })
   if (!user) return []
   const unitPerms = await loadUserUnitPermissions({ userId, discordId: user.discordId })
+  const groups = user.groupMemberships.map((membership) => membership.group)
+  if (user.group && !groups.some((group) => group.name === user.group?.name)) groups.push(user.group)
   return resolveEffectivePermissions(
     user.permissions,
-    [...user.groupMemberships.map((m) => m.group.permissions), ...unitPerms],
+    [
+      ...groups.map((group) => group.permissions),
+      automaticPermissionsForRoleNames(groups.map((group) => group.name)),
+      ...unitPerms,
+    ],
   )
 }
 

@@ -36,12 +36,6 @@ export default function ReportsPage() {
 
   if (!canView) return <UnauthorizedContent />
 
-  /** Aus einer Anzeige heraus direkt in die Akte der Person springen. */
-  const openPerson = (id: string) => {
-    setPersonId(id)
-    setActiveTab('files')
-  }
-
   return (
     <div className="mx-auto max-w-7xl pb-2">
       <div className="mb-5 flex flex-wrap gap-2">
@@ -68,7 +62,7 @@ export default function ReportsPage() {
       </div>
 
       {activeTab === 'reports' && (
-        <ReportsWorkspace canManage={canManage} canDelete={canDelete} onOpenPerson={openPerson} />
+        <ReportsWorkspace canManage={canManage} canDelete={canDelete} />
       )}
       {activeTab === 'files' && (
         <PersonFilesWorkspace
