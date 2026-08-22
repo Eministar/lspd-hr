@@ -5,6 +5,7 @@ import { success, error, unauthorized } from '@/lib/api-response'
 import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import { normalizeBadgeNumber, rankHasBadgeRange, resolveEntryBadgeNumbers } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows } from '@/lib/badge-blacklist'
+import { rankChangeSnapshot, snapshotJson } from '@/lib/rank-change-entry'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -83,22 +84,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    const entry = await prisma.rankChangeListEntry.create({
-      data: {
-        listId: id,
-        officerId,
-        currentRankId: officer.rankId,
-        proposedRankId,
-        newBadgeNumber: nextBadge || null,
-        note: note || null,
-        createdById: user.id,
-      },
-      include: {
-        officer: { select: { firstName: true, lastName: true, badgeNumber: true } },
-        currentRank: { select: { name: true, color: true } },
-        proposedRank: { select: { name: true, color: true } },
-        createdBy: { select: { id: true, displayName: true } },
-      },
+    const entry = await prisma.$transaction(async (tx) => {
+      const created = await tx.rankChangeListEntry.create({
+        data: {
+          listId: id,
+          officerId,
+          currentRankId: officer.rankId,
+          proposedRankId,
+          newBadgeNumber: nextBadge || null,
+          note: typeof note === 'string' && note.trim() ? note.trim() : null,
+          createdById: user.id,
+        },
+        include: {
+          officer: { select: { id: true, firstName: true, lastName: true, badgeNumber: true } },
+          currentRank: { select: { id: true, name: true, color: true, sortOrder: true } },
+          proposedRank: { select: { id: true, name: true, color: true, sortOrder: true } },
+          createdBy: { select: { id: true, displayName: true } },
+        },
+      })
+      await tx.rankChangeEntryHistory.create({
+        data: {
+          entryId: created.id,
+          revision: 1,
+          actorId: user.id,
+          action: 'CREATED',
+          beforeState: {},
+          afterState: snapshotJson(rankChangeSnapshot(created)),
+        },
+      })
+      return created
     })
 
     // Vorschau der Auto-DN in der Antwort mitgeben (nicht persistiert)

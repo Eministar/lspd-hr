@@ -30,6 +30,12 @@ type PrismaClientCompat = PrismaClient & {
   rankchangeentry: CompatDelegate
   rankChangeVote: CompatDelegate
   rankchangevote: CompatDelegate
+  rankChangeEntryComment: CompatDelegate
+  rankchangeentrycomment: CompatDelegate
+  rankChangeEntryProposal: CompatDelegate
+  rankchangeentryproposal: CompatDelegate
+  rankChangeEntryHistory: CompatDelegate
+  rankchangeentryhistory: CompatDelegate
   systemSetting: CompatDelegate
   systemsetting: CompatDelegate
   taskList: CompatDelegate
@@ -84,6 +90,12 @@ const delegateAliases: Record<string, string> = {
   rankchangeentry: 'rankChangeListEntry',
   rankChangeVote: 'rankchangevote',
   rankchangevote: 'rankChangeVote',
+  rankChangeEntryComment: 'rankchangeentrycomment',
+  rankchangeentrycomment: 'rankChangeEntryComment',
+  rankChangeEntryProposal: 'rankchangeentryproposal',
+  rankchangeentryproposal: 'rankChangeEntryProposal',
+  rankChangeEntryHistory: 'rankchangeentryhistory',
+  rankchangeentryhistory: 'rankChangeEntryHistory',
   systemSetting: 'systemsetting',
   systemsetting: 'systemSetting',
   taskList: 'tasklist',

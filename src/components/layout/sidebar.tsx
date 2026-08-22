@@ -159,7 +159,7 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
         </div>
       </div>
 
-      <nav className="flex-1 px-2.5 space-y-[2px] overflow-y-auto">
+      <nav className="flex-1 space-y-[2px] overflow-y-auto px-2.5 lg:pb-12">
         <SectionLabel>Navigation</SectionLabel>
         {mainNav
           .filter((item) => !item.permission || hasPermission(user, item.permission))

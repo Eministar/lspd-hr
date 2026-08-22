@@ -55,6 +55,7 @@ const PRIMARY_KEYS: Record<string, string[]> = {
 const DELETE_AFFECTED_MODELS: Record<string, string[]> = {
   User: [
     'UserGroupMembership', 'UserUnitAssignment', 'FormTestSession', 'JobApplication', 'RankChangeVote', 'ApiToken',
+    'RankChangeEntryComment', 'RankChangeEntryProposal', 'RankChangeEntryHistory',
     'AcademyResource', 'FormTest', 'FormResponse', 'PressRelease', 'CalendarEvent', 'SruFolder', 'SruDocument',
     'Probation', 'ProbationEntry', 'PromotionLog', 'Termination', 'Sanction', 'Note', 'RankChangeList',
     'RankChangeListEntry', 'TaskList', 'Task', 'PatrolBoard', 'Ordnung', 'ContractTemplate', 'Contract',
@@ -75,7 +76,7 @@ const DELETE_AFFECTED_MODELS: Record<string, string[]> = {
   ],
   Probation: ['ProbationEntry'],
   RankChangeList: ['RankChangeListEntry'],
-  RankChangeListEntry: ['RankChangeVote'],
+  RankChangeListEntry: ['RankChangeVote', 'RankChangeEntryComment', 'RankChangeEntryProposal', 'RankChangeEntryHistory'],
   TaskList: ['Task'],
   Task: ['TaskAssignment'],
   PatrolBoard: ['PatrolUnit'],
@@ -284,6 +285,9 @@ export async function completeMutationCapture(
 export function describeTrackedChange(method: string, path: string): string {
   const normalized = path.split('?')[0]
   const mappings: Array<[RegExp, string]> = [
+    [/\/rank-change-entries\/.+\/comments/, 'Kommentar zur Rangänderung geändert'],
+    [/\/rank-change-entries\/.+\/proposals/, 'Vorschlag zur Rangänderung geändert'],
+    [/\/rank-change-entries/, 'Rangänderung bearbeitet'],
     [/\/rank-change-lists\/.+\/vote$/, 'Abstimmung geändert'],
     [/\/rank-change-lists/, 'Up-/D-Rank-Liste geändert'],
     [/\/officers/, 'Officer-Daten geändert'],

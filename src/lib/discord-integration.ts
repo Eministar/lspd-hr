@@ -1393,11 +1393,11 @@ export async function sendDiscordUpdateAnnouncement(input: DiscordUpdateAnnounce
 
   return postChannelMessage(channelId, componentMessage(markdownTextDisplays([
     markdownHeader('📢', truncate(title, 240), version ? `v${version.replace(/^v/i, '')}` : null),
-    'Sehr geehrte Kolleginnen und Kollegen,\n\nmit diesem Update stehen die nachfolgenden Neuerungen und Verbesserungen zur Verfügung.',
+    'Hallo zusammen,\n\nhier sind die wichtigsten Änderungen:',
     note || null,
     ...blocks,
-    'Mit freundlichen Grüßen\n**Systemadministration**\nLos Santos Police Department',
-    markdownMeta([input.actor ? `Im Auftrag: ${actorLabel}` : null, discordTimestamp(now, 'f')]),
+    `Mit freundlichen Grüßen\n${input.actor ? actorLabel : '**Systemadministration**'}`,
+    markdownMeta([discordTimestamp(now, 'f')]),
   ])))
 }
 
@@ -1457,15 +1457,7 @@ function trainingRoleValue(config: DiscordConfig, change: DiscordTrainingChange)
 }
 
 function trainingChangeLine(change: DiscordTrainingChange, config: DiscordConfig) {
-  const previous = change.previousCompleted ?? false
-  const wording = change.completed
-    ? previous
-      ? 'ist weiterhin als abgeschlossen vermerkt'
-      : 'wurde als erfolgreich abgeschlossen eingetragen'
-    : previous
-      ? 'wird nicht mehr als abgeschlossen geführt'
-      : 'ist derzeit noch nicht abgeschlossen'
-  return `- ${trainingRoleValue(config, change)} ${wording}.`
+  return `- ${trainingRoleValue(config, change)}: **${change.completed ? 'abgeschlossen' : 'nicht abgeschlossen'}**`
 }
 
 async function unitChangeBlock(change: DiscordUnitChange, config: DiscordConfig) {
@@ -1517,19 +1509,19 @@ function officialEventIntroduction(type: keyof typeof EVENT_META, name: string) 
   const subject = name ? ` **${name}**` : ''
   switch (type) {
     case 'hire':
-      return `wir freuen uns, bekannt geben zu dürfen, dass${subject} den Dienst beim Los Santos Police Department aufgenommen hat. Wir heißen das neue Mitglied herzlich willkommen und wünschen einen erfolgreichen Start.`
+      return `${subject} ist dem LSPD beigetreten. Willkommen im Team!`.trim()
     case 'promotion':
-      return `hiermit informieren wir über eine Änderung des Dienstgrades von${subject}. Die maßgeblichen Angaben finden Sie nachfolgend.`
+      return `Der Dienstgrad von${subject} wurde geändert.`
     case 'training':
-      return `der Ausbildungsstand von${subject} wurde aktualisiert. Die dokumentierte Änderung ist nachfolgend aufgeführt.`
+      return `Der Ausbildungsstand von${subject} wurde aktualisiert.`
     case 'units':
-      return `die organisatorische Zuordnung von${subject} wurde angepasst. Die aktuelle Einteilung finden Sie nachfolgend.`
+      return `Die Unit-Zuordnung von${subject} wurde geändert.`
     case 'sanction':
-      return `hiermit wird die nachfolgende dienstrechtliche Maßnahme gegenüber${subject} bekannt gegeben. Wir bitten um Beachtung der aufgeführten Vorgaben und Fristen.`
+      return `Für${subject} wurde eine Sanktion eingetragen.`
     case 'termination':
-      return `hiermit teilen wir mit, dass das Dienstverhältnis von${subject} beendet wurde. Die maßgeblichen Angaben sind nachfolgend aufgeführt.`
+      return `Das Dienstverhältnis von${subject} wurde beendet.`
     case 'update':
-      return `hiermit informieren wir über eine aktuelle Personalangelegenheit${subject ? ` zu${subject}` : ''}.`
+      return subject ? `Es gibt eine neue Mitteilung zu${subject}.` : 'Es gibt eine neue Mitteilung.'
   }
 }
 
@@ -1553,8 +1545,6 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
     const dn = bracketedServiceNumber(officer.badgeNumber, prefix)
     const rankRoleSnow = snowflake(officer.rankId ? config.rankRoleMap[officer.rankId] : '')
     const rankValue = rankRoleSnow ? `<@&${rankRoleSnow}>` : officer.rank?.name ?? '—'
-    const linkedOfficer = snowflake(officer.discordId) ? mention(officer.discordId) : `**${officerDisplayName}**`
-    rows.push({ label: 'Name', value: linkedOfficer })
     rows.push({ label: 'Dienstnummer', value: `\`${dn}\`` })
     rows.push({ label: 'Rang', value: rankValue })
     if (event.type === 'hire') {
@@ -1567,7 +1557,7 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
   }
 
   const trainingBlock = event.type === 'training' && event.trainingChanges?.length
-    ? `### Dokumentierter Ausbildungsstand\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
+    ? `### Ausbildung\n${event.trainingChanges.map((change) => trainingChangeLine(change, config)).join('\n')}`
     : null
   const unitsBlock = event.unitChange
     ? await unitChangeBlock(event.unitChange, config)
@@ -1579,29 +1569,25 @@ async function buildDiscordHrEventPayload(event: DiscordHrEventInput, config: Di
   const pingLine = mentionIds.length ? mentionIds.map((id) => `<@${id}>`).join(' ') : null
   const allowedMentions = mentionIds.length ? { users: mentionIds } : undefined
   const salutation = event.type === 'sanction' && mentionIds.length === 1
-    ? `Guten Tag <@${mentionIds[0]}>,`
-    : 'Sehr geehrte Kolleginnen und Kollegen,'
+    ? `Hallo <@${mentionIds[0]}>,`
+    : 'Hallo zusammen,'
   const description = polishedEventDescription(event.description)
-  const letter = [
-    salutation,
-    officialEventIntroduction(event.type, officerDisplayName),
-    description || null,
-  ].filter((part): part is string => Boolean(part)).join('\n\n')
-  const closing = 'Mit freundlichen Grüßen\n**Human Resources Department**\nLos Santos Police Department'
+  const message = [officialEventIntroduction(event.type, officerDisplayName), description]
+    .filter(Boolean)
+    .join(' ')
+  const letter = `${salutation}\n\n${message}`
+  const closing = `Mit freundlichen Grüßen\n${event.actor ? actorLabel : '**Human Resources**'}`
 
   return componentMessage(
     markdownTextDisplays([
       markdownHeader(meta.icon, customHeading, headingSubject),
       event.type === 'sanction' ? null : pingLine,
       letter,
-      rows.length ? `### Angaben zur Mitteilung\n${markdownRows(rows)}` : null,
+      rows.length ? `### Details\n${markdownRows(rows)}` : null,
       trainingBlock,
       unitsBlock,
       closing,
-      markdownMeta([
-        event.actor ? `Im Auftrag: ${actorLabel}` : null,
-        discordTimestamp(now, 'f'),
-      ]),
+      markdownMeta([discordTimestamp(now, 'f')]),
     ]),
     allowedMentions ? { allowedMentions } : undefined,
   )
@@ -1669,19 +1655,18 @@ function buildContractMessagePayload(input: DiscordContractMessageInput, options
   const mentionId = options.mentionUser ? snowflake(input.discordId) : ''
   const recipient = mentionId ? `<@${mentionId}>` : `**${input.officerName}**`
   const introduction = input.reminder
-    ? 'wir möchten Sie freundlich daran erinnern, den bereitgestellten Arbeitsvertrag zu prüfen und zu unterschreiben. Erst danach kann Ihre Einstellung vollständig abgeschlossen werden.'
-    : 'für den Abschluss Ihrer Einstellung haben wir Ihren persönlichen Arbeitsvertrag vorbereitet. Bitte lesen Sie das Dokument sorgfältig, ergänzen Sie die erforderlichen Angaben und unterzeichnen Sie es anschließend.'
+    ? 'bitte prüfen und unterschreiben Sie noch Ihren Arbeitsvertrag.'
+    : 'Ihr Arbeitsvertrag ist bereit. Bitte prüfen, ausfüllen und unterschreiben Sie ihn.'
 
   return componentMessage(
     [
       ...markdownTextDisplays([
         markdownHeader('📝', heading),
         `Guten Tag ${recipient},\n\n${introduction}`,
-        input.note ? `**Zusätzlicher Hinweis:** ${input.note}` : null,
-        '### Angaben zum Vertrag',
+        input.note ? `**Hinweis:** ${input.note}` : null,
         markdownRows(rows),
-        'Mit freundlichen Grüßen\n**Human Resources Department**\nLos Santos Police Department',
-        markdownMeta(['Dieser Link ist persönlich und darf nicht weitergegeben werden']),
+        'Mit freundlichen Grüßen\n**Human Resources**',
+        markdownMeta(['Persönlicher Link · nicht weitergeben']),
       ]),
       actionRow([linkButton('Vertrag öffnen & unterschreiben', input.contractUrl)]),
     ],

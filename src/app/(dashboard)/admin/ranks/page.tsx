@@ -321,12 +321,14 @@ export default function RanksPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="DN von"
+              numericOnly
               value={form.badgeMin}
               onChange={(e) => setForm({ ...form, badgeMin: e.target.value })}
               placeholder="z. B. 1"
             />
             <Input
               label="DN bis"
+              numericOnly
               value={form.badgeMax}
               onChange={(e) => setForm({ ...form, badgeMax: e.target.value })}
               placeholder="z. B. 10"
@@ -349,9 +351,10 @@ export default function RanksPage() {
         <div className="space-y-4">
           <Input
             label="Dienstnummer"
+            numericOnly
             value={blacklistForm.badgeNumber}
             onChange={(e) => setBlacklistForm({ ...blacklistForm, badgeNumber: e.target.value })}
-            placeholder="z. B. 500 oder LSPD-500"
+            placeholder="z. B. 500"
             required
           />
           <Input

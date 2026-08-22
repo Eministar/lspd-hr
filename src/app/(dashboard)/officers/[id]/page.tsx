@@ -772,7 +772,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                       <Input label="Nachname" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Dienstnummer" value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
+                      <Input label="Dienstnummer" numericOnly value={form.badgeNumber} onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })} />
                       <Select label="Rang" value={form.rankId} onChange={(e) => setForm({ ...form, rankId: e.target.value })} options={ranks?.map(r => ({ value: r.id, label: r.name })) || []} />
                     </div>
                     <Input
@@ -1386,7 +1386,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <Select label="Neuer Rang (höher)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={higherRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
-          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
+          <Input label="Neue DN (optional)" numericOnly value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
           <Textarea label="Notiz" value={rankChangeNote} onChange={(e) => setRankChangeNote(e.target.value)} rows={2} placeholder="Optional" />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setPromoteModal(false)}>Abbrechen</Button>
@@ -1403,7 +1403,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <Select label="Neuer Rang (niedriger)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={lowerRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
-          <Input label="Neue DN (optional)" value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
+          <Input label="Neue DN (optional)" numericOnly value={newBadgeNumber} onChange={(e) => setNewBadgeNumber(e.target.value)} placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`} />
           <Textarea label="Grund" value={rankChangeNote} onChange={(e) => setRankChangeNote(e.target.value)} rows={2} placeholder="Grund für Degradierung..." />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setDemoteModal(false)}>Abbrechen</Button>
@@ -1454,6 +1454,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           />
           <Input
             label="Neue DN (optional)"
+            numericOnly
             value={addToListBadgeNumber}
             onChange={(e) => setAddToListBadgeNumber(e.target.value)}
             placeholder={`Aktuell: ${displayBadgeNumber(officer.badgeNumber)}`}

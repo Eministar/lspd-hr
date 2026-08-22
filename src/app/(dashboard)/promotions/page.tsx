@@ -537,6 +537,7 @@ export default function RankChangeListsPage() {
               )}
               <Input
                 label="Neue DN (optional)"
+                numericOnly
                 value={entryForm.newBadgeNumber}
                 onChange={(event) => setEntryForm({ ...entryForm, newBadgeNumber: event.target.value })}
                 placeholder={`Aktuell: ${displayBadgeNumber(selectedOfficer.badgeNumber)}`}

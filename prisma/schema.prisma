@@ -171,49 +171,53 @@ model User {
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
 
-  groupMemberships         UserGroupMembership[]
-  promotionsPerformed      PromotionLog[]        @relation("PerformedBy")
-  terminationsPerformed    Termination[]         @relation("TerminatedBy")
-  sanctionsIssued          Sanction[]            @relation("SanctionIssuedBy")
-  notesAuthored            Note[]                @relation("NoteAuthor")
-  auditLogs                AuditLog[]            @relation("AuditUser")
-  createdLists             RankChangeList[]      @relation("ListCreator")
-  rankChangeEntriesCreated RankChangeListEntry[] @relation("EntryCreator")
-  rankChangeEntriesExecuted RankChangeListEntry[] @relation("EntryExecutor")
-  rankChangeVotes          RankChangeVote[]
-  taskListsCreated         TaskList[]            @relation("TaskListCreator")
-  tasksCreated             Task[]                @relation("TaskCreator")
-  calendarEventsCreated    CalendarEvent[]       @relation("CalendarEventCreator")
-  sruFoldersCreated        SruFolder[]           @relation("SruFolderCreator")
-  sruDocumentsCreated      SruDocument[]         @relation("SruDocumentCreator")
-  sruDocumentsUpdated      SruDocument[]         @relation("SruDocumentUpdater")
-  probationsCreated        Probation[]           @relation("ProbationCreator")
-  probationsDecided        Probation[]           @relation("ProbationDecider")
-  probationEntriesCreated  ProbationEntry[]      @relation("ProbationEntryCreator")
-  patrolBoardsCreated      PatrolBoard[]         @relation("PatrolBoardCreator")
-  apiTokensOwned           ApiToken[]            @relation("ApiTokenOwner")
-  apiTokensCreated         ApiToken[]            @relation("ApiTokenCreator")
-  academyResourcesCreated  AcademyResource[]     @relation("AcademyResourceCreator")
-  formTestsCreated         FormTest[]            @relation("FormTestCreator")
-  formResponsesSubmitted   FormResponse[]        @relation("FormResponseRespondent")
-  formResponsesReviewed    FormResponse[]        @relation("FormResponseReviewer")
-  formTestSessions         FormTestSession[]     @relation("FormTestSessionUser")
-  jobApplicationsSubmitted JobApplication[]      @relation("JobApplicationApplicant")
-  jobApplicationsReviewed  JobApplication[]      @relation("JobApplicationReviewer")
-  pressReleasesCreated     PressRelease[]        @relation("PressReleaseCreator")
-  pressReleasesUpdated     PressRelease[]        @relation("PressReleaseUpdater")
-  ordnungenCreated         Ordnung[]             @relation("OrdnungCreator")
-  unitAssignments          UserUnitAssignment[]
-  contractTemplatesCreated ContractTemplate[]    @relation("ContractTemplateCreator")
-  contractsCreated         Contract[]            @relation("ContractCreator")
-  contractsSigned          Contract[]            @relation("ContractSigner")
-  personFilesCreated       PersonFile[]          @relation("PersonFileCreator")
-  reportsRecorded          Report[]              @relation("ReportRecorder")
-  reportUpdatesAuthored    ReportUpdate[]        @relation("ReportUpdateAuthor")
-  transferRequestsCreated  TransferRequest[]     @relation("TransferRequestCreator")
-  transferRequestsSignedHr TransferRequest[]     @relation("TransferRequestHrSigner")
-  transferRequestsSignedOf TransferRequest[]     @relation("TransferRequestOfficerSigner")
-  changeSets               ChangeSet[]
+  groupMemberships          UserGroupMembership[]
+  promotionsPerformed       PromotionLog[]            @relation("PerformedBy")
+  terminationsPerformed     Termination[]             @relation("TerminatedBy")
+  sanctionsIssued           Sanction[]                @relation("SanctionIssuedBy")
+  notesAuthored             Note[]                    @relation("NoteAuthor")
+  auditLogs                 AuditLog[]                @relation("AuditUser")
+  createdLists              RankChangeList[]          @relation("ListCreator")
+  rankChangeEntriesCreated  RankChangeListEntry[]     @relation("EntryCreator")
+  rankChangeEntriesExecuted RankChangeListEntry[]     @relation("EntryExecutor")
+  rankChangeVotes           RankChangeVote[]
+  rankChangeComments        RankChangeEntryComment[]  @relation("RankChangeCommentAuthor")
+  rankChangeProposals       RankChangeEntryProposal[] @relation("RankChangeProposalAuthor")
+  rankChangeReviews         RankChangeEntryProposal[] @relation("RankChangeProposalReviewer")
+  rankChangeHistory         RankChangeEntryHistory[]  @relation("RankChangeHistoryActor")
+  taskListsCreated          TaskList[]                @relation("TaskListCreator")
+  tasksCreated              Task[]                    @relation("TaskCreator")
+  calendarEventsCreated     CalendarEvent[]           @relation("CalendarEventCreator")
+  sruFoldersCreated         SruFolder[]               @relation("SruFolderCreator")
+  sruDocumentsCreated       SruDocument[]             @relation("SruDocumentCreator")
+  sruDocumentsUpdated       SruDocument[]             @relation("SruDocumentUpdater")
+  probationsCreated         Probation[]               @relation("ProbationCreator")
+  probationsDecided         Probation[]               @relation("ProbationDecider")
+  probationEntriesCreated   ProbationEntry[]          @relation("ProbationEntryCreator")
+  patrolBoardsCreated       PatrolBoard[]             @relation("PatrolBoardCreator")
+  apiTokensOwned            ApiToken[]                @relation("ApiTokenOwner")
+  apiTokensCreated          ApiToken[]                @relation("ApiTokenCreator")
+  academyResourcesCreated   AcademyResource[]         @relation("AcademyResourceCreator")
+  formTestsCreated          FormTest[]                @relation("FormTestCreator")
+  formResponsesSubmitted    FormResponse[]            @relation("FormResponseRespondent")
+  formResponsesReviewed     FormResponse[]            @relation("FormResponseReviewer")
+  formTestSessions          FormTestSession[]         @relation("FormTestSessionUser")
+  jobApplicationsSubmitted  JobApplication[]          @relation("JobApplicationApplicant")
+  jobApplicationsReviewed   JobApplication[]          @relation("JobApplicationReviewer")
+  pressReleasesCreated      PressRelease[]            @relation("PressReleaseCreator")
+  pressReleasesUpdated      PressRelease[]            @relation("PressReleaseUpdater")
+  ordnungenCreated          Ordnung[]                 @relation("OrdnungCreator")
+  unitAssignments           UserUnitAssignment[]
+  contractTemplatesCreated  ContractTemplate[]        @relation("ContractTemplateCreator")
+  contractsCreated          Contract[]                @relation("ContractCreator")
+  contractsSigned           Contract[]                @relation("ContractSigner")
+  personFilesCreated        PersonFile[]              @relation("PersonFileCreator")
+  reportsRecorded           Report[]                  @relation("ReportRecorder")
+  reportUpdatesAuthored     ReportUpdate[]            @relation("ReportUpdateAuthor")
+  transferRequestsCreated   TransferRequest[]         @relation("TransferRequestCreator")
+  transferRequestsSignedHr  TransferRequest[]         @relation("TransferRequestHrSigner")
+  transferRequestsSignedOf  TransferRequest[]         @relation("TransferRequestOfficerSigner")
+  changeSets                ChangeSet[]
 }
 
 model UserGroupMembership {
@@ -881,45 +885,50 @@ model ChangeSetEntry {
 }
 
 model RankChangeList {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
   /// Legacy: Listen sind seit der Zusammenlegung gemischt ("MIXED"). Alte Listen behalten
   /// PROMOTION/DEMOTION, der Typ wird aber nur noch pro Eintrag aus der Rangrichtung abgeleitet.
-  type        String   @default("MIXED")
-  status      String   @default("DRAFT") // DRAFT, COMPLETED
+  type              String    @default("MIXED")
+  status            String    @default("DRAFT") // DRAFT, COMPLETED
   /// Gesperrte Liste: keine neuen Einreichungen mehr, offene Einträge bleiben durchführbar.
   /// Bewusst getrennt von `status`, damit eine Rücknahme (status -> DRAFT) die Sperre nicht aufhebt.
   submissionsClosed Boolean   @default(false)
   closedAt          DateTime?
-  createdById String?
-  createdBy   User?    @relation("ListCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdById       String?
+  createdBy         User?     @relation("ListCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   entries RankChangeListEntry[]
 }
 
 model RankChangeListEntry {
-  id             String         @id @default(cuid())
+  id             String                    @id @default(cuid())
   listId         String
-  list           RankChangeList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list           RankChangeList            @relation(fields: [listId], references: [id], onDelete: Cascade)
   officerId      String
-  officer        Officer        @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  officer        Officer                   @relation(fields: [officerId], references: [id], onDelete: Cascade)
   currentRankId  String
-  currentRank    Rank           @relation("EntryCurrentRank", fields: [currentRankId], references: [id])
+  currentRank    Rank                      @relation("EntryCurrentRank", fields: [currentRankId], references: [id])
   proposedRankId String
-  proposedRank   Rank           @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
+  proposedRank   Rank                      @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
   newBadgeNumber String?
   note           String?
-  executed       Boolean        @default(false)
+  executed       Boolean                   @default(false)
   executedAt     DateTime?
   executedById   String?
-  executedBy     User?          @relation("EntryExecutor", fields: [executedById], references: [id], onDelete: SetNull)
+  executedBy     User?                     @relation("EntryExecutor", fields: [executedById], references: [id], onDelete: SetNull)
   createdById    String?
-  createdBy      User?          @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt      DateTime       @default(now())
+  createdBy      User?                     @relation("EntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @default(now()) @updatedAt
+  revision       Int                       @default(1)
   votes          RankChangeVote[]
+  comments       RankChangeEntryComment[]
+  proposals      RankChangeEntryProposal[]
+  history        RankChangeEntryHistory[]
 
   @@unique([listId, officerId])
 }
@@ -936,6 +945,61 @@ model RankChangeVote {
 
   @@unique([entryId, userId])
   @@index([userId])
+}
+
+model RankChangeEntryComment {
+  id        String              @id @default(cuid())
+  entryId   String
+  entry     RankChangeListEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?               @relation("RankChangeCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  content   String              @db.Text
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([entryId, createdAt])
+  @@index([authorId])
+}
+
+model RankChangeEntryProposal {
+  id           String              @id @default(cuid())
+  entryId      String
+  entry        RankChangeListEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  authorId     String?
+  author       User?               @relation("RankChangeProposalAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  baseRevision Int
+  beforeState  Json
+  afterState   Json
+  reason       String?             @db.Text
+  status       String              @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  reviewedById String?
+  reviewedBy   User?               @relation("RankChangeProposalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote   String?             @db.Text
+  reviewedAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([entryId, status, createdAt])
+  @@index([authorId])
+  @@index([reviewedById])
+}
+
+model RankChangeEntryHistory {
+  id          String              @id @default(cuid())
+  entryId     String
+  entry       RankChangeListEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  revision    Int
+  actorId     String?
+  actor       User?               @relation("RankChangeHistoryActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action      String // CREATED, DIRECT_EDIT, PROPOSAL_ACCEPTED
+  beforeState Json
+  afterState  Json
+  proposalId  String?
+  createdAt   DateTime            @default(now())
+
+  @@unique([entryId, revision])
+  @@index([actorId])
+  @@index([proposalId])
 }
 
 model SystemSetting {

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Lock, LockOpen, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Lock, LockOpen, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
@@ -299,6 +299,13 @@ export function RankChangeListCard({
                                             </p>
                                         </div>
                                         <div className="ml-auto flex shrink-0 items-center gap-2">
+                                            <Link
+                                                href={`/promotions/${entry.id}`}
+                                                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#234568]/70 bg-[#102542]/70 px-2.5 text-[11.5px] font-medium text-[#b7c5d8] transition-colors hover:border-[#d4af37]/45 hover:text-[#f3d77a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40"
+                                                title="Eintrag, Kommentare und Vorschläge öffnen"
+                                            >
+                                                Details <ChevronRight size={13} />
+                                            </Link>
                                             <EntryVoteControls
                                                 summary={entry.voteSummary}
                                                 disabled={entry.executed || isCompleted}

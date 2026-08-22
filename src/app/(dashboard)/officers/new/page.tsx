@@ -200,6 +200,7 @@ export default function NewOfficerPage() {
                 <Input
                   id="badgeNumber"
                   label="Dienstnummer"
+                  numericOnly
                   value={form.badgeNumber}
                   onChange={(e) => update('badgeNumber', e.target.value)}
                   placeholder="Automatisch nach Rang"

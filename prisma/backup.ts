@@ -30,6 +30,9 @@ type SnapshotData = {
   rankChangeLists: unknown[]
   rankChangeListEntries: unknown[]
   rankChangeVotes: unknown[]
+  rankChangeEntryComments: unknown[]
+  rankChangeEntryProposals: unknown[]
+  rankChangeEntryHistory: unknown[]
   systemSettings: unknown[]
   taskLists: unknown[]
   tasks: unknown[]
@@ -77,6 +80,9 @@ const TABLES: { key: SnapshotKey; delegateNames: readonly string[] }[] = [
     delegateNames: ['rankChangeListEntry', 'rankchangelistentry', 'rankchangeentry'],
   },
   { key: 'rankChangeVotes', delegateNames: ['rankChangeVote', 'rankchangevote'] },
+  { key: 'rankChangeEntryComments', delegateNames: ['rankChangeEntryComment', 'rankchangeentrycomment'] },
+  { key: 'rankChangeEntryProposals', delegateNames: ['rankChangeEntryProposal', 'rankchangeentryproposal'] },
+  { key: 'rankChangeEntryHistory', delegateNames: ['rankChangeEntryHistory', 'rankchangeentryhistory'] },
   { key: 'systemSettings', delegateNames: ['systemSetting', 'systemsetting'] },
   { key: 'taskLists', delegateNames: ['taskList', 'tasklist'] },
   { key: 'tasks', delegateNames: ['task'] },

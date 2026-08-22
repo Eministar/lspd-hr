@@ -80,7 +80,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'probations:manage': 'Probezeiten verwalten',
   'sanctions:manage': 'Sanktionen ausstellen',
   'rank-changes:view': 'Beförderungen/Degradierungen ansehen',
-  'rank-changes:manage': 'Beförderungen/Degradierungen',
+  'rank-changes:manage': 'Rangänderungen verwalten (Vollzugriff)',
   'rank-change-lists:delete': 'Beförderungs-/Degradierungslisten löschen',
   'rank-change-lists:execute': 'Beförderungen/Degradierungen durchführen',
   'academy:view': 'Recruitment & Training ansehen',

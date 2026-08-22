@@ -180,7 +180,7 @@ export function ChangeHistoryControls() {
   }, [apply])
 
   return (
-    <div className="fixed bottom-4 left-3 z-50 inline-flex items-center gap-1 rounded-[10px] border border-[#1e3a5c]/70 bg-[#081a30]/95 p-1 shadow-[0_8px_28px_rgba(0,0,0,0.3)] backdrop-blur-xl lg:bottom-5 lg:left-[260px]">
+    <div className="fixed right-3 top-1.5 z-50 inline-grid grid-cols-2 items-center gap-1 rounded-[9px] border border-[#d4af37]/15 bg-[#081a30]/95 p-1 shadow-[0_6px_20px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:bottom-[58px] lg:left-[10px] lg:right-auto lg:top-auto lg:w-[224px]">
       <HistoryButton
         label="Rückgängig"
         shortcut="Strg/Cmd+Z"
@@ -233,14 +233,14 @@ function HistoryButton({
       aria-label={title}
       title={title}
       className={cn(
-        'inline-flex h-8 items-center gap-1.5 rounded-[7px] px-2.5 text-[12px] font-medium text-[#b7c5d8] transition-colors',
+        'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[6px] px-2 text-[12px] font-medium text-[#b7c5d8] transition-colors',
         'hover:bg-[#17375f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40',
         'disabled:cursor-not-allowed disabled:opacity-30',
         loading && 'animate-pulse',
       )}
     >
       {children}
-      <span className="hidden max-w-36 truncate xl:inline">{action?.label ?? label}</span>
+      <span className="hidden max-w-[72px] truncate lg:inline">{action?.label ?? label}</span>
     </button>
   )
 }
