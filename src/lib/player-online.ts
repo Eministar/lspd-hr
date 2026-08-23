@@ -38,6 +38,7 @@ export type PlayerOnlineSyncSummary = {
   checkedAt: Date
   onlineCount: number
   errorCount: number
+  statusCounts: Record<PlayerOnlineStatusName, number>
   results: PlayerOnlineSyncResult[]
 }
 
@@ -48,21 +49,34 @@ type OfficerForPlayerSync = {
 
 type RawPlayerOnlineResponse = {
   discordId?: unknown
+  discord_id?: unknown
   online?: unknown
+  isOnline?: unknown
+  is_online?: unknown
   scriptConnected?: unknown
+  script_connected?: unknown
   lastHeartbeat?: unknown
+  last_heartbeat?: unknown
   player?: unknown
 }
 
 type RawPlayer = {
   name?: unknown
+  playerName?: unknown
+  player_name?: unknown
   identifier?: unknown
+  license?: unknown
   steamId?: unknown
+  steam_id?: unknown
   job?: unknown
   ping?: unknown
   playtimeSeconds?: unknown
+  playtime_seconds?: unknown
   connectedAt?: unknown
+  connected_at?: unknown
 }
+
+type UnknownRecord = Record<string, unknown>
 
 let lastAllSyncAt = 0
 let lastAllSync: PlayerOnlineSyncSummary | null = null
@@ -127,32 +141,70 @@ function cleanString(value: unknown, max: number) {
   return cleaned ? cleaned.slice(0, max) : null
 }
 
+function asRecord(value: unknown): UnknownRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as UnknownRecord
+    : null
+}
+
+function firstValue(record: UnknownRecord, names: string[]) {
+  for (const name of names) {
+    if (record[name] !== undefined) return record[name]
+  }
+  return undefined
+}
+
+function cleanBoolean(value: unknown) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1 ? true : value === 0 ? false : null
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  if (['true', '1', 'yes', 'online', 'connected'].includes(normalized)) return true
+  if (['false', '0', 'no', 'offline', 'disconnected'].includes(normalized)) return false
+  return null
+}
+
 function cleanInt(value: unknown) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null
-  const int = Math.round(value)
+  const numeric = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && value.trim()
+      ? Number(value)
+      : Number.NaN
+  if (!Number.isFinite(numeric)) return null
+  const int = Math.round(numeric)
   return int >= 0 ? int : null
 }
 
 function cleanDate(value: unknown) {
-  if (typeof value !== 'string' || !value.trim()) return null
-  const date = new Date(value)
+  if (typeof value !== 'string' && typeof value !== 'number') return null
+  if (typeof value === 'string' && !value.trim()) return null
+  const numeric = typeof value === 'number' ? value : Number.NaN
+  const date = new Date(Number.isFinite(numeric) ? (numeric < 10_000_000_000 ? numeric * 1000 : numeric) : value)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+function cleanJob(value: unknown) {
+  if (typeof value === 'string') return cleanString(value, 64)
+  const record = asRecord(value)
+  if (!record) return null
+  return cleanString(firstValue(record, ['name', 'id', 'key', 'label']), 64)
+}
+
 function normalizePlayer(value: unknown): PlayerOnlinePlayer | null {
-  if (!value || typeof value !== 'object') return null
-  const player = value as RawPlayer
-  const name = cleanString(player.name, 80)
+  const record = asRecord(value)
+  if (!record) return null
+  const player = record as RawPlayer
+  const name = cleanString(firstValue(record, ['name', 'playerName', 'player_name', 'displayName']), 80)
   if (!name) return null
 
   return {
     name,
-    identifier: cleanString(player.identifier, 96),
-    steamId: cleanString(player.steamId, 64),
-    job: cleanString(player.job, 64),
+    identifier: cleanString(firstValue(record, ['identifier', 'license', 'licenseId', 'license_id']), 96),
+    steamId: cleanString(firstValue(record, ['steamId', 'steam_id', 'steam']), 64),
+    job: cleanJob(player.job),
     ping: cleanInt(player.ping),
-    playtimeSeconds: cleanInt(player.playtimeSeconds),
-    connectedAt: cleanDate(player.connectedAt),
+    playtimeSeconds: cleanInt(firstValue(record, ['playtimeSeconds', 'playtime_seconds', 'playtime'])),
+    connectedAt: cleanDate(firstValue(record, ['connectedAt', 'connected_at', 'joinedAt', 'joined_at'])),
   }
 }
 
@@ -173,6 +225,103 @@ function sessionEndFromStatus(status: { lastHeartbeat: Date | null }, now: Date)
   return now
 }
 
+function responseRecord(value: unknown) {
+  const root = asRecord(value)
+  if (!root) return null
+  const statusFields = ['online', 'isOnline', 'is_online', 'scriptConnected', 'script_connected', 'connected', 'player', 'character', 'playerData', 'player_data']
+  if (statusFields.some((field) => root[field] !== undefined)) return root
+  for (const key of ['data', 'result', 'response']) {
+    const nested = asRecord(root[key])
+    if (nested) return nested
+  }
+  return root
+}
+
+function playerList(value: unknown) {
+  if (Array.isArray(value)) return value.map(asRecord).filter((row): row is UnknownRecord => !!row)
+  const root = asRecord(value)
+  if (!root) return null
+  for (const key of ['players', 'data', 'results']) {
+    if (Array.isArray(root[key])) {
+      return (root[key] as unknown[]).map(asRecord).filter((row): row is UnknownRecord => !!row)
+    }
+    const nested = asRecord(root[key])
+    if (nested) {
+      for (const nestedKey of ['players', 'data', 'results']) {
+        if (Array.isArray(nested[nestedKey])) {
+          return (nested[nestedKey] as unknown[]).map(asRecord).filter((row): row is UnknownRecord => !!row)
+        }
+      }
+    }
+  }
+  return null
+}
+
+function normalizePlayerOnlineResponse(value: unknown, requestedDiscordId: string) {
+  const list = playerList(value)
+  if (list) {
+    const match = list.find((row) => {
+      const directId = cleanDiscordId(firstValue(row, ['discordId', 'discord_id', 'discord']))
+      const identifiers = Array.isArray(row.identifiers) ? row.identifiers : []
+      const identifierId = identifiers.map(cleanDiscordId).find(Boolean) ?? null
+      return (directId ?? identifierId) === requestedDiscordId
+    })
+    if (!match) {
+      return {
+        discordId: requestedDiscordId,
+        online: false,
+        scriptConnected: false,
+        lastHeartbeat: null,
+        player: null,
+      }
+    }
+    const explicitPlayer = firstValue(match, ['player', 'character'])
+    const player = normalizePlayer(explicitPlayer ?? match)
+    return {
+      discordId: cleanDiscordId(firstValue(match, ['discordId', 'discord_id', 'discord'])) ?? requestedDiscordId,
+      online: cleanBoolean(firstValue(match, ['online', 'isOnline', 'is_online'])) ?? true,
+      scriptConnected: cleanBoolean(firstValue(match, ['scriptConnected', 'script_connected', 'isScriptConnected', 'connected'])) ?? true,
+      lastHeartbeat: cleanDate(firstValue(match, ['lastHeartbeat', 'last_heartbeat', 'heartbeatAt', 'heartbeat_at'])),
+      player,
+    }
+  }
+
+  const record = responseRecord(value)
+  if (!record) throw new Error('Player-Online API lieferte kein JSON-Objekt')
+  const playerValue = firstValue(record, ['player', 'character', 'playerData', 'player_data'])
+  const player = normalizePlayer(playerValue) ?? normalizePlayer(record)
+  const onlineValue = firstValue(record, ['online', 'isOnline', 'is_online'])
+  const connectedValue = firstValue(record, ['scriptConnected', 'script_connected', 'isScriptConnected', 'connected'])
+  const online = cleanBoolean(onlineValue)
+  const scriptConnected = cleanBoolean(connectedValue)
+
+  if (online === null && scriptConnected === null && !player) {
+    const fields = Object.keys(record).slice(0, 12).join(', ') || 'keine'
+    throw new Error(`Unbekanntes Player-Online-Antwortformat (Felder: ${fields})`)
+  }
+
+  return {
+    discordId: cleanDiscordId(firstValue(record, ['discordId', 'discord_id', 'discord'])) ?? requestedDiscordId,
+    online: online ?? !!player,
+    scriptConnected: scriptConnected ?? (online ?? !!player),
+    lastHeartbeat: cleanDate(firstValue(record, ['lastHeartbeat', 'last_heartbeat', 'heartbeatAt', 'heartbeat_at'])),
+    player,
+  }
+}
+
+function countStatuses(results: PlayerOnlineSyncResult[]) {
+  const counts: Record<PlayerOnlineStatusName, number> = {
+    online: 0,
+    offline: 0,
+    'ignored-job': 0,
+    'not-linked': 0,
+    'not-configured': 0,
+    error: 0,
+  }
+  results.forEach((result) => { counts[result.status] += 1 })
+  return counts
+}
+
 async function fetchPlayerOnline(discordId: string): Promise<{
   discordId: string
   online: boolean
@@ -186,15 +335,20 @@ async function fetchPlayerOnline(discordId: string): Promise<{
 
   const url = new URL(playerOnlineApiUrl())
   url.searchParams.set('discordId', discordId)
+  url.searchParams.set('discord_id', discordId)
 
   const res = await fetch(url, {
     method: 'GET',
-    headers: { 'x-api-secret': secret },
+    headers: { 'x-api-secret': secret, accept: 'application/json' },
     cache: 'no-store',
     signal: AbortSignal.timeout(playerOnlineTimeoutMs()),
   })
 
-  if (res.status === 403 || res.status === 404) {
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(`Player-Online API lehnt das API-Secret ab (${res.status})`)
+  }
+
+  if (res.status === 404) {
     return {
       discordId,
       online: false,
@@ -211,13 +365,7 @@ async function fetchPlayerOnline(discordId: string): Promise<{
   }
 
   const body = await res.json() as RawPlayerOnlineResponse
-  return {
-    discordId: cleanDiscordId(body.discordId) ?? discordId,
-    online: body.online === true,
-    scriptConnected: body.scriptConnected === true,
-    lastHeartbeat: cleanDate(body.lastHeartbeat),
-    player: normalizePlayer(body.player),
-  }
+  return normalizePlayerOnlineResponse(body, discordId)
 }
 
 async function endActivePlaytime(officer: OfficerForPlayerSync, endedAt: Date) {
@@ -425,6 +573,7 @@ export async function syncAllPlayerPlaytime(options?: { force?: boolean; now?: D
       checkedAt: now,
       onlineCount: 0,
       errorCount: 0,
+      statusCounts: countStatuses([]),
       results: [],
     }
   }
@@ -447,6 +596,7 @@ export async function syncAllPlayerPlaytime(options?: { force?: boolean; now?: D
       checkedAt: now,
       onlineCount: results.filter((result) => result.status === 'online').length,
       errorCount: results.filter((result) => result.status === 'error').length,
+      statusCounts: countStatuses(results),
       results,
     }
 
@@ -479,6 +629,7 @@ export function getLastPlayerSyncSummary(now = new Date()): PlayerOnlineSyncSumm
     checkedAt: now,
     onlineCount: 0,
     errorCount: 0,
+    statusCounts: countStatuses([]),
     results: [],
   }
 }

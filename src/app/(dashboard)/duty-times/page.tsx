@@ -77,6 +77,7 @@ interface DutySnapshot {
     checkedAt: string
     onlineCount: number
     errorCount: number
+    statusCounts: Record<ApiStatus, number>
   }
   activeCount: number
   totalActiveDurationMs: number
@@ -170,8 +171,8 @@ export default function DutyTimesPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-          <span className={cn('health-pill', data.sync.configured ? 'ok' : 'warn')}>
-            <Signal size={12} /> API {data.sync.configured ? 'verbunden' : 'nicht konfiguriert'}
+          <span className={cn('health-pill', data.sync.errorCount > 0 ? 'err' : data.sync.configured ? 'ok' : 'warn')}>
+            <Signal size={12} /> API {data.sync.errorCount > 0 ? 'fehlerhaft' : data.sync.configured ? 'abgefragt' : 'nicht konfiguriert'}
           </span>
             {data.sync.errorCount > 0 && <span className="health-pill err">{data.sync.errorCount} Fehler</span>}
           </div>
@@ -186,6 +187,12 @@ export default function DutyTimesPage() {
         {data.sync.errorCount > 0 && (
             <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111]/80 px-4 py-3 text-[12.5px] text-[#fca5a5]">
               {data.sync.errorCount} Player-Online-Abfragen sind fehlgeschlagen. Die betroffenen Officers sind unten markiert.
+            </div>
+        )}
+
+        {data.sync.configured && data.sync.onlineCount === 0 && data.sync.errorCount === 0 && (
+            <div className="rounded-[12px] border border-[#29496c] bg-[#0a1e38]/70 px-4 py-3 text-[12px] text-[#9fb0c4]">
+              Die API antwortet, meldet aber keinen aktiven Police-Spieler: {data.sync.statusCounts.offline} offline, {data.sync.statusCounts['ignored-job']} mit anderem Job und {data.sync.statusCounts['not-linked']} ohne Discord-Verknüpfung.
             </div>
         )}
 
@@ -213,7 +220,7 @@ export default function DutyTimesPage() {
 
               {podium.length >= 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                    {[podium[1], podium[0], podium[2]].filter(Boolean).map((officer, idx) => {
+                    {[podium[1], podium[0], podium[2]].filter(Boolean).map((officer) => {
                       // visual order: 2nd, 1st, 3rd
                       const rank = officer === podium[0] ? 1 : officer === podium[1] ? 2 : 3
                       const colors = rank === 1
