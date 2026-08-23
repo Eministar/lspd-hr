@@ -44,8 +44,9 @@ import {
 import { CONTRACT_STATUS_META, type ContractStatusValue } from '@/lib/contracts'
 import { SanctionCard, type SanctionRecord } from '@/components/sanctions/sanction-card'
 import { Badge } from '@/components/ui/badge'
+import { RankNumberBadge } from '@/components/ranks/rank-number-badge'
 
-interface Rank { id: string; name: string; sortOrder: number; color: string }
+interface Rank { id: string; name: string; sortOrder: number; internalNumber: number | null; color: string }
 interface Unit { id: string; key: string; name: string; color: string; active: boolean }
 interface Training {
   id: string
@@ -725,7 +726,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     <div>
       <PageHeader
         title={`${officer.firstName} ${officer.lastName}`}
-        description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}`}
+        description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}${officer.rank?.internalNumber != null ? ` · Rang ${officer.rank.internalNumber}` : ''}`}
         action={
           <div className="flex gap-1.5 flex-wrap">
             <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank?.color} className="mr-1" />
@@ -818,9 +819,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 </InfoRow>
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />
-                    <span className="text-[13.5px] text-[#eee]">{officer.rank?.name}</span>
-                  </span>
+                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />
+                     <span className="text-[13.5px] text-[#eee]">{officer.rank?.name}</span>
+                     <RankNumberBadge number={officer.rank?.internalNumber} />
+                   </span>
                 </InfoRow>
                 <InfoRow label="Status">
                   <span className="inline-flex items-center gap-1.5">

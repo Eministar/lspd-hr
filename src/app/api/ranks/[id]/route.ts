@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
+import { isUniqueConstraintError } from '@/lib/prisma-errors'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,12 +23,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (bMin != null && bMax != null && bMin > bMax) {
       return error('Dienstnummer-Minimum darf nicht größer als Maximum sein')
     }
+    const internalNumber = body.internalNumber === undefined
+      ? undefined
+      : body.internalNumber === null || body.internalNumber === ''
+        ? null
+        : Number(body.internalNumber)
+    if (internalNumber != null && (!Number.isSafeInteger(internalNumber) || internalNumber < 1)) {
+      return error('Die interne Rangnummer muss eine positive ganze Zahl sein')
+    }
+    if (internalNumber != null) {
+      const duplicate = await prisma.rank.findFirst({
+        where: { internalNumber, id: { not: id } },
+        select: { name: true },
+      })
+      if (duplicate) return error(`Interne Rangnummer ${internalNumber} wird bereits von „${duplicate.name}“ verwendet`)
+    }
 
     const rank = await prisma.rank.update({
       where: { id },
       data: {
         name: body.name,
         sortOrder: body.sortOrder,
+        internalNumber,
         color: body.color,
         badgeMin: bMin,
         badgeMax: bMax,
@@ -36,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return success(rank)
   } catch (e: unknown) {
+    if (isUniqueConstraintError(e)) return error('Name oder interne Rangnummer ist bereits vergeben')
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

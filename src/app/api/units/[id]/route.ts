@@ -2,7 +2,12 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
-import { automaticPermissionsForRoleNames, sanitizePermissions } from '@/lib/permissions'
+import { automaticPermissionsForRoleNames } from '@/lib/permissions'
+import {
+  composeUnitPermissions,
+  sanitizeUnitIcon,
+  sanitizeUnitModules,
+} from '@/lib/unit-modules'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,12 +23,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (!name) return error('Name darf nicht leer sein')
       data.name = name
     }
+    if ('description' in body) {
+      data.description = typeof body.description === 'string' && body.description.trim()
+        ? body.description.trim()
+        : null
+    }
     if (typeof body.color === 'string' && body.color) data.color = body.color
+    if (typeof body.icon === 'string') data.icon = sanitizeUnitIcon(body.icon)
     if (typeof body.sortOrder === 'number') data.sortOrder = body.sortOrder
     if (typeof body.active === 'boolean') data.active = body.active
-    if (Array.isArray(body.permissions)) {
+    if (typeof body.showInNavigation === 'boolean') data.showInNavigation = body.showInNavigation
+
+    const modules = 'modules' in body ? sanitizeUnitModules(body.modules) : sanitizeUnitModules(existing.modules)
+    if ('modules' in body) data.modules = modules
+    if (Array.isArray(body.permissions) || 'modules' in body) {
       data.permissions = Array.from(new Set([
-        ...sanitizePermissions(body.permissions),
+        ...composeUnitPermissions(
+          Array.isArray(body.permissions) ? body.permissions : existing.permissions,
+          modules,
+        ),
         ...automaticPermissionsForRoleNames([
           existing.key,
           typeof data.name === 'string' ? data.name : existing.name,
@@ -32,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const unit = await prisma.unit.update({ where: { id }, data })
-    return success(unit)
+    return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules) })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

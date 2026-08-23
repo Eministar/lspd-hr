@@ -46,6 +46,7 @@ import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber, formatBadgeNumber } from '@/lib/badge-number'
 import { OfficerAvatar } from '@/components/officers/officer-avatar'
+import { RankNumberBadge } from '@/components/ranks/rank-number-badge'
 
 interface Training {
   id: string
@@ -67,6 +68,7 @@ interface Rank {
   id: string
   name: string
   sortOrder: number
+  internalNumber: number | null
   color: string
   badgeMin: number | null
   badgeMax: number | null
@@ -850,7 +852,8 @@ export default function OfficersPage() {
                       className={cn('text-[#4a6585] transition-transform duration-200 shrink-0', isCollapsed && '-rotate-90')}
                     />
                     <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: rank.color }} />
-                    <span className="text-[13px] font-semibold text-[#eee] truncate">{rank.name}</span>
+                    <span className="truncate text-[13px] font-semibold text-[#eee]">{rank.name}</span>
+                    <RankNumberBadge number={rank.internalNumber} />
                     <span className="text-[12px] text-[#4a6585] font-normal shrink-0">{groupOfficers.length}</span>
                     {rank.badgeMin != null && rank.badgeMax != null && (
                       <span className="hidden sm:inline text-[10px] text-[#4a6585] ml-auto font-mono">

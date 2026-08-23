@@ -235,16 +235,21 @@ model UserGroupMembership {
 }
 
 model Unit {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  name        String
-  color       String   @default("#d4af37")
-  sortOrder   Int      @default(0)
-  active      Boolean  @default(true)
+  id               String   @id @default(cuid())
+  key              String   @unique
+  name             String
+  description      String?  @db.Text
+  color            String   @default("#d4af37")
+  icon             String   @default("briefcase")
+  sortOrder        Int      @default(0)
+  active           Boolean  @default(true)
+  showInNavigation Boolean  @default(false)
+  /// Auswählbare Funktionsbereiche inkl. Zugriffsstufe, z. B. {"academy":"manage"}.
+  modules          Json     @default("{}")
   /// Zusätzliche Rechte, die diese Unit ihren Mitgliedern gewährt (analog UserGroup.permissions).
-  permissions Json     @default("[]")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  permissions      Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   userAssignments UserUnitAssignment[]
 }
@@ -263,10 +268,12 @@ model UserUnitAssignment {
 }
 
 model Rank {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  sortOrder Int
-  color     String   @default("#3B82F6")
+  id             String   @id @default(cuid())
+  name           String   @unique
+  sortOrder      Int
+  /// Interne, sichtbare Rangnummer (z. B. Chief of Police = Rang 19). Unabhängig von der Sortierung.
+  internalNumber Int?     @unique
+  color          String   @default("#3B82F6")
   /// Inklusiver Zahlenbereich für Dienstnummern (nur Ziffern / Prefix+Ziffern). Null = kein autom. Bereich.
   badgeMin  Int?
   badgeMax  Int?

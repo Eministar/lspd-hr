@@ -14,11 +14,13 @@ import { useToast } from '@/components/ui/toast'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { displayBadgeNumber, formatBadgeNumber } from '@/lib/badge-number'
+import { RankNumberBadge } from '@/components/ranks/rank-number-badge'
 
 interface Rank {
   id: string
   name: string
   sortOrder: number
+  internalNumber: number | null
   color: string
   badgeMin: number | null
   badgeMax: number | null
@@ -58,6 +60,7 @@ export default function RanksPage() {
   const [form, setForm] = useState({
     name: '',
     sortOrder: 0,
+    internalNumber: '' as string,
     color: '#3B82F6',
     badgeMin: '' as string,
     badgeMax: '' as string,
@@ -69,6 +72,7 @@ export default function RanksPage() {
     setForm({
       name: '',
       sortOrder: (ranks?.length || 0) + 1,
+      internalNumber: '',
       color: '#3B82F6',
       badgeMin: '',
       badgeMax: '',
@@ -82,6 +86,7 @@ export default function RanksPage() {
     setForm({
       name: rank.name,
       sortOrder: rank.sortOrder,
+      internalNumber: rank.internalNumber != null ? String(rank.internalNumber) : '',
       color: rank.color,
       badgeMin: rank.badgeMin != null ? String(rank.badgeMin) : '',
       badgeMax: rank.badgeMax != null ? String(rank.badgeMax) : '',
@@ -107,6 +112,7 @@ export default function RanksPage() {
     const payload = {
       name: form.name,
       sortOrder: form.sortOrder,
+      internalNumber: form.internalNumber.trim() === '' ? null : form.internalNumber,
       color: form.color,
       badgeMin: form.badgeMin.trim() === '' ? null : form.badgeMin,
       badgeMax: form.badgeMax.trim() === '' ? null : form.badgeMax,
@@ -246,10 +252,13 @@ export default function RanksPage() {
               transition={{ delay: i * 0.02 }}
               className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
             >
-              <span className="text-[12px] text-[#bbb] font-mono w-6 text-right">{rank.sortOrder}</span>
+              <span className="w-10 shrink-0 text-right font-mono text-[9.5px] uppercase tracking-wider text-[#526b85]" title="Sortierungsposition">Pos {rank.sortOrder}</span>
               <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ backgroundColor: rank.color }} />
               <div className="flex-1 min-w-0">
-                <span className="text-[13.5px] font-medium text-[#eee]">{rank.name}</span>
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span className="text-[13.5px] font-medium text-[#eee]">{rank.name}</span>
+                  <RankNumberBadge number={rank.internalNumber} />
+                </span>
                 {rank.badgeMin != null && rank.badgeMax != null && (
                   <span className="ml-2 text-[10px] text-[#4a6585] font-mono">
                     DN {formatBadgeNumber(rank.badgeMin, '')}–{formatBadgeNumber(rank.badgeMax, '')}
@@ -313,7 +322,13 @@ export default function RanksPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editRank ? 'Rang bearbeiten' : 'Neuer Rang'}>
         <div className="space-y-4">
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          <Input label="Reihenfolge" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Sortierungszahl" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
+            <Input label="Interne Rangnummer" numericOnly value={form.internalNumber} onChange={(e) => setForm({ ...form, internalNumber: e.target.value })} placeholder="z. B. 19" />
+          </div>
+          <p className="text-[11.5px] leading-5 text-[#6b8299]">
+            Die Sortierungszahl bestimmt nur die Position in Listen. Die interne Nummer wird sichtbar am Rang angezeigt, zum Beispiel „Rang 19“.
+          </p>
           <ColorField value={form.color} onChange={(color) => setForm({ ...form, color })} />
           <p className="text-[11.5px] text-[#6b8299]">
             Dienstnummer-Bereich (nur Zahl, optional): Bei Rangwechsel wird automatisch die kleinste freie Nummer in diesem Bereich vergeben (Einstellungen: Präfix z. B. LSPD-).

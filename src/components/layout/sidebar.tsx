@@ -6,21 +6,25 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText, ChartNoAxesCombined,
-  Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
+  Shield, GraduationCap, UserCog, Settings, LogOut, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
-  ClipboardList, Megaphone, FileText, Plane, Fingerprint, Newspaper, Gavel,
+  ClipboardList, Megaphone, FileText, Gavel,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
 import { hasAnyPermission, hasPermission, type Permission } from '@/lib/permissions'
 import Image from 'next/image'
+import { useFetch } from '@/hooks/use-fetch'
+import { unitIconComponent } from '@/components/units/unit-icon'
+import type { NavigationUnit } from '@/lib/unit-navigation'
 
 interface NavItem {
   name: string
   href: string
   icon: LucideIcon
   permission?: Permission
+  color?: string
 }
 
 interface NavContentProps {
@@ -47,19 +51,10 @@ const mainNav: NavItem[] = [
   { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
 ]
 
-const tasksNav: NavItem[] = [
-  { name: 'Recruitment & Training', href: '/academy', icon: ListChecks, permission: 'academy:view' },
-  { name: 'HR Abteilung', href: '/hr', icon: Briefcase, permission: 'hr:view' },
-  { name: 'Pressesprecher', href: '/press', icon: Newspaper, permission: 'press:view' },
-  { name: 'S.R.U.', href: '/sru', icon: Shield, permission: 'sru:view' },
-  { name: 'Air-Support Division', href: '/air-support', icon: Plane, permission: 'air-support:view' },
-  { name: 'Detective Unit', href: '/detective', icon: Fingerprint, permission: 'detective:view' },
-]
-
 const adminNav: NavItem[] = [
   { name: 'Ränge', href: '/admin/ranks', icon: Shield, permission: 'ranks:manage' },
   { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap, permission: 'trainings:manage' },
-  { name: 'Units', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
+  { name: 'Units & Module', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
   { name: 'API-Tokens', href: '/admin/api-tokens', icon: KeyRound, permission: 'groups:manage' },
@@ -113,7 +108,12 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
       {active && (
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] rounded-r-full bg-[#f0d060] shadow-[0_0_8px_rgba(240,208,96,0.6)]" />
       )}
-      <Icon size={18} strokeWidth={active ? 2.25 : 1.75} className={cn('shrink-0 transition-transform duration-200', !active && 'group-hover:scale-110')} />
+      <Icon
+        size={18}
+        strokeWidth={active ? 2.25 : 1.75}
+        style={!active && item.color ? { color: item.color } : undefined}
+        className={cn('shrink-0 transition-transform duration-200', !active && 'group-hover:scale-110')}
+      />
       <span className="truncate">{item.name}</span>
       {active && (
         <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#071b33]/40" />
@@ -123,6 +123,13 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
 }
 
 function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
+  const { data: navigationUnits } = useFetch<NavigationUnit[]>(user ? '/api/navigation/units' : null)
+  const unitNav: NavItem[] = (navigationUnits ?? []).map((unit) => ({
+    name: unit.name,
+    href: unit.href,
+    icon: unitIconComponent(unit.icon),
+    color: unit.color,
+  }))
   const showAdmin = hasAnyPermission(user, [
     'ranks:manage',
     'trainings:manage',
@@ -158,13 +165,11 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
           .filter((item) => !item.permission || hasPermission(user, item.permission))
           .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
-        {hasAnyPermission(user, ['academy:view', 'hr:view', 'press:view', 'sru:view', 'air-support:view', 'detective:view']) && (
+        {unitNav.length > 0 && (
           <>
             <SectionDivider />
-            <SectionLabel>Aufgaben</SectionLabel>
-            {tasksNav
-              .filter((item) => !item.permission || hasPermission(user, item.permission))
-              .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+            <SectionLabel>Units</SectionLabel>
+            {unitNav.map((item) => <NavLink key={`${item.href}:${item.name}`} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
 
