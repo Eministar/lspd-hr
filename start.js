@@ -9,14 +9,34 @@
 
 process.env.NODE_ENV = 'production'
 
-require('dotenv/config')
 const path = require('node:path')
 const http = require('node:http')
 const fs = require('node:fs')
 const { spawnSync } = require('node:child_process')
 const { parse } = require('node:url')
+const dotenv = require('dotenv')
 
 const projectDir = path.resolve(__dirname)
+// Der Einrichtungsassistent schreibt bewusst in .env.local. Diese Datei muss
+// vor dem Erfassen der Bot-/Gateway-Konfiguration geladen sein; .env bleibt
+// der nachrangige Fallback für klassische Deployments.
+function loadEnvFallback(filePath) {
+  try {
+    const parsed = dotenv.parse(fs.readFileSync(filePath))
+    for (const [key, value] of Object.entries(parsed)) {
+      // Nichtleere Host-Variablen gewinnen. Leere Docker-Platzhalter dürfen
+      // hingegen von der persistenten Setup-Datei gefüllt werden.
+      if (!String(process.env[key] || '').trim()) process.env[key] = value
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') console.warn(`[Env] ${filePath} konnte nicht geladen werden:`, error)
+  }
+}
+
+const setupEnvFile = String(process.env.LSPD_SETUP_ENV_FILE || '').trim()
+  || path.join(projectDir, '.env.local')
+loadEnvFallback(path.resolve(setupEnvFile))
+loadEnvFallback(path.join(projectDir, '.env'))
 const rawWebhookUrl =
   String(process.env.DISCORD_WEBHOOK_URL || '').trim() ||
   String(process.env.LSPD_DISCORD_WEBHOOK_URL || '').trim()

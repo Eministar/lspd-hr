@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Lock, LockOpen, MessageSquare, Play, ThumbsDown, ThumbsUp, Undo2, X } from 'lucide-react'
+import { ArrowDown, ArrowDownRight, ArrowRight, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronRight, Lock, LockOpen, MessageSquare, Play, Undo2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import { cn, formatDate } from '@/lib/utils'
@@ -100,16 +100,22 @@ function EntryVoteControls({
     loading: boolean
     onVote: (vote: RankChangeVoteValue) => void
 }) {
-    const buttons: { vote: RankChangeVoteValue; count: number; label: string; icon: typeof ThumbsUp }[] = [
-        { vote: 'UP', count: summary.upvotes, label: 'Upvote', icon: ThumbsUp },
-        { vote: 'DOWN', count: summary.downvotes, label: 'Downvote', icon: ThumbsDown },
+    const buttons: {
+        vote: RankChangeVoteValue
+        count: number
+        label: string
+        icon: typeof ArrowUp
+        activeClassName: string
+    }[] = [
+        { vote: 'HIGHER', count: summary.higherVotes, label: 'Höher einstufen', icon: ArrowUp, activeClassName: 'bg-[#34d399]/18 text-[#6ee7b7]' },
+        { vote: 'CONFIRM', count: summary.confirmVotes, label: 'Vorschlag bestätigen', icon: Check, activeClassName: 'bg-[#d4af37]/18 text-[#f3d77a]' },
+        { vote: 'LOWER', count: summary.lowerVotes, label: 'Niedriger einstufen', icon: ArrowDown, activeClassName: 'bg-[#f87171]/18 text-[#fca5a5]' },
     ]
 
     return (
-        <div className="inline-flex shrink-0 items-center gap-1 rounded-[8px] border border-[#1e3a5c]/55 bg-[#091b31]/70 p-1" aria-label="Abstimmung">
-            {buttons.map(({ vote, count, label, icon: Icon }) => {
+        <div className="inline-flex shrink-0 items-center gap-1 rounded-[8px] border border-[#1e3a5c]/55 bg-[#091b31]/70 p-1" role="group" aria-label="Abstimmung zur Rangänderung">
+            {buttons.map(({ vote, count, label, icon: Icon, activeClassName }) => {
                 const active = summary.currentUserVote === vote
-                const isUpvote = vote === 'UP'
                 return (
                     <button
                         key={vote}
@@ -118,12 +124,11 @@ function EntryVoteControls({
                         disabled={disabled || loading}
                         aria-pressed={active}
                         aria-label={`${label}: ${count} Stimme${count === 1 ? '' : 'n'}`}
-                        title={active ? `${label} entfernen` : `${label} abgeben`}
+                        title={active ? `${label} – Stimme entfernen` : label}
                         className={cn(
                             'inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-[6px] px-2 text-[11.5px] font-semibold tabular-nums transition-colors',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 disabled:cursor-not-allowed disabled:opacity-55',
-                            active && isUpvote && 'bg-[#34d399]/18 text-[#6ee7b7]',
-                            active && !isUpvote && 'bg-[#f87171]/18 text-[#fca5a5]',
+                            active && activeClassName,
                             !active && 'text-[#7e93ab] hover:bg-[#17375f]/70 hover:text-white',
                         )}
                     >

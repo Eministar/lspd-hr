@@ -19,7 +19,6 @@ function buildMarkdown(): string {
   lines.push('')
   lines.push('> Vollständige HTTP-API für das LSPD HR Dashboard. Jede Dashboard-Funktion ist auch programmatisch verfügbar.')
   lines.push('')
-  lines.push('**Interaktive Doku & Try-it-out:** [https://deine-domain.tld/docs](https://deine-domain.tld/docs)')
   lines.push('**OpenAPI Spec (JSON):** [`/api/v1/openapi.json`](/api/v1/openapi.json)')
   lines.push('**OpenAPI Spec (YAML):** [`/api/v1/openapi.yaml`](/api/v1/openapi.yaml)')
   lines.push('')

@@ -4,8 +4,10 @@ import { use, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowDownRight,
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   Check,
   Clock3,
@@ -15,8 +17,6 @@ import {
   Pencil,
   Send,
   ShieldCheck,
-  ThumbsDown,
-  ThumbsUp,
   Trash2,
   UserRound,
   X,
@@ -339,20 +339,25 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <div className="inline-flex items-center gap-1 rounded-[9px] border border-[#234568]/65 bg-[#07182c]/55 p-1">
+            <div className="inline-flex items-center gap-1 rounded-[9px] border border-[#234568]/65 bg-[#07182c]/55 p-1" role="group" aria-label="Abstimmung zur Rangänderung">
               {([
-                ['UP', entry.voteSummary.upvotes, ThumbsUp],
-                ['DOWN', entry.voteSummary.downvotes, ThumbsDown],
-              ] as const).map(([value, count, Icon]) => (
+                ['HIGHER', entry.voteSummary.higherVotes, ArrowUp, 'Höher einstufen', 'bg-[#34d399]/16 text-[#6ee7b7]'],
+                ['CONFIRM', entry.voteSummary.confirmVotes, Check, 'Vorschlag bestätigen', 'bg-[#d4af37]/16 text-[#f3d77a]'],
+                ['LOWER', entry.voteSummary.lowerVotes, ArrowDown, 'Niedriger einstufen', 'bg-[#f87171]/16 text-[#fca5a5]'],
+              ] as const).map(([value, count, Icon, label, activeClassName]) => (
                 <button
                   key={value}
+                  type="button"
                   onClick={() => vote(value)}
                   disabled={voting || entry.executed || entry.list.status === 'COMPLETED'}
                   aria-pressed={entry.voteSummary.currentUserVote === value}
+                  aria-label={`${label}: ${count} Stimme${count === 1 ? '' : 'n'}`}
+                  title={entry.voteSummary.currentUserVote === value ? `${label} – Stimme entfernen` : label}
                   className={cn(
-                    'inline-flex h-8 min-w-11 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[11.5px] font-semibold transition-colors disabled:opacity-40',
+                    'inline-flex h-8 min-w-11 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[11.5px] font-semibold tabular-nums transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 disabled:cursor-not-allowed disabled:opacity-40',
                     entry.voteSummary.currentUserVote === value
-                      ? value === 'UP' ? 'bg-[#34d399]/16 text-[#6ee7b7]' : 'bg-[#f87171]/16 text-[#fca5a5]'
+                      ? activeClassName
                       : 'text-[#8ea4bd] hover:bg-[#17375f]/65 hover:text-white',
                   )}
                 >

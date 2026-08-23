@@ -226,9 +226,25 @@ function createTrackedPrismaClient(baseClient: PrismaClient): PrismaClient {
   }) as unknown as PrismaClient
 }
 
-/** Ein Client pro Node-Prozess (auch in Production), damit keine Verbindungsfluten entstehen. */
-const prismaClient = globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient())
-const trackedPrismaClient = globalForPrisma.prismaTracked
-  ?? (globalForPrisma.prismaTracked = createTrackedPrismaClient(prismaClient))
-export const prisma =
-  globalForPrisma.prismaCompat ?? (globalForPrisma.prismaCompat = createPrismaCompatClient(trackedPrismaClient))
+/**
+ * Ein Client pro Node-Prozess (auch in Production), aber bewusst lazy.
+ *
+ * Eine noch nicht eingerichtete Installation muss Next bauen und den
+ * Setup-/Health-Endpunkt ausliefern können. Erst der erste echte Zugriff auf
+ * einen Prisma-Delegate benötigt deshalb DATABASE_URL.
+ */
+function getPrismaClient() {
+  const prismaClient = globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient())
+  const trackedPrismaClient = globalForPrisma.prismaTracked
+    ?? (globalForPrisma.prismaTracked = createTrackedPrismaClient(prismaClient))
+  return globalForPrisma.prismaCompat
+    ?? (globalForPrisma.prismaCompat = createPrismaCompatClient(trackedPrismaClient))
+}
+
+export const prisma = new Proxy({} as PrismaClientCompat, {
+  get(_target, prop) {
+    const client = getPrismaClient()
+    const value = Reflect.get(client, prop, client)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})

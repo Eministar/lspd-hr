@@ -1,8 +1,11 @@
-export type RankChangeVoteValue = 'UP' | 'DOWN'
+export const RANK_CHANGE_VOTE_VALUES = ['HIGHER', 'CONFIRM', 'LOWER'] as const
+
+export type RankChangeVoteValue = (typeof RANK_CHANGE_VOTE_VALUES)[number]
 
 export interface RankChangeVoteSummary {
-  upvotes: number
-  downvotes: number
+  higherVotes: number
+  confirmVotes: number
+  lowerVotes: number
   currentUserVote: RankChangeVoteValue | null
 }
 
@@ -15,17 +18,24 @@ export function summarizeRankChangeVotes(
   votes: StoredRankChangeVote[],
   currentUserId: string,
 ): RankChangeVoteSummary {
-  let upvotes = 0
-  let downvotes = 0
+  let higherVotes = 0
+  let confirmVotes = 0
+  let lowerVotes = 0
   let currentUserVote: RankChangeVoteValue | null = null
 
   for (const vote of votes) {
-    if (vote.value === 'UP') upvotes += 1
-    if (vote.value === 'DOWN') downvotes += 1
-    if (vote.userId === currentUserId && (vote.value === 'UP' || vote.value === 'DOWN')) {
+    // Alte UP-/DOWN-Stimmen werden bewusst nicht als neue, gerichtete Stimmen umgedeutet.
+    if (vote.value === 'HIGHER') higherVotes += 1
+    if (vote.value === 'CONFIRM') confirmVotes += 1
+    if (vote.value === 'LOWER') lowerVotes += 1
+    if (vote.userId === currentUserId && isRankChangeVoteValue(vote.value)) {
       currentUserVote = vote.value
     }
   }
 
-  return { upvotes, downvotes, currentUserVote }
+  return { higherVotes, confirmVotes, lowerVotes, currentUserVote }
+}
+
+export function isRankChangeVoteValue(value: unknown): value is RankChangeVoteValue {
+  return typeof value === 'string' && RANK_CHANGE_VOTE_VALUES.some((candidate) => candidate === value)
 }

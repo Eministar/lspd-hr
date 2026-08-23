@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { error, success, unauthorized } from '@/lib/api-response'
-import { summarizeRankChangeVotes, type RankChangeVoteValue } from '@/lib/rank-change-votes'
+import { isRankChangeVoteValue, summarizeRankChangeVotes } from '@/lib/rank-change-votes'
 
 export async function PATCH(
   req: NextRequest,
@@ -11,11 +11,11 @@ export async function PATCH(
   try {
     const user = await requirePermission('rank-changes:view')
     const { id, entryId } = await params
-    const body = await req.json()
-    const vote = body.vote as RankChangeVoteValue | null
+    const body: unknown = await req.json()
+    const vote = typeof body === 'object' && body !== null && 'vote' in body ? body.vote : undefined
 
-    if (vote !== null && vote !== 'UP' && vote !== 'DOWN') {
-      return error('Vote muss UP, DOWN oder null sein')
+    if (vote !== null && !isRankChangeVoteValue(vote)) {
+      return error('Stimme muss HIGHER, CONFIRM, LOWER oder null sein')
     }
 
     const entry = await prisma.rankChangeListEntry.findFirst({

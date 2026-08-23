@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getDutyTimesSnapshot } from '@/lib/duty-times'
-import { playerOnlineApiConfigured } from '@/lib/player-online'
-import { getDiscordConfig, getDiscordGuildRoles } from '@/lib/discord-integration'
+import { getSetupStatus } from '@/lib/setup'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +60,7 @@ function overallCode(checks: HealthCheck[]): HealthCode {
 }
 
 async function databaseCheck() {
+  const { prisma } = await import('@/lib/prisma')
   await prisma.$queryRaw`SELECT 1`
   const [users, officers] = await Promise.all([
     prisma.user.count(),
@@ -78,6 +76,7 @@ async function databaseCheck() {
 }
 
 async function authCheck() {
+  const { getDiscordConfig } = await import('@/lib/discord-integration')
   const config = await getDiscordConfig()
   const clientConfigured = configuredEnv(
     'DISCORD_CLIENT_ID',
@@ -121,6 +120,10 @@ async function authCheck() {
 }
 
 async function dutyTimesCheck() {
+  const [{ getDutyTimesSnapshot }, { playerOnlineApiConfigured }] = await Promise.all([
+    import('@/lib/duty-times'),
+    import('@/lib/player-online'),
+  ])
   const snapshot = await getDutyTimesSnapshot(new Date())
   const errorCount = snapshot.sync.errorCount
   const configured = playerOnlineApiConfigured()
@@ -155,6 +158,7 @@ async function dutyTimesCheck() {
 }
 
 async function discordCheck() {
+  const { getDiscordConfig, getDiscordGuildRoles } = await import('@/lib/discord-integration')
   const config = await getDiscordConfig()
   const botConfigured = configuredEnv('DISCORD_BOT_TOKEN', 'LSPD_DISCORD_BOT_TOKEN')
 
@@ -180,6 +184,10 @@ async function discordCheck() {
 }
 
 async function discordSyncCheck() {
+  const [{ prisma }, { getDiscordConfig }] = await Promise.all([
+    import('@/lib/prisma'),
+    import('@/lib/discord-integration'),
+  ])
   const config = await getDiscordConfig()
   const configuredRoleIds = new Set([
     ...config.employeeRoleIds,
@@ -217,6 +225,27 @@ async function discordSyncCheck() {
 
 export async function GET() {
   const startedAt = Date.now()
+  const setup = await getSetupStatus()
+  if (setup.setupRequired) {
+    return NextResponse.json({
+      success: true,
+      code: 'UNCONFIGURED',
+      ok: false,
+      setupRequired: true,
+      checkedAt: new Date().toISOString(),
+      durationMs: Date.now() - startedAt,
+      checks: [{
+        name: 'setup',
+        code: 'UNCONFIGURED',
+        ok: false,
+        critical: false,
+        durationMs: Date.now() - startedAt,
+        message: 'Die Ersteinrichtung ist noch nicht abgeschlossen',
+        details: { missing: setup.missing, databaseState: setup.databaseState },
+      }],
+    }, { status: 200 })
+  }
+
   const checks = await Promise.all([
     timedCheck('database', true, databaseCheck),
     timedCheck('auth.login', true, authCheck),

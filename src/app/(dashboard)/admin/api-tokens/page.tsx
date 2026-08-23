@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Copy, KeyRound, Plus, RefreshCw, ShieldOff, Trash2, Eye, EyeOff, Activity, ExternalLink, Infinity as InfinityIcon, User as UserIcon, UserCog, Lock, Settings } from 'lucide-react'
+import { Copy, KeyRound, Plus, RefreshCw, ShieldOff, Trash2, Eye, EyeOff, Activity, Infinity as InfinityIcon, User as UserIcon, UserCog, Lock, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -181,19 +181,9 @@ export default function ApiTokensPage() {
         title="API-Tokens"
         description="Programmatischer Zugriff auf das Dashboard via Bearer-Token"
         action={
-          <div className="flex gap-2">
-            <a
-              href="/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-[12.5px] text-[#9fb0c4] hover:text-[#d4af37] transition-colors"
-            >
-              <ExternalLink size={12} /> API-Dokumentation
-            </a>
-            <Button size="sm" onClick={openCreate}>
-              <Plus size={14} strokeWidth={2} /> Neuer Token
-            </Button>
-          </div>
+          <Button size="sm" onClick={openCreate}>
+            <Plus size={14} strokeWidth={2} /> Neuer Token
+          </Button>
         }
       />
 

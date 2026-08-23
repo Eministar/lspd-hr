@@ -23,4 +23,4 @@
     ]
 
 [start]
-    cmd = "node scripts/initialize-database.js && npx next start -p ${PORT:-3000} -H 0.0.0.0"
+    cmd = "node start.js"

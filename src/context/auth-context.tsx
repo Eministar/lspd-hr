@@ -41,6 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const lastFetchRef = useRef(0)
+  const setupRequiredRef = useRef<boolean | null>(null)
+  const [setupRequired, setSetupRequired] = useState<boolean | null>(null)
 
   // Lädt den aktuellen User aus /api/auth/me.
   // `silent`: kein globaler Loading-State und kein Zurücksetzen bei
@@ -75,18 +77,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(() => loadUser(false), [loadUser])
 
   const revalidateUser = useCallback(() => {
+    if (setupRequiredRef.current !== false) return
     if (Date.now() - lastFetchRef.current < REVALIDATE_THROTTLE_MS) return
     void loadUser(true)
   }, [loadUser])
 
-  // Erstes Laden beim Mount (mit Loading-State).
+  // Vor jedem Auth-/DB-Zugriff prüfen, ob die Installation eingerichtet ist.
+  // Dadurch kann eine komplett leere Installation starten, ohne dass Prisma
+  // bereits beim ersten Rendern an einer fehlenden DATABASE_URL scheitert.
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void refreshUser()
-    }, 0)
+    const controller = new AbortController()
+    const loadBootstrapState = async () => {
+      try {
+        const response = await fetch('/api/setup/status', {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        const payload = await response.json()
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'Einrichtungsstatus konnte nicht geladen werden')
 
-    return () => window.clearTimeout(timeoutId)
-  }, [refreshUser])
+        const required = payload.data?.setupRequired === true
+        setupRequiredRef.current = required
+        setSetupRequired(required)
+        if (required) {
+          setUser(null)
+          setAuthError(null)
+          setLoading(false)
+          return
+        }
+        await loadUser(false)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        setUser(null)
+        setAuthError(error instanceof Error ? error.message : 'Einrichtungsstatus konnte nicht geladen werden')
+        setLoading(false)
+      }
+    }
+    void loadBootstrapState()
+
+    return () => controller.abort()
+  }, [loadUser])
+
+  useEffect(() => {
+    if (setupRequired === true && pathname !== '/setup') {
+      router.replace('/setup')
+    } else if (setupRequired === false && pathname === '/setup') {
+      router.replace('/login')
+    }
+  }, [pathname, router, setupRequired])
 
   // Bei jedem Seitenwechsel die Rechte still neu auflösen, damit z.B. frisch
   // über eine Benutzergruppe vergebene Permissions ohne Re-Login greifen.

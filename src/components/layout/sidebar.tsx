@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText,
+  LayoutDashboard, Users, ArrowUpDown, UserX, StickyNote, ScrollText, ChartNoAxesCombined,
   Shield, GraduationCap, UserCog, Settings, LogOut, ListChecks, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
-  ClipboardList, Megaphone, FileText, BookOpen, ArrowDownToLine, Plane, Fingerprint, Newspaper, Gavel,
+  ClipboardList, Megaphone, FileText, Plane, Fingerprint, Newspaper, Gavel,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -32,6 +32,7 @@ interface NavContentProps {
 
 const mainNav: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard:view' },
+  { name: 'Statistiken', href: '/statistics', icon: ChartNoAxesCombined, permission: 'dashboard:view' },
   { name: 'Ordnungen', href: '/ordnungen', icon: FileText },
   { name: 'Kalender', href: '/calendar', icon: CalendarDays, permission: 'calendar:view' },
   { name: 'Dienstzeiten', href: '/duty-times', icon: Timer, permission: 'duty-times:view' },
@@ -63,14 +64,9 @@ const adminNav: NavItem[] = [
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
   { name: 'API-Tokens', href: '/admin/api-tokens', icon: KeyRound, permission: 'groups:manage' },
   { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
-  { name: 'System-Update', href: '/admin/update', icon: ArrowDownToLine, permission: 'users:manage' },
   { name: 'Update senden', href: '/admin/update-announcer', icon: Megaphone, permission: 'updates:send' },
   { name: 'Uploads', href: '/admin/uploads', icon: Upload, permission: 'settings:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
-]
-
-const developerNav: NavItem[] = [
-  { name: 'API-Dokumentation', href: '/docs', icon: BookOpen },
 ]
 
 const accountNav: NavItem[] = [
@@ -127,9 +123,6 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
 }
 
 function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
-  // API-Dokumentation ist für alle authentifizierten User sichtbar — daher
-  // zeigen wir den Admin-Block immer, sobald irgendein Admin-Bereich freigeschaltet
-  // ist. Die einzelnen Items werden unten weiter gefiltert.
   const showAdmin = hasAnyPermission(user, [
     'ranks:manage',
     'trainings:manage',
@@ -184,10 +177,6 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
               .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
           </>
         )}
-
-        <SectionDivider />
-        <SectionLabel>Entwickler</SectionLabel>
-        {developerNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
 
         <SectionDivider />
         <SectionLabel>Konto</SectionLabel>
