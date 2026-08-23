@@ -335,6 +335,28 @@ function summarizeErrors(results: PlayerOnlineSyncResult[]) {
     .slice(0, 4)
 }
 
+async function responseErrorDetail(res: Response) {
+  const text = await res.text().catch(() => '')
+  if (!text) return ''
+
+  const contentType = res.headers.get('content-type')?.toLowerCase() ?? ''
+  if (contentType.includes('application/json')) {
+    try {
+      const body = JSON.parse(text) as UnknownRecord
+      const detail = cleanString(firstValue(body, ['error', 'message', 'detail']), 160)
+      if (detail) return detail
+    } catch {
+      // Ungültiges JSON wird unten als bereinigter Text ausgegeben.
+    }
+  }
+
+  return text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160)
+}
+
 async function fetchPlayerOnline(discordId: string): Promise<{
   discordId: string
   online: boolean
@@ -356,8 +378,14 @@ async function fetchPlayerOnline(discordId: string): Promise<{
     signal: AbortSignal.timeout(playerOnlineTimeoutMs()),
   })
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error(`Player-Online API lehnt das API-Secret ab (${res.status})`)
+  if (res.status === 401) {
+    const detail = await responseErrorDetail(res)
+    throw new Error(`Player-Online API-Secret fehlt oder ist ungültig (401)${detail ? `: ${detail}` : ''}`)
+  }
+
+  if (res.status === 403) {
+    const detail = await responseErrorDetail(res)
+    throw new Error(`Player-Online API verbietet die Anfrage (403)${detail ? `: ${detail}` : ''}. Secret-Berechtigung, Server-IP und Cloudflare prüfen.`)
   }
 
   if (res.status === 404) {
@@ -372,8 +400,8 @@ async function fetchPlayerOnline(discordId: string): Promise<{
   }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Player-Online API ${res.status}: ${text.slice(0, 180) || res.statusText}`)
+    const detail = await responseErrorDetail(res)
+    throw new Error(`Player-Online API ${res.status}: ${detail || res.statusText}`)
   }
 
   const body = await res.json() as RawPlayerOnlineResponse
