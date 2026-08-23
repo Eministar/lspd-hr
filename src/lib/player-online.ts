@@ -39,6 +39,7 @@ export type PlayerOnlineSyncSummary = {
   onlineCount: number
   errorCount: number
   statusCounts: Record<PlayerOnlineStatusName, number>
+  errorSummary: Array<{ message: string; count: number }>
   results: PlayerOnlineSyncResult[]
 }
 
@@ -322,6 +323,18 @@ function countStatuses(results: PlayerOnlineSyncResult[]) {
   return counts
 }
 
+function summarizeErrors(results: PlayerOnlineSyncResult[]) {
+  const counts = new Map<string, number>()
+  results.forEach((result) => {
+    if (result.status !== 'error') return
+    const message = (result.error?.trim() || 'Unbekannter Player-Online-Fehler').slice(0, 220)
+    counts.set(message, (counts.get(message) ?? 0) + 1)
+  })
+  return Array.from(counts, ([message, count]) => ({ message, count }))
+    .sort((a, b) => b.count - a.count || a.message.localeCompare(b.message))
+    .slice(0, 4)
+}
+
 async function fetchPlayerOnline(discordId: string): Promise<{
   discordId: string
   online: boolean
@@ -335,7 +348,6 @@ async function fetchPlayerOnline(discordId: string): Promise<{
 
   const url = new URL(playerOnlineApiUrl())
   url.searchParams.set('discordId', discordId)
-  url.searchParams.set('discord_id', discordId)
 
   const res = await fetch(url, {
     method: 'GET',
@@ -574,6 +586,7 @@ export async function syncAllPlayerPlaytime(options?: { force?: boolean; now?: D
       onlineCount: 0,
       errorCount: 0,
       statusCounts: countStatuses([]),
+      errorSummary: [],
       results: [],
     }
   }
@@ -597,7 +610,14 @@ export async function syncAllPlayerPlaytime(options?: { force?: boolean; now?: D
       onlineCount: results.filter((result) => result.status === 'online').length,
       errorCount: results.filter((result) => result.status === 'error').length,
       statusCounts: countStatuses(results),
+      errorSummary: summarizeErrors(results),
       results,
+    }
+
+    if (summary.errorSummary.length > 0) {
+      console.warn(
+        `[PlayerOnline] ${summary.errorCount} Fehler: ${summary.errorSummary.map((entry) => `${entry.count}× ${entry.message}`).join(' | ')}`,
+      )
     }
 
     if (results.some((result) => result.status === 'online' || result.status === 'offline' || result.status === 'ignored-job')) {
@@ -630,6 +650,7 @@ export function getLastPlayerSyncSummary(now = new Date()): PlayerOnlineSyncSumm
     onlineCount: 0,
     errorCount: 0,
     statusCounts: countStatuses([]),
+    errorSummary: [],
     results: [],
   }
 }

@@ -78,6 +78,7 @@ interface DutySnapshot {
     onlineCount: number
     errorCount: number
     statusCounts: Record<ApiStatus, number>
+    errorSummary: Array<{ message: string; count: number }>
   }
   activeCount: number
   totalActiveDurationMs: number
@@ -186,7 +187,14 @@ export default function DutyTimesPage() {
 
         {data.sync.errorCount > 0 && (
             <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111]/80 px-4 py-3 text-[12.5px] text-[#fca5a5]">
-              {data.sync.errorCount} Player-Online-Abfragen sind fehlgeschlagen. Die betroffenen Officers sind unten markiert.
+              <p>{data.sync.errorCount} Player-Online-Abfragen sind fehlgeschlagen.</p>
+              {data.sync.errorSummary.length > 0 && (
+                  <ul className="mt-2 space-y-1 font-mono text-[11px] text-[#fecaca]">
+                    {data.sync.errorSummary.map((entry) => (
+                        <li key={entry.message}>{entry.count}× {entry.message}</li>
+                    ))}
+                  </ul>
+              )}
             </div>
         )}
 
