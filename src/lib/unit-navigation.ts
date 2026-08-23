@@ -34,7 +34,29 @@ const DEFAULT_NAVIGATION_UNITS: {
 
 let bootstrapPromise: Promise<void> | null = null
 
+async function repairInvalidUnitJsonRows() {
+  // Bei der erstmaligen Einführung der JSON-Spalte hat MariaDB auf einzelnen
+  // Installationen bestehende Zeilen mit einem leeren String gefüllt. Prisma
+  // kann dann nicht einmal mehr selektieren ("Unexpected end of JSON input").
+  // Gültige Werte werden von diesen Bedingungen ausdrücklich nicht berührt.
+  await prisma.$executeRawUnsafe(`
+    UPDATE \`Unit\`
+    SET \`modules\` = '{}'
+    WHERE \`modules\` IS NULL
+       OR TRIM(CAST(\`modules\` AS CHAR)) = ''
+       OR JSON_VALID(\`modules\`) = 0
+  `)
+  await prisma.$executeRawUnsafe(`
+    UPDATE \`Unit\`
+    SET \`permissions\` = '[]'
+    WHERE \`permissions\` IS NULL
+       OR TRIM(CAST(\`permissions\` AS CHAR)) = ''
+       OR JSON_VALID(\`permissions\`) = 0
+  `)
+}
+
 async function bootstrapDefaultNavigationUnits() {
+  await repairInvalidUnitJsonRows()
   const marker = await prisma.systemSetting.findUnique({ where: { key: BOOTSTRAP_SETTING }, select: { id: true } })
   if (marker) return
 

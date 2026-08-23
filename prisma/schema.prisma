@@ -245,7 +245,8 @@ model Unit {
   active           Boolean  @default(true)
   showInNavigation Boolean  @default(false)
   /// Auswählbare Funktionsbereiche inkl. Zugriffsstufe, z. B. {"academy":"manage"}.
-  modules          Json     @default("{}")
+  /// Nullable, damit additive MariaDB-Updates bestehende Zeilen nicht mit leerem, ungültigem JSON füllen.
+  modules          Json?
   /// Zusätzliche Rechte, die diese Unit ihren Mitgliedern gewährt (analog UserGroup.permissions).
   permissions      Json     @default("[]")
   createdAt        DateTime @default(now())
