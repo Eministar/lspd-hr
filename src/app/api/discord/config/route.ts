@@ -42,9 +42,21 @@ export async function GET(req: NextRequest) {
         data: [],
         error: e instanceof Error ? e.message : 'Discord-Channel konnten nicht geladen werden',
       })),
-      prisma.rank.findMany({ orderBy: { sortOrder: 'asc' } }),
-      prisma.training.findMany({ orderBy: { sortOrder: 'asc' } }),
-      prisma.unit.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+      // Diese Einstellungsseite braucht nur die Bezeichner. Explizite Selects
+      // verhindern, dass eine neue, noch nicht gepushte optionale Spalte die
+      // komplette Discord-Konfiguration unsichtbar macht.
+      prisma.rank.findMany({
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, name: true },
+      }),
+      prisma.training.findMany({
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, label: true },
+      }),
+      prisma.unit.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        select: { key: true, name: true },
+      }),
       prisma.userGroup.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     ])
 
