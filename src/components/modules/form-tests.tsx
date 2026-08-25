@@ -816,7 +816,7 @@ function ChoiceOptions({
       </div>
       <div className="space-y-2">
         {choices.map((choice, index) => (
-          <div key={`${choice}-${index}`} className="flex items-center gap-2">
+          <div key={index} className="flex items-center gap-2">
             {showCorrect && (
               <button
                 type="button"
