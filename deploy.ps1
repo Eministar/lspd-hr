@@ -132,7 +132,6 @@ Invoke-TeeCommand "Prisma generate" "npx" @("prisma", "generate")
 
 if (-not $SkipDbPush) {
     Invoke-TeeCommand "Prisma db push (npm run db:push = Backup + push)" "npm" @("run", "db:push")
-    Invoke-TeeCommand "Unitgruppen-Status prüfen (einmaliger Backfill)" "npm" @("run", "db:backfill-unit-groups")
 }
 else {
     Write-Host ""

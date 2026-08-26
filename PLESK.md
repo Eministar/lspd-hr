@@ -76,18 +76,13 @@ Alte Dateien aus `public/uploads` bei Bedarf einmalig in den neuen `UPLOAD_DIR` 
 git pull origin main    # oder dein Branch
 npm ci
 npm run db:push
-npm run db:backfill-unit-groups
 npm run build
 # App in Plesk neu starten (Button / „restart“)
 ```
 
-Bei Schema-Änderungen: erst `npm run db:push` und beim ersten Einordnen der
-bestehenden Units zusätzlich `npm run db:backfill-unit-groups`, dann wieder
-bauen/neu starten. Der Backfill setzt nach einem erfolgreichen Lauf einen
-Marker und ist bei späteren Deploys nur noch eine schnelle Prüfung. Für eine
-bewusste erneute Prüfung steht `npm run db:backfill-unit-groups -- --force`
-zur Verfügung. `npx prisma migrate deploy` ist für
-dieses Projekt nicht der vorgesehene Rollout-Weg, weil die Produktion mit
+Bei Schema-Änderungen: `npm run db:push`, dann bauen/neu starten.
+Die Datenmigration für bestehende Units liegt unter `prisma/migrations/20260827_group_existing_units/migration.sql`.
+`npx prisma migrate deploy` ist für dieses Projekt nicht der vorgesehene Rollout-Weg, weil die Produktion mit
 `db push` betrieben wird. Ein alter fehlgeschlagener Migrationseintrag kann
 deshalb bei `migrate deploy` mit `P3009` erscheinen, ohne den normalen Deploy zu
 blockieren.

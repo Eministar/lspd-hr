@@ -140,11 +140,6 @@ must_step "Prisma-Client generieren" npx prisma generate
 # Bricht bewusst ab, wenn der Push destruktiv wäre → dann manuell eingreifen.
 must_step "Schema anwenden (db push, ohne Datenverlust)" npx prisma db push
 
-# `db push` wendet das Schema an, führt aber keine SQL-Datenmigrationen aus.
-# Der einmalige Backfill prüft einen DB-Marker, erhält IDs und alle bestehenden
-# Zuweisungen. Nach dem ersten erfolgreichen Lauf bleibt dieser Schritt schnell.
-must_step "Unitgruppen-Status prüfen" npm run db:backfill-unit-groups
-
 # Optionaler Seed — NUR wenn RUN_SEED=1 (z.B. update.sh --seed). Standardmäßig
 # aus, weil der Seed Gruppen-/Unit-Rechte auf die Defaults zurücksetzen würde.
 if [ "${RUN_SEED:-0}" = "1" ]; then
