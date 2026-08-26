@@ -12,5 +12,9 @@ Internal Affairs als `isLeadership` markiert und können dadurch die gemeinsame
 Leitungsrolle der Gruppe synchronisieren.
 
 Die SQL-Schritte sind idempotent: Bereits gesetzte `groupId`-Werte und manuell
-angelegte Unitgruppen werden nicht überschrieben. Nicht erkannte oder später
-hinzugefügte Units können weiterhin im Unitgruppen-Editor einsortiert werden.
+angelegte Unitgruppen werden nicht überschrieben. Da der produktive Deploy
+`prisma db push` verwendet (und damit SQL-Migrationen nicht automatisch
+ausführt), startet der Deploy zusätzlich
+`npm run db:backfill-unit-groups`. Der Backfill kann bei Bedarf auch manuell
+ausgeführt werden. Nicht erkannte oder später hinzugefügte Units können
+weiterhin im Unitgruppen-Editor einsortiert werden.

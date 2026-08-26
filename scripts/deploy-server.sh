@@ -51,6 +51,11 @@ log "Schema anwenden (prisma db push, ohne --accept-data-loss)"
 # Bricht bewusst ab, wenn der Push destruktiv wäre → dann manuell eingreifen.
 npx prisma db push
 
+log "Bestehende Units in Unitgruppen einordnen"
+# `db push` wendet das Schema an, führt aber keine SQL-Datenmigrationen aus.
+# Der idempotente Backfill erhält IDs und alle bestehenden Zuweisungen.
+npm run db:backfill-unit-groups
+
 # Optionaler Seed — NUR wenn RUN_SEED=1 (z.B. update.sh --seed). Standardmäßig
 # aus, weil der Seed Gruppen-/Unit-Rechte auf die Defaults zurücksetzen würde.
 if [ "${RUN_SEED:-0}" = "1" ]; then
