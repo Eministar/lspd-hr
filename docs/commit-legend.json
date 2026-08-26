@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-08-26T22:25:44.416Z",
+  "generatedAt": "2026-08-26T22:52:24.330Z",
   "entries": [
+    {
+      "buildId": "build-4e583454cd",
+      "commit": "4e583454cd2101e697955025a2056cf6b38a5f3a",
+      "shortCommit": "4e583454cd",
+      "subject": "Merge branch 'main' of https://github.com/Eministar/lspd-hr",
+      "author": "Eministar",
+      "date": "2026-08-26T22:51:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4e583454cd2101e697955025a2056cf6b38a5f3a"
+    },
+    {
+      "buildId": "build-e3b5b89d70",
+      "commit": "e3b5b89d70a83b5ba2a69049f8c54620b4d005c8",
+      "shortCommit": "e3b5b89d70",
+      "subject": "feat: implement legal case batch creation and display features",
+      "author": "Eministar",
+      "date": "2026-08-26T22:51:07Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e3b5b89d70a83b5ba2a69049f8c54620b4d005c8"
+    },
+    {
+      "buildId": "build-f9d2ed5ffb",
+      "commit": "f9d2ed5ffb488fd60b104d4755b1319c893ccfad",
+      "shortCommit": "f9d2ed5ffb",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-08-26T22:25:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f9d2ed5ffb488fd60b104d4755b1319c893ccfad"
+    },
     {
       "buildId": "build-cda65aaf96",
       "commit": "cda65aaf96103d2adb5c58dcd9757b1b12ce005a",
