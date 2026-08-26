@@ -1,7 +1,70 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-08-26T12:48:54.316Z",
+  "generatedAt": "2026-08-26T16:24:58.525Z",
   "entries": [
+    {
+      "buildId": "build-f8390fffca",
+      "commit": "f8390fffca0f3266bde9bfb2bb187a03120676d8",
+      "shortCommit": "f8390fffca",
+      "subject": "feat: enhance deploy script with improved logging and error handling for deployment steps",
+      "author": "Eministar",
+      "date": "2026-08-26T16:05:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f8390fffca0f3266bde9bfb2bb187a03120676d8"
+    },
+    {
+      "buildId": "build-fd00829932",
+      "commit": "fd00829932f4b7528591bc5bcbc834541f4af778",
+      "shortCommit": "fd00829932",
+      "subject": "feat: implement unit group backfill functionality and enhance unit management",
+      "author": "Eministar",
+      "date": "2026-08-26T16:00:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fd00829932f4b7528591bc5bcbc834541f4af778"
+    },
+    {
+      "buildId": "build-9d137ca1c9",
+      "commit": "9d137ca1c94e61b9ff6f6c1ad2b18ddcf6a2d9d2",
+      "shortCommit": "9d137ca1c9",
+      "subject": "feat: enhance officer status update handling with retry logic and error management",
+      "author": "Eministar",
+      "date": "2026-08-26T15:38:47Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9d137ca1c94e61b9ff6f6c1ad2b18ddcf6a2d9d2"
+    },
+    {
+      "buildId": "build-bcf23762c6",
+      "commit": "bcf23762c69b1a247dd56e8cd0c41c73498d87a6",
+      "shortCommit": "bcf23762c6",
+      "subject": "feat: add external URL support for documents and implement scroll-to-top functionality",
+      "author": "Eministar",
+      "date": "2026-08-26T15:32:30Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bcf23762c69b1a247dd56e8cd0c41c73498d87a6"
+    },
+    {
+      "buildId": "build-ad260e2b6a",
+      "commit": "ad260e2b6aca8623da18c07375a7ceaff01b8800",
+      "shortCommit": "ad260e2b6a",
+      "subject": "feat: add migration for existing units to create unit groups and link them with groupId",
+      "author": "Eministar",
+      "date": "2026-08-26T15:26:18Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ad260e2b6aca8623da18c07375a7ceaff01b8800"
+    },
+    {
+      "buildId": "build-868059e92b",
+      "commit": "868059e92ba74f6065f1be7054b9f1236a83ab5f",
+      "shortCommit": "868059e92b",
+      "subject": "fix: resolve dynamic path handling for uploads to avoid build-time dependency issues",
+      "author": "Eministar",
+      "date": "2026-08-26T15:20:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/868059e92ba74f6065f1be7054b9f1236a83ab5f"
+    },
+    {
+      "buildId": "build-bfc3be7b75",
+      "commit": "bfc3be7b75780a1ad19f2ddfd5efff653da0e1d2",
+      "shortCommit": "bfc3be7b75",
+      "subject": "feat: add internal affairs module with officer search functionality and update sanctions handling",
+      "author": "Eministar",
+      "date": "2026-08-26T15:17:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bfc3be7b75780a1ad19f2ddfd5efff653da0e1d2"
+    },
     {
       "buildId": "build-34536c3d58",
       "commit": "34536c3d58f3080cdbdd3e31f21d267c8f6571ff",
