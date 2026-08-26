@@ -1,24 +1,12 @@
 import type { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
+import { isRecordChangedError } from '@/lib/prisma-errors'
 
 const MAX_SECURITY_EVENTS = 80
 const MAX_SESSION_WRITE_ATTEMPTS = 3
 
-function readErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : ''
-}
-
 export function isFormTestSessionWriteConflict(error: unknown) {
-  const message = readErrorMessage(error).toLowerCase()
-  return (
-    message.includes('record has changed since last read') ||
-    (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: unknown }).code === 'P2034'
-    )
-  )
+  return isRecordChangedError(error)
 }
 
 async function waitForRetry(attempt: number) {

@@ -1,15 +1,48 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import type { OfficerFlag, OfficerStatus } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
+import { isRecordChangedError } from '@/lib/prisma-errors'
 
 export const INACTIVITY_DAYS = 7
 const AUTOMATION_INTERVAL_MS = 60_000
 const SYSTEM_USERNAME = 'lspd-system'
 const SYSTEM_DISPLAY_NAME = 'LSPD System'
+const STATUS_UPDATE_ATTEMPTS = 3
+
+export interface OfficerStatusAutomationResult {
+  skipped: boolean
+  updated: number
+  notesCreated: number
+}
 export const SYSTEM_NOTE_TITLE = 'Automatische Fehlzeit-Markierung'
 export const INACTIVITY_NOTE_DISMISSED_ACTION = 'INACTIVITY_NOTE_DISMISSED'
 
 let lastAutomationRun = 0
+let automationInFlight: Promise<OfficerStatusAutomationResult> | null = null
+
+async function updateOfficerStatusSafely(input: {
+  id: string
+  status: OfficerStatus
+  flag: OfficerFlag | null
+  nextStatus: OfficerStatus
+  nextFlag: OfficerFlag | null
+}) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= STATUS_UPDATE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.officer.updateMany({
+        where: { id: input.id, status: input.status, flag: input.flag },
+        data: { status: input.nextStatus, flag: input.nextFlag },
+      })
+    } catch (error) {
+      lastError = error
+      if (!isRecordChangedError(error) || attempt === STATUS_UPDATE_ATTEMPTS) throw error
+      await new Promise((resolve) => setTimeout(resolve, 20 * attempt))
+    }
+  }
+  throw lastError
+}
 
 export function parseAbsenceDate(value: string, fallbackTime?: { hours: number; minutes: number }) {
   const input = value.trim()
@@ -208,10 +241,27 @@ export async function getOfficerAbsenceReport(officerId: string, now = new Date(
   }
 }
 
-export async function runOfficerStatusAutomation(options?: { force?: boolean }) {
+/**
+ * Verhindert überlappende Statusläufe innerhalb eines Node-Prozesses. Das ist
+ * wichtig, weil Dashboard-Polling, Player-Sync und Discord-Abmeldungen dieselbe
+ * Officer-Tabelle nahezu gleichzeitig anstoßen können.
+ */
+export async function runOfficerStatusAutomation(options?: { force?: boolean }): Promise<OfficerStatusAutomationResult> {
+  if (automationInFlight) return automationInFlight
+
+  const run = runOfficerStatusAutomationPass(options)
+  automationInFlight = run
+  try {
+    return await run
+  } finally {
+    if (automationInFlight === run) automationInFlight = null
+  }
+}
+
+async function runOfficerStatusAutomationPass(options?: { force?: boolean }): Promise<OfficerStatusAutomationResult> {
   const now = new Date()
   if (!options?.force && now.getTime() - lastAutomationRun < AUTOMATION_INTERVAL_MS) {
-    return { skipped: true }
+    return { skipped: true, updated: 0, notesCreated: 0 }
   }
   lastAutomationRun = now.getTime()
 
@@ -293,14 +343,31 @@ export async function runOfficerStatusAutomation(options?: { force?: boolean }) 
     }
 
     if (officer.status !== nextStatus || officer.flag !== nextFlag) {
-      await prisma.officer.update({
-        where: { id: officer.id },
-        data: {
-          status: nextStatus,
-          flag: nextFlag,
-        },
-      })
-      updated++
+      // Die Statusautomatik läuft parallel zu Discord-/Dashboard-Schreibvorgängen.
+      // updateMany vermeidet das RETURNING-Read von `update`, das MariaDB bei
+      // aktivierter innodb_snapshot_isolation mit ER_CHECKREAD ablehnen kann.
+      // Die alten Werte im WHERE schützen außerdem vor dem Überschreiben eines
+      // zwischenzeitlich geänderten Officer-Datensatzes.
+      let result: { count: number }
+      try {
+        result = await updateOfficerStatusSafely({
+          id: officer.id,
+          status: officer.status,
+          flag: officer.flag,
+          nextStatus,
+          nextFlag,
+        })
+      } catch (error) {
+        // Ein anderer Prozess kann genau diesen Officer gerade aktualisieren.
+        // Der nächste Lauf liest den neuen Stand erneut; die Abmeldung selbst
+        // bleibt trotzdem erfolgreich gespeichert.
+        if (isRecordChangedError(error)) {
+          console.warn(`[AbsenceStatus] Konkurrierendes Officer-Update übersprungen (${officer.id})`)
+          continue
+        }
+        throw error
+      }
+      if (result.count > 0) updated++
     }
   }
 
