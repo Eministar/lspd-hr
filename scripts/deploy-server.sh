@@ -22,53 +22,136 @@ APP_DIR="${APP_DIR:?APP_DIR ist nicht gesetzt}"
 SCREEN_NAME="${SCREEN_NAME:-LSPDPANEL}"
 BRANCH="${DEPLOY_BRANCH:-main}"
 
-log() { printf '\n\033[36m=== %s ===\033[0m\n' "$1"; }
+if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
+  C_RESET=$'\033[0m'
+  C_DIM=$'\033[2m'
+  C_CYAN=$'\033[36m'
+  C_BLUE=$'\033[34m'
+  C_GREEN=$'\033[32m'
+  C_YELLOW=$'\033[33m'
+  C_RED=$'\033[31m'
+  C_WHITE=$'\033[97m'
+else
+  C_RESET=''
+  C_DIM=''
+  C_CYAN=''
+  C_BLUE=''
+  C_GREEN=''
+  C_YELLOW=''
+  C_RED=''
+  C_WHITE=''
+fi
 
-log "Wechsel ins App-Verzeichnis: $APP_DIR"
+ANIMATE=0
+if [[ -t 1 && "${CI:-}" != "true" && "${NO_COLOR:-}" != "1" ]]; then
+  ANIMATE=1
+fi
+
+log() { printf '\n%s━━ %s%s\n' "$C_CYAN" "$1" "$C_RESET"; }
+info() { printf '%s│%s %s\n' "$C_BLUE" "$C_RESET" "$1"; }
+ok() { printf '%s✓%s %s\n' "$C_GREEN" "$C_RESET" "$1"; }
+warn() { printf '%s⚠%s %s\n' "$C_YELLOW" "$C_RESET" "$1" >&2; }
+fail() { printf '%s✗%s %s\n' "$C_RED" "$C_RESET" "$1" >&2; }
+
+run_step() {
+  local label="$1"
+  shift
+  local started elapsed status pid log_file frame_index=0
+  started="$(date +%s)"
+
+  if [[ "$ANIMATE" -eq 1 ]]; then
+    log_file="$(mktemp)"
+    "$@" >"$log_file" 2>&1 &
+    pid=$!
+    local frames=('⠋' '⠙' '⠹' '⸸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+    while kill -0 "$pid" 2>/dev/null; do
+      printf '\r%s%s%s %s' "$C_CYAN" "${frames[$frame_index]}" "$C_RESET" "$label"
+      frame_index=$(( (frame_index + 1) % ${#frames[@]} ))
+      sleep 0.12
+    done
+    if wait "$pid"; then status=0; else status=$?; fi
+    elapsed=$(( $(date +%s) - started ))
+    printf '\r\033[K'
+    if [[ "$status" -eq 0 ]]; then
+      ok "$label ${C_DIM}(${elapsed}s)${C_RESET}"
+    else
+      fail "$label fehlgeschlagen ${C_DIM}(${elapsed}s)${C_RESET}"
+      cat "$log_file" >&2
+    fi
+    rm -f "$log_file"
+    return "$status"
+  fi
+
+  printf '%s…%s %s\n' "$C_CYAN" "$C_RESET" "$label"
+  if "$@"; then
+    elapsed=$(( $(date +%s) - started ))
+    ok "$label ${C_DIM}(${elapsed}s)${C_RESET}"
+    return 0
+  else
+    status=$?
+    fail "$label fehlgeschlagen"
+    return "$status"
+  fi
+}
+
+must_step() {
+  if ! run_step "$@"; then
+    fail "Deploy abgebrochen. Die laufende App bleibt unverändert."
+    exit 1
+  fi
+}
+
+printf '\n%s╭──────────────────────────────────────────────╮%s\n' "$C_CYAN" "$C_RESET"
+printf '%s│%s  %sLSPD HR · SERVER UPDATE%s                  %s│%s\n' "$C_CYAN" "$C_RESET" "$C_WHITE" "$C_RESET" "$C_CYAN" "$C_RESET"
+printf '%s│%s  Branch: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$BRANCH" "$C_CYAN" "$C_RESET"
+printf '%s╰──────────────────────────────────────────────╯%s\n' "$C_CYAN" "$C_RESET"
+
+info "Arbeitsverzeichnis: $APP_DIR"
 cd "$APP_DIR"
 
 if [ "${SKIP_BACKUP:-0}" = "1" ]; then
-  log "DB-Backup übersprungen (--no-backup)"
+  warn "DB-Backup übersprungen (--no-backup)"
 else
-  log "DB-Backup"
+  log "Sicherung"
   # Non-fatal: ein fehlgeschlagenes Backup darf den Deploy nicht blockieren.
-  if ! npm run db:backup; then
-    echo "WARN: DB-Backup fehlgeschlagen — Deploy wird fortgesetzt (Schema-Änderungen sind additiv). Mit --no-backup ganz überspringen."
+  if ! run_step "Datenbank-Backup" npm run db:backup; then
+    warn "Backup fehlgeschlagen — Deploy wird fortgesetzt (Schema-Änderungen sind additiv)."
   fi
 fi
 
-log "Code aktualisieren (git reset --hard origin/$BRANCH)"
-git fetch origin "$BRANCH"
-git reset --hard "origin/$BRANCH"
+log "Code"
+must_step "Repository aktualisieren" git fetch origin "$BRANCH"
+must_step "Auf origin/$BRANCH wechseln" git reset --hard "origin/$BRANCH"
 
-log "Dependencies installieren (npm ci)"
-npm ci
+log "Abhängigkeiten"
+must_step "Dependencies installieren" npm ci
 
-log "Prisma-Client generieren"
-npx prisma generate
+log "Datenbank"
+must_step "Prisma-Client generieren" npx prisma generate
 
-log "Schema anwenden (prisma db push, ohne --accept-data-loss)"
 # Bricht bewusst ab, wenn der Push destruktiv wäre → dann manuell eingreifen.
-npx prisma db push
+must_step "Schema anwenden (db push, ohne Datenverlust)" npx prisma db push
 
-log "Bestehende Units in Unitgruppen einordnen"
 # `db push` wendet das Schema an, führt aber keine SQL-Datenmigrationen aus.
 # Der idempotente Backfill erhält IDs und alle bestehenden Zuweisungen.
-npm run db:backfill-unit-groups
+must_step "Bestehende Units gruppieren" npm run db:backfill-unit-groups
 
 # Optionaler Seed — NUR wenn RUN_SEED=1 (z.B. update.sh --seed). Standardmäßig
 # aus, weil der Seed Gruppen-/Unit-Rechte auf die Defaults zurücksetzen würde.
 if [ "${RUN_SEED:-0}" = "1" ]; then
-  log "Seed (RUN_SEED=1)"
-  npm run db:seed
+  log "Optionale Daten"
+  must_step "Seed ausführen" npm run db:seed
 fi
 
-log "Build"
-npm run build
+log "Build & Neustart"
+must_step "Production-Build erstellen" npm run build
 
-log "App neu starten (screen: $SCREEN_NAME)"
 # Alte Session sauber beenden (Fehler ignorieren, falls keine läuft).
-screen -S "$SCREEN_NAME" -X quit || true
+if screen -S "$SCREEN_NAME" -X quit >/dev/null 2>&1; then
+  info "Alte Screen-Session beendet: $SCREEN_NAME"
+else
+  info "Keine laufende Screen-Session gefunden — starte frisch"
+fi
 # Kurz warten, damit der Port freigegeben wird.
 sleep 2
 # V8-Heap deckeln: ohne Limit wählt Node das Ceiling nach RAM (mehrere GB) und
@@ -77,7 +160,10 @@ sleep 2
 # via .env/dotenv — das lädt erst nach dem Node-Start, zu spät für V8-Flags).
 # Über NODE_MAX_OLD_SPACE_MB überschreibbar.
 NODE_MAX_OLD_SPACE_MB="${NODE_MAX_OLD_SPACE_MB:-1024}"
-screen -dmS "$SCREEN_NAME" env "NODE_OPTIONS=--max-old-space-size=$NODE_MAX_OLD_SPACE_MB" npm run start
+must_step "App starten (Screen: $SCREEN_NAME)" screen -dmS "$SCREEN_NAME" env "NODE_OPTIONS=--max-old-space-size=$NODE_MAX_OLD_SPACE_MB" npm run start
 
-log "Deploy fertig — Screen-Sessions:"
+log "Fertig"
+ok "Update erfolgreich abgeschlossen"
+info "Node-Heap: ${NODE_MAX_OLD_SPACE_MB} MB"
+info "Aktive Screen-Sessions:"
 screen -ls || true

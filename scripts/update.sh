@@ -2,7 +2,7 @@
 #
 # update.sh — manuelles Server-Update. Einfach auf dem Server im App-Ordner:
 #
-#   bash scripts/update.sh              # normales Update (pull, build, migrate, restart)
+#   bash scripts/update.sh              # normales Update (pull, Schema, Backfill, Build, Restart)
 #   bash scripts/update.sh --seed       # zusätzlich Seed (einmalig: importiert bestehende
 #                                        #   Ordnungen; ACHTUNG: setzt Gruppen-/Unit-Rechte
 #                                        #   auf die Seed-Defaults zurück!)
@@ -12,13 +12,31 @@
 # Erkennt den App-Ordner selbst (Elternverzeichnis dieses Skripts) und ruft dann
 # den gemeinsamen Deploy-Ablauf (deploy-server.sh) auf. Ablauf dort:
 #   DB-Backup → git reset --hard origin/<branch> → npm ci → prisma generate →
-#   prisma db push (ohne --accept-data-loss) → [optional Seed] → build →
-#   screen LSPDPANEL neu starten.
+#   prisma db push (ohne --accept-data-loss) → Unitgruppen-Backfill →
+#   [optional Seed] → build → screen LSPDPANEL neu starten.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
+  C_RESET=$'\033[0m'
+  C_DIM=$'\033[2m'
+  C_CYAN=$'\033[36m'
+  C_GREEN=$'\033[32m'
+  C_YELLOW=$'\033[33m'
+  C_RED=$'\033[31m'
+  C_WHITE=$'\033[97m'
+else
+  C_RESET=''
+  C_DIM=''
+  C_CYAN=''
+  C_GREEN=''
+  C_YELLOW=''
+  C_RED=''
+  C_WHITE=''
+fi
 
 RUN_SEED=0
 SKIP_BACKUP=0
@@ -37,11 +55,40 @@ while [ "$#" -gt 0 ]; do
 done
 
 export APP_DIR RUN_SEED SKIP_BACKUP DEPLOY_BRANCH
+cd "$APP_DIR"
+
+printf '\n%s╭──────────────────────────────────────────────╮%s\n' "$C_CYAN" "$C_RESET"
+printf '%s│%s  %sLSPD HR · UPDATE MANAGER%s                 %s│%s\n' "$C_CYAN" "$C_RESET" "$C_WHITE" "$C_RESET" "$C_CYAN" "$C_RESET"
+printf '%s│%s  Branch: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$DEPLOY_BRANCH" "$C_CYAN" "$C_RESET"
+printf '%s│%s  Backup: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$([ "$SKIP_BACKUP" -eq 1 ] && echo "übersprungen" || echo "aktiv")" "$C_CYAN" "$C_RESET"
+printf '%s╰──────────────────────────────────────────────╯%s\n' "$C_CYAN" "$C_RESET"
 
 # Wichtig: deploy-server.sh liegt im Repo und wird von `git reset --hard`
 # mitten im Lauf überschrieben. Bash liest Skripte fortlaufend aus der Datei —
 # würde die Datei sich darunter ändern, führt das zu Fehlern. Deshalb in eine
-# stabile temporäre Kopie ausführen.
+# stabile temporäre Kopie ausführen. Die Kopie kommt direkt vom Ziel-Branch,
+# damit ein einziger Aufruf bereits die aktuelle Deploy-Logik verwendet.
 TMP_DEPLOY="$(mktemp)"
-cp "$SCRIPT_DIR/deploy-server.sh" "$TMP_DEPLOY"
-exec bash "$TMP_DEPLOY"
+trap 'rm -f "$TMP_DEPLOY"' EXIT
+printf '%s⟳%s Aktualisiere Deploy-Logik …\n' "$C_CYAN" "$C_RESET"
+if git fetch origin "$DEPLOY_BRANCH" >/dev/null 2>&1; then
+  printf '%s✓%s Deploy-Logik ist aktuell.\n' "$C_GREEN" "$C_RESET"
+else
+  printf '%s✗%s Remote-Branch konnte nicht geladen werden.\n' "$C_RED" "$C_RESET" >&2
+  exit 1
+fi
+
+if git show "origin/$DEPLOY_BRANCH:scripts/deploy-server.sh" > "$TMP_DEPLOY"; then
+  printf '%s✓%s Stabile Deploy-Ausführung vorbereitet.\n' "$C_GREEN" "$C_RESET"
+else
+  printf '%s✗%s Deploy-Skript im Ziel-Branch nicht gefunden.\n' "$C_RED" "$C_RESET" >&2
+  exit 1
+fi
+
+if bash "$TMP_DEPLOY"; then
+  status=0
+else
+  status=$?
+fi
+rm -f "$TMP_DEPLOY"
+exit "$status"

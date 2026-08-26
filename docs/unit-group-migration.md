@@ -18,3 +18,19 @@ ausführt), startet der Deploy zusätzlich
 `npm run db:backfill-unit-groups`. Der Backfill kann bei Bedarf auch manuell
 ausgeführt werden. Nicht erkannte oder später hinzugefügte Units können
 weiterhin im Unitgruppen-Editor einsortiert werden.
+
+## Einmalig auf einem bestehenden Server ausführen
+
+Nach dem Pull der aktuellen Version:
+
+```bash
+npm ci
+npm run db:push
+npm run db:backfill-unit-groups
+```
+
+Der Backfill ist wiederholbar und verknüpft nur Units ohne `groupId`. Die
+Migrationstabelle `_prisma_migrations` muss dafür nicht verwendet werden.
+`npx prisma migrate deploy` bleibt in diesem Projekt ungeeignet, solange die
+historisch fehlgeschlagene Migration `20260509_user_fk_set_null` nicht separat
+geprüft und aufgelöst wurde.
