@@ -29,7 +29,7 @@ export default function InternalReportDetailPage({ params }: { params: Promise<{
   }
 
   if (loading) return <PageLoader />
-  if (!hasPermission(user, 'reports:view')) return <UnauthorizedContent />
+  if (!hasPermission(user, 'reports:view') && !hasPermission(user, 'internal-affairs:view')) return <UnauthorizedContent />
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 pb-2">
@@ -65,8 +65,8 @@ export default function InternalReportDetailPage({ params }: { params: Promise<{
 
       <ReportDetail
         reportId={id}
-        canManage={hasPermission(user, 'reports:manage')}
-        canDelete={hasPermission(user, 'reports:delete')}
+        canManage={hasPermission(user, 'reports:manage') || hasPermission(user, 'internal-affairs:manage')}
+        canDelete={hasPermission(user, 'reports:delete') || hasPermission(user, 'internal-affairs:manage')}
         onChanged={() => undefined}
         onDeleted={() => router.replace('/anzeigen?tab=reports')}
       />

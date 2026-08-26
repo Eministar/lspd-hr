@@ -118,7 +118,11 @@ export async function POST(req: NextRequest) {
       authGroupRoleMap: canManageSettings && body.authGroupRoleMap && typeof body.authGroupRoleMap === 'object' ? body.authGroupRoleMap : undefined,
       rankRoleMap: hasPermission(user, 'ranks:manage') && body.rankRoleMap && typeof body.rankRoleMap === 'object' ? body.rankRoleMap : undefined,
       trainingRoleMap: hasPermission(user, 'trainings:manage') && body.trainingRoleMap && typeof body.trainingRoleMap === 'object' ? body.trainingRoleMap : undefined,
-      unitRoleMap: hasPermission(user, 'units:manage') && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
+      // Einstellungen-Administratoren dürfen die Legacy-Zuordnung ebenfalls
+      // pflegen. Zuvor wurde das Feld für Nutzer mit ausschließlich
+      // `settings:manage` aus dem Payload entfernt und jede Auswahl blieb
+      // dadurch wirkungslos.
+      unitRoleMap: (hasPermission(user, 'units:manage') || canManageSettings) && body.unitRoleMap && typeof body.unitRoleMap === 'object' ? body.unitRoleMap : undefined,
     })
     const nextConfig = await getDiscordConfig()
     const nextManagedRoles = new Set(managedDiscordRoleIds(nextConfig))

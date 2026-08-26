@@ -12,7 +12,7 @@
 # Erkennt den App-Ordner selbst (Elternverzeichnis dieses Skripts) und ruft dann
 # den gemeinsamen Deploy-Ablauf (deploy-server.sh) auf. Ablauf dort:
 #   DB-Backup → git reset --hard origin/<branch> → npm ci → prisma generate →
-#   prisma db push (ohne --accept-data-loss) → Unitgruppen-Backfill →
+#   prisma db push (ohne --accept-data-loss) → Unitgruppen-Status prüfen →
 #   [optional Seed] → build → screen LSPDPANEL neu starten.
 
 set -euo pipefail
@@ -38,6 +38,14 @@ else
   C_WHITE=''
 fi
 
+BOX_TEXT=40
+BOX_INNER=$((BOX_TEXT + 2))
+printf -v BOX_RULE '%*s' "$BOX_INNER" ''
+BOX_RULE="${BOX_RULE// /─}"
+box_start() { printf '\n%s╭%s╮%s\n' "$C_CYAN" "$BOX_RULE" "$C_RESET"; }
+box_line() { printf '%s│  %-40s  │%s\n' "$C_CYAN" "$1" "$C_RESET"; }
+box_end() { printf '%s╰%s╯%s\n' "$C_CYAN" "$BOX_RULE" "$C_RESET"; }
+
 RUN_SEED=0
 SKIP_BACKUP=0
 DEPLOY_BRANCH="main"
@@ -57,11 +65,17 @@ done
 export APP_DIR RUN_SEED SKIP_BACKUP DEPLOY_BRANCH
 cd "$APP_DIR"
 
-printf '\n%s╭──────────────────────────────────────────────╮%s\n' "$C_CYAN" "$C_RESET"
-printf '%s│%s  %sLSPD HR · UPDATE MANAGER%s                 %s│%s\n' "$C_CYAN" "$C_RESET" "$C_WHITE" "$C_RESET" "$C_CYAN" "$C_RESET"
-printf '%s│%s  Branch: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$DEPLOY_BRANCH" "$C_CYAN" "$C_RESET"
-printf '%s│%s  Backup: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$([ "$SKIP_BACKUP" -eq 1 ] && echo "übersprungen" || echo "aktiv")" "$C_CYAN" "$C_RESET"
-printf '%s╰──────────────────────────────────────────────╯%s\n' "$C_CYAN" "$C_RESET"
+if [ "$SKIP_BACKUP" -eq 1 ]; then
+  BACKUP_LABEL="übersprungen"
+else
+  BACKUP_LABEL="aktiv"
+fi
+
+box_start
+box_line "LSPD HR · UPDATE MANAGER"
+box_line "Branch: $DEPLOY_BRANCH"
+box_line "Backup: $BACKUP_LABEL"
+box_end
 
 # Wichtig: deploy-server.sh liegt im Repo und wird von `git reset --hard`
 # mitten im Lauf überschrieben. Bash liest Skripte fortlaufend aus der Datei —

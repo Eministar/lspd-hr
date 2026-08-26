@@ -8,7 +8,7 @@ import { releaseTerminatedBadgeNumber } from '@/lib/badge-blacklist'
 
 export async function GET() {
   try {
-    await requirePermission('terminations:view')
+    await requirePermission(['terminations:view', 'internal-affairs:view'])
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage'])
+    const user = await requireAuth(['ADMIN', 'HR'], ['terminations:manage', 'internal-affairs:manage'])
     const body = await req.json()
 
     const { officerId, reason } = body

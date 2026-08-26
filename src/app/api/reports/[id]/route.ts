@@ -22,7 +22,7 @@ function parseIncidentDate(value: unknown) {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requirePermission('reports:view')
+    await requirePermission(['reports:view', 'internal-affairs:view'])
     const { id } = await params
 
     const report = await prisma.report.findUnique({ where: { id }, select: reportSelect })
@@ -44,7 +44,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('reports:manage')
+    const user = await requirePermission(['reports:manage', 'internal-affairs:manage'])
     const { id } = await params
     const body = await req.json() as Record<string, unknown>
 
@@ -106,7 +106,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('reports:delete')
+    const user = await requirePermission(['reports:delete', 'internal-affairs:manage'])
     const { id } = await params
 
     const existing = await prisma.report.findUnique({ where: { id }, select: { id: true, caseNumber: true } })

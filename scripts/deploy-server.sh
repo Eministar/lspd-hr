@@ -42,6 +42,14 @@ else
   C_WHITE=''
 fi
 
+BOX_TEXT=40
+BOX_INNER=$((BOX_TEXT + 2))
+printf -v BOX_RULE '%*s' "$BOX_INNER" ''
+BOX_RULE="${BOX_RULE// /─}"
+box_start() { printf '\n%s╭%s╮%s\n' "$C_CYAN" "$BOX_RULE" "$C_RESET"; }
+box_line() { printf '%s│  %-40s  │%s\n' "$C_CYAN" "$1" "$C_RESET"; }
+box_end() { printf '%s╰%s╯%s\n' "$C_CYAN" "$BOX_RULE" "$C_RESET"; }
+
 ANIMATE=0
 if [[ -t 1 && "${CI:-}" != "true" && "${NO_COLOR:-}" != "1" ]]; then
   ANIMATE=1
@@ -101,10 +109,10 @@ must_step() {
   fi
 }
 
-printf '\n%s╭──────────────────────────────────────────────╮%s\n' "$C_CYAN" "$C_RESET"
-printf '%s│%s  %sLSPD HR · SERVER UPDATE%s                  %s│%s\n' "$C_CYAN" "$C_RESET" "$C_WHITE" "$C_RESET" "$C_CYAN" "$C_RESET"
-printf '%s│%s  Branch: %-35s %s│%s\n' "$C_CYAN" "$C_RESET" "$BRANCH" "$C_CYAN" "$C_RESET"
-printf '%s╰──────────────────────────────────────────────╯%s\n' "$C_CYAN" "$C_RESET"
+box_start
+box_line "LSPD HR · SERVER UPDATE"
+box_line "Branch: $BRANCH"
+box_end
 
 info "Arbeitsverzeichnis: $APP_DIR"
 cd "$APP_DIR"
@@ -133,8 +141,9 @@ must_step "Prisma-Client generieren" npx prisma generate
 must_step "Schema anwenden (db push, ohne Datenverlust)" npx prisma db push
 
 # `db push` wendet das Schema an, führt aber keine SQL-Datenmigrationen aus.
-# Der idempotente Backfill erhält IDs und alle bestehenden Zuweisungen.
-must_step "Bestehende Units gruppieren" npm run db:backfill-unit-groups
+# Der einmalige Backfill prüft einen DB-Marker, erhält IDs und alle bestehenden
+# Zuweisungen. Nach dem ersten erfolgreichen Lauf bleibt dieser Schritt schnell.
+must_step "Unitgruppen-Status prüfen" npm run db:backfill-unit-groups
 
 # Optionaler Seed — NUR wenn RUN_SEED=1 (z.B. update.sh --seed). Standardmäßig
 # aus, weil der Seed Gruppen-/Unit-Rechte auf die Defaults zurücksetzen würde.

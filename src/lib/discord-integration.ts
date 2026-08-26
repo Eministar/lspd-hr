@@ -755,11 +755,18 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   const legacyUnitRoleMap = cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {}))
   const unitRoleMap = {
     ...legacyUnitRoleMap,
+    // Nur tatsächlich gesetzte Rollen aus der Unit-Tabelle überschreiben die
+    // Legacy-Zuordnung. Leere `discordRoleId`-Felder dürfen die gespeicherten
+    // Rollen aus `discord.unitRoleMap` nicht in leere Strings verwandeln —
+    // genau dadurch erschienen in den Einstellungen bisher alle Einträge als
+    // „Keine Rolle“ und waren nach dem Speichern wieder verschwunden.
     ...Object.fromEntries(
-      unitRows.map((unit) => [
-        unit.key,
-        unit.discordRoleId && /^\d{17,22}$/.test(unit.discordRoleId) ? unit.discordRoleId : '',
-      ]),
+      unitRows
+        .filter((unit) => typeof unit.discordRoleId === 'string' && /^\d{17,22}$/.test(unit.discordRoleId))
+        .map((unit) => [
+          unit.key,
+          unit.discordRoleId!,
+        ]),
     ),
   }
   const unitGroups: DiscordUnitGroup[] = unitGroupRows.map((group) => ({

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 /** Bilder für Anzeigen und Personenakten (Ausweis, Lichtbild, Beweisfotos). */
 export async function POST(req: NextRequest) {
   try {
-    await requirePermission('reports:manage')
+    await requirePermission(['reports:manage', 'internal-affairs:manage'])
 
     let form: FormData
     try {

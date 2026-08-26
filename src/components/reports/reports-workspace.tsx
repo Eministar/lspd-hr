@@ -72,6 +72,8 @@ export interface ReportRow {
 interface ReportsWorkspaceProps {
   canManage: boolean
   canDelete: boolean
+  /** IA nutzt dieselben strukturierten Vorgänge, zeigt sie aber als Ermittlungsakten an. */
+  context?: 'reports' | 'internal-affairs'
 }
 
 type StatusFilter = 'ALL' | 'OPEN' | ReportStatusValue
@@ -125,7 +127,10 @@ function reportHaystack(report: ReportRow) {
     .toLowerCase()
 }
 
-export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps) {
+export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: ReportsWorkspaceProps) {
+  const isInternalAffairs = context === 'internal-affairs'
+  const entryLabel = isInternalAffairs ? 'Ermittlungsakte' : 'Anzeige'
+  const entryPluralLabel = isInternalAffairs ? 'Ermittlungsakten' : 'Anzeigen'
   const { data: reports, loading, error: loadError, refetch } = useFetch<ReportRow[]>('/api/reports')
   const { data: people, refetch: refetchPeople } = useFetch<PersonSummary[]>('/api/person-files')
   const { execute } = useApi()
@@ -164,7 +169,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
 
   const submit = async () => {
     if (!form.charge.trim()) {
-      addToast({ type: 'error', title: 'Tatvorwurf fehlt' })
+      addToast({ type: 'error', title: isInternalAffairs ? 'Ermittlungsart fehlt' : 'Tatvorwurf fehlt' })
       return
     }
     if (!form.description.trim()) {
@@ -186,7 +191,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
           attachments: form.attachments,
         }),
       }) as ReportRow | null
-      addToast({ type: 'success', title: 'Anzeige aufgenommen', message: created?.caseNumber })
+      addToast({ type: 'success', title: `${entryLabel} aufgenommen`, message: created?.caseNumber })
       setCreateOpen(false)
       setForm(EMPTY_FORM)
       if (created?.id) setSelectedId(created.id)
@@ -203,12 +208,14 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Anzeigen"
-        description="Anzeigen aufnehmen, Vorgänge verfolgen und Personenakten verknüpfen."
+        title={entryPluralLabel}
+        description={isInternalAffairs
+          ? 'Ermittlungsakten zu Personen aufnehmen, Beweise hinterlegen und den Verlauf dokumentieren.'
+          : 'Anzeigen aufnehmen, Vorgänge verfolgen und Personenakten verknüpfen.'}
         action={canManage ? (
           <Button size="sm" onClick={() => { setForm(EMPTY_FORM); setCreateOpen(true) }}>
             <Plus size={14} strokeWidth={2} />
-            Anzeige aufnehmen
+            {entryLabel} aufnehmen
           </Button>
         ) : undefined}
       />
@@ -220,7 +227,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
       )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Anzeigen gesamt" value={stats.total} />
+        <StatCard label={`${entryPluralLabel} gesamt`} value={stats.total} />
         <StatCard label="Offene Vorgänge" value={stats.open} />
         <StatCard label="Bei Gericht" value={stats.court} />
         <StatCard label="Abgeschlossen" value={stats.closed} />
@@ -228,14 +235,16 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
 
       {(reports ?? []).length === 0 ? (
         <EmptyState
-          title="Noch keine Anzeigen aufgenommen"
-          hint={canManage ? 'Lege die erste Anzeige über „Anzeige aufnehmen“ an.' : 'Aufgenommene Anzeigen erscheinen hier.'}
+          title={`Noch keine ${entryPluralLabel.toLowerCase()} aufgenommen`}
+          hint={canManage
+            ? `Lege die erste ${entryLabel.toLowerCase()} über „${entryLabel} aufnehmen“ an.`
+            : `${entryPluralLabel} erscheinen hier.`}
         />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[340px_1fr]">
           <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 lg:sticky lg:top-4">
             <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Vorgänge</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">{isInternalAffairs ? 'Ermittlungsakten' : 'Vorgänge'}</p>
               <span className="text-[10.5px] text-[#536b86]">
                 {filtered.length}
                 {filtered.length !== (reports?.length ?? 0) && ` / ${reports?.length ?? 0}`}
@@ -248,7 +257,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Aktenzeichen, Name, Tatvorwurf"
+                  placeholder={isInternalAffairs ? 'Aktenzeichen, Name, Ermittlungsart' : 'Aktenzeichen, Name, Tatvorwurf'}
                   className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
                 />
               </div>
@@ -286,11 +295,12 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
               reportId={activeId}
               canManage={canManage}
               canDelete={canDelete}
+              context={context}
               onChanged={() => void refetch()}
               onDeleted={() => { setSelectedId(null); void refetch() }}
             />
           ) : (
-            <EmptyState title="Kein Vorgang ausgewählt" hint="Wähle links eine Anzeige aus." />
+            <EmptyState title="Kein Vorgang ausgewählt" hint={`Wähle links eine ${entryLabel.toLowerCase()} aus.`} />
           )}
         </div>
       )}
@@ -298,24 +308,28 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title="Anzeige aufnehmen"
-        description="Alle Angaben landen in der Akte der beteiligten Personen."
+        title={`${entryLabel} aufnehmen`}
+        description={isInternalAffairs
+          ? 'Alle Angaben, Personen und Beweisbilder werden in der Ermittlungsakte dokumentiert.'
+          : 'Alle Angaben landen in der Akte der beteiligten Personen.'}
         size="xl"
       >
         <div className="space-y-4">
           <Textarea
-            label="Tatvorwurf"
+            label={isInternalAffairs ? 'Ermittlungsart / Vorwurf' : 'Tatvorwurf'}
             value={form.charge}
             onChange={(event) => setForm({ ...form, charge: event.target.value })}
             rows={2}
-            placeholder="z. B. Körperverletzung, Diebstahl, Sachbeschädigung"
+            placeholder={isInternalAffairs
+              ? 'z. B. interne Prüfung, Korruption, Dienstverstoß'
+              : 'z. B. Körperverletzung, Diebstahl, Sachbeschädigung'}
           />
           <Textarea
-            label="Sachverhalt"
+            label="Kurze Schilderung des Sachverhalts"
             value={form.description}
             onChange={(event) => setForm({ ...form, description: event.target.value })}
             rows={5}
-            placeholder="Was ist passiert? Wer war beteiligt? Zeugen?"
+            placeholder={isInternalAffairs ? 'Was wurde festgestellt? Wer war beteiligt?' : 'Was ist passiert? Wer war beteiligt? Zeugen?'}
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -340,16 +354,20 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
           </div>
 
           <PersonPicker
-            title="Anzeigenerstatter (Antragsteller)"
-            description="Wer stellt die Anzeige? Ausweisbild und Telefonnummer landen in seiner Akte."
+            title={isInternalAffairs ? 'Meldende Person' : 'Anzeigenerstatter (Antragsteller)'}
+            description={isInternalAffairs
+              ? 'Wer hat den Vorgang gemeldet? Angaben werden in der Personenakte verknüpft.'
+              : 'Wer stellt die Anzeige? Ausweisbild und Telefonnummer landen in seiner Akte.'}
             people={people ?? []}
             value={form.complainant}
             onChange={(value) => setForm({ ...form, complainant: value })}
           />
 
           <PersonPicker
-            title="Angezeigter (Beschuldigter)"
-            description="Gegen wen richtet sich die Anzeige? Bei jeder neuen Person entsteht automatisch eine Akte."
+            title={isInternalAffairs ? 'Betroffene Person' : 'Angezeigter (Beschuldigter)'}
+            description={isInternalAffairs
+              ? 'Auf wen bezieht sich die Ermittlungsakte? Bei jeder neuen Person entsteht automatisch eine Akte.'
+              : 'Gegen wen richtet sich die Anzeige? Bei jeder neuen Person entsteht automatisch eine Akte.'}
             people={people ?? []}
             value={form.suspect}
             onChange={(value) => setForm({ ...form, suspect: value })}
@@ -358,6 +376,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
           <AttachmentEditor
             attachments={form.attachments}
             onChange={(attachments) => setForm({ ...form, attachments })}
+            title={isInternalAffairs ? 'Beweise / Bilder' : 'Beweisbilder'}
           />
 
           <div className="flex justify-end gap-2 pt-1">
@@ -366,7 +385,7 @@ export function ReportsWorkspace({ canManage, canDelete }: ReportsWorkspaceProps
             </Button>
             <Button size="sm" onClick={submit} loading={saving}>
               <Save size={13} />
-              Anzeige speichern
+              {entryLabel} speichern
             </Button>
           </div>
         </div>
@@ -379,15 +398,19 @@ export function ReportDetail({
   reportId,
   canManage,
   canDelete,
+  context = 'reports',
   onChanged,
   onDeleted,
 }: {
   reportId: string
   canManage: boolean
   canDelete: boolean
+  context?: 'reports' | 'internal-affairs'
   onChanged: () => void
   onDeleted: () => void
 }) {
+  const isInternalAffairs = context === 'internal-affairs'
+  const entryLabel = isInternalAffairs ? 'Ermittlungsakte' : 'Anzeige'
   const { data: report, loading, error, refetch } = useFetch<ReportRow>(`/api/reports/${reportId}`)
   const { execute } = useApi()
   const { addToast } = useToast()
@@ -419,11 +442,11 @@ export function ReportDetail({
   }
 
   const remove = async () => {
-    if (!report || !confirm(`Anzeige ${report.caseNumber} wirklich löschen?`)) return
+    if (!report || !confirm(`${entryLabel} ${report.caseNumber} wirklich löschen?`)) return
     setSaving(true)
     try {
       await execute(`/api/reports/${report.id}`, { method: 'DELETE' })
-      addToast({ type: 'success', title: 'Anzeige gelöscht' })
+      addToast({ type: 'success', title: `${entryLabel} gelöscht` })
       onDeleted()
     } catch (e) {
       addToast({ type: 'error', title: 'Löschen fehlgeschlagen', message: e instanceof Error ? e.message : '' })
@@ -433,7 +456,7 @@ export function ReportDetail({
   }
 
   if (loading) return <EmptyState title="Vorgang wird geladen…" hint="" />
-  if (error || !report) return <EmptyState title="Anzeige nicht gefunden" hint={error || 'Der Vorgang ist nicht mehr vorhanden.'} />
+  if (error || !report) return <EmptyState title={`${entryLabel} nicht gefunden`} hint={error || 'Der Vorgang ist nicht mehr vorhanden.'} />
 
   const meta = REPORT_STATUS_META[report.status]
   const attachments = report.attachments ?? []
@@ -475,19 +498,19 @@ export function ReportDetail({
 
       <div className="grid gap-4 md:grid-cols-2">
         <PersonCard
-          title="Anzeigenerstatter"
+          title={isInternalAffairs ? 'Meldende Person' : 'Anzeigenerstatter'}
           person={report.complainant}
           showIdCard
         />
         <PersonCard
-          title="Angezeigter"
+          title={isInternalAffairs ? 'Betroffene Person' : 'Angezeigter'}
           person={report.suspect}
         />
       </div>
 
       {attachments.length > 0 && (
         <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
-          <SectionTitle icon={FileText} title="Beweisbilder" />
+          <SectionTitle icon={FileText} title={isInternalAffairs ? 'Beweise / Bilder' : 'Beweisbilder'} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {attachments.map((attachment) => (
               <a
@@ -618,9 +641,11 @@ function PersonCard({
 function AttachmentEditor({
   attachments,
   onChange,
+  title = 'Beweisbilder',
 }: {
   attachments: ReportAttachment[]
   onChange: (attachments: ReportAttachment[]) => void
+  title?: string
 }) {
   const add = (url: string) => {
     if (!url) return
@@ -632,7 +657,7 @@ function AttachmentEditor({
 
   return (
     <section className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
-      <p className="text-[13px] font-semibold text-white">Beweisbilder</p>
+      <p className="text-[13px] font-semibold text-white">{title}</p>
       <p className="mt-0.5 text-[11.5px] text-[#6b8299]">Optionale Fotos zum Vorgang (max. 12).</p>
 
       {attachments.length > 0 && (

@@ -8,7 +8,7 @@ import { cleanReportLongText, isReportStatus } from '@/lib/reports'
 /** Vermerk zur Anzeige schreiben, optional mit Statuswechsel. */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requirePermission('reports:manage')
+    const user = await requirePermission(['reports:manage', 'internal-affairs:manage'])
     const { id } = await params
     const body = await req.json() as Record<string, unknown>
 

@@ -22,9 +22,9 @@ function isTab(value: string | null): value is Tab {
 
 export default function ReportsPage() {
   const { user } = useAuth()
-  const canView = hasPermission(user, 'reports:view')
-  const canManage = hasPermission(user, 'reports:manage')
-  const canDelete = hasPermission(user, 'reports:delete')
+  const canView = hasPermission(user, 'reports:view') || hasPermission(user, 'internal-affairs:view')
+  const canManage = hasPermission(user, 'reports:manage') || hasPermission(user, 'internal-affairs:manage')
+  const canDelete = hasPermission(user, 'reports:delete') || hasPermission(user, 'internal-affairs:manage')
 
   const [activeTab, setActiveTab] = useState<Tab>('reports')
   const [personId, setPersonId] = useState<string | null>(null)

@@ -16,6 +16,11 @@ type GroupBlueprint = {
   leadershipKeys: string[]
 }
 
+// Wird erst nach einem vollständig erfolgreichen Lauf gesetzt. Damit bleibt
+// der Deploy schnell und führt die einmalige Bestandsmigration nicht bei jedem
+// Update erneut aus. Mit `--force` kann ein Admin sie bewusst erneut prüfen.
+const BACKFILL_SETTING_KEY = 'migration.unit-groups.v1'
+
 // Diese Zuordnung ist absichtlich nach Unit-Keys statt nach IDs aufgebaut:
 // IDs und bestehende Zuweisungen bleiben dadurch vollständig erhalten.
 const GROUPS: GroupBlueprint[] = [
@@ -122,11 +127,22 @@ async function main() {
   if (!databaseUrl) throw new Error('DATABASE_URL fehlt.')
 
   const prisma = new PrismaClient({ adapter: new PrismaMariaDb(databaseUrl) })
+  const force = process.argv.includes('--force')
   let createdGroups = 0
   let linkedUnits = 0
   let markedLeadership = 0
 
   try {
+    const completed = await prisma.systemSetting.findUnique({
+      where: { key: BACKFILL_SETTING_KEY },
+      select: { id: true },
+    })
+
+    if (completed && !force) {
+      console.log('Unitgruppen-Backfill bereits abgeschlossen – nichts zu tun.')
+      return
+    }
+
     for (const blueprint of GROUPS) {
       let group = await prisma.unitGroup.findUnique({ where: { key: blueprint.key }, select: { id: true } })
       if (!group) {
@@ -162,6 +178,12 @@ async function main() {
       })
       markedLeadership += leadership.count
     }
+
+    await prisma.systemSetting.upsert({
+      where: { key: BACKFILL_SETTING_KEY },
+      create: { key: BACKFILL_SETTING_KEY, value: new Date().toISOString() },
+      update: {},
+    })
   } finally {
     await prisma.$disconnect()
   }

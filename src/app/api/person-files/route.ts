@@ -15,7 +15,7 @@ function parseBirthDate(value: unknown) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requirePermission('reports:view')
+    await requirePermission(['reports:view', 'internal-affairs:view'])
 
     const search = cleanReportText(req.nextUrl.searchParams.get('search'), 80)
     const wantedOnly = req.nextUrl.searchParams.get('wanted') === 'true'
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requirePermission('reports:manage')
+    const user = await requirePermission(['reports:manage', 'internal-affairs:manage'])
     const body = await req.json() as Record<string, unknown>
 
     const firstName = cleanReportText(body.firstName, 80)

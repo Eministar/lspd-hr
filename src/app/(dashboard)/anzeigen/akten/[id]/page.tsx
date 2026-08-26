@@ -16,7 +16,7 @@ export default function PersonFileDetailPage({ params }: { params: Promise<{ id:
   const { user, loading } = useAuth()
 
   if (loading) return <PageLoader />
-  if (!hasPermission(user, 'reports:view')) return <UnauthorizedContent />
+  if (!hasPermission(user, 'reports:view') && !hasPermission(user, 'internal-affairs:view')) return <UnauthorizedContent />
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 pb-2">
@@ -30,8 +30,8 @@ export default function PersonFileDetailPage({ params }: { params: Promise<{ id:
 
       <PersonFileDetailView
         personId={id}
-        canManage={hasPermission(user, 'reports:manage')}
-        canDelete={hasPermission(user, 'reports:delete')}
+        canManage={hasPermission(user, 'reports:manage') || hasPermission(user, 'internal-affairs:manage')}
+        canDelete={hasPermission(user, 'reports:delete') || hasPermission(user, 'internal-affairs:manage')}
         onChanged={() => undefined}
         onDeleted={() => router.replace('/anzeigen?tab=files')}
       />
