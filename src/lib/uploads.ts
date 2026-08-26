@@ -53,7 +53,9 @@ export function resolveUploadPath(filename: string) {
   if (!isStoredUploadFilename(filename)) throw new Error('Dateiname ist ungültig')
 
   const base = uploadDir()
-  const target = path.normalize(path.join(base, filename))
+  // The path is intentionally resolved at runtime from a validated filename;
+  // tell Turbopack not to treat this dynamic join as a build-time dependency.
+  const target = path.normalize(path.join(/*turbopackIgnore: true*/ base, filename))
   if (!target.startsWith(`${base}${path.sep}`)) throw new Error('Dateiname ist ungültig')
 
   return target
