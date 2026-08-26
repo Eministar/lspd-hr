@@ -7,6 +7,7 @@ import {
   ExternalLink,
   FilePlus2,
   Gavel,
+  Layers,
   Loader2,
   Pencil,
   Scale,
@@ -31,6 +32,7 @@ import {
   type LegalCaseStatusValue,
 } from '@/lib/legal-cases'
 import { formatFineAmount, penalGradeLabel, sanctionMeasureLabel } from '@/lib/sanction-catalog'
+import { displayBadgeNumber } from '@/lib/badge-number'
 import { cn, formatDateTime } from '@/lib/utils'
 
 interface CaseRow {
@@ -82,15 +84,42 @@ const STATUS_FILTERS: { value: '' | LegalCaseStatusValue; label: string }[] = [
 
 export function LegalCases({ canManage }: { canManage: boolean }) {
   const { addToast } = useToast()
+  const { execute, loading: batchLoading } = useApi<{ token: string; caseCount: number }>()
   const { data, loading, refetch } = useFetch<CaseRow[]>('/api/legal-cases')
   const [statusFilter, setStatusFilter] = useState<'' | LegalCaseStatusValue>('')
   const [createOpen, setCreateOpen] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [batch, setBatch] = useState<{ token: string; caseCount: number } | null>(null)
 
   const rows = useMemo(() => {
     const list = (data ?? []).filter((row) => !statusFilter || row.status === statusFilter)
     return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [data, statusFilter])
+
+  const batchUrl = batch ? `${window.location.origin}/klagen/${batch.token}` : ''
+
+  const createBatch = async () => {
+    if (!confirm('Für alle gekündigten Mitarbeiter mit offenen Sanktionen werden jetzt Sanktionsklagen erstellt. Fortfahren?')) return
+    try {
+      const result = await execute('/api/legal-cases/batch', { method: 'POST' })
+      if (!result) return
+      setBatch(result)
+      void refetch()
+      addToast({ type: 'success', title: 'Sammelklage erstellt', message: `${result.caseCount} Klagen erzeugt` })
+    } catch (e) {
+      addToast({ type: 'error', title: 'Sammelklage fehlgeschlagen', message: e instanceof Error ? e.message : '' })
+    }
+  }
+
+  const copyBatchLink = async () => {
+    if (!batchUrl) return
+    try {
+      await navigator.clipboard.writeText(batchUrl)
+      addToast({ type: 'success', title: 'Sammelklage-Link kopiert' })
+    } catch {
+      addToast({ type: 'error', title: 'Link konnte nicht kopiert werden' })
+    }
+  }
 
   if (loading) return <PageLoader />
 
@@ -115,12 +144,37 @@ export function LegalCases({ canManage }: { canManage: boolean }) {
           ))}
         </div>
         {canManage && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <FilePlus2 size={15} />
-            Neue Klage
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={createBatch} loading={batchLoading}>
+              <Layers size={15} />
+              Gekündigte mit offenen Sanktionen klagen
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <FilePlus2 size={15} />
+              Neue Klage
+            </Button>
+          </div>
         )}
       </div>
+
+      {batch && (
+        <div className="flex flex-col gap-2 rounded-[12px] border border-[#8b5cf6]/35 bg-[#8b5cf6]/8 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-white">
+              Sammelklage erstellt — {batch.caseCount} Klage{batch.caseCount === 1 ? '' : 'n'}
+            </p>
+            <p className="mt-0.5 break-all font-mono text-[11px] text-[#a78bfa]">{batchUrl}</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.open(batchUrl, '_blank', 'noopener')}>
+              <ExternalLink size={13} /> Übersicht öffnen
+            </Button>
+            <Button variant="outline" size="sm" onClick={copyBatchLink}>
+              <Copy size={13} /> Link kopieren
+            </Button>
+          </div>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="glass-panel-elevated flex flex-col items-center justify-center rounded-[14px] border border-[#1e3a5c]/45 px-6 py-16 text-center">
@@ -186,7 +240,7 @@ function CaseCard({ row, onOpen }: { row: CaseRow; onOpen: () => void }) {
           <p className="mt-2 truncate text-[14px] font-semibold text-white">{row.title}</p>
           <p className="mt-0.5 truncate text-[12px] text-[#8ea4bd]">
             {row.accusedName ?? 'Ohne Beklagten'}
-            {row.accusedBadge ? ` · ${row.accusedBadge}` : ''}
+            {row.accusedBadge ? ` · ${displayBadgeNumber(row.accusedBadge)}` : ''}
           </p>
         </div>
         <span className={cn('shrink-0 rounded-full border px-2.5 py-[2px] text-[10.5px] font-semibold', statusClass(row.status))}>
@@ -284,7 +338,7 @@ function SanctionCaseForm({ submitting, onCreate, onBack }: { submitting: boolea
 
   const officerOptions = useMemo(() => (officers ?? []).map((officer) => ({
     value: officer.id,
-    label: `${officer.firstName} ${officer.lastName}${officer.badgeNumber ? ` (${officer.badgeNumber})` : ''}${officer.openSanctionCount > 0 ? ` · ${officer.openSanctionCount} offen` : ''}`,
+    label: `${officer.firstName} ${officer.lastName}${officer.badgeNumber ? ` (${displayBadgeNumber(officer.badgeNumber)})` : ''}${officer.openSanctionCount > 0 ? ` · ${officer.openSanctionCount} offen` : ''}`,
   })), [officers])
 
   useEffect(() => {
@@ -404,7 +458,7 @@ function CustomCaseForm({ submitting, onCreate, onBack }: { submitting: boolean;
     { value: '', label: 'Kein Beklagter' },
     ...(officers ?? []).map((officer) => ({
       value: officer.id,
-      label: `${officer.firstName} ${officer.lastName}${officer.badgeNumber ? ` (${officer.badgeNumber})` : ''}`,
+      label: `${officer.firstName} ${officer.lastName}${officer.badgeNumber ? ` (${displayBadgeNumber(officer.badgeNumber)})` : ''}`,
     })),
   ], [officers])
 

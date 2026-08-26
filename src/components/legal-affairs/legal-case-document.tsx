@@ -31,6 +31,7 @@ export interface LegalCaseDocumentData {
   closing: string | null
   accused: LegalCaseAccused
   sanctions: LegalCaseSanctionSnapshot[]
+  signerName: string | null
   place: string
   documentDate: string
   filedAt: string | null
@@ -66,8 +67,13 @@ export function LegalCaseDocument({ document }: { document: LegalCaseDocumentDat
   const showContractClause = document.kind === 'SANCTION' || document.sanctions.length > 0
 
   return (
-    <article lang="de" className="lawsuit-paper">
-      <div className="lawsuit-inner">
+    <>
+      {/* Handschrift-Schriftart für die Unterschrift — lädt nur auf den Seiten,
+          die eine Klageschrift anzeigen; offline greifen die System-Kursiven. */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" />
+      <article lang="de" className="lawsuit-paper">
+        <div className="lawsuit-inner">
         {/* Briefkopf */}
         <header className="lawsuit-letterhead">
           <div className="lawsuit-brand">
@@ -190,8 +196,10 @@ export function LegalCaseDocument({ document }: { document: LegalCaseDocumentDat
 
         <div className="lawsuit-signatures">
           <div>
-            <div className="lawsuit-signature-name" />
-            <div className="lawsuit-signature-line">Rechtsabteilung · {DIVISION_NAME}</div>
+            <div className="lawsuit-signature-name lawsuit-signature-script">
+              {document.signerName ?? 'Rechtsabteilung'}
+            </div>
+            <div className="lawsuit-signature-line">Klägervertretung · {DIVISION_NAME}</div>
           </div>
           <div>
             <div className="lawsuit-signature-name" />
@@ -228,6 +236,7 @@ export function LegalCaseDocument({ document }: { document: LegalCaseDocumentDat
           Entwurf
         </div>
       )}
-    </article>
+      </article>
+    </>
   )
 }

@@ -45,7 +45,7 @@ export const AUDIT_LOG_GROUPS = {
   },
   legal: {
     label: 'Legal Affairs',
-    actions: ['LEGAL_CASE_CREATED', 'LEGAL_CASE_UPDATED', 'LEGAL_CASE_DELETED'],
+    actions: ['LEGAL_CASE_CREATED', 'LEGAL_CASE_UPDATED', 'LEGAL_CASE_DELETED', 'LEGAL_CASE_BATCH_CREATED'],
   },
   system: {
     label: 'System & API',

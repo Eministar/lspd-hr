@@ -1722,6 +1722,20 @@ select option:hover {
   overflow-wrap: anywhere;
 }
 
+/* Handschriftliche Unterschrift der Klägervertretung. */
+.lawsuit-signature-script {
+  font-family: 'Great Vibes', 'Segoe Script', 'Brush Script MT', 'Bradley Hand', 'Apple Chancery', cursive;
+  font-size: 34px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: var(--lawsuit-accent);
+  transform: rotate(-2.5deg) translateX(-2px);
+  transform-origin: left bottom;
+  min-height: 44px;
+}
+
 .lawsuit-signature-line {
   border-top: 1px solid var(--lawsuit-ink);
   padding-top: 7px;

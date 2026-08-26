@@ -231,6 +231,7 @@ model User {
   officerSearchesCreated     OfficerSearch[]           @relation("OfficerSearchCreator")
   internalAffairsDawsCreated InternalAffairsDaw[]      @relation("IaDawCreator")
   legalCasesCreated          LegalCase[]               @relation("LegalCaseCreator")
+  legalCaseBatchesCreated    LegalCaseBatch[]          @relation("LegalCaseBatchCreator")
   transferRequestsCreated    TransferRequest[]         @relation("TransferRequestCreator")
   transferRequestsSignedHr   TransferRequest[]         @relation("TransferRequestHrSigner")
   transferRequestsSignedOf   TransferRequest[]         @relation("TransferRequestOfficerSigner")
@@ -1678,9 +1679,30 @@ model LegalCase {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  /// Zugehörige Sammelaktion ("Alle offenen Sanktionen gekündigter Mitarbeiter").
+  batchId String?
+  batch   LegalCaseBatch? @relation("LegalCaseBatchCases", fields: [batchId], references: [id], onDelete: SetNull)
+
   linkedSanctions Sanction[] @relation("SanctionLegalCase")
 
   @@index([status, updatedAt])
   @@index([officerId])
   @@index([createdById])
+  @@index([batchId])
+}
+
+/// Eine Sammelaktion der Legal Affairs Division: erzeugt für jeden gekündigten
+/// Mitarbeiter mit offenen Sanktionen genau eine Sanktionsklage. Der eigene
+/// Link-Token öffnet eine Übersicht aller enthaltenen Klageschriften.
+model LegalCaseBatch {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  title       String   @default("Sammelklagen – Offene Sanktionen gekündigter Mitarbeiter")
+  createdById String?
+  createdBy   User?    @relation("LegalCaseBatchCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  cases LegalCase[] @relation("LegalCaseBatchCases")
+
+  @@index([createdAt])
 }

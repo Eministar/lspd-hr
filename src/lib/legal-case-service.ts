@@ -3,8 +3,9 @@ import type { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import { CONTRACT_PLACE } from '@/lib/contracts'
+import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { formatFineAmount, penalGradeLabel, sanctionMeasureLabel } from '@/lib/sanction-catalog'
-import { nextSequenceNumber } from '@/lib/sequence-numbers'
+import { formatSequenceNumber, nextSequenceNumber, parseSequenceNumber } from '@/lib/sequence-numbers'
 import {
   LEGAL_CASE_PREFIX,
   readLegalCaseSanctions,
@@ -249,7 +250,7 @@ export async function createLegalCase(input: CreateLegalCaseInput) {
         title,
         officerId: officer?.id ?? null,
         accusedName: officer ? `${officer.firstName} ${officer.lastName}`.trim() : null,
-        accusedBadge: officer?.badgeNumber ?? null,
+        accusedBadge: officer?.badgeNumber ? stripTerminatedBadgeNumber(officer.badgeNumber) : null,
         accusedRank: officer?.rank?.name ?? null,
         accusedDiscordId: officer?.discordId ?? null,
         subject,
@@ -274,7 +275,7 @@ export async function createLegalCase(input: CreateLegalCaseInput) {
   return loadLegalCaseById(legalCase.id)
 }
 
-function buildSanctionSnapshot(sanctions: SanctionForCase[]) {
+export function buildSanctionSnapshot(sanctions: SanctionForCase[]) {
   return sanctions.map((sanction) => ({
     sanctionId: sanction.id,
     reason: sanction.reason,
@@ -292,7 +293,8 @@ export type LegalCaseDocument = Awaited<ReturnType<typeof serializeLegalCase>>
 /** Bereitet die Klageschrift für die Anzeige (Dashboard oder geteilter Link) auf. */
 export async function serializeLegalCase(record: LegalCaseRecord) {
   const prefix = await getBadgePrefix()
-  const rawBadge = record.accusedBadge ?? record.officer?.badgeNumber ?? null
+  const sourceBadge = record.accusedBadge ?? record.officer?.badgeNumber ?? ''
+  const rawBadge = stripTerminatedBadgeNumber(sourceBadge) || null
   const badge = rawBadge && prefix && !rawBadge.startsWith(prefix)
     ? `${prefix.endsWith('-') ? prefix : `${prefix}-`}${rawBadge}`
     : rawBadge
@@ -316,10 +318,186 @@ export async function serializeLegalCase(record: LegalCaseRecord) {
       address: null,
     },
     sanctions: readLegalCaseSanctions(record.sanctions),
+    signerName: record.createdBy?.displayName?.trim() || null,
     place: CONTRACT_PLACE,
     documentDate: (record.filedAt ?? record.createdAt).toISOString(),
     filedAt: record.filedAt,
     closedAt: record.closedAt,
     createdAt: record.createdAt,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Sammelklagen (gekündigte Mitarbeiter mit offenen Sanktionen)
+// ---------------------------------------------------------------------------
+
+async function createUniqueLegalCaseBatchToken() {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = generateLegalCaseToken()
+    const existing = await prisma.legalCaseBatch.findUnique({ where: { token }, select: { id: true } })
+    if (!existing) return token
+  }
+  throw new Error('Sammelklage-Token konnte nicht erstellt werden')
+}
+
+const legalCaseBatchInclude = {
+  cases: {
+    orderBy: { caseNumber: 'asc' as const },
+    select: {
+      id: true,
+      caseNumber: true,
+      token: true,
+      kind: true,
+      status: true,
+      title: true,
+      accusedName: true,
+      accusedBadge: true,
+      accusedRank: true,
+      sanctions: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.LegalCaseBatchInclude
+
+export type LegalCaseBatchRecord = NonNullable<Awaited<ReturnType<typeof loadLegalCaseBatchByToken>>>
+
+export async function loadLegalCaseBatchByToken(token: string) {
+  if (!token) return null
+  const batch = await prisma.legalCaseBatch.findUnique({ where: { token }, include: legalCaseBatchInclude })
+  if (!batch || batch.token !== token) return null
+  return batch
+}
+
+/** Aufbereitung einer Sammelklage-Übersicht für den geteilten Link. */
+export async function serializeLegalCaseBatch(batch: LegalCaseBatchRecord) {
+  const prefix = await getBadgePrefix()
+  return {
+    token: batch.token,
+    title: batch.title,
+    createdAt: batch.createdAt.toISOString(),
+    caseCount: batch.cases.length,
+    cases: batch.cases.map((legalCase) => {
+      const sourceBadge = legalCase.accusedBadge ?? ''
+      const rawBadge = stripTerminatedBadgeNumber(sourceBadge) || null
+      const badge = rawBadge && prefix && !rawBadge.startsWith(prefix)
+        ? `${prefix.endsWith('-') ? prefix : `${prefix}-`}${rawBadge}`
+        : rawBadge
+      return {
+        id: legalCase.id,
+        caseNumber: legalCase.caseNumber,
+        token: legalCase.token,
+        kind: legalCase.kind,
+        status: legalCase.status,
+        title: legalCase.title,
+        accusedName: legalCase.accusedName,
+        accusedBadge: badge,
+        accusedRank: legalCase.accusedRank,
+        sanctions: readLegalCaseSanctions(legalCase.sanctions),
+      }
+    }),
+  }
+}
+
+function formatSequenceNumberAllocated(prefix: string, value: number) {
+  return formatSequenceNumber(prefix, value)
+}
+
+/**
+ * Erzeugt für jeden gekündigten Mitarbeiter mit offenen Sanktionen genau eine
+ * Sanktionsklage und bündelt sie in einer Sammelklage mit eigenem Link-Token.
+ * Da die verknüpften Sanktionen dabei auf `IN_COURT` wechseln, erzeugt ein
+ * erneuter Lauf keine doppelten Klagen.
+ */
+export async function createLegalCaseBatch(createdById: string) {
+  const officers = await prisma.officer.findMany({
+    where: { status: 'TERMINATED', sanctions: { some: { status: 'OPEN' } } },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      badgeNumber: true,
+      discordId: true,
+      rank: { select: { name: true } },
+    },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+  })
+
+  if (officers.length === 0) {
+    throw new Error('Keine gekündigten Mitarbeiter mit offenen Sanktionen gefunden')
+  }
+
+  const openSanctions = await prisma.sanction.findMany({
+    where: { status: 'OPEN', officerId: { in: officers.map((officer) => officer.id) } },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  const byOfficer = new Map<string, typeof openSanctions>()
+  for (const sanction of openSanctions) {
+    if (!sanction.officerId) continue
+    const list = byOfficer.get(sanction.officerId) ?? []
+    list.push(sanction)
+    byOfficer.set(sanction.officerId, list)
+  }
+
+  const activeOfficers = officers.filter((officer) => (byOfficer.get(officer.id)?.length ?? 0) > 0)
+  if (activeOfficers.length === 0) {
+    throw new Error('Keine gekündigten Mitarbeiter mit offenen Sanktionen gefunden')
+  }
+
+  const existingNumbers = await prisma.legalCase.findMany({ select: { caseNumber: true } })
+  const nextFormatted = nextSequenceNumber(LEGAL_CASE_PREFIX, existingNumbers.map((row) => row.caseNumber))
+  const baseNumber = parseSequenceNumber(LEGAL_CASE_PREFIX, nextFormatted) ?? 1
+
+  const caseTokens = await Promise.all(activeOfficers.map(() => createUniqueLegalCaseToken()))
+  const batchToken = await createUniqueLegalCaseBatchToken()
+
+  const batch = await prisma.$transaction(async (tx) => {
+    const createdBatch = await tx.legalCaseBatch.create({
+      data: { token: batchToken, createdById },
+      select: { id: true },
+    })
+
+    let index = 0
+    for (const officer of activeOfficers) {
+      const sanctions = byOfficer.get(officer.id) ?? []
+      const generated = buildSanctionCaseContent(officer, sanctions)
+      const caseNumber = formatSequenceNumberAllocated(LEGAL_CASE_PREFIX, baseNumber + index)
+
+      const legalCase = await tx.legalCase.create({
+        data: {
+          caseNumber,
+          token: caseTokens[index],
+          kind: 'SANCTION',
+          title: 'Sanktionsklage',
+          officerId: officer.id,
+          accusedName: `${officer.firstName} ${officer.lastName}`.trim(),
+          accusedBadge: officer.badgeNumber ? stripTerminatedBadgeNumber(officer.badgeNumber) : null,
+          accusedRank: officer.rank?.name ?? null,
+          accusedDiscordId: officer.discordId ?? null,
+          subject: generated.subject,
+          content: generated.content,
+          closing: generated.closing,
+          sanctions: buildSanctionSnapshot(sanctions) as unknown as Prisma.InputJsonValue,
+          batchId: createdBatch.id,
+          createdById,
+        },
+        select: { id: true },
+      })
+
+      await tx.sanction.updateMany({
+        where: { id: { in: sanctions.map((sanction) => sanction.id) } },
+        data: { status: 'IN_COURT', legalCaseId: legalCase.id },
+      })
+
+      index += 1
+    }
+
+    return createdBatch
+  })
+
+  const reloaded = await prisma.legalCaseBatch.findUnique({
+    where: { id: batch.id },
+    include: legalCaseBatchInclude,
+  })
+  return reloaded ? serializeLegalCaseBatch(reloaded) : null
 }
