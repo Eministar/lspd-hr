@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-08-26T18:59:49.225Z",
+  "generatedAt": "2026-08-26T19:45:40.980Z",
   "entries": [
+    {
+      "buildId": "build-ed5971ee5a",
+      "commit": "ed5971ee5a775af5ca2be6525f32a6a15c6336be",
+      "shortCommit": "ed5971ee5a",
+      "subject": "Merge branch 'main' of https://github.com/Eministar/lspd-hr",
+      "author": "Eministar",
+      "date": "2026-08-26T19:44:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ed5971ee5a775af5ca2be6525f32a6a15c6336be"
+    },
+    {
+      "buildId": "build-fafd3c5dae",
+      "commit": "fafd3c5dae26cab3d147dd93cf068d2727a04061",
+      "shortCommit": "fafd3c5dae",
+      "subject": "feat: refactor unit group backfill process and enhance sorting logic for units",
+      "author": "Eministar",
+      "date": "2026-08-26T19:44:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fafd3c5dae26cab3d147dd93cf068d2727a04061"
+    },
+    {
+      "buildId": "build-ceedc16721",
+      "commit": "ceedc1672168283cb53ce82e9d2a5ef6a844f568",
+      "shortCommit": "ceedc16721",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-08-26T18:59:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ceedc1672168283cb53ce82e9d2a5ef6a844f568"
+    },
     {
       "buildId": "build-7cdd8ad5af",
       "commit": "7cdd8ad5afcf70c47c426979425d5f361b83e63d",
