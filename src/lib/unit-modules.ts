@@ -8,6 +8,7 @@ export const UNIT_MODULE_KEYS = [
   'air_support',
   'detective',
   'internal_affairs',
+  'lad',
 ] as const
 
 export type UnitModuleKey = (typeof UNIT_MODULE_KEYS)[number]
@@ -140,6 +141,16 @@ export const UNIT_MODULES: UnitModuleDefinition[] = [
     icon: 'search',
     viewPermission: 'internal-affairs:view',
     managePermissions: ['internal-affairs:manage'],
+  },
+  {
+    key: 'lad',
+    label: 'Legal Affairs Division',
+    shortLabel: 'LAD',
+    description: 'Rechtsabteilung: Dokumente und Klagen mit geteilter Klageschrift.',
+    href: '/lad',
+    icon: 'scale',
+    viewPermission: 'lad:view',
+    managePermissions: ['lad:manage'],
   },
 ]
 

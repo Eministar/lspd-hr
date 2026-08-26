@@ -1,7 +1,7 @@
 import { requirePermission } from '@/lib/auth'
 import type { Permission } from '@/lib/permissions'
 
-export const TASK_MODULES = ['ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT', 'DETECTIVE', 'INTERNAL_AFFAIRS'] as const
+export const TASK_MODULES = ['ACADEMY', 'HR', 'SRU', 'AIR_SUPPORT', 'DETECTIVE', 'INTERNAL_AFFAIRS', 'LAD'] as const
 export type TaskModuleKey = (typeof TASK_MODULES)[number]
 
 const MODULE_PERMISSION: Record<TaskModuleKey, { view: Permission; manage: Permission }> = {
@@ -11,6 +11,7 @@ const MODULE_PERMISSION: Record<TaskModuleKey, { view: Permission; manage: Permi
   AIR_SUPPORT: { view: 'air-support:view', manage: 'air-support:manage' },
   DETECTIVE: { view: 'detective:view', manage: 'detective:manage' },
   INTERNAL_AFFAIRS: { view: 'internal-affairs:view', manage: 'internal-affairs:manage' },
+  LAD: { view: 'lad:view', manage: 'lad:manage' },
 }
 
 const MODULE_FORM_TEST_MANAGE_PERMISSION: Partial<Record<TaskModuleKey, Permission>> = {

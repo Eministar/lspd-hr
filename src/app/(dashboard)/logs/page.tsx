@@ -66,6 +66,9 @@ const actionLabels: Record<string, string> = {
   API_TOKEN_REVOKED: 'API-Token widerrufen',
   API_TOKEN_HARD_DELETED: 'API-Token gelöscht',
   API_TOKENS_LIMIT_UPDATED: 'API-Limit geändert',
+  LEGAL_CASE_CREATED: 'Klage erstellt',
+  LEGAL_CASE_UPDATED: 'Klage bearbeitet',
+  LEGAL_CASE_DELETED: 'Klage gelöscht',
   CHANGE_UNDONE: 'Änderung rückgängig',
   CHANGE_REDONE: 'Änderung wiederholt',
 }
@@ -81,6 +84,7 @@ const groupChipStyles: Record<AuditLogGroupKey | 'other', string> = {
   calendar: 'bg-[#101f33] text-[#8aa8d8]',
   patrol: 'bg-[#0f2d3a] text-[#6cc3e8]',
   internalAffairs: 'bg-[#0b2938] text-[#7dd3fc]',
+  legal: 'bg-[#251438] text-[#c4b5fd]',
   system: 'bg-[#22232b] text-[#a3a8c2]',
   other: 'bg-[#0f2340] text-[#888]',
 }

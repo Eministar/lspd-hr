@@ -1265,3 +1265,577 @@ select option:hover {
     background: transparent;
   }
 }
+
+/* ─── Klageschrift: Dokumentenansicht (Legal Affairs Division) ───────────
+   Wie der Arbeitsvertrag wird auch die Klageschrift immer als helles,
+   amtliches Papier gerendert — unabhängig vom dunklen Dashboard. Die
+   Anmutung folgt einer deutschen Gerichtsschrift: Briefkopf mit Wappen,
+   Anschriftenblock, "In Sachen"-Rubrum, durchnummerierte Beweismittel
+   und ein amtlicher Rundstempel. */
+.lawsuit-paper {
+  --lawsuit-serif: 'Cambria', 'Charter', 'Georgia', 'Liberation Serif', 'Times New Roman', serif;
+  --lawsuit-sans: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --lawsuit-ink: #16223a;
+  --lawsuit-ink-soft: #46536b;
+  --lawsuit-rule: rgba(22, 34, 58, 0.16);
+  --lawsuit-accent: #16305f;
+  --lawsuit-gold: #b08a2e;
+
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+  max-width: 800px;
+  border: 1px solid #d8d2c2;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.7), transparent 60%),
+    linear-gradient(180deg, #fdfcf9 0%, #f5f1e7 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 22px 56px rgba(0, 0, 0, 0.5);
+  color: var(--lawsuit-ink);
+  font-family: var(--lawsuit-serif);
+  font-size: 14.5px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.lawsuit-paper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url(/shield.webp);
+  background-repeat: no-repeat;
+  background-position: center 44%;
+  background-size: min(52%, 360px);
+  opacity: 0.045;
+  pointer-events: none;
+}
+
+.lawsuit-paper::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(176, 138, 46, 0.4);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.lawsuit-paper > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lawsuit-inner {
+  padding: 40px 48px 34px;
+}
+
+.lawsuit-inner::after {
+  content: '';
+  position: absolute;
+  inset: 27px;
+  border: 1px solid var(--lawsuit-rule);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .lawsuit-inner {
+    padding: 26px 20px 26px;
+  }
+}
+
+.lawsuit-letterhead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 2px solid #16223a;
+  padding-bottom: 16px;
+}
+
+.lawsuit-brand {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.lawsuit-brand img {
+  width: 58px;
+  height: 58px;
+  flex: none;
+  object-fit: contain;
+}
+
+.lawsuit-dept {
+  font-family: var(--lawsuit-sans);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  color: #142033;
+}
+
+.lawsuit-division {
+  margin-top: 2px;
+  font-family: var(--lawsuit-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lawsuit-gold);
+}
+
+.lawsuit-contact {
+  margin-top: 7px;
+  font-family: var(--lawsuit-sans);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--lawsuit-ink-soft);
+  letter-spacing: 0.02em;
+}
+
+.lawsuit-letterhead-meta {
+  flex: none;
+  text-align: right;
+  font-family: var(--lawsuit-sans);
+}
+
+.lawsuit-meta-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lawsuit-gold);
+}
+
+.lawsuit-meta-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lawsuit-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lawsuit-letterhead-meta .lawsuit-meta-row + .lawsuit-meta-row {
+  margin-top: 8px;
+}
+
+.lawsuit-court {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lawsuit-court-box {
+  font-family: var(--lawsuit-sans);
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--lawsuit-ink);
+  text-align: right;
+}
+
+.lawsuit-court-box strong {
+  font-weight: 700;
+}
+
+.lawsuit-title {
+  margin-top: 26px;
+  text-align: center;
+  font-family: var(--lawsuit-serif);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: #13213b;
+  text-indent: 0.16em;
+}
+
+.lawsuit-title-rule {
+  margin: 12px auto 0;
+  width: 190px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--lawsuit-gold) 22%, var(--lawsuit-gold) 78%, transparent);
+}
+
+.lawsuit-subtitle {
+  margin-top: 8px;
+  text-align: center;
+  font-family: var(--lawsuit-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7f7050;
+}
+
+.lawsuit-rubrum {
+  margin-top: 26px;
+  font-family: var(--lawsuit-sans);
+}
+
+.lawsuit-rubrum-lead {
+  font-family: var(--lawsuit-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--lawsuit-ink);
+}
+
+.lawsuit-parties {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 1px solid var(--lawsuit-rule);
+  border-bottom: 1px solid var(--lawsuit-rule);
+  padding: 14px 0;
+}
+
+.lawsuit-party + .lawsuit-party {
+  padding-top: 12px;
+  border-top: 1px dashed rgba(22, 34, 58, 0.16);
+}
+
+.lawsuit-party + .lawsuit-party {
+  margin-top: 12px;
+}
+
+.lawsuit-party-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lawsuit-gold);
+}
+
+.lawsuit-party-name {
+  margin-top: 4px;
+  font-family: var(--lawsuit-serif);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--lawsuit-ink);
+}
+
+.lawsuit-party-line {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--lawsuit-ink-soft);
+}
+
+.lawsuit-section {
+  margin-top: 26px;
+}
+
+.lawsuit-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 9px;
+  font-family: var(--lawsuit-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lawsuit-accent);
+}
+
+.lawsuit-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(22, 48, 95, 0.4), transparent);
+}
+
+.lawsuit-subject {
+  font-family: var(--lawsuit-serif);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--lawsuit-ink);
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.lawsuit-prose {
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--lawsuit-ink);
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  hyphenate-limit-chars: 7 3 3;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
+
+.lawsuit-prose > * + * {
+  margin-top: 9px;
+}
+
+.lawsuit-prose h1,
+.lawsuit-prose h2,
+.lawsuit-prose h3,
+.lawsuit-prose h4,
+.lawsuit-prose h5,
+.lawsuit-prose h6 {
+  margin-top: 14px;
+  font-family: var(--lawsuit-serif);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: left;
+  color: #13213b;
+}
+
+.lawsuit-prose h1 { font-size: 18px; }
+.lawsuit-prose h2 { font-size: 16px; }
+.lawsuit-prose h3,
+.lawsuit-prose h4,
+.lawsuit-prose h5,
+.lawsuit-prose h6 { font-size: 14.5px; }
+
+.lawsuit-prose strong {
+  font-weight: 700;
+  color: #10172a;
+}
+
+.lawsuit-prose em {
+  font-style: italic;
+}
+
+.lawsuit-prose ul,
+.lawsuit-prose ol {
+  margin-left: 1.35em;
+  padding-left: 0;
+  text-align: left;
+}
+
+.lawsuit-prose ul { list-style: disc outside; }
+.lawsuit-prose ol { list-style: decimal outside; }
+
+.lawsuit-prose li + li {
+  margin-top: 4px;
+}
+
+.lawsuit-prose li::marker {
+  color: var(--lawsuit-ink-soft);
+}
+
+.lawsuit-evidence {
+  list-style: none;
+  counter-reset: exhibit;
+  padding: 0;
+  margin: 0;
+}
+
+.lawsuit-evidence > li {
+  counter-increment: exhibit;
+  position: relative;
+  padding: 11px 0 11px 86px;
+  border-bottom: 1px solid rgba(22, 34, 58, 0.12);
+}
+
+.lawsuit-evidence > li::before {
+  content: 'Beweis ' counter(exhibit);
+  position: absolute;
+  left: 0;
+  top: 11px;
+  font-family: var(--lawsuit-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lawsuit-gold);
+}
+
+.lawsuit-evidence-title {
+  font-family: var(--lawsuit-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lawsuit-ink);
+}
+
+.lawsuit-evidence-meta {
+  margin-top: 2px;
+  font-family: var(--lawsuit-sans);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--lawsuit-ink-soft);
+}
+
+.lawsuit-clause-box {
+  margin-top: 16px;
+  border: 1px solid rgba(22, 48, 95, 0.22);
+  border-left: 4px solid var(--lawsuit-accent);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 14px 18px;
+  break-inside: avoid;
+}
+
+.lawsuit-clause-heading {
+  font-family: var(--lawsuit-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lawsuit-accent);
+  margin-bottom: 6px;
+}
+
+.lawsuit-clause-box .lawsuit-prose {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.lawsuit-divider {
+  margin-top: 30px;
+  border: 0;
+  border-top: 1px solid var(--lawsuit-rule);
+}
+
+.lawsuit-place-date {
+  margin-top: 24px;
+  font-size: 14.5px;
+  color: var(--lawsuit-ink);
+}
+
+.lawsuit-signatures {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 28px;
+}
+
+.lawsuit-signature-name {
+  min-height: 34px;
+  padding-bottom: 3px;
+  font-family: var(--lawsuit-serif);
+  font-size: 23px;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  color: var(--lawsuit-accent);
+  overflow-wrap: anywhere;
+}
+
+.lawsuit-signature-line {
+  border-top: 1px solid var(--lawsuit-ink);
+  padding-top: 7px;
+  font-family: var(--lawsuit-sans);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--lawsuit-ink-soft);
+}
+
+.lawsuit-footer {
+  margin-top: 34px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(22, 34, 58, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--lawsuit-sans);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b8168;
+}
+
+.lawsuit-seal {
+  position: absolute;
+  right: 40px;
+  bottom: 110px;
+  z-index: 3;
+  display: flex;
+  height: 148px;
+  width: 148px;
+  transform: rotate(-14deg);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 3px double var(--lawsuit-accent);
+  border-radius: 50%;
+  color: var(--lawsuit-accent);
+  font-family: var(--lawsuit-sans);
+  text-align: center;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.lawsuit-seal::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(22, 48, 95, 0.65);
+  border-radius: 50%;
+}
+
+.lawsuit-seal-top {
+  max-width: 116px;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.lawsuit-seal-main {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lawsuit-seal-date {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.lawsuit-draft-mark {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-family: var(--lawsuit-sans);
+  font-size: clamp(36px, 8vw, 74px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(22, 48, 95, 0.12);
+  transform: rotate(-24deg);
+}
+
+@media (max-width: 640px) {
+  .lawsuit-seal {
+    right: 18px;
+    bottom: 24px;
+    height: 108px;
+    width: 108px;
+  }
+  .lawsuit-seal-main { font-size: 11px; }
+  .lawsuit-seal-top { max-width: 84px; font-size: 6.5px; }
+  .lawsuit-letterhead { flex-direction: column; }
+  .lawsuit-letterhead-meta { text-align: left; }
+}
+
+@media print {
+  .lawsuit-paper {
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+    background: #ffffff;
+  }
+  .lawsuit-paper::before {
+    opacity: 0.025;
+  }
+}

@@ -22,6 +22,10 @@ function clientIp(req: NextRequest) {
 /**
  * Unterschreiben darf ausschließlich der Officer selbst. Prüfrollen und HR
  * haben über denselben Link nur Leserecht — sie dürfen hier also nicht durch.
+ *
+ * Die Discord-ID wird gegen den Vertrags-Snapshot UND gegen die aktuelle
+ * Officer-Akte geprüft. So bleibt die Unterschrift auch dann möglich, wenn HR
+ * die Discord-ID nach Erstellung des Vertrags korrigiert hat.
  */
 async function authorizeSigner(token: string) {
   const contract = await loadContractByToken(token)
@@ -31,16 +35,29 @@ async function authorizeSigner(token: string) {
   if (!user) {
     return { error: error('Bitte melde dich mit Discord an, um zu unterschreiben.', 401) }
   }
-  if (!contract.signerDiscordId) {
+
+  const signerDiscordId = contract.signerDiscordId?.trim() || null
+  const officerDiscordId = contract.officer?.discordId?.trim() || null
+  if (!signerDiscordId && !officerDiscordId) {
     return { error: error('Für diesen Vertrag ist keine Discord-ID hinterlegt.', 409) }
   }
-  if (user.discordId !== contract.signerDiscordId) {
+
+  const ownsContract = Boolean(user.discordId && (
+    (signerDiscordId && user.discordId === signerDiscordId) ||
+    (officerDiscordId && user.discordId === officerDiscordId)
+  ))
+  if (!ownsContract) {
     return {
       error: error('Nur der Officer selbst kann diesen Vertrag unterschreiben.', 403),
     }
   }
 
   return { contract, user }
+}
+
+/** Bestimmt den aktuell gültigen Discord-Signierungs-Snapshot für den Vertrag. */
+function contractSignerDiscordId(contract: Awaited<ReturnType<typeof loadContractByToken>>) {
+  return contract?.officer?.discordId?.trim() || contract?.signerDiscordId?.trim() || null
 }
 
 /** Vertrag ausfüllen und unterschreiben. */
@@ -107,6 +124,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         values: values as unknown as Prisma.InputJsonValue,
         signedAt: new Date(),
         signedName: signedName || `${contract.officer.firstName} ${contract.officer.lastName}`.trim(),
+        signerDiscordId: contractSignerDiscordId(contract),
         signedByUserId: user.id,
         signedIp: clientIp(req),
         signedUserAgent: req.headers.get('user-agent')?.slice(0, 200) ?? null,

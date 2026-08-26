@@ -61,6 +61,7 @@ const STATUS_OPTIONS = [
   { value: 'OPEN', label: 'Offen' },
   { value: 'PAID', label: 'Bezahlt' },
   { value: 'ESCALATED', label: 'Nicht bezahlt / verdoppelt' },
+  { value: 'IN_COURT', label: 'In Klage' },
   { value: '', label: 'Alle Status' },
 ]
 

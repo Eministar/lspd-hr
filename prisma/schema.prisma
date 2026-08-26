@@ -31,6 +31,7 @@ enum TaskModule {
   AIR_SUPPORT
   DETECTIVE
   INTERNAL_AFFAIRS
+  LAD
 }
 
 enum TaskStatus {
@@ -57,6 +58,7 @@ enum SanctionStatus {
   OPEN
   PAID
   ESCALATED
+  IN_COURT
 }
 
 enum CalendarEventType {
@@ -142,6 +144,17 @@ enum ContractStatus {
   CANCELLED
 }
 
+enum LegalCaseKind {
+  SANCTION
+  CUSTOM
+}
+
+enum LegalCaseStatus {
+  DRAFT
+  FILED
+  CLOSED
+}
+
 model UserGroup {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -217,6 +230,7 @@ model User {
   reportUpdatesAuthored      ReportUpdate[]            @relation("ReportUpdateAuthor")
   officerSearchesCreated     OfficerSearch[]           @relation("OfficerSearchCreator")
   internalAffairsDawsCreated InternalAffairsDaw[]      @relation("IaDawCreator")
+  legalCasesCreated          LegalCase[]               @relation("LegalCaseCreator")
   transferRequestsCreated    TransferRequest[]         @relation("TransferRequestCreator")
   transferRequestsSignedHr   TransferRequest[]         @relation("TransferRequestHrSigner")
   transferRequestsSignedOf   TransferRequest[]         @relation("TransferRequestOfficerSigner")
@@ -611,6 +625,7 @@ model Officer {
   transferRequests    TransferRequest[]     @relation("OfficerTransferRequests")
   searches            OfficerSearch[]
   internalAffairsDaws InternalAffairsDaw[]
+  legalCases          LegalCase[]          @relation("OfficerLegalCases")
 
   @@index([badgeNumber])
 }
@@ -895,6 +910,9 @@ model Sanction {
   discordMessageId    String?
   issuedByUserId      String?
   issuedBy            User?          @relation("SanctionIssuedBy", fields: [issuedByUserId], references: [id], onDelete: SetNull)
+  /// Zuordnung zu einer Klage der Legal Affairs Division (Sanktionsklage).
+  legalCaseId         String?
+  legalCase           LegalCase?     @relation("SanctionLegalCase", fields: [legalCaseId], references: [id], onDelete: SetNull)
   previousRank        String?
   previousBadgeNumber String?
   previousFirstName   String?
@@ -906,6 +924,7 @@ model Sanction {
   @@index([issuedByUserId, createdAt])
   @@index([status, dueAt])
   @@index([parentSanctionId])
+  @@index([legalCaseId])
 }
 
 model Note {
@@ -1607,6 +1626,59 @@ model TransferRequest {
   createdBy   User?    @relation("TransferRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([officerId])
+  @@index([createdById])
+}
+
+// ---------------------------------------------------------------------------
+// Legal Affairs Division — Klagen
+// ---------------------------------------------------------------------------
+
+/// Eine Klage (Klageschrift) der Legal Affairs Division. Jede Klageschrift
+/// hat einen eigenen Link (`token`), über den sie ohne Anmeldung eingesehen
+/// werden kann. `kind=SANCTION` wird beim Erstellen automatisch aus den
+/// ausgewählten offenen Sanktionen generiert; `kind=CUSTOM` ist frei verfasst.
+model LegalCase {
+  id         String          @id @default(cuid())
+  /// Aktenzeichen der Klage, z. B. "LAD-0001".
+  caseNumber String          @unique @db.VarChar(24)
+  /// Link-Token für die öffentliche Einsicht.
+  token      String          @unique
+  kind       LegalCaseKind   @default(CUSTOM)
+  status     LegalCaseStatus @default(DRAFT)
+  title      String
+
+  /// Beklagter (Officer). Snapshot-Felder bleiben erhalten, wenn der Officer
+  /// später gelöscht wird.
+  officerId String?
+  officer   Officer? @relation("OfficerLegalCases", fields: [officerId], references: [id], onDelete: SetNull)
+
+  accusedName      String? @db.VarChar(200)
+  accusedBadge     String? @db.VarChar(64)
+  accusedRank      String? @db.VarChar(120)
+  accusedDiscordId String? @db.VarChar(64)
+
+  /// Betreff der Klageschrift.
+  subject String  @db.Text
+  /// Sachverhalt (Markdown).
+  content String  @db.Text
+  /// Antrag / Schlusstext (Markdown).
+  closing String? @db.Text
+
+  /// Snapshot der als Beweismittel verknüpften Sanktionen:
+  /// `[{ sanctionId, reason, penalGrade, measureType, fineAmount, sgRounds, createdAt, dueAt }]`.
+  sanctions Json @default("[]")
+
+  filedAt    DateTime?
+  closedAt   DateTime?
+  createdById String?
+  createdBy   User?    @relation("LegalCaseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  linkedSanctions Sanction[] @relation("SanctionLegalCase")
 
   @@index([status, updatedAt])
   @@index([officerId])

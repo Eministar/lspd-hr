@@ -81,7 +81,7 @@ export type ContractAccessResult =
  * oder er hat eine Prüfrolle bzw. das Recht, Verträge im Dashboard zu sehen.
  */
 export async function resolveContractAccess(
-  contract: Pick<ContractLinkRecord, 'signerDiscordId'>,
+  contract: Pick<ContractLinkRecord, 'signerDiscordId' | 'officer'>,
   user: CurrentUser | null,
 ): Promise<ContractAccessResult> {
   if (!user) {
@@ -92,7 +92,17 @@ export async function resolveContractAccess(
     }
   }
 
-  if (contract.signerDiscordId && user.discordId === contract.signerDiscordId) {
+  // Der Officer selbst darf unterschreiben, wenn seine Discord-ID zum Vertrag
+  // passt. Bewusst in zwei Stufen geprüft: erst der Snapshot, dann die aktuelle
+  // Officer-Akte. HR kann die Discord-ID nachträglich korrigieren — ohne diesen
+  // Fallback bliebe sonst auch der richtige Account dauerhaft ausgesperrt (403).
+  const signerDiscordId = contract.signerDiscordId?.trim() || null
+  const officerDiscordId = contract.officer?.discordId?.trim() || null
+  const ownsContract = Boolean(user.discordId && (
+    (signerDiscordId && user.discordId === signerDiscordId) ||
+    (officerDiscordId && user.discordId === officerDiscordId)
+  ))
+  if (ownsContract) {
     return { ok: true, access: 'signer' }
   }
 
@@ -105,7 +115,7 @@ export async function resolveContractAccess(
     return { ok: true, access: 'auditor' }
   }
 
-  if (!contract.signerDiscordId) {
+  if (!signerDiscordId && !officerDiscordId) {
     return {
       ok: false,
       status: 409,

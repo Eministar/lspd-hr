@@ -43,6 +43,10 @@ export const AUDIT_LOG_GROUPS = {
     label: 'Internal Affairs',
     actions: ['OFFICER_SEARCH_CREATED', 'OFFICER_SEARCH_DELETED'],
   },
+  legal: {
+    label: 'Legal Affairs',
+    actions: ['LEGAL_CASE_CREATED', 'LEGAL_CASE_UPDATED', 'LEGAL_CASE_DELETED'],
+  },
   system: {
     label: 'System & API',
     actions: [

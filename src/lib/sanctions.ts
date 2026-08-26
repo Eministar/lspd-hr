@@ -25,7 +25,7 @@ export {
   resolveSanctionMeasure,
   type SanctionMeasureType,
 } from './sanction-catalog'
-export const SANCTION_STATUSES = new Set(['OPEN', 'PAID', 'ESCALATED'])
+export const SANCTION_STATUSES = new Set(['OPEN', 'PAID', 'ESCALATED', 'IN_COURT'])
 
 export const sanctionInclude = {
   officer: { include: { rank: true } },
@@ -75,6 +75,8 @@ export function sanctionStatusLabel(status: string) {
       return 'Bezahlt'
     case 'ESCALATED':
       return 'Nicht bezahlt / verdoppelt'
+    case 'IN_COURT':
+      return 'In Klage'
     default:
       return 'Offen'
   }

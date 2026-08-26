@@ -15,7 +15,7 @@ export interface SanctionRecord {
   fineAmount: number | null
   sgRounds?: number | null
   penalty: string | null
-  status: 'OPEN' | 'PAID' | 'ESCALATED'
+  status: 'OPEN' | 'PAID' | 'ESCALATED' | 'IN_COURT'
   dueAt: string | null
   paidAt: string | null
   escalatedAt: string | null
@@ -37,12 +37,14 @@ export interface SanctionCardOfficer {
 export function sanctionStatusLabel(status: SanctionRecord['status']) {
   if (status === 'PAID') return 'Bezahlt'
   if (status === 'ESCALATED') return 'Nicht bezahlt / verdoppelt'
+  if (status === 'IN_COURT') return 'In Klage'
   return 'Offen'
 }
 
 export function sanctionStatusClass(status: SanctionRecord['status']) {
   if (status === 'PAID') return 'border-[#166534]/60 bg-[#052e1a]/60 text-[#86efac]'
   if (status === 'ESCALATED') return 'border-[#7f1d1d]/60 bg-[#2a1212]/60 text-[#fca5a5]'
+  if (status === 'IN_COURT') return 'border-[#6d28d9]/60 bg-[#1a1030]/60 text-[#c4b5fd]'
   return 'border-[#b45309]/50 bg-[#1d1608]/70 text-[#fbbf24]'
 }
 
@@ -71,6 +73,12 @@ const SANCTION_STATUS_CONFIG = {
     glow: 'shadow-[0_0_0_1px_rgba(220,38,38,0.2)]',
     border: 'border-[#dc2626]/25',
     bg: 'bg-[#0d0202]',
+  },
+  IN_COURT: {
+    accent: 'bg-[#8b5cf6]',
+    glow: 'shadow-[0_0_0_1px_rgba(139,92,246,0.2)]',
+    border: 'border-[#8b5cf6]/25',
+    bg: 'bg-[#0a0616]',
   },
 } as const
 

@@ -323,6 +323,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       })
     }
 
+    // Die Discord-ID ist der Schlüssel für den persönlichen Vertragslink.
+    // Wird sie korrigiert, müssen offene Verträge mitwandern — sonst bleibt
+    // dem Officer sein Vertrag nach der Korrektur verschlossen (403).
+    if (discordChanged) {
+      void prisma.contract.updateMany({
+        where: { officerId: id, status: { in: ['DRAFT', 'SENT'] } },
+        data: { signerDiscordId: parsed.data.discordId ?? null },
+      }).catch((syncError) => {
+        console.error('[Contracts] signerDiscordId konnte nicht aktualisiert werden:', syncError)
+      })
+    }
+
     if (rankChanged || nameChanged || badgeChanged || unitsChanged || discordChanged || statusChanged) {
       queueOfficerRoleSync(id, parsed.data.status === 'TERMINATED' ? 'remove-all' : 'sync')
     }

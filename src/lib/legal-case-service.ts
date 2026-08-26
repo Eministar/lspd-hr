@@ -1,0 +1,325 @@
+import { randomBytes } from 'node:crypto'
+import type { Prisma } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
+import { getBadgePrefix } from '@/lib/settings-helpers'
+import { CONTRACT_PLACE } from '@/lib/contracts'
+import { formatFineAmount, penalGradeLabel, sanctionMeasureLabel } from '@/lib/sanction-catalog'
+import { nextSequenceNumber } from '@/lib/sequence-numbers'
+import {
+  LEGAL_CASE_PREFIX,
+  readLegalCaseSanctions,
+  type LegalCaseKindValue,
+} from '@/lib/legal-cases'
+
+export const legalCaseSelect = {
+  id: true,
+  caseNumber: true,
+  token: true,
+  kind: true,
+  status: true,
+  title: true,
+  officerId: true,
+  accusedName: true,
+  accusedBadge: true,
+  accusedRank: true,
+  accusedDiscordId: true,
+  subject: true,
+  content: true,
+  closing: true,
+  sanctions: true,
+  filedAt: true,
+  closedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  officer: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      badgeNumber: true,
+      discordId: true,
+      rank: { select: { name: true } },
+    },
+  },
+  createdBy: { select: { id: true, displayName: true } },
+} satisfies Prisma.LegalCaseSelect
+
+export type LegalCaseRecord = Prisma.LegalCaseGetPayload<{ select: typeof legalCaseSelect }>
+
+function generateLegalCaseToken() {
+  return randomBytes(24).toString('base64url')
+}
+
+async function createUniqueLegalCaseToken() {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = generateLegalCaseToken()
+    const existing = await prisma.legalCase.findUnique({ where: { token }, select: { id: true } })
+    if (!existing) return token
+  }
+  throw new Error('Klage-Token konnte nicht erstellt werden')
+}
+
+/** Nächste freie Aktenzeichen-Nummer im Format `LAD-0001`. */
+async function nextLegalCaseNumber() {
+  const existing = await prisma.legalCase.findMany({ select: { caseNumber: true } })
+  return nextSequenceNumber(LEGAL_CASE_PREFIX, existing.map((row) => row.caseNumber))
+}
+
+export async function loadLegalCaseById(id: string) {
+  return prisma.legalCase.findUnique({ where: { id }, select: legalCaseSelect })
+}
+
+export async function loadLegalCaseByToken(token: string) {
+  if (!token) return null
+  const legalCase = await prisma.legalCase.findUnique({ where: { token }, select: legalCaseSelect })
+  if (!legalCase) return null
+  if (legalCase.token !== token) return null
+  return legalCase
+}
+
+function formatDateDe(value: Date | string | null | undefined) {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+type OfficerForCase = {
+  id: string
+  firstName: string
+  lastName: string
+  badgeNumber: string
+  discordId: string | null
+  rank?: { name: string } | null
+}
+
+type SanctionForCase = {
+  id: string
+  reason: string
+  penalGrade: string
+  measureType: string
+  fineAmount: number | null
+  sgRounds: number | null
+  dueAt: Date | null
+  createdAt: Date
+}
+
+/** Aufbereitete Sanktionsklage: Betreff, Sachverhalt, Antrag und Beweis-Snapshot. */
+export function buildSanctionCaseContent(officer: OfficerForCase, sanctions: SanctionForCase[]) {
+  const name = `${officer.firstName} ${officer.lastName}`.trim()
+  const badge = officer.badgeNumber || null
+
+  const subject = `Klage des Los Santos Police Department gegen ${name}${badge ? ` (${badge})` : ''} wegen Nichtzahlung offener Sanktion(en) nach Beendigung des Dienstverhältnisses`
+
+  const totalFine = sanctions
+    .filter((sanction) => sanction.measureType !== 'SG_ROUNDS' && sanction.fineAmount !== null)
+    .reduce((sum, sanction) => sum + (sanction.fineAmount ?? 0), 0)
+
+  const bullets = sanctions.map((sanction) => {
+    const measure = sanctionMeasureLabel(sanction)
+    const meta = [
+      penalGradeLabel(sanction.penalGrade),
+      measure,
+      sanction.dueAt ? `Frist bis ${formatDateDe(sanction.dueAt)}` : 'ohne Frist',
+      `ausgestellt am ${formatDateDe(sanction.createdAt)}`,
+    ].join(' · ')
+    return `- **${meta}**\n  Grund: ${sanction.reason}`
+  })
+
+  const claimAmount = totalFine > 0
+    ? ` die offenen Forderungen in Höhe von insgesamt **${formatFineAmount(totalFine)}** nebst Zinsen`
+    : ' die offenen Verbindlichkeiten vollständig'
+
+  const content = [
+    `Die Klägerin, das **Los Santos Police Department**, vertreten durch die Legal Affairs Division, erhebt gegen den Beklagten Klage und trägt hierzu wie folgt vor:`,
+    '',
+    `1. Der Beklagte stand im Dienst der Klägerin und unterlag dem zwischen den Parteien geschlossenen Arbeitsvertrag.`,
+    `2. Das Dienstverhältnis des Beklagten wurde beendet. Gemäß **§ 6 des Arbeitsvertrages** entbindet eine Kündigung oder Entlassung jedoch nicht von bereits bestehenden Verpflichtungen; offene Sanktionen, Geldstrafen und sonstige Forderungen bleiben bestehen und sind vollständig zu begleichen.`,
+    `3. Gegen den Beklagten bestehen die nachfolgend näher bezeichneten offenen Sanktionen (siehe Beweismittel):`,
+    ...bullets,
+    `4. Trotz Fälligkeit und ausdrücklichem Hinweis auf die fortbestehende Zahlungspflicht hat der Beklagte die offenen Beträge bis heute nicht beglichen.`,
+  ].join('\n')
+
+  const closing = [
+    'Aus den vorgenannten Gründen wird beantragt,',
+    '',
+    `1. den Beklagten zu verurteilen,${claimAmount} zu begleichen,`,
+    '2. festzustellen, dass sich der Beklagte mit der Zahlung in Verzug befindet,',
+    '3. dem Beklagten die Kosten des Verfahrens aufzuerlegen.',
+  ].join('\n')
+
+  return { subject, content, closing }
+}
+
+export interface CreateLegalCaseInput {
+  kind: LegalCaseKindValue
+  officerId?: string | null
+  sanctionIds?: string[]
+  title?: string | null
+  subject?: string | null
+  content?: string | null
+  closing?: string | null
+  createdById: string
+}
+
+/**
+ * Erzeugt eine neue Klageschrift. Bei `kind=SANCTION` werden Betreff,
+ * Sachverhalt und Antrag automatisch aus den ausgewählten offenen Sanktionen
+ * generiert. Verknüpfte Sanktionen werden auf `IN_COURT` gesetzt und mit der
+ * Klage verknüpft.
+ */
+export async function createLegalCase(input: CreateLegalCaseInput) {
+  const kind = input.kind
+
+  let officer: OfficerForCase | null = null
+  if (input.officerId) {
+    officer = await prisma.officer.findUnique({
+      where: { id: input.officerId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        badgeNumber: true,
+        discordId: true,
+        rank: { select: { name: true } },
+      },
+    })
+    if (!officer) throw new Error('Officer nicht gefunden')
+  }
+
+  let sanctionSnapshots: ReturnType<typeof buildSanctionSnapshot> = []
+  let selectedSanctionIds: string[] = []
+
+  if (input.sanctionIds && input.sanctionIds.length > 0) {
+    if (!officer) throw new Error('Für verknüpfte Sanktionen ist ein Officer erforderlich')
+    selectedSanctionIds = Array.from(new Set(input.sanctionIds.map((id) => id.trim()).filter(Boolean)))
+    const sanctions = await prisma.sanction.findMany({
+      where: { id: { in: selectedSanctionIds } },
+    })
+    if (sanctions.length !== selectedSanctionIds.length) {
+      throw new Error('Eine oder mehrere Sanktionen wurden nicht gefunden')
+    }
+    const openSanctions = sanctions.filter((sanction) => sanction.status === 'OPEN')
+    if (openSanctions.length !== sanctions.length) {
+      throw new Error('Nur offene Sanktionen können einer Klage zugeordnet werden')
+    }
+    for (const sanction of openSanctions) {
+      if (sanction.officerId !== officer.id) {
+        throw new Error('Sanktion gehört nicht zum ausgewählten Officer')
+      }
+    }
+    sanctionSnapshots = buildSanctionSnapshot(openSanctions)
+    selectedSanctionIds = openSanctions.map((sanction) => sanction.id)
+  }
+
+  let title: string
+  let subject: string
+  let content: string
+  let closing: string | null
+
+  if (kind === 'SANCTION') {
+    if (!officer) throw new Error('Für eine Sanktionsklage ist ein Officer erforderlich')
+    if (selectedSanctionIds.length === 0) throw new Error('Mindestens eine offene Sanktion ist erforderlich')
+
+    const sanctions = await prisma.sanction.findMany({
+      where: { id: { in: selectedSanctionIds } },
+    })
+    const generated = buildSanctionCaseContent(officer, sanctions)
+    title = input.title?.trim() || 'Sanktionsklage'
+    subject = generated.subject
+    content = generated.content
+    closing = generated.closing
+  } else {
+    title = input.title?.trim() || 'Klageschrift'
+    subject = input.subject?.trim() || ''
+    content = input.content?.trim() || ''
+    closing = input.closing?.trim() || null
+    if (!content) throw new Error('Der Sachverhalt darf nicht leer sein')
+  }
+
+  const caseNumber = await nextLegalCaseNumber()
+  const token = await createUniqueLegalCaseToken()
+
+  const legalCase = await prisma.$transaction(async (tx) => {
+    const created = await tx.legalCase.create({
+      data: {
+        caseNumber,
+        token,
+        kind,
+        title,
+        officerId: officer?.id ?? null,
+        accusedName: officer ? `${officer.firstName} ${officer.lastName}`.trim() : null,
+        accusedBadge: officer?.badgeNumber ?? null,
+        accusedRank: officer?.rank?.name ?? null,
+        accusedDiscordId: officer?.discordId ?? null,
+        subject,
+        content,
+        closing,
+        sanctions: sanctionSnapshots as unknown as Prisma.InputJsonValue,
+        createdById: input.createdById,
+      },
+      select: legalCaseSelect,
+    })
+
+    if (selectedSanctionIds.length > 0) {
+      await tx.sanction.updateMany({
+        where: { id: { in: selectedSanctionIds } },
+        data: { status: 'IN_COURT', legalCaseId: created.id },
+      })
+    }
+
+    return created
+  })
+
+  return loadLegalCaseById(legalCase.id)
+}
+
+function buildSanctionSnapshot(sanctions: SanctionForCase[]) {
+  return sanctions.map((sanction) => ({
+    sanctionId: sanction.id,
+    reason: sanction.reason,
+    penalGrade: sanction.penalGrade,
+    measureType: sanction.measureType,
+    fineAmount: sanction.fineAmount,
+    sgRounds: sanction.sgRounds,
+    dueAt: sanction.dueAt ? sanction.dueAt.toISOString() : null,
+    createdAt: sanction.createdAt.toISOString(),
+  }))
+}
+
+export type LegalCaseDocument = Awaited<ReturnType<typeof serializeLegalCase>>
+
+/** Bereitet die Klageschrift für die Anzeige (Dashboard oder geteilter Link) auf. */
+export async function serializeLegalCase(record: LegalCaseRecord) {
+  const prefix = await getBadgePrefix()
+  const rawBadge = record.accusedBadge ?? record.officer?.badgeNumber ?? null
+  const badge = rawBadge && prefix && !rawBadge.startsWith(prefix)
+    ? `${prefix.endsWith('-') ? prefix : `${prefix}-`}${rawBadge}`
+    : rawBadge
+
+  return {
+    id: record.id,
+    token: record.token,
+    caseNumber: record.caseNumber,
+    kind: record.kind,
+    status: record.status,
+    title: record.title,
+    subject: record.subject,
+    content: record.content,
+    closing: record.closing,
+    accused: {
+      name: record.accusedName
+        ?? (record.officer ? `${record.officer.firstName} ${record.officer.lastName}`.trim() : null),
+      badge,
+      rank: record.accusedRank ?? record.officer?.rank?.name ?? null,
+      discordId: record.accusedDiscordId ?? record.officer?.discordId ?? null,
+      address: null,
+    },
+    sanctions: readLegalCaseSanctions(record.sanctions),
+    place: CONTRACT_PLACE,
+    documentDate: (record.filedAt ?? record.createdAt).toISOString(),
+    filedAt: record.filedAt,
+    closedAt: record.closedAt,
+    createdAt: record.createdAt,
+  }
+}

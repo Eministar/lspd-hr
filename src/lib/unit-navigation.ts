@@ -32,6 +32,7 @@ const DEFAULT_NAVIGATION_UNITS: {
   { key: 'AIR_SUPPORT', name: 'Air-Support Division', description: 'Luftunterstützung und Flugdienst.', color: '#38bdf8', icon: 'plane', module: 'air_support', sortOrder: 50 },
   { key: 'DETECTIVE', name: 'Detective Unit', description: 'Ermittlungen und Fallbearbeitung.', color: '#a78bfa', icon: 'fingerprint', module: 'detective', sortOrder: 60 },
   { key: 'INTERNAL_AFFAIRS', name: 'Internal Affairs', description: 'Interne Ermittlungen, Dokumentation und Durchsuchungsakten.', color: '#0ea5e9', icon: 'search', module: 'internal_affairs', defaultAccess: 'manage', sortOrder: 70 },
+  { key: 'LAD', name: 'Legal Affairs Division', description: 'Rechtsabteilung: Dokumente und Klagen mit geteilter Klageschrift.', color: '#8b5cf6', icon: 'scale', module: 'lad', defaultAccess: 'manage', sortOrder: 80 },
 ]
 
 let bootstrapPromise: Promise<void> | null = null
