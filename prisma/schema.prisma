@@ -680,6 +680,9 @@ model SruDocument {
   folder      SruFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title       String
   content     String     @db.Text
+  /// Optionaler externer Dokument-Link. Wird direkt im Browser geöffnet;
+  /// Markdown bleibt für interne Notizen und bestehende Dokumente verfügbar.
+  externalUrl String?    @db.VarChar(2048)
   sortOrder   Int        @default(0)
   createdById String?
   createdBy   User?      @relation("SruDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)

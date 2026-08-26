@@ -13,6 +13,19 @@ function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+/** Nur sichere externe Ziele speichern; leere Eingaben entfernen den Link. */
+function normalizeExternalUrl(value: unknown): string | null | undefined {
+  const raw = cleanText(value)
+  if (!raw) return null
+  try {
+    const parsed = new URL(raw)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
+    return parsed.toString()
+  } catch {
+    return undefined
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -21,6 +34,8 @@ export async function POST(req: NextRequest) {
     const title = cleanText(body.title)
     const folderId = cleanText(body.folderId)
     if (!title) return error('Titel ist erforderlich')
+    const externalUrl = normalizeExternalUrl(body.externalUrl)
+    if (externalUrl === undefined) return error('Gültiger HTTP- oder HTTPS-Link ist erforderlich')
 
     if (folderId) {
       const folder = await prisma.sruFolder.findFirst({ where: { id: folderId, module: targetModule }, select: { id: true } })
@@ -39,6 +54,7 @@ export async function POST(req: NextRequest) {
         folderId: folderId || null,
         title,
         content: typeof body.content === 'string' ? body.content : '',
+        externalUrl,
         sortOrder: (last?.sortOrder ?? -1) + 1,
         createdById: user.id,
         updatedById: user.id,

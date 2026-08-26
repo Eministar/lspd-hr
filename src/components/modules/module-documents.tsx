@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bold, ChevronRight, Code, Eye, FileText, Folder, FolderPlus, Heading1, Heading2, Heading3,
-  Italic, Link2, List, ListOrdered, ListTodo, Maximize2, Minimize2, Plus, Quote, RefreshCw,
+  ExternalLink, Italic, Link2, List, ListOrdered, ListTodo, Maximize2, Minimize2, Plus, Quote, RefreshCw,
   Save, Search, SquareSplitHorizontal, Strikethrough, Table2, Trash2, Type,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -29,6 +29,7 @@ interface ModuleDocument {
   folderId: string | null
   title: string
   content: string
+  externalUrl: string | null
   updatedAt: string
   updatedBy: UserLite | null
 }
@@ -69,6 +70,15 @@ function relativeTime(iso: string) {
   return formatDateTime(iso)
 }
 
+function safeExternalUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 export function ModuleDocuments({ module, title: pageTitle, description, emptyDocument, canManage }: ModuleDocumentsProps) {
   const { data, loading, refetch } = useFetch<DocumentsPayload>(`/api/sru/folders?module=${module}`)
   const { execute } = useApi()
@@ -76,6 +86,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [externalUrl, setExternalUrl] = useState('')
   const [folderId, setFolderId] = useState('')
   const [dirty, setDirty] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
@@ -85,7 +96,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [docModalOpen, setDocModalOpen] = useState(false)
   const [folderForm, setFolderForm] = useState({ name: '', description: '', color: '#d4af37' })
-  const [docForm, setDocForm] = useState({ title: '', folderId: '' })
+  const [docForm, setDocForm] = useState({ title: '', folderId: '', externalUrl: '' })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const allDocuments = useMemo(() => [
@@ -98,13 +109,16 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     ...(data?.folders ?? []).map((f) => ({ value: f.id, label: f.name })),
   ], [data])
   const previewHtml = useMemo(() => renderMarkdown(content), [content])
+  const directUrl = useMemo(() => safeExternalUrl(externalUrl.trim()), [externalUrl])
   const wordCount = useMemo(() => countWords(content), [content])
   const charCount = content.length
 
   const matchesSearch = useCallback((doc: ModuleDocument) => {
     const q = search.trim().toLowerCase()
     if (!q) return true
-    return doc.title.toLowerCase().includes(q) || doc.content.toLowerCase().includes(q)
+    return doc.title.toLowerCase().includes(q)
+      || doc.content.toLowerCase().includes(q)
+      || (doc.externalUrl ?? '').toLowerCase().includes(q)
   }, [search])
 
   useEffect(() => {
@@ -112,10 +126,18 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
   }, [allDocuments, selectedDocument])
 
   useEffect(() => {
-    if (!selectedDocument) { setTitle(''); setContent(''); setFolderId(''); setDirty(false); return }
+    if (!selectedDocument) {
+      setTitle('')
+      setContent('')
+      setExternalUrl('')
+      setFolderId('')
+      setDirty(false)
+      return
+    }
     if (dirty) return
     setTitle(selectedDocument.title)
     setContent(selectedDocument.content)
+    setExternalUrl(selectedDocument.externalUrl ?? '')
     setFolderId(selectedDocument.folderId ?? '')
   }, [dirty, selectedDocument])
 
@@ -132,7 +154,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     try {
       await execute(`/api/sru/documents/${selectedDocument.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ title, content, folderId: folderId || null }),
+        body: JSON.stringify({ title, content, externalUrl: externalUrl.trim() || null, folderId: folderId || null }),
       })
       addToast({ type: 'success', title: 'Dokument gespeichert' })
       setDirty(false)
@@ -140,7 +162,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     } catch (err) {
       addToast({ type: 'error', title: 'Speichern fehlgeschlagen', message: err instanceof Error ? err.message : '' })
     }
-  }, [addToast, content, execute, folderId, refetch, selectedDocument, title])
+  }, [addToast, content, execute, externalUrl, folderId, refetch, selectedDocument, title])
 
   // Cmd/Ctrl+S to save
   useEffect(() => {
@@ -236,11 +258,17 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
     try {
       const created = await execute('/api/sru/documents', {
         method: 'POST',
-        body: JSON.stringify({ module, title: docForm.title, folderId: docForm.folderId || null, content: emptyDocument }),
+        body: JSON.stringify({
+          module,
+          title: docForm.title,
+          folderId: docForm.folderId || null,
+          content: docForm.externalUrl.trim() ? '' : emptyDocument,
+          externalUrl: docForm.externalUrl.trim() || null,
+        }),
       }) as ModuleDocument | null
       addToast({ type: 'success', title: 'Dokument erstellt' })
       setDocModalOpen(false)
-      setDocForm({ title: '', folderId: '' })
+      setDocForm({ title: '', folderId: '', externalUrl: '' })
       setDirty(false)
       await refetch()
       if (created?.id) setSelectedId(created.id)
@@ -315,6 +343,47 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
       </div>
   )
 
+  const directDocumentView = (
+    <div className={cn(
+      'flex min-h-0 items-center justify-center overflow-y-auto bg-gradient-to-b from-[#071a30]/40 to-[#04101f]/30 p-6',
+      fullscreen ? 'h-full' : 'h-[min(72vh,760px)] min-h-[560px]',
+    )}>
+      <div className="w-full max-w-xl rounded-[18px] border border-[#d4af37]/25 bg-[#071426]/90 p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.28)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]">
+          <ExternalLink size={25} strokeWidth={1.8} />
+        </div>
+        <p className="mt-4 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[#d4af37]/80">Externer Dokument-Link</p>
+        <h3 className="mt-1.5 text-[18px] font-semibold text-white">{title}</h3>
+        <p className="mx-auto mt-2 max-w-md text-[12px] leading-5 text-[#8ea4bd]">
+          Dieses Dokument wird direkt im Browser geöffnet. Der Markdown-Editor ist für diesen Eintrag deaktiviert.
+        </p>
+        {directUrl ? (
+          <a
+            href={directUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-auto mt-5 inline-flex h-10 items-center gap-2 rounded-[10px] bg-gradient-to-b from-[#d4af37] to-[#c29d32] px-4 text-[13px] font-semibold text-[#071b33] shadow-[0_4px_16px_rgba(212,175,55,0.18)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/60"
+          >
+            <ExternalLink size={15} />
+            Dokument im Browser öffnen
+          </a>
+        ) : (
+          <p className="mt-5 text-[12px] text-[#fca5a5]">Der Link ist noch nicht gültig. Bitte eine vollständige HTTP- oder HTTPS-Adresse speichern.</p>
+        )}
+        {directUrl && <p className="mt-4 break-all font-mono text-[10px] leading-4 text-[#536b86]">{directUrl}</p>}
+        {content.trim() && (
+          <details className="mt-6 border-t border-[#18385f]/60 pt-4 text-left">
+            <summary className="cursor-pointer text-[11px] font-semibold text-[#8ea4bd]">Interne Notizen anzeigen</summary>
+            <article
+              className="markdown-document mt-3 rounded-[10px] border border-[#18385f]/50 bg-[#04101f]/60 p-4 text-[12px] leading-5"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          </details>
+        )}
+      </div>
+    </div>
+  )
+
   const toolbarBtn = (icon: React.ReactNode, label: string, onClick: () => void) => (
       <button
           type="button"
@@ -335,18 +404,38 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
             <div className="flex h-full min-h-0 flex-col">
               {/* Title bar */}
               <div className="border-b border-[#18385f]/45 bg-gradient-to-r from-[#071a30]/80 to-[#091e36]/60 p-4 space-y-3">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
                   <Input label="Titel" value={title} onChange={(e) => { setDirty(true); setTitle(e.target.value) }} disabled={!canManage} required />
-                  <div className="lg:w-[220px]">
-                    <Select label="Ordner" value={folderId} onValueChange={(v) => { setDirty(true); setFolderId(v) }} options={folderOptions} disabled={!canManage} />
-                  </div>
+                  <Select label="Ordner" value={folderId} onValueChange={(v) => { setDirty(true); setFolderId(v) }} options={folderOptions} disabled={!canManage} />
                   {canManage && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveDocument} disabled={!title.trim() || !dirty}>
-                          <Save size={13} /> {dirty ? 'Speichern' : 'Gespeichert'}
-                        </Button>
-                        <Button variant="danger" size="sm" onClick={deleteDocument}><Trash2 size={13} /></Button>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={saveDocument} disabled={!title.trim() || !dirty}>
+                        <Save size={13} /> {dirty ? 'Speichern' : 'Gespeichert'}
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={deleteDocument}><Trash2 size={13} /></Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1">
+                    <Input
+                      label="Direktlink (optional)"
+                      type="url"
+                      value={externalUrl}
+                      onChange={(e) => { setDirty(true); setExternalUrl(e.target.value) }}
+                      disabled={!canManage}
+                      placeholder="https://drive.google.com/..."
+                    />
+                  </div>
+                  {directUrl && (
+                    <a
+                      href={directUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-[#d4af37]/35 bg-[#d4af37]/10 px-3 text-[11.5px] font-semibold text-[#e2c45d] transition-colors hover:bg-[#d4af37]/16 hover:text-white"
+                    >
+                      <ExternalLink size={13} /> Öffnen
+                    </a>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-[#6b8299]">
@@ -366,7 +455,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
 
               {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-1 border-b border-[#18385f]/45 bg-[#061426]/70 px-3 py-1.5">
-                {canManage && (
+                {canManage && !directUrl && (
                     <>
                       <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
                         {toolbarBtn(<Heading1 size={15} />, 'Überschrift 1', toolbarActions.heading1)}
@@ -392,24 +481,25 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                     </>
                 )}
                 <div className="ml-auto flex items-center gap-0.5">
-                  {(['edit', 'split', 'preview'] as ViewMode[]).map((mode) => {
+                  {!directUrl && (['edit', 'split', 'preview'] as ViewMode[]).map((mode) => {
                     const Icon = mode === 'edit' ? Type : mode === 'split' ? SquareSplitHorizontal : Eye
                     const label = mode === 'edit' ? 'Editor' : mode === 'split' ? 'Geteilt' : 'Vorschau'
                     return (
-                        <button
-                            key={mode}
-                            type="button"
-                            onClick={() => setViewMode(mode)}
-                            title={label}
-                            className={cn(
-                                'inline-flex h-8 items-center gap-1.5 rounded-[7px] px-2.5 text-[11.5px] font-medium transition-colors',
-                                viewMode === mode ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-[#8ea4bd] hover:bg-[#102542] hover:text-white',
-                            )}
-                        >
-                          <Icon size={13} /> {label}
-                        </button>
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setViewMode(mode)}
+                        title={label}
+                        className={cn(
+                          'inline-flex h-8 items-center gap-1.5 rounded-[7px] px-2.5 text-[11.5px] font-medium transition-colors',
+                          viewMode === mode ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-[#8ea4bd] hover:bg-[#102542] hover:text-white',
+                        )}
+                      >
+                        <Icon size={13} /> {label}
+                      </button>
                     )
                   })}
+                  {directUrl && <span className="inline-flex h-8 items-center gap-1.5 px-2 text-[11px] font-semibold text-[#d4af37]"><ExternalLink size={13} /> Browseransicht</span>}
                   <button
                       type="button"
                       onClick={() => setFullscreen((v) => !v)}
@@ -421,7 +511,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-hidden">{editor}</div>
+              <div className="min-h-0 flex-1 overflow-hidden">{directUrl ? directDocumentView : editor}</div>
             </div>
         ) : (
             <div className="flex min-h-[680px] flex-col items-center justify-center text-center px-6">
@@ -549,6 +639,18 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
           <div className="space-y-4">
             <Input label="Titel" value={docForm.title} onChange={(e) => setDocForm({ ...docForm, title: e.target.value })} required />
             <Select label="Ordner" value={docForm.folderId} onValueChange={(v) => setDocForm({ ...docForm, folderId: v })} options={folderOptions} />
+            <div>
+              <Input
+                label="Direktlink (optional)"
+                type="url"
+                value={docForm.externalUrl}
+                onChange={(e) => setDocForm({ ...docForm, externalUrl: e.target.value })}
+                placeholder="https://drive.google.com/..."
+              />
+              <p className="mt-1.5 text-[10.5px] leading-4 text-[#607994]">
+                Mit einem Link öffnet sich der Eintrag direkt im Browser statt im Markdown-Editor.
+              </p>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" size="sm" onClick={() => setDocModalOpen(false)}>Abbrechen</Button>
               <Button size="sm" onClick={createDocument} disabled={!docForm.title.trim()}>Erstellen</Button>
@@ -575,8 +677,9 @@ function DocumentButton({ document, color, active, onClick }: { document: Module
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color ?? '#d4af37' }} />
           <p className={cn('truncate text-[12.5px] font-medium flex-1', active ? 'text-white' : 'text-[#edf4fb]')}>{document.title}</p>
+          {document.externalUrl && <ExternalLink size={11} className="shrink-0 text-[#d4af37]" aria-label="Direktlink" />}
         </div>
-        <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#6b8299] pl-3.5">{preview(document.content)}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#6b8299] pl-3.5">{document.externalUrl ? 'Direkt im Browser öffnen' : preview(document.content)}</p>
       </button>
   )
 }

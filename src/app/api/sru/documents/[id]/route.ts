@@ -13,6 +13,19 @@ function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+/** Nur sichere externe Ziele speichern; leere Eingaben entfernen den Link. */
+function normalizeExternalUrl(value: unknown): string | null | undefined {
+  const raw = cleanText(value)
+  if (!raw) return null
+  try {
+    const parsed = new URL(raw)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
+    return parsed.toString()
+  } catch {
+    return undefined
+  }
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -29,6 +42,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.title = title
     }
     if ('content' in body) data.content = typeof body.content === 'string' ? body.content : ''
+    if ('externalUrl' in body) {
+      const externalUrl = normalizeExternalUrl(body.externalUrl)
+      if (externalUrl === undefined) return error('Gültiger HTTP- oder HTTPS-Link ist erforderlich')
+      data.externalUrl = externalUrl
+    }
     if ('folderId' in body) {
       const folderId = cleanText(body.folderId)
       if (folderId) {
