@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-08-26T16:24:58.525Z",
+  "generatedAt": "2026-08-26T18:59:49.225Z",
   "entries": [
+    {
+      "buildId": "build-7cdd8ad5af",
+      "commit": "7cdd8ad5afcf70c47c426979425d5f361b83e63d",
+      "shortCommit": "7cdd8ad5af",
+      "subject": "Merge branch 'main' of https://github.com/Eministar/lspd-hr",
+      "author": "Eministar",
+      "date": "2026-08-26T18:58:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7cdd8ad5afcf70c47c426979425d5f361b83e63d"
+    },
+    {
+      "buildId": "build-2b9d142a8e",
+      "commit": "2b9d142a8ed6b4250f9ff10543cef26b1b365444",
+      "shortCommit": "2b9d142a8e",
+      "subject": "feat: implement internal affairs navigation and person files management components",
+      "author": "Eministar",
+      "date": "2026-08-26T18:58:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2b9d142a8ed6b4250f9ff10543cef26b1b365444"
+    },
+    {
+      "buildId": "build-1829f6370e",
+      "commit": "1829f6370e3526fe0afff2ace56f35a6db76e7a6",
+      "shortCommit": "1829f6370e",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-08-26T16:24:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1829f6370e3526fe0afff2ace56f35a6db76e7a6"
+    },
     {
       "buildId": "build-f8390fffca",
       "commit": "f8390fffca0f3266bde9bfb2bb187a03120676d8",
