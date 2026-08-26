@@ -172,54 +172,55 @@ model User {
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
 
-  groupMemberships          UserGroupMembership[]
-  promotionsPerformed       PromotionLog[]            @relation("PerformedBy")
-  terminationsPerformed     Termination[]             @relation("TerminatedBy")
-  sanctionsIssued           Sanction[]                @relation("SanctionIssuedBy")
-  notesAuthored             Note[]                    @relation("NoteAuthor")
-  auditLogs                 AuditLog[]                @relation("AuditUser")
-  createdLists              RankChangeList[]          @relation("ListCreator")
-  rankChangeEntriesCreated  RankChangeListEntry[]     @relation("EntryCreator")
-  rankChangeEntriesExecuted RankChangeListEntry[]     @relation("EntryExecutor")
-  rankChangeVotes           RankChangeVote[]
-  rankChangeComments        RankChangeEntryComment[]  @relation("RankChangeCommentAuthor")
-  rankChangeProposals       RankChangeEntryProposal[] @relation("RankChangeProposalAuthor")
-  rankChangeReviews         RankChangeEntryProposal[] @relation("RankChangeProposalReviewer")
-  rankChangeHistory         RankChangeEntryHistory[]  @relation("RankChangeHistoryActor")
-  taskListsCreated          TaskList[]                @relation("TaskListCreator")
-  tasksCreated              Task[]                    @relation("TaskCreator")
-  calendarEventsCreated     CalendarEvent[]           @relation("CalendarEventCreator")
-  sruFoldersCreated         SruFolder[]               @relation("SruFolderCreator")
-  sruDocumentsCreated       SruDocument[]             @relation("SruDocumentCreator")
-  sruDocumentsUpdated       SruDocument[]             @relation("SruDocumentUpdater")
-  probationsCreated         Probation[]               @relation("ProbationCreator")
-  probationsDecided         Probation[]               @relation("ProbationDecider")
-  probationEntriesCreated   ProbationEntry[]          @relation("ProbationEntryCreator")
-  patrolBoardsCreated       PatrolBoard[]             @relation("PatrolBoardCreator")
-  apiTokensOwned            ApiToken[]                @relation("ApiTokenOwner")
-  apiTokensCreated          ApiToken[]                @relation("ApiTokenCreator")
-  academyResourcesCreated   AcademyResource[]         @relation("AcademyResourceCreator")
-  formTestsCreated          FormTest[]                @relation("FormTestCreator")
-  formResponsesSubmitted    FormResponse[]            @relation("FormResponseRespondent")
-  formResponsesReviewed     FormResponse[]            @relation("FormResponseReviewer")
-  formTestSessions          FormTestSession[]         @relation("FormTestSessionUser")
-  jobApplicationsSubmitted  JobApplication[]          @relation("JobApplicationApplicant")
-  jobApplicationsReviewed   JobApplication[]          @relation("JobApplicationReviewer")
-  pressReleasesCreated      PressRelease[]            @relation("PressReleaseCreator")
-  pressReleasesUpdated      PressRelease[]            @relation("PressReleaseUpdater")
-  ordnungenCreated          Ordnung[]                 @relation("OrdnungCreator")
-  unitAssignments           UserUnitAssignment[]
-  contractTemplatesCreated  ContractTemplate[]        @relation("ContractTemplateCreator")
-  contractsCreated          Contract[]                @relation("ContractCreator")
-  contractsSigned           Contract[]                @relation("ContractSigner")
-  personFilesCreated        PersonFile[]              @relation("PersonFileCreator")
-  reportsRecorded           Report[]                  @relation("ReportRecorder")
-  reportUpdatesAuthored     ReportUpdate[]            @relation("ReportUpdateAuthor")
-  officerSearchesCreated    OfficerSearch[]           @relation("OfficerSearchCreator")
-  transferRequestsCreated   TransferRequest[]         @relation("TransferRequestCreator")
-  transferRequestsSignedHr  TransferRequest[]         @relation("TransferRequestHrSigner")
-  transferRequestsSignedOf  TransferRequest[]         @relation("TransferRequestOfficerSigner")
-  changeSets                ChangeSet[]
+  groupMemberships           UserGroupMembership[]
+  promotionsPerformed        PromotionLog[]            @relation("PerformedBy")
+  terminationsPerformed      Termination[]             @relation("TerminatedBy")
+  sanctionsIssued            Sanction[]                @relation("SanctionIssuedBy")
+  notesAuthored              Note[]                    @relation("NoteAuthor")
+  auditLogs                  AuditLog[]                @relation("AuditUser")
+  createdLists               RankChangeList[]          @relation("ListCreator")
+  rankChangeEntriesCreated   RankChangeListEntry[]     @relation("EntryCreator")
+  rankChangeEntriesExecuted  RankChangeListEntry[]     @relation("EntryExecutor")
+  rankChangeVotes            RankChangeVote[]
+  rankChangeComments         RankChangeEntryComment[]  @relation("RankChangeCommentAuthor")
+  rankChangeProposals        RankChangeEntryProposal[] @relation("RankChangeProposalAuthor")
+  rankChangeReviews          RankChangeEntryProposal[] @relation("RankChangeProposalReviewer")
+  rankChangeHistory          RankChangeEntryHistory[]  @relation("RankChangeHistoryActor")
+  taskListsCreated           TaskList[]                @relation("TaskListCreator")
+  tasksCreated               Task[]                    @relation("TaskCreator")
+  calendarEventsCreated      CalendarEvent[]           @relation("CalendarEventCreator")
+  sruFoldersCreated          SruFolder[]               @relation("SruFolderCreator")
+  sruDocumentsCreated        SruDocument[]             @relation("SruDocumentCreator")
+  sruDocumentsUpdated        SruDocument[]             @relation("SruDocumentUpdater")
+  probationsCreated          Probation[]               @relation("ProbationCreator")
+  probationsDecided          Probation[]               @relation("ProbationDecider")
+  probationEntriesCreated    ProbationEntry[]          @relation("ProbationEntryCreator")
+  patrolBoardsCreated        PatrolBoard[]             @relation("PatrolBoardCreator")
+  apiTokensOwned             ApiToken[]                @relation("ApiTokenOwner")
+  apiTokensCreated           ApiToken[]                @relation("ApiTokenCreator")
+  academyResourcesCreated    AcademyResource[]         @relation("AcademyResourceCreator")
+  formTestsCreated           FormTest[]                @relation("FormTestCreator")
+  formResponsesSubmitted     FormResponse[]            @relation("FormResponseRespondent")
+  formResponsesReviewed      FormResponse[]            @relation("FormResponseReviewer")
+  formTestSessions           FormTestSession[]         @relation("FormTestSessionUser")
+  jobApplicationsSubmitted   JobApplication[]          @relation("JobApplicationApplicant")
+  jobApplicationsReviewed    JobApplication[]          @relation("JobApplicationReviewer")
+  pressReleasesCreated       PressRelease[]            @relation("PressReleaseCreator")
+  pressReleasesUpdated       PressRelease[]            @relation("PressReleaseUpdater")
+  ordnungenCreated           Ordnung[]                 @relation("OrdnungCreator")
+  unitAssignments            UserUnitAssignment[]
+  contractTemplatesCreated   ContractTemplate[]        @relation("ContractTemplateCreator")
+  contractsCreated           Contract[]                @relation("ContractCreator")
+  contractsSigned            Contract[]                @relation("ContractSigner")
+  personFilesCreated         PersonFile[]              @relation("PersonFileCreator")
+  reportsRecorded            Report[]                  @relation("ReportRecorder")
+  reportUpdatesAuthored      ReportUpdate[]            @relation("ReportUpdateAuthor")
+  officerSearchesCreated     OfficerSearch[]           @relation("OfficerSearchCreator")
+  internalAffairsDawsCreated InternalAffairsDaw[]      @relation("IaDawCreator")
+  transferRequestsCreated    TransferRequest[]         @relation("TransferRequestCreator")
+  transferRequestsSignedHr   TransferRequest[]         @relation("TransferRequestHrSigner")
+  transferRequestsSignedOf   TransferRequest[]         @relation("TransferRequestOfficerSigner")
+  changeSets                 ChangeSet[]
 }
 
 model UserGroupMembership {
@@ -589,26 +590,27 @@ model Officer {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  trainings         OfficerTraining[]
-  promotionLogs     PromotionLog[]
-  terminations      Termination[]
-  sanctions         Sanction[]
-  officerNotes      Note[]                @relation("OfficerNotes")
-  auditLogs         AuditLog[]            @relation("AuditOfficer")
-  rankChangeEntries RankChangeListEntry[]
-  taskAssignments   TaskAssignment[]      @relation("TaskAssigned")
-  dutySessions      DutyTimeSession[]
-  playtimeSessions  PlaytimeSession[]
-  absenceNotices    AbsenceNotice[]
-  probations        Probation[]
-  calendarEvents    CalendarEvent[]       @relation("CalendarEventOfficer")
-  patrolAssignments PatrolAssignment[]    @relation("PatrolAssigned")
-  patrolSessions    PatrolSession[]       @relation("PatrolSessionOfficer")
-  dispatchCenters   DispatchCenterState[] @relation("DispatchCenterOfficer")
-  contracts         Contract[]
-  jobApplication    JobApplication?       @relation("OfficerJobApplication")
-  transferRequests  TransferRequest[]     @relation("OfficerTransferRequests")
-  searches          OfficerSearch[]
+  trainings           OfficerTraining[]
+  promotionLogs       PromotionLog[]
+  terminations        Termination[]
+  sanctions           Sanction[]
+  officerNotes        Note[]                @relation("OfficerNotes")
+  auditLogs           AuditLog[]            @relation("AuditOfficer")
+  rankChangeEntries   RankChangeListEntry[]
+  taskAssignments     TaskAssignment[]      @relation("TaskAssigned")
+  dutySessions        DutyTimeSession[]
+  playtimeSessions    PlaytimeSession[]
+  absenceNotices      AbsenceNotice[]
+  probations          Probation[]
+  calendarEvents      CalendarEvent[]       @relation("CalendarEventOfficer")
+  patrolAssignments   PatrolAssignment[]    @relation("PatrolAssigned")
+  patrolSessions      PatrolSession[]       @relation("PatrolSessionOfficer")
+  dispatchCenters     DispatchCenterState[] @relation("DispatchCenterOfficer")
+  contracts           Contract[]
+  jobApplication      JobApplication?       @relation("OfficerJobApplication")
+  transferRequests    TransferRequest[]     @relation("OfficerTransferRequests")
+  searches            OfficerSearch[]
+  internalAffairsDaws InternalAffairsDaw[]
 
   @@index([badgeNumber])
 }
@@ -629,6 +631,40 @@ model OfficerSearch {
 
   @@index([officerId, conductedAt])
   @@index([createdById])
+}
+
+/// Dienstaufsichtswarnungen, Disziplinarakten und Ermittlungen von Internal Affairs
+model InternalAffairsDaw {
+  id                  String    @id @default(cuid())
+  caseNumber          String?
+  title               String
+  category            String    @default("DAW") // DAW, DISCIPLINARY, INSTRUCTION, INVESTIGATION, OTHER
+  officerId           String?
+  officer             Officer?  @relation(fields: [officerId], references: [id], onDelete: SetNull)
+  allegation          String?   @db.Text
+  statement           String?   @db.Text
+  penalGrade          String?
+  sanctionSummary     String?   @db.Text
+  fineAmount          Int?
+  sgRounds            Int?
+  suspensionHours     Int?
+  status              String    @default("OPEN") // OPEN, IN_REVIEW, SANCTIONED, RESOLVED, DISMISSED
+  evidence            Json?
+  incidentAt          DateTime?
+  deadlineAt          DateTime?
+  resolutionNote      String?   @db.Text
+  createdById         String?
+  createdBy           User?     @relation("IaDawCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  previousRank        String?
+  previousBadgeNumber String?
+  previousFirstName   String?
+  previousLastName    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([officerId, createdAt])
+  @@index([createdById])
+  @@index([status, createdAt])
 }
 
 model CalendarEvent {

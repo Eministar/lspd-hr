@@ -1,8 +1,8 @@
 'use client'
 
+import { InternalAffairsDawsWorkspace } from '@/components/internal-affairs/internal-affairs-daws'
 import { InternalAffairsNavigation } from '@/components/internal-affairs/internal-affairs-navigation'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
-import { ReportsWorkspace } from '@/components/reports/reports-workspace'
 import { useAuth } from '@/context/auth-context'
 import { hasPermission } from '@/lib/permissions'
 
@@ -16,7 +16,7 @@ export function InternalAffairsInvestigations() {
   return (
     <div className="mx-auto max-w-7xl pb-2">
       <InternalAffairsNavigation active="investigations" />
-      <ReportsWorkspace canManage={canManage} canDelete={canManage} context="internal-affairs" />
+      <InternalAffairsDawsWorkspace canManage={canManage} />
     </div>
   )
 }

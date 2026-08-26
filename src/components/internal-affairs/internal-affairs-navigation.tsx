@@ -15,7 +15,7 @@ export type InternalAffairsSection =
 const sections: { id: InternalAffairsSection; label: string; href: string; icon: typeof FileText }[] = [
   { id: 'documents', label: 'Dokumente', href: '/internal-affairs', icon: FileText },
   { id: 'searches', label: 'Durchsuchungen', href: '/internal-affairs?tab=searches', icon: FileSearch },
-  { id: 'investigations', label: 'Ermittlungsakten', href: '/internal-affairs/investigations', icon: ScrollText },
+  { id: 'investigations', label: 'DAWs & Ermittlungen', href: '/internal-affairs/investigations', icon: ScrollText },
   { id: 'person-files', label: 'Personenakten', href: '/internal-affairs/person-files', icon: FolderOpen },
   { id: 'terminations', label: 'Kündigungen', href: '/internal-affairs/terminations', icon: UserX },
 ]
