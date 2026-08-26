@@ -1,0 +1,2877 @@
+{
+  "repository": "Eministar/lspd-hr",
+  "generatedAt": "2026-08-26T12:48:54.316Z",
+  "entries": [
+    {
+      "buildId": "build-34536c3d58",
+      "commit": "34536c3d58f3080cdbdd3e31f21d267c8f6571ff",
+      "shortCommit": "34536c3d58",
+      "subject": "leck meine eier #13",
+      "author": "Eministar",
+      "date": "2026-08-25T19:27:39Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/34536c3d58f3080cdbdd3e31f21d267c8f6571ff"
+    },
+    {
+      "buildId": "build-307a7cbfad",
+      "commit": "307a7cbfad7197e68a6a0cc74a8c3508bc61c6ec",
+      "shortCommit": "307a7cbfad",
+      "subject": "leck meine eier #12",
+      "author": "Eministar",
+      "date": "2026-08-23T22:53:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/307a7cbfad7197e68a6a0cc74a8c3508bc61c6ec"
+    },
+    {
+      "buildId": "build-d2f5dd0c2c",
+      "commit": "d2f5dd0c2c0b4bd403d8dfb11db58fe5c40a2f04",
+      "shortCommit": "d2f5dd0c2c",
+      "subject": "leck meine eier #11",
+      "author": "Eministar",
+      "date": "2026-08-23T22:47:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d2f5dd0c2c0b4bd403d8dfb11db58fe5c40a2f04"
+    },
+    {
+      "buildId": "build-0c56c3c6ca",
+      "commit": "0c56c3c6ca70ded01794ba8bd9e75f12dad2d9d8",
+      "shortCommit": "0c56c3c6ca",
+      "subject": "leck meine eier #10",
+      "author": "Eministar",
+      "date": "2026-08-23T22:41:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0c56c3c6ca70ded01794ba8bd9e75f12dad2d9d8"
+    },
+    {
+      "buildId": "build-0f24b0039b",
+      "commit": "0f24b0039be3145e8f90bd307af3a6e40b42642f",
+      "shortCommit": "0f24b0039b",
+      "subject": "leck meine eier #9",
+      "author": "Eministar",
+      "date": "2026-08-23T22:33:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0f24b0039be3145e8f90bd307af3a6e40b42642f"
+    },
+    {
+      "buildId": "build-74799ea870",
+      "commit": "74799ea8707dbd6a12d372812e76cbd3f46a1286",
+      "shortCommit": "74799ea870",
+      "subject": "leck meine eier #8",
+      "author": "Eministar",
+      "date": "2026-08-23T22:05:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/74799ea8707dbd6a12d372812e76cbd3f46a1286"
+    },
+    {
+      "buildId": "build-b73c3758cc",
+      "commit": "b73c3758ccd52f06da3e96d5fd9ff965d558fd15",
+      "shortCommit": "b73c3758cc",
+      "subject": "leck meine eier #7",
+      "author": "Eministar",
+      "date": "2026-08-23T21:51:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b73c3758ccd52f06da3e96d5fd9ff965d558fd15"
+    },
+    {
+      "buildId": "build-e87d9f7818",
+      "commit": "e87d9f781891e290e175d0db56ee4f1fa401697c",
+      "shortCommit": "e87d9f7818",
+      "subject": "leck meine eier #6",
+      "author": "Eministar",
+      "date": "2026-08-23T21:21:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e87d9f781891e290e175d0db56ee4f1fa401697c"
+    },
+    {
+      "buildId": "build-43ec1e9844",
+      "commit": "43ec1e9844704a31ce305bc437c16b862f415c6a",
+      "shortCommit": "43ec1e9844",
+      "subject": "leck meine eier #5",
+      "author": "Eministar",
+      "date": "2026-08-22T20:14:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/43ec1e9844704a31ce305bc437c16b862f415c6a"
+    },
+    {
+      "buildId": "build-4919f36ecb",
+      "commit": "4919f36ecb50b21dc32a5bb626ee7f578ad67b02",
+      "shortCommit": "4919f36ecb",
+      "subject": "leck meine eier #4",
+      "author": "Eministar",
+      "date": "2026-08-22T20:02:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4919f36ecb50b21dc32a5bb626ee7f578ad67b02"
+    },
+    {
+      "buildId": "build-75b75569b2",
+      "commit": "75b75569b2317d619e999b0bed3a80b43fb216ea",
+      "shortCommit": "75b75569b2",
+      "subject": "leck meine eier #3",
+      "author": "Eministar",
+      "date": "2026-08-22T16:08:38Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/75b75569b2317d619e999b0bed3a80b43fb216ea"
+    },
+    {
+      "buildId": "build-8c055152fb",
+      "commit": "8c055152fbd05f6618f46b40ca35db30d8c19565",
+      "shortCommit": "8c055152fb",
+      "subject": "leck meine eier #2",
+      "author": "Eministar",
+      "date": "2026-08-22T15:45:32Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8c055152fbd05f6618f46b40ca35db30d8c19565"
+    },
+    {
+      "buildId": "build-43a8a76368",
+      "commit": "43a8a76368d0e501e3273de63bb5420a2aab9f83",
+      "shortCommit": "43a8a76368",
+      "subject": "leck meine eier #1",
+      "author": "Eministar",
+      "date": "2026-08-22T15:20:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/43a8a76368d0e501e3273de63bb5420a2aab9f83"
+    },
+    {
+      "buildId": "build-f74e4b3b5c",
+      "commit": "f74e4b3b5c3b8d2b29bfeacbec83596164984193",
+      "shortCommit": "f74e4b3b5c",
+      "subject": "leck meine eier",
+      "author": "Eministar",
+      "date": "2026-08-22T15:15:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f74e4b3b5c3b8d2b29bfeacbec83596164984193"
+    },
+    {
+      "buildId": "build-567ac3e8ba",
+      "commit": "567ac3e8bae7fd5eca1b43f7da57d257c20d4185",
+      "shortCommit": "567ac3e8ba",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-07-28T15:39:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/567ac3e8bae7fd5eca1b43f7da57d257c20d4185"
+    },
+    {
+      "buildId": "build-50a9b544bd",
+      "commit": "50a9b544bd0e547df9899cbea6e68dbaeff8c4f9",
+      "shortCommit": "50a9b544bd",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-07-26T20:55:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/50a9b544bd0e547df9899cbea6e68dbaeff8c4f9"
+    },
+    {
+      "buildId": "build-5064911fbe",
+      "commit": "5064911fbe83882d4526c660eeb38b033dacca82",
+      "shortCommit": "5064911fbe",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-07-25T12:59:33Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/5064911fbe83882d4526c660eeb38b033dacca82"
+    },
+    {
+      "buildId": "build-14dd241170",
+      "commit": "14dd2411708e36b6cbdc906efd920248d8369834",
+      "shortCommit": "14dd241170",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-07-25T12:47:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/14dd2411708e36b6cbdc906efd920248d8369834"
+    },
+    {
+      "buildId": "build-3dbc30b5be",
+      "commit": "3dbc30b5be08b1a5f60f82ef00c2c0c1db51c0e1",
+      "shortCommit": "3dbc30b5be",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-07-25T12:13:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3dbc30b5be08b1a5f60f82ef00c2c0c1db51c0e1"
+    },
+    {
+      "buildId": "build-3c03cc124e",
+      "commit": "3c03cc124e1acc60ea305ac0dc3c4791f1a1c887",
+      "shortCommit": "3c03cc124e",
+      "subject": "fixed more stuff",
+      "author": "Eministar",
+      "date": "2026-07-24T08:00:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3c03cc124e1acc60ea305ac0dc3c4791f1a1c887"
+    },
+    {
+      "buildId": "build-cda7d53972",
+      "commit": "cda7d539724f069860dc4dd5a7db5d69acd3b0c2",
+      "shortCommit": "cda7d53972",
+      "subject": "fixed",
+      "author": "Eministar",
+      "date": "2026-07-24T07:47:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cda7d539724f069860dc4dd5a7db5d69acd3b0c2"
+    },
+    {
+      "buildId": "build-c1e34d501d",
+      "commit": "c1e34d501d6f8cbc6489e7eca431adc55b0204f5",
+      "shortCommit": "c1e34d501d",
+      "subject": "- duty-times: Wochen- und Tagesgrenzen ueber \"+ 7 * MS_PER_DAY\" gerechnet, an",
+      "author": "Eministar",
+      "date": "2026-07-24T07:40:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c1e34d501d6f8cbc6489e7eca431adc55b0204f5"
+    },
+    {
+      "buildId": "build-1c55a9d744",
+      "commit": "1c55a9d744205e2087f5b4fea0456a7c92a1fd3c",
+      "shortCommit": "1c55a9d744",
+      "subject": "fix(live-updates): protect in-progress edits from silent refetch + release v1.0.0",
+      "author": "Eministar",
+      "date": "2026-07-15T18:19:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1c55a9d744205e2087f5b4fea0456a7c92a1fd3c"
+    },
+    {
+      "buildId": "build-a983e707e1",
+      "commit": "a983e707e19c20b7b98ccb8a278cf68e0f50a128",
+      "shortCommit": "a983e707e1",
+      "subject": "feat(ebenen): rank-based Discord tier roles",
+      "author": "Eministar",
+      "date": "2026-07-15T18:06:56Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a983e707e19c20b7b98ccb8a278cf68e0f50a128"
+    },
+    {
+      "buildId": "build-04177108e7",
+      "commit": "04177108e77ca56c6682b9afd8939f81eb854f7f",
+      "shortCommit": "04177108e7",
+      "subject": "docs(ebenen): add design spec for rank-based Discord tier roles",
+      "author": "Eministar",
+      "date": "2026-07-15T15:19:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/04177108e77ca56c6682b9afd8939f81eb854f7f"
+    },
+    {
+      "buildId": "build-ffef136f20",
+      "commit": "ffef136f2034aacf6e96be0fd8deea8747b5fee3",
+      "shortCommit": "ffef136f20",
+      "subject": "feat(ordnungen): implement OrdnungEditor component and refactor modal usage",
+      "author": "Eministar",
+      "date": "2026-07-13T21:30:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ffef136f2034aacf6e96be0fd8deea8747b5fee3"
+    },
+    {
+      "buildId": "build-4f11bd83b1",
+      "commit": "4f11bd83b184ae76af96a647f4ff90f15662b6a0",
+      "shortCommit": "4f11bd83b1",
+      "subject": "fix(json): cast column as CHAR to prevent JSON parsing crash in Prisma",
+      "author": "Eministar",
+      "date": "2026-07-13T21:05:33Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4f11bd83b184ae76af96a647f4ff90f15662b6a0"
+    },
+    {
+      "buildId": "build-e5e2691c9b",
+      "commit": "e5e2691c9b29c689c807b03010bf605e02329207",
+      "shortCommit": "e5e2691c9b",
+      "subject": "fix(deploy): set NODE_MAX_OLD_SPACE_MB for memory management; default permissions to empty JSON",
+      "author": "Eministar",
+      "date": "2026-07-13T21:04:15Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e5e2691c9b29c689c807b03010bf605e02329207"
+    },
+    {
+      "buildId": "build-df958118ce",
+      "commit": "df958118ced8137c85f03b8df24088322fcafced",
+      "shortCommit": "df958118ce",
+      "subject": "fix(backup): resilient per-table read; name failing table instead of crashing",
+      "author": "Eministar",
+      "date": "2026-07-12T23:30:38Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/df958118ced8137c85f03b8df24088322fcafced"
+    },
+    {
+      "buildId": "build-7126746360",
+      "commit": "71267463606f96f0a83cb6aa539cbdd1d082c8ca",
+      "shortCommit": "7126746360",
+      "subject": "fix(scripts): backup non-fatal + --no-backup flag; remove stray files",
+      "author": "Eministar",
+      "date": "2026-07-12T23:28:32Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/71267463606f96f0a83cb6aa539cbdd1d082c8ca"
+    },
+    {
+      "buildId": "build-2239b1d07f",
+      "commit": "2239b1d07f3ec05d16f86799ed67c8657627e29e",
+      "shortCommit": "2239b1d07f",
+      "subject": "chore: force LF line endings for shell scripts",
+      "author": "Eministar",
+      "date": "2026-07-12T23:21:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2239b1d07f3ec05d16f86799ed67c8657627e29e"
+    },
+    {
+      "buildId": "build-52ec1fa35d",
+      "commit": "52ec1fa35de32c775680aa5ff0e081420162bf18",
+      "shortCommit": "52ec1fa35d",
+      "subject": "fix(scripts): run deploy from temp copy so git reset does not rewrite live script",
+      "author": "Eministar",
+      "date": "2026-07-12T23:21:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/52ec1fa35de32c775680aa5ff0e081420162bf18"
+    },
+    {
+      "buildId": "build-8ef19e39b2",
+      "commit": "8ef19e39b2aaff77ff64952310bc2c768378e968",
+      "shortCommit": "8ef19e39b2",
+      "subject": "feat(scripts): add manual server update.sh + optional seed step in deploy",
+      "author": "Eministar",
+      "date": "2026-07-12T23:20:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8ef19e39b2aaff77ff64952310bc2c768378e968"
+    },
+    {
+      "buildId": "build-ac9563367c",
+      "commit": "ac9563367c91698802e11374596ce5d65f84fa37",
+      "shortCommit": "ac9563367c",
+      "subject": "Merge feat/auto-deploy: push-triggered SSH deploy",
+      "author": "Eministar",
+      "date": "2026-07-12T23:17:28Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ac9563367c91698802e11374596ce5d65f84fa37"
+    },
+    {
+      "buildId": "build-73b549b563",
+      "commit": "73b549b563863cebd0fbc4354f4d6a612cd70191",
+      "shortCommit": "73b549b563",
+      "subject": "feat(ci): auto-deploy on push to main via GitHub Actions + SSH",
+      "author": "Eministar",
+      "date": "2026-07-12T23:17:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/73b549b563863cebd0fbc4354f4d6a612cd70191"
+    },
+    {
+      "buildId": "build-cf8f7fdab8",
+      "commit": "cf8f7fdab8081e8b65c44701093b967bc0e8bb41",
+      "shortCommit": "cf8f7fdab8",
+      "subject": "Merge origin/main (ImgBot image optimizations)",
+      "author": "Eministar",
+      "date": "2026-07-12T23:13:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cf8f7fdab8081e8b65c44701093b967bc0e8bb41"
+    },
+    {
+      "buildId": "build-d9be2d244b",
+      "commit": "d9be2d244b08338d7374fc329d980047a9249a99",
+      "shortCommit": "d9be2d244b",
+      "subject": "Merge feature/unit-permissions: units as permission grantors",
+      "author": "Eministar",
+      "date": "2026-07-12T23:07:23Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d9be2d244b08338d7374fc329d980047a9249a99"
+    },
+    {
+      "buildId": "build-553f371c73",
+      "commit": "553f371c737662340032679267628fb8b2ce946a",
+      "shortCommit": "553f371c73",
+      "subject": "feat(units): direct unit assignment in users admin UI",
+      "author": "Eministar",
+      "date": "2026-07-12T23:06:29Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/553f371c737662340032679267628fb8b2ce946a"
+    },
+    {
+      "buildId": "build-f2870a4c1d",
+      "commit": "f2870a4c1df8c8cb370d4a73f5155f4533c1216c",
+      "shortCommit": "f2870a4c1d",
+      "subject": "feat(units): permission editor in units admin UI",
+      "author": "Eministar",
+      "date": "2026-07-12T23:04:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f2870a4c1df8c8cb370d4a73f5155f4533c1216c"
+    },
+    {
+      "buildId": "build-0f08196ad8",
+      "commit": "0f08196ad88049e9864fb5631e7a869049c3caf9",
+      "shortCommit": "0f08196ad8",
+      "subject": "feat(units): units API accepts permissions; user API supports direct unit assignment",
+      "author": "Eministar",
+      "date": "2026-07-12T23:03:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0f08196ad88049e9864fb5631e7a869049c3caf9"
+    },
+    {
+      "buildId": "build-6b9f120474",
+      "commit": "6b9f12047406fec77a573994b7dd061b8d9a3dbd",
+      "shortCommit": "6b9f120474",
+      "subject": "feat(units): add Unit.permissions + UserUnitAssignment, resolve into effective permissions",
+      "author": "Eministar",
+      "date": "2026-07-12T23:00:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6b9f12047406fec77a573994b7dd061b8d9a3dbd"
+    },
+    {
+      "buildId": "build-b910e24ea8",
+      "commit": "b910e24ea8ff60f52755e43e871d1fd1afddf93b",
+      "shortCommit": "b910e24ea8",
+      "subject": "Merge feature/ordnungen-dynamisch: dynamic ordnungen & categories",
+      "author": "Eministar",
+      "date": "2026-07-12T22:46:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b910e24ea8ff60f52755e43e871d1fd1afddf93b"
+    },
+    {
+      "buildId": "build-d6f11faeea",
+      "commit": "d6f11faeea9f19bfcbd902865813c12817c829eb",
+      "shortCommit": "d6f11faeea",
+      "subject": "Merge fix/db-pool-diagnostics: configurable DB pool + slow-query logging",
+      "author": "Eministar",
+      "date": "2026-07-12T22:46:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d6f11faeea9f19bfcbd902865813c12817c829eb"
+    },
+    {
+      "buildId": "build-11bb86fe58",
+      "commit": "11bb86fe583412f6bcc55bfba45b554cd92ae619",
+      "shortCommit": "11bb86fe58",
+      "subject": "fix(db): explicit configurable connection pool + slow-query logging",
+      "author": "Eministar",
+      "date": "2026-07-12T22:45:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/11bb86fe583412f6bcc55bfba45b554cd92ae619"
+    },
+    {
+      "buildId": "build-3390114f06",
+      "commit": "3390114f06c7ce4f729a8f2b20a365502021dc12",
+      "shortCommit": "3390114f06",
+      "subject": "chore(ordnungen): remove file-based config route",
+      "author": "Eministar",
+      "date": "2026-07-12T22:34:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3390114f06c7ce4f729a8f2b20a365502021dc12"
+    },
+    {
+      "buildId": "build-976143df23",
+      "commit": "976143df237db8b1d2fdf218bbcfe5bb7cdb3cc8",
+      "shortCommit": "976143df23",
+      "subject": "feat(ordnungen): render overview from DB and add inline create/edit/delete UI",
+      "author": "Eministar",
+      "date": "2026-07-12T22:31:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/976143df237db8b1d2fdf218bbcfe5bb7cdb3cc8"
+    },
+    {
+      "buildId": "build-147e825949",
+      "commit": "147e8259499e52298c7156ae1cae268037d44bda",
+      "shortCommit": "147e825949",
+      "subject": "feat(ordnungen): import existing ordnungen into DB and load detail page from DB",
+      "author": "Eministar",
+      "date": "2026-07-12T22:27:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/147e8259499e52298c7156ae1cae268037d44bda"
+    },
+    {
+      "buildId": "build-fb55d5d62d",
+      "commit": "fb55d5d62d8018192e4da9b1ccaf48863a856b9d",
+      "shortCommit": "fb55d5d62d",
+      "subject": "feat(ordnungen): add category + ordnungen CRUD API",
+      "author": "Eministar",
+      "date": "2026-07-12T22:25:38Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fb55d5d62d8018192e4da9b1ccaf48863a856b9d"
+    },
+    {
+      "buildId": "build-40bc5a2d17",
+      "commit": "40bc5a2d17a086da44defe913ca28a6fcaa07614",
+      "shortCommit": "40bc5a2d17",
+      "subject": "feat(ordnungen): add shared icon map and DB DTO types",
+      "author": "Eministar",
+      "date": "2026-07-12T22:23:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/40bc5a2d17a086da44defe913ca28a6fcaa07614"
+    },
+    {
+      "buildId": "build-731bc31873",
+      "commit": "731bc3187361c01ea19fddb67874ec669c7e0ed6",
+      "shortCommit": "731bc31873",
+      "subject": "feat(ordnungen): add Ordnung/OrdnungCategory models and ordnungen:manage permission",
+      "author": "Eministar",
+      "date": "2026-07-12T22:21:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/731bc3187361c01ea19fddb67874ec669c7e0ed6"
+    },
+    {
+      "buildId": "build-d610091cbc",
+      "commit": "d610091cbc1273a11db66800c06d7ce1a4eb3f9a",
+      "shortCommit": "d610091cbc",
+      "subject": "Add implementation plan for dynamic ordnungen & categories",
+      "author": "Eministar",
+      "date": "2026-07-12T22:19:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d610091cbc1273a11db66800c06d7ce1a4eb3f9a"
+    },
+    {
+      "buildId": "build-b2c1dfc5cd",
+      "commit": "b2c1dfc5cd203e2f67580ba8ab20fe9066fba856",
+      "shortCommit": "b2c1dfc5cd",
+      "subject": "Add design spec for dynamic ordnungen & categories",
+      "author": "Eministar",
+      "date": "2026-07-12T22:11:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b2c1dfc5cd203e2f67580ba8ab20fe9066fba856"
+    },
+    {
+      "buildId": "build-bbf030b8a6",
+      "commit": "bbf030b8a6b6ad5665f6ed91de16b7242540c9ab",
+      "shortCommit": "bbf030b8a6",
+      "subject": "Merge pull request #1 from Eministar/imgbot",
+      "author": "Eministar",
+      "date": "2026-07-12T14:06:07Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bbf030b8a6b6ad5665f6ed91de16b7242540c9ab"
+    },
+    {
+      "buildId": "build-1e922ba1ac",
+      "commit": "1e922ba1ac6a43a73856fa07ac8cf0a258dcfd5f",
+      "shortCommit": "1e922ba1ac",
+      "subject": "Merge pull request #3 from Eministar/codex/probation-unit-actions",
+      "author": "Eministar",
+      "date": "2026-07-11T17:58:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1e922ba1ac6a43a73856fa07ac8cf0a258dcfd5f"
+    },
+    {
+      "buildId": "build-c636f9222a",
+      "commit": "c636f9222a3f4f03604b5dd56836da11a26cc4e1",
+      "shortCommit": "c636f9222a",
+      "subject": "Add promotion block functionality for officers; implement role handling and UI updates",
+      "author": "Eministar",
+      "date": "2026-07-11T17:57:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c636f9222a3f4f03604b5dd56836da11a26cc4e1"
+    },
+    {
+      "buildId": "build-d27afc24e2",
+      "commit": "d27afc24e2f0aa58f13927bc188edd5f3711be3b",
+      "shortCommit": "d27afc24e2",
+      "subject": "Merge pull request #2 from Eministar/codex/probation-unit-actions",
+      "author": "Eministar",
+      "date": "2026-07-10T01:08:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d27afc24e2f0aa58f13927bc188edd5f3711be3b"
+    },
+    {
+      "buildId": "build-3b710bacc0",
+      "commit": "3b710bacc0bc358a83f856a70dd427f327250643",
+      "shortCommit": "3b710bacc0",
+      "subject": "Improve probation actions and unit change logs",
+      "author": "Eministar",
+      "date": "2026-07-10T01:07:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3b710bacc0bc358a83f856a70dd427f327250643"
+    },
+    {
+      "buildId": "build-7fcfdcd4e9",
+      "commit": "7fcfdcd4e9d423660a4d2bdd703dd6da78a81952",
+      "shortCommit": "7fcfdcd4e9",
+      "subject": "[ImgBot] Optimize images",
+      "author": "ImgBotApp",
+      "date": "2026-07-10T00:51:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7fcfdcd4e9d423660a4d2bdd703dd6da78a81952"
+    },
+    {
+      "buildId": "build-875d777a52",
+      "commit": "875d777a52cd8fc566487ea997968a1c2e2882d7",
+      "shortCommit": "875d777a52",
+      "subject": "update rank structure in dienstordnung.md; refine titles and levels for clarity",
+      "author": "Eministar",
+      "date": "2026-07-10T00:29:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/875d777a52cd8fc566487ea997968a1c2e2882d7"
+    },
+    {
+      "buildId": "build-aa350b76b9",
+      "commit": "aa350b76b907b2ba526029ea381d54fe9aae785f",
+      "shortCommit": "aa350b76b9",
+      "subject": "implement probation entry creation and management; add type and status handling, enhance checklist functionality",
+      "author": "Eministar",
+      "date": "2026-07-10T00:18:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/aa350b76b907b2ba526029ea381d54fe9aae785f"
+    },
+    {
+      "buildId": "build-f8d9b00304",
+      "commit": "f8d9b00304a0a8fb3718db5acdcfac4415d7363a",
+      "shortCommit": "f8d9b00304",
+      "subject": "refactor note handling; add content and title validation, update schema for long text support",
+      "author": "Eministar",
+      "date": "2026-07-09T23:39:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f8d9b00304a0a8fb3718db5acdcfac4415d7363a"
+    },
+    {
+      "buildId": "build-6cbe67f263",
+      "commit": "6cbe67f263a12ff5d821638b61037ba13f4553d7",
+      "shortCommit": "6cbe67f263",
+      "subject": "Preserve LSPD badge prefix in display names",
+      "author": "Eministar",
+      "date": "2026-07-08T17:37:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6cbe67f263a12ff5d821638b61037ba13f4553d7"
+    },
+    {
+      "buildId": "build-f33a3f88d1",
+      "commit": "f33a3f88d15a849db21d91b6095b7d463e4e7da8",
+      "shortCommit": "f33a3f88d1",
+      "subject": "refactor user display name handling in authentication and Discord integration; improve search functionality for officers",
+      "author": "Eministar",
+      "date": "2026-07-08T16:53:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f33a3f88d15a849db21d91b6095b7d463e4e7da8"
+    },
+    {
+      "buildId": "build-1cd08978ce",
+      "commit": "1cd08978ce5dac6b75158ed53760910a6e63ed03",
+      "shortCommit": "1cd08978ce",
+      "subject": "implement search and filter functionality for audit logs; add grouping for log actions",
+      "author": "Eministar",
+      "date": "2026-07-07T19:22:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1cd08978ce5dac6b75158ed53760910a6e63ed03"
+    },
+    {
+      "buildId": "build-a61cd8e2dc",
+      "commit": "a61cd8e2dc9f0d3526303d6f28018cfb6518e827",
+      "shortCommit": "a61cd8e2dc",
+      "subject": "implement search and filter functionality for terminations; add fallback for badge number assignment on reactivation",
+      "author": "Eministar",
+      "date": "2026-07-07T19:10:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a61cd8e2dc9f0d3526303d6f28018cfb6518e827"
+    },
+    {
+      "buildId": "build-7f08594340",
+      "commit": "7f085943400449c125f3663bf1aa9fe1126b3b0b",
+      "shortCommit": "7f08594340",
+      "subject": "add visitor portal and press speaker workspace pages; update routing and permissions for job applications",
+      "author": "Eministar",
+      "date": "2026-07-06T17:11:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7f085943400449c125f3663bf1aa9fe1126b3b0b"
+    },
+    {
+      "buildId": "build-a9db1d380b",
+      "commit": "a9db1d380b1b076873780a8d16c0b176e0b23064",
+      "shortCommit": "a9db1d380b",
+      "subject": "implemented badge number resolution for rank change entries and updated related logic in route handling",
+      "author": "Eministar",
+      "date": "2026-07-05T18:42:20Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a9db1d380b1b076873780a8d16c0b176e0b23064"
+    },
+    {
+      "buildId": "build-54aeb0abf0",
+      "commit": "54aeb0abf0cea7ec7a8b33e18b7980d8f57306df",
+      "shortCommit": "54aeb0abf0",
+      "subject": "removed outdated HR leadership names from hr-dienstordnung.md",
+      "author": "Eministar",
+      "date": "2026-07-05T14:50:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/54aeb0abf0cea7ec7a8b33e18b7980d8f57306df"
+    },
+    {
+      "buildId": "build-9e5b812b92",
+      "commit": "9e5b812b92cc1b582beb6cec47a1dad36e352f4f",
+      "shortCommit": "9e5b812b92",
+      "subject": "updated HR leadership names in hr-dienstordnung.md",
+      "author": "Eministar",
+      "date": "2026-07-05T14:50:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9e5b812b92cc1b582beb6cec47a1dad36e352f4f"
+    },
+    {
+      "buildId": "build-9409279c30",
+      "commit": "9409279c307cc7212f4e28274549235ff06de6fc",
+      "shortCommit": "9409279c30",
+      "subject": "corrected S.W.U. references to S.R.U. throughout the application",
+      "author": "Eministar",
+      "date": "2026-07-05T13:23:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9409279c307cc7212f4e28274549235ff06de6fc"
+    },
+    {
+      "buildId": "build-533313bf7e",
+      "commit": "533313bf7e4d37e26883436793aff3dee9cb7ba7",
+      "shortCommit": "533313bf7e",
+      "subject": "added error handling for form test session and improved security event management",
+      "author": "Eministar",
+      "date": "2026-07-04T22:33:30Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/533313bf7e4d37e26883436793aff3dee9cb7ba7"
+    },
+    {
+      "buildId": "build-e63bb0bf62",
+      "commit": "e63bb0bf62a7d467d8004aad393510cc71f32077",
+      "shortCommit": "e63bb0bf62",
+      "subject": "added total all-time playtime duration metrics",
+      "author": "Eministar",
+      "date": "2026-07-02T13:51:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e63bb0bf62a7d467d8004aad393510cc71f32077"
+    },
+    {
+      "buildId": "build-55c17e1000",
+      "commit": "55c17e10001564309c805db3460803b39fddada0",
+      "shortCommit": "55c17e1000",
+      "subject": "added indicator for hiring",
+      "author": "Eministar",
+      "date": "2026-06-30T13:41:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/55c17e10001564309c805db3460803b39fddada0"
+    },
+    {
+      "buildId": "build-082b1d813d",
+      "commit": "082b1d813df7a45fb781ecea394564be7a328c80",
+      "shortCommit": "082b1d813d",
+      "subject": "added indicator for tests",
+      "author": "Eministar",
+      "date": "2026-06-30T13:18:02Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/082b1d813df7a45fb781ecea394564be7a328c80"
+    },
+    {
+      "buildId": "build-3181df1c3a",
+      "commit": "3181df1c3ab34710b737bf1005a51f7be3577c3a",
+      "shortCommit": "3181df1c3a",
+      "subject": "fixed opacity",
+      "author": "Eministar",
+      "date": "2026-06-30T13:02:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3181df1c3ab34710b737bf1005a51f7be3577c3a"
+    },
+    {
+      "buildId": "build-1e100dc0eb",
+      "commit": "1e100dc0eb89a9d67b7d5d601921240973ffacda",
+      "shortCommit": "1e100dc0eb",
+      "subject": "added screenshot protection",
+      "author": "Eministar",
+      "date": "2026-06-29T23:40:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1e100dc0eb89a9d67b7d5d601921240973ffacda"
+    },
+    {
+      "buildId": "build-213c28d276",
+      "commit": "213c28d276c929532bb527776198f38b9ca5ac42",
+      "shortCommit": "213c28d276",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-06-29T23:31:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/213c28d276c929532bb527776198f38b9ca5ac42"
+    },
+    {
+      "buildId": "build-1c514d94f9",
+      "commit": "1c514d94f9991f80acb89cdda8c04715ec0c4f80",
+      "shortCommit": "1c514d94f9",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-06-29T23:24:20Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1c514d94f9991f80acb89cdda8c04715ec0c4f80"
+    },
+    {
+      "buildId": "build-af36e4d734",
+      "commit": "af36e4d734da64174d1cda0ba22aca28a6777d07",
+      "shortCommit": "af36e4d734",
+      "subject": "added new features",
+      "author": "Eministar",
+      "date": "2026-06-29T23:17:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/af36e4d734da64174d1cda0ba22aca28a6777d07"
+    },
+    {
+      "buildId": "build-1ce40750e6",
+      "commit": "1ce40750e6cbe7484432a9af0f3cd7f4f5a3ace3",
+      "shortCommit": "1ce40750e6",
+      "subject": "fix",
+      "author": "Eministar",
+      "date": "2026-06-29T22:54:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1ce40750e6cbe7484432a9af0f3cd7f4f5a3ace3"
+    },
+    {
+      "buildId": "build-cad41c118d",
+      "commit": "cad41c118d06bdc8ee766605f5ea4b98a148c75c",
+      "shortCommit": "cad41c118d",
+      "subject": "feat(form-tests): add session tracking, anonymous responses, and survey mode",
+      "author": "Eministar",
+      "date": "2026-06-29T22:49:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cad41c118d06bdc8ee766605f5ea4b98a148c75c"
+    },
+    {
+      "buildId": "build-d9379b9c5f",
+      "commit": "d9379b9c5f178751d08c0e68c3230d5bf472c4a7",
+      "shortCommit": "d9379b9c5f",
+      "subject": "feat(form-tests): track unsaved changes and prevent accidental overwrites",
+      "author": "Eministar",
+      "date": "2026-06-29T22:12:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d9379b9c5f178751d08c0e68c3230d5bf472c4a7"
+    },
+    {
+      "buildId": "build-8ae3d30e4b",
+      "commit": "8ae3d30e4bde3a0a31550b8b73797a45ea35f525",
+      "shortCommit": "8ae3d30e4b",
+      "subject": "feat(form-tests): add editable form test module with questions, responses, and scoring",
+      "author": "Eministar",
+      "date": "2026-06-29T21:58:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8ae3d30e4bde3a0a31550b8b73797a45ea35f525"
+    },
+    {
+      "buildId": "build-2876e428a5",
+      "commit": "2876e428a5cc73bb2271f1d361ecd6a02b1ae3e9",
+      "shortCommit": "2876e428a5",
+      "subject": "feat(patrol-board): drop rule-gate from FiveM sync PATCH path",
+      "author": "Eministar",
+      "date": "2026-06-27T20:47:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2876e428a5cc73bb2271f1d361ecd6a02b1ae3e9"
+    },
+    {
+      "buildId": "build-3b03ede641",
+      "commit": "3b03ede641afe4da3b30ae88a9002797b4e2edfd",
+      "shortCommit": "3b03ede641",
+      "subject": "docs: fix openapi-spec doc-drift for patrol-board sync endpoints",
+      "author": "Eministar",
+      "date": "2026-06-27T20:44:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3b03ede641afe4da3b30ae88a9002797b4e2edfd"
+    },
+    {
+      "buildId": "build-7fa6f9f868",
+      "commit": "7fa6f9f8688dfc71ec39bc9e6b34a09e4e1971d0",
+      "shortCommit": "7fa6f9f868",
+      "subject": "docs: add complete MDT patrol-board API integration guide",
+      "author": "Eministar",
+      "date": "2026-06-27T20:34:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7fa6f9f8688dfc71ec39bc9e6b34a09e4e1971d0"
+    },
+    {
+      "buildId": "build-990d40df8d",
+      "commit": "990d40df8dd476d751def997cf5ec290cbf8ea0b",
+      "shortCommit": "990d40df8d",
+      "subject": "docs(api): document patrol-session, patrol-time and dispatch-center endpoints",
+      "author": "Eministar",
+      "date": "2026-06-27T20:30:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/990d40df8dd476d751def997cf5ec290cbf8ea0b"
+    },
+    {
+      "buildId": "build-eff0e04feb",
+      "commit": "eff0e04feb9cb25e511ffc5d1dc9744d2ee858a1",
+      "shortCommit": "eff0e04feb",
+      "subject": "feat(officers): show patrol-time card on officer detail page",
+      "author": "Eministar",
+      "date": "2026-06-27T20:25:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/eff0e04feb9cb25e511ffc5d1dc9744d2ee858a1"
+    },
+    {
+      "buildId": "build-0cf4a589d2",
+      "commit": "0cf4a589d2808ec2108ae5702f663e4adb23b244",
+      "shortCommit": "0cf4a589d2",
+      "subject": "feat(patrol-board): convert board page to read-only live view with status, dispatch center and leaderboard",
+      "author": "Eministar",
+      "date": "2026-06-27T20:18:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0cf4a589d2808ec2108ae5702f663e4adb23b244"
+    },
+    {
+      "buildId": "build-553eca9b34",
+      "commit": "553eca9b34b664f8d6f0ed7bf93dec999c6bce5f",
+      "shortCommit": "553eca9b34",
+      "subject": "feat(api): add dispatch-center occupant endpoints and expose state in board GET",
+      "author": "Eministar",
+      "date": "2026-06-27T20:13:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/553eca9b34b664f8d6f0ed7bf93dec999c6bce5f"
+    },
+    {
+      "buildId": "build-ff457e20fe",
+      "commit": "ff457e20fe7f0fa68e8ca47de6fd9f695d5d7d3c",
+      "shortCommit": "ff457e20fe",
+      "subject": "feat(api): add patrol-time aggregation and leaderboard endpoints",
+      "author": "Eministar",
+      "date": "2026-06-27T20:08:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ff457e20fe7f0fa68e8ca47de6fd9f695d5d7d3c"
+    },
+    {
+      "buildId": "build-8602843bd2",
+      "commit": "8602843bd2bd0d0b0bb706c6e1035450d2992cf6",
+      "shortCommit": "8602843bd2",
+      "subject": "feat(api): add patrol-session ingest endpoints (single + batch)",
+      "author": "Eministar",
+      "date": "2026-06-27T20:04:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8602843bd2bd0d0b0bb706c6e1035450d2992cf6"
+    },
+    {
+      "buildId": "build-fb527b99de",
+      "commit": "fb527b99de29ffdbcd49e9c27f30e73cb1750af0",
+      "shortCommit": "fb527b99de",
+      "subject": "feat(patrol-sessions): add session ingest service with discord resolution and idempotent upsert",
+      "author": "Eministar",
+      "date": "2026-06-27T20:01:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fb527b99de29ffdbcd49e9c27f30e73cb1750af0"
+    },
+    {
+      "buildId": "build-589bad452d",
+      "commit": "589bad452da62c2cd42d8f22818d47c59bca91ea",
+      "shortCommit": "589bad452d",
+      "subject": "feat(patrol-board): accept status/scope/assignedDispatchId in full-replace sync",
+      "author": "Eministar",
+      "date": "2026-06-27T19:58:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/589bad452da62c2cd42d8f22818d47c59bca91ea"
+    },
+    {
+      "buildId": "build-d2e0b7c546",
+      "commit": "d2e0b7c54697c523a8b71c73aef9e679bb6ffb31",
+      "shortCommit": "d2e0b7c546",
+      "subject": "feat(schema): add PatrolSession, DispatchCenterState, patrol status/scope/dispatch fields",
+      "author": "Eministar",
+      "date": "2026-06-27T19:20:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d2e0b7c54697c523a8b71c73aef9e679bb6ffb31"
+    },
+    {
+      "buildId": "build-8b35e428c7",
+      "commit": "8b35e428c78e7459c3a237341c08b0c4090ee64b",
+      "shortCommit": "8b35e428c7",
+      "subject": "docs: add Leitstelle/Streifenboard sync implementation plan",
+      "author": "Eministar",
+      "date": "2026-06-27T19:17:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8b35e428c78e7459c3a237341c08b0c4090ee64b"
+    },
+    {
+      "buildId": "build-61f42607a2",
+      "commit": "61f42607a2717d46bcc3e8e3c480e02a7961190f",
+      "shortCommit": "61f42607a2",
+      "subject": "docs: add Leitstelle/Streifenboard sync design spec",
+      "author": "Eministar",
+      "date": "2026-06-27T19:12:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/61f42607a2717d46bcc3e8e3c480e02a7961190f"
+    },
+    {
+      "buildId": "build-dbbb45d268",
+      "commit": "dbbb45d268610204f316d82921525670595833af",
+      "shortCommit": "dbbb45d268",
+      "subject": "feat: introduce Detective Unit module with tasks, calendar, and permissions",
+      "author": "Eministar",
+      "date": "2026-06-25T18:07:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/dbbb45d268610204f316d82921525670595833af"
+    },
+    {
+      "buildId": "build-3cddc6d09c",
+      "commit": "3cddc6d09c61a0f3dae5fdc4ebb2a78b5ee9da45",
+      "shortCommit": "3cddc6d09c",
+      "subject": "chore: handle enum narrowing for schema sync and prevent data loss",
+      "author": "Eministar",
+      "date": "2026-06-25T11:58:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3cddc6d09c61a0f3dae5fdc4ebb2a78b5ee9da45"
+    },
+    {
+      "buildId": "build-7bfe8af3fd",
+      "commit": "7bfe8af3fdc1c73a3ed4f6cbda05f098469223a3",
+      "shortCommit": "7bfe8af3fd",
+      "subject": "chore: reassign removed department enums before schema sync to prevent data loss",
+      "author": "Eministar",
+      "date": "2026-06-25T11:49:42Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7bfe8af3fdc1c73a3ed4f6cbda05f098469223a3"
+    },
+    {
+      "buildId": "build-8140babab0",
+      "commit": "8140babab0dce3603cbddc85cd4910e644f88c40",
+      "shortCommit": "8140babab0",
+      "subject": "chore: remove Internal Affairs module and associated assets",
+      "author": "Eministar",
+      "date": "2026-06-25T11:45:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8140babab0dce3603cbddc85cd4910e644f88c40"
+    },
+    {
+      "buildId": "build-841ebb20ff",
+      "commit": "841ebb20ff66749d19af8c13a7df15d62197042d",
+      "shortCommit": "841ebb20ff",
+      "subject": "feat: add mention support and message deletion for Discord events",
+      "author": "Eministar",
+      "date": "2026-06-24T21:22:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/841ebb20ff66749d19af8c13a7df15d62197042d"
+    },
+    {
+      "buildId": "build-b13071e2f2",
+      "commit": "b13071e2f2e06a74084b2959e70b244e17ef12c6",
+      "shortCommit": "b13071e2f2",
+      "subject": "refactor: redirect Dienstordnung page to Ordnungen overview",
+      "author": "Eministar",
+      "date": "2026-06-24T21:09:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b13071e2f2e06a74084b2959e70b244e17ef12c6"
+    },
+    {
+      "buildId": "build-4e5882ac44",
+      "commit": "4e5882ac44035ac4c60936650113f737fb27fc65",
+      "shortCommit": "4e5882ac44",
+      "subject": "feat: add Internal Affairs to ordnungen and update sidebar navigation",
+      "author": "Eministar",
+      "date": "2026-06-24T21:03:42Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4e5882ac44035ac4c60936650113f737fb27fc65"
+    },
+    {
+      "buildId": "build-38175b8fb7",
+      "commit": "38175b8fb76917da168ff2c10b9315f16baa1353",
+      "shortCommit": "38175b8fb7",
+      "subject": "feat: add Internal Affairs Division service regulations and documentation",
+      "author": "Eministar",
+      "date": "2026-06-24T20:59:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/38175b8fb76917da168ff2c10b9315f16baa1353"
+    },
+    {
+      "buildId": "build-6f1f4530f9",
+      "commit": "6f1f4530f9a7ba047dc754428a0818f32a9ae41e",
+      "shortCommit": "6f1f4530f9",
+      "subject": "refactor: update `@db.Text` annotations for Prisma schema fields",
+      "author": "Eministar",
+      "date": "2026-06-24T20:42:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6f1f4530f9a7ba047dc754428a0818f32a9ae41e"
+    },
+    {
+      "buildId": "build-7bf1716ce8",
+      "commit": "7bf1716ce85d0d0520ca8e461c3974a0f3309500",
+      "shortCommit": "7bf1716ce8",
+      "subject": "feat: add Fabian Richter to HR service regulation leadership section",
+      "author": "Eministar",
+      "date": "2026-06-24T19:03:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7bf1716ce85d0d0520ca8e461c3974a0f3309500"
+    },
+    {
+      "buildId": "build-f1af0391fa",
+      "commit": "f1af0391faa7c033a68f236e62a5c14075e3d01f",
+      "shortCommit": "f1af0391fa",
+      "subject": "chore: simplify HR service regulations by removing sanctions and complaints sections",
+      "author": "Eministar",
+      "date": "2026-06-24T18:54:47Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f1af0391faa7c033a68f236e62a5c14075e3d01f"
+    },
+    {
+      "buildId": "build-d3ec56acba",
+      "commit": "d3ec56acba605d583ddc83e5e442f215b674abfa",
+      "shortCommit": "d3ec56acba",
+      "subject": "feat: add transient error retries and configurable timeouts for Discord API integration",
+      "author": "Eministar",
+      "date": "2026-06-24T18:43:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d3ec56acba605d583ddc83e5e442f215b674abfa"
+    },
+    {
+      "buildId": "build-8822067513",
+      "commit": "8822067513d07c8f9b35989c19d7cce441b3a888",
+      "shortCommit": "8822067513",
+      "subject": "refactor: remove unique constraint from `Rank.sortOrder` in Prisma schema",
+      "author": "Eministar",
+      "date": "2026-06-24T16:46:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8822067513d07c8f9b35989c19d7cce441b3a888"
+    },
+    {
+      "buildId": "build-447b75230e",
+      "commit": "447b75230e10c487928013fe6d54986fc34a40fe",
+      "shortCommit": "447b75230e",
+      "subject": "feat: add Internal Affairs, Air-Support, and SWU modules with full workspace integration",
+      "author": "Eministar",
+      "date": "2026-06-24T16:42:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/447b75230e10c487928013fe6d54986fc34a40fe"
+    },
+    {
+      "buildId": "build-ccf17cb36d",
+      "commit": "ccf17cb36df09cdb49bcc37683538d13d4a70050",
+      "shortCommit": "ccf17cb36d",
+      "subject": "feat: revise HR service regulations to expand leadership competencies and enforce stricter documentation policies",
+      "author": "Eministar",
+      "date": "2026-06-22T21:01:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ccf17cb36df09cdb49bcc37683538d13d4a70050"
+    },
+    {
+      "buildId": "build-f907000b53",
+      "commit": "f907000b5344cdad18233c979ac062fb46f730c9",
+      "shortCommit": "f907000b53",
+      "subject": "feat: add recovery script for Discord server switch and improve .env priority in Discord integration",
+      "author": "Eministar",
+      "date": "2026-06-22T20:07:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f907000b5344cdad18233c979ac062fb46f730c9"
+    },
+    {
+      "buildId": "build-16d21a2989",
+      "commit": "16d21a298911a17ce311bbd762f2a5bb83c3aea2",
+      "shortCommit": "16d21a2989",
+      "subject": "feat: specify maximum armored vehicles for bank transport operations in service regulations",
+      "author": "Eministar",
+      "date": "2026-06-21T19:30:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/16d21a298911a17ce311bbd762f2a5bb83c3aea2"
+    },
+    {
+      "buildId": "build-6ed6c65f58",
+      "commit": "6ed6c65f587dd61c1d300b06b2b3b0bc1d8313a7",
+      "shortCommit": "6ed6c65f58",
+      "subject": "feat: introduce Academy resource management system with full CRUD support",
+      "author": "Eministar",
+      "date": "2026-06-21T12:05:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6ed6c65f587dd61c1d300b06b2b3b0bc1d8313a7"
+    },
+    {
+      "buildId": "build-7523f7e3db",
+      "commit": "7523f7e3db26e54429502bea353e278e3523bc97",
+      "shortCommit": "7523f7e3db",
+      "subject": "feat: standardize badge number formatting in `desiredNickname` with `displayBadgeNumber`",
+      "author": "Eministar",
+      "date": "2026-06-20T14:14:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7523f7e3db26e54429502bea353e278e3523bc97"
+    },
+    {
+      "buildId": "build-4a17cafea8",
+      "commit": "4a17cafea89a7acd942c0acf5b945a42cf7dfef2",
+      "shortCommit": "4a17cafea8",
+      "subject": "feat: improve officer training updates with validation, error handling, and optimized database operations",
+      "author": "Eministar",
+      "date": "2026-06-20T14:11:18Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4a17cafea89a7acd942c0acf5b945a42cf7dfef2"
+    },
+    {
+      "buildId": "build-067b5938ff",
+      "commit": "067b5938ff3a9d3eb71b125cb25c8623d1935825",
+      "shortCommit": "067b5938ff",
+      "subject": "feat: add badge number normalization script and integrate it into database workflows",
+      "author": "Eministar",
+      "date": "2026-06-20T14:06:06Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/067b5938ff3a9d3eb71b125cb25c8623d1935825"
+    },
+    {
+      "buildId": "build-7f5bd9c5f8",
+      "commit": "7f5bd9c5f81bb529eb0377ffb7ee14eb5b52e18b",
+      "shortCommit": "7f5bd9c5f8",
+      "subject": "feat: enhance Discord integration with permission handling, caching, and role synchronization improvements",
+      "author": "Eministar",
+      "date": "2026-06-20T13:57:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7f5bd9c5f81bb529eb0377ffb7ee14eb5b52e18b"
+    },
+    {
+      "buildId": "build-fe74eab60e",
+      "commit": "fe74eab60e49b8f9b70c77f5841a8cbcad8a461b",
+      "shortCommit": "fe74eab60e",
+      "subject": "feat: rewrite Discord integration to use components and markdown for rich, standardized messaging",
+      "author": "Eministar",
+      "date": "2026-06-20T00:50:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fe74eab60e49b8f9b70c77f5841a8cbcad8a461b"
+    },
+    {
+      "buildId": "build-e95f197da5",
+      "commit": "e95f197da5519395e714d388e2e8e4ec4ac62f14",
+      "shortCommit": "e95f197da5",
+      "subject": "feat: standardize badge number formatting across the dashboard with `displayBadgeNumber` and `formatBadgeNumber` functions",
+      "author": "Eministar",
+      "date": "2026-06-20T00:40:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e95f197da5519395e714d388e2e8e4ec4ac62f14"
+    },
+    {
+      "buildId": "build-dc483f96ac",
+      "commit": "dc483f96ac5f0a27076709f4ab2ded95b2fb9534",
+      "shortCommit": "dc483f96ac",
+      "subject": "feat: introduce badge number normalization across APIs for consistent formatting",
+      "author": "Eministar",
+      "date": "2026-06-20T00:34:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/dc483f96ac5f0a27076709f4ab2ded95b2fb9534"
+    },
+    {
+      "buildId": "build-f7429b0286",
+      "commit": "f7429b02863f146b275615cdc0ff164dad1fa966",
+      "shortCommit": "f7429b0286",
+      "subject": "feat: enhance database initialization with import validation and JSON migration for officer data",
+      "author": "Eministar",
+      "date": "2026-06-20T00:15:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f7429b02863f146b275615cdc0ff164dad1fa966"
+    },
+    {
+      "buildId": "build-4aea60900d",
+      "commit": "4aea60900d270a67a117fb4bee541d324fbb23b4",
+      "shortCommit": "4aea60900d",
+      "subject": "feat: update database initialization flow and streamline Procfile configuration",
+      "author": "Eministar",
+      "date": "2026-06-20T00:11:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4aea60900d270a67a117fb4bee541d324fbb23b4"
+    },
+    {
+      "buildId": "build-1df701321a",
+      "commit": "1df701321a105f1cc8cd9108ccd6ad5be25123a0",
+      "shortCommit": "1df701321a",
+      "subject": "feat: add database initialization script and initial data import file for streamlined setup",
+      "author": "Eministar",
+      "date": "2026-06-20T00:08:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1df701321a105f1cc8cd9108ccd6ad5be25123a0"
+    },
+    {
+      "buildId": "build-6f4cdfc1d9",
+      "commit": "6f4cdfc1d95bb47a8b37cc223d45f65562ea3c5a",
+      "shortCommit": "6f4cdfc1d9",
+      "subject": "feat: add `.dockerignore` for cleaner builds and API documentation for the LSPD HR Dashboard",
+      "author": "Eministar",
+      "date": "2026-06-17T13:43:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6f4cdfc1d95bb47a8b37cc223d45f65562ea3c5a"
+    },
+    {
+      "buildId": "build-fe427c7595",
+      "commit": "fe427c7595dc68498273fd6072b29bed763e8939",
+      "shortCommit": "fe427c7595",
+      "subject": "feat: implement RankChangeListCard component for managing rank change lists",
+      "author": "Eministar",
+      "date": "2026-06-04T01:03:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fe427c7595dc68498273fd6072b29bed763e8939"
+    },
+    {
+      "buildId": "build-e9e54172fe",
+      "commit": "e9e54172fee717bb5320c039828deecd2fc40577",
+      "shortCommit": "e9e54172fe",
+      "subject": "feat: configure IIS to pass through error responses for accurate JSON error messaging",
+      "author": "Eministar",
+      "date": "2026-06-03T22:25:28Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e9e54172fee717bb5320c039828deecd2fc40577"
+    },
+    {
+      "buildId": "build-398a94e040",
+      "commit": "398a94e04023c789a1a49b050bdb1bdc8f28c8dd",
+      "shortCommit": "398a94e040",
+      "subject": "feat: add client-side validation for form submission to improve error messaging",
+      "author": "Eministar",
+      "date": "2026-06-03T20:56:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/398a94e04023c789a1a49b050bdb1bdc8f28c8dd"
+    },
+    {
+      "buildId": "build-bed257dc21",
+      "commit": "bed257dc21a1bf333d4f9b9d9aebfa7086cf3d42",
+      "shortCommit": "bed257dc21",
+      "subject": "feat: handle controlled empty selection in select component to prevent React warnings",
+      "author": "Eministar",
+      "date": "2026-06-03T01:22:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bed257dc21a1bf333d4f9b9d9aebfa7086cf3d42"
+    },
+    {
+      "buildId": "build-bd03568b2d",
+      "commit": "bd03568b2dfffc969f7cb2bf40fd391ebf9e34a7",
+      "shortCommit": "bd03568b2d",
+      "subject": "feat: update Prisma client generator to use JavaScript client for compatibility with production entry",
+      "author": "Eministar",
+      "date": "2026-06-03T01:14:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bd03568b2dfffc969f7cb2bf40fd391ebf9e34a7"
+    },
+    {
+      "buildId": "build-332fa3b9fd",
+      "commit": "332fa3b9fd1f0f3cc330ef44263f07b5f2ca7af5",
+      "shortCommit": "332fa3b9fd",
+      "subject": "feat: update Prisma client handling to ensure JavaScript client is used and improve error messaging",
+      "author": "Eministar",
+      "date": "2026-06-03T01:06:23Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/332fa3b9fd1f0f3cc330ef44263f07b5f2ca7af5"
+    },
+    {
+      "buildId": "build-657687d70c",
+      "commit": "657687d70c7dee742b5fded747e85d80f766fecf",
+      "shortCommit": "657687d70c",
+      "subject": "feat: add support for Discord admin role management with live role validation and caching",
+      "author": "Eministar",
+      "date": "2026-06-03T01:00:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/657687d70c7dee742b5fded747e85d80f766fecf"
+    },
+    {
+      "buildId": "build-5719910489",
+      "commit": "5719910489bc6f0a30c2375adebb44007baa92a3",
+      "shortCommit": "5719910489",
+      "subject": "feat: optimize Discord integration by fetching member roles once to reduce API calls and improve group synchronization",
+      "author": "Eministar",
+      "date": "2026-06-03T00:48:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/5719910489bc6f0a30c2375adebb44007baa92a3"
+    },
+    {
+      "buildId": "build-dafb5f8b6d",
+      "commit": "dafb5f8b6dc8f43e464ef0087a9eec90aa8f8509",
+      "shortCommit": "dafb5f8b6d",
+      "subject": "feat: improve Discord integration by separating manual group assignment and membership synchronization to avoid primary key conflicts",
+      "author": "Eministar",
+      "date": "2026-05-28T20:14:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/dafb5f8b6dc8f43e464ef0087a9eec90aa8f8509"
+    },
+    {
+      "buildId": "build-7141727c47",
+      "commit": "7141727c478309b727b88728ab5b696dd48fe3e7",
+      "shortCommit": "7141727c47",
+      "subject": "feat: enhance Discord integration with manual group assignment and role synchronization",
+      "author": "Eministar",
+      "date": "2026-05-28T20:07:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7141727c478309b727b88728ab5b696dd48fe3e7"
+    },
+    {
+      "buildId": "build-560304e06a",
+      "commit": "560304e06a69b0af84ff9d55fe1e6ad0d8805fdc",
+      "shortCommit": "560304e06a",
+      "subject": "feat: enhance Discord integration with member status tracking and validation",
+      "author": "Eministar",
+      "date": "2026-05-20T14:37:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/560304e06a69b0af84ff9d55fe1e6ad0d8805fdc"
+    },
+    {
+      "buildId": "build-caa414281a",
+      "commit": "caa414281aaf3144ea4e9c46f4560f9a33bdf27d",
+      "shortCommit": "caa414281a",
+      "subject": "feat: implement full synchronization progress tracking in Discord integration",
+      "author": "Eministar",
+      "date": "2026-05-20T14:21:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/caa414281aaf3144ea4e9c46f4560f9a33bdf27d"
+    },
+    {
+      "buildId": "build-01814aaf10",
+      "commit": "01814aaf1010a0486be2f163cb10b40f24722be4",
+      "shortCommit": "01814aaf10",
+      "subject": "feat: refactor Discord integration to streamline permission handling and remove bootstrap role logic",
+      "author": "Eministar",
+      "date": "2026-05-20T14:08:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/01814aaf1010a0486be2f163cb10b40f24722be4"
+    },
+    {
+      "buildId": "build-c56e8b6c9f",
+      "commit": "c56e8b6c9f47bb7993d46af02bbd518f31b31353",
+      "shortCommit": "c56e8b6c9f",
+      "subject": "feat: update Discord integration to improve officer group synchronization logic",
+      "author": "Eministar",
+      "date": "2026-05-20T14:03:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c56e8b6c9f47bb7993d46af02bbd518f31b31353"
+    },
+    {
+      "buildId": "build-5449620308",
+      "commit": "54496203088cb2d3388383c7946d127997a8600a",
+      "shortCommit": "5449620308",
+      "subject": "feat: implement dashboard group synchronization for officers in Discord integration",
+      "author": "Eministar",
+      "date": "2026-05-20T13:57:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/54496203088cb2d3388383c7946d127997a8600a"
+    },
+    {
+      "buildId": "build-c7c041bac4",
+      "commit": "c7c041bac49d068db008152f1889463e3016f0d4",
+      "shortCommit": "c7c041bac4",
+      "subject": "feat: add documents tab and HR document module to page",
+      "author": "Eministar",
+      "date": "2026-05-20T13:34:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c7c041bac49d068db008152f1889463e3016f0d4"
+    },
+    {
+      "buildId": "build-78b2270a94",
+      "commit": "78b2270a94483a919e7db2e7aeda4edffb414e78",
+      "shortCommit": "78b2270a94",
+      "subject": "feat: enhance Dienstordnung page with quick links and improved layout",
+      "author": "Eministar",
+      "date": "2026-05-20T12:36:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/78b2270a94483a919e7db2e7aeda4edffb414e78"
+    },
+    {
+      "buildId": "build-843f13c7b9",
+      "commit": "843f13c7b9835b7281e7bcb9e837cd59ceaca9e7",
+      "shortCommit": "843f13c7b9",
+      "subject": "feat: add comprehensive service regulations and guidelines for LSPD members",
+      "author": "Eministar",
+      "date": "2026-05-20T12:26:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/843f13c7b9835b7281e7bcb9e837cd59ceaca9e7"
+    },
+    {
+      "buildId": "build-ecc4268792",
+      "commit": "ecc42687922c434a5f8fc5b788540abe18de9a0d",
+      "shortCommit": "ecc4268792",
+      "subject": "refactor: update styles and structure for KPI cards and metrics, add new components for improved UI",
+      "author": "Eministar",
+      "date": "2026-05-20T11:51:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ecc42687922c434a5f8fc5b788540abe18de9a0d"
+    },
+    {
+      "buildId": "build-d9836becb2",
+      "commit": "d9836becb283a760940263ca7f3cf886008b21be",
+      "shortCommit": "d9836becb2",
+      "subject": "increase timeout and sync TTL, add error fallback and grace period handling",
+      "author": "Eministar",
+      "date": "2026-05-19T16:57:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d9836becb283a760940263ca7f3cf886008b21be"
+    },
+    {
+      "buildId": "build-8f0b7f04c7",
+      "commit": "8f0b7f04c7044507b025c45704cfc959aff9c26c",
+      "shortCommit": "8f0b7f04c7",
+      "subject": "fixed last online error",
+      "author": "Eministar",
+      "date": "2026-05-19T16:41:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8f0b7f04c7044507b025c45704cfc959aff9c26c"
+    },
+    {
+      "buildId": "build-a66cfd4cc6",
+      "commit": "a66cfd4cc60f09effd10c92358e01060f292752a",
+      "shortCommit": "a66cfd4cc6",
+      "subject": "deleted AGENTS.md from CLAUDE.md",
+      "author": "Eministar",
+      "date": "2026-05-19T16:30:29Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a66cfd4cc60f09effd10c92358e01060f292752a"
+    },
+    {
+      "buildId": "build-899f72ce1d",
+      "commit": "899f72ce1d04af6c05ff14875914cb569fb30fe4",
+      "shortCommit": "899f72ce1d",
+      "subject": "Delete {,-",
+      "author": "Eministar",
+      "date": "2026-05-19T16:28:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/899f72ce1d04af6c05ff14875914cb569fb30fe4"
+    },
+    {
+      "buildId": "build-7033e27090",
+      "commit": "7033e2709051d15a2dce582aea4d1b8bf87f8e53",
+      "shortCommit": "7033e27090",
+      "subject": "Delete {,+",
+      "author": "Eministar",
+      "date": "2026-05-19T16:28:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7033e2709051d15a2dce582aea4d1b8bf87f8e53"
+    },
+    {
+      "buildId": "build-e2c4c55e3b",
+      "commit": "e2c4c55e3b829adf51945ff3e2397fa09f69274a",
+      "shortCommit": "e2c4c55e3b",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-05-19T16:25:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e2c4c55e3b829adf51945ff3e2397fa09f69274a"
+    },
+    {
+      "buildId": "build-b699e68627",
+      "commit": "b699e68627756a2c98faa7114df11529e06e3cad",
+      "shortCommit": "b699e68627",
+      "subject": "feat: added iframe support",
+      "author": "Eministar",
+      "date": "2026-05-19T16:25:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b699e68627756a2c98faa7114df11529e06e3cad"
+    },
+    {
+      "buildId": "build-0949768850",
+      "commit": "0949768850687d4d24f1b4668032b71690eeab16",
+      "shortCommit": "0949768850",
+      "subject": "Delete .claude directory",
+      "author": "Eministar",
+      "date": "2026-05-19T16:00:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0949768850687d4d24f1b4668032b71690eeab16"
+    },
+    {
+      "buildId": "build-5ea1d4275b",
+      "commit": "5ea1d4275b5e92de49f758a62765a0d6a493e55a",
+      "shortCommit": "5ea1d4275b",
+      "subject": "feat: update endActivePlaytime to set officer's last online timestamp from lastHeartbeat",
+      "author": "Eministar",
+      "date": "2026-05-19T15:09:35Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/5ea1d4275b5e92de49f758a62765a0d6a493e55a"
+    },
+    {
+      "buildId": "build-1361974b58",
+      "commit": "1361974b58d59ba0f57cdf06b01d7a1e5a6165c6",
+      "shortCommit": "1361974b58",
+      "subject": "feat: update playtime session handling to update officer's last online timestamp",
+      "author": "Eministar",
+      "date": "2026-05-19T15:04:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1361974b58d59ba0f57cdf06b01d7a1e5a6165c6"
+    },
+    {
+      "buildId": "build-b08fde1a11",
+      "commit": "b08fde1a112ec183084363b3de43d2d9c1274ebb",
+      "shortCommit": "b08fde1a11",
+      "subject": "feat: add Detective module with calendar, task board, and document management",
+      "author": "Eministar",
+      "date": "2026-05-19T14:40:42Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b08fde1a112ec183084363b3de43d2d9c1274ebb"
+    },
+    {
+      "buildId": "build-504a282dd2",
+      "commit": "504a282dd295e055842cfdcfd94769d16ed9571f",
+      "shortCommit": "504a282dd2",
+      "subject": "feat: add Allgemein category to the Dienstordnung page",
+      "author": "Eministar",
+      "date": "2026-05-19T14:11:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/504a282dd295e055842cfdcfd94769d16ed9571f"
+    },
+    {
+      "buildId": "build-4d5a4ac92a",
+      "commit": "4d5a4ac92a11ef5bfe3c5e4084971396bea101f6",
+      "shortCommit": "4d5a4ac92a",
+      "subject": "feat: add Dienstordnung document and implement loading functionality in the page component",
+      "author": "Eministar",
+      "date": "2026-05-19T14:10:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4d5a4ac92a11ef5bfe3c5e4084971396bea101f6"
+    },
+    {
+      "buildId": "build-0eef4560fb",
+      "commit": "0eef4560fb150284409c4641d75030822fac9362",
+      "shortCommit": "0eef4560fb",
+      "subject": "feat: update Discord role handling to support multiple role IDs in group mappings",
+      "author": "Eministar",
+      "date": "2026-05-19T12:27:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0eef4560fb150284409c4641d75030822fac9362"
+    },
+    {
+      "buildId": "build-dd1e6dd09d",
+      "commit": "dd1e6dd09d4babf3d6aa4e21cabb8fc0b27ad788",
+      "shortCommit": "dd1e6dd09d",
+      "subject": "fix: login issue with role check",
+      "author": "Eministar",
+      "date": "2026-05-19T12:12:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/dd1e6dd09d4babf3d6aa4e21cabb8fc0b27ad788"
+    },
+    {
+      "buildId": "build-713860cbbd",
+      "commit": "713860cbbd243e1b732f0635647207bbce902ad8",
+      "shortCommit": "713860cbbd",
+      "subject": "feat: implement bootstrap role check for Discord users to assign default permissions",
+      "author": "Eministar",
+      "date": "2026-05-18T21:00:18Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/713860cbbd243e1b732f0635647207bbce902ad8"
+    },
+    {
+      "buildId": "build-8df6d9073f",
+      "commit": "8df6d9073f89062b85208bc6405d438fcd925ccf",
+      "shortCommit": "8df6d9073f",
+      "subject": "feat: enhance Discord authentication to include dynamic role-based permissions",
+      "author": "Eministar",
+      "date": "2026-05-18T20:55:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8df6d9073f89062b85208bc6405d438fcd925ccf"
+    },
+    {
+      "buildId": "build-c9dd73a609",
+      "commit": "c9dd73a6092ecdda19d97d01d218668223e3e770",
+      "shortCommit": "c9dd73a609",
+      "subject": "feat: update login redirection to use base URL for consistency in route handling",
+      "author": "Eministar",
+      "date": "2026-05-18T20:50:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c9dd73a6092ecdda19d97d01d218668223e3e770"
+    },
+    {
+      "buildId": "build-be548040d4",
+      "commit": "be548040d47b7672b337a93c61fec4bb0a27f434",
+      "shortCommit": "be548040d4",
+      "subject": "feat: add support for Discord authentication role IDs in environment configuration",
+      "author": "Eministar",
+      "date": "2026-05-18T20:46:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/be548040d47b7672b337a93c61fec4bb0a27f434"
+    },
+    {
+      "buildId": "build-f5f2acd5be",
+      "commit": "f5f2acd5be101917f6121fd7296e3994f763cf5e",
+      "shortCommit": "f5f2acd5be",
+      "subject": "feat: update environment configuration for production site URL and enhance base URL handling",
+      "author": "Eministar",
+      "date": "2026-05-18T20:41:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f5f2acd5be101917f6121fd7296e3994f763cf5e"
+    },
+    {
+      "buildId": "build-362985550f",
+      "commit": "362985550ff040ec7f866430ea6e01cd57971ed4",
+      "shortCommit": "362985550f",
+      "subject": "feat: enhance Discord integration with user profile synchronization and update login handling",
+      "author": "Eministar",
+      "date": "2026-05-18T20:27:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/362985550ff040ec7f866430ea6e01cd57971ed4"
+    },
+    {
+      "buildId": "build-2f07351404",
+      "commit": "2f073514042a578954e00ce84eca258774cd7d46",
+      "shortCommit": "2f07351404",
+      "subject": "feat: update SRU references to include periods for consistency and improve document handling",
+      "author": "Eministar",
+      "date": "2026-05-18T19:53:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2f073514042a578954e00ce84eca258774cd7d46"
+    },
+    {
+      "buildId": "build-6e325e0d43",
+      "commit": "6e325e0d4329a3b5b744602971d241bb38f84a1d",
+      "shortCommit": "6e325e0d43",
+      "subject": "feat: enhance SRU document and folder management with color customization and improved task list handling",
+      "author": "Eministar",
+      "date": "2026-05-18T19:47:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6e325e0d4329a3b5b744602971d241bb38f84a1d"
+    },
+    {
+      "buildId": "build-cf89ab38a7",
+      "commit": "cf89ab38a766117c147f266360d8a92865261836",
+      "shortCommit": "cf89ab38a7",
+      "subject": "feat: implement SRU document and folder management with CRUD operations and permissions",
+      "author": "Eministar",
+      "date": "2026-05-18T19:37:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cf89ab38a766117c147f266360d8a92865261836"
+    },
+    {
+      "buildId": "build-10b054781b",
+      "commit": "10b054781b75d578bcc5cdd95e371f45e80884da",
+      "shortCommit": "10b054781b",
+      "subject": "feat: update Prisma client handling to include TypeScript support and improve error messages",
+      "author": "Eministar",
+      "date": "2026-05-18T18:11:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/10b054781b75d578bcc5cdd95e371f45e80884da"
+    },
+    {
+      "buildId": "build-1930449519",
+      "commit": "193044951961ce3f9f91961321dc773712242f98",
+      "shortCommit": "1930449519",
+      "subject": "feat: refactor live update process with PowerShell script and enhance Prisma client handling",
+      "author": "Eministar",
+      "date": "2026-05-18T18:07:00Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/193044951961ce3f9f91961321dc773712242f98"
+    },
+    {
+      "buildId": "build-f0bf9c84ce",
+      "commit": "f0bf9c84cec63b122f7d5dc5d11f981bdbeef062",
+      "shortCommit": "f0bf9c84ce",
+      "subject": "feat: implement update announcement feature for Discord with form handling",
+      "author": "Eministar",
+      "date": "2026-05-18T16:48:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f0bf9c84cec63b122f7d5dc5d11f981bdbeef062"
+    },
+    {
+      "buildId": "build-76d175dfd2",
+      "commit": "76d175dfd296b4168657d668c7e3e5954fb74624",
+      "shortCommit": "76d175dfd2",
+      "subject": "feat: add update channel configuration and announcement functionality for Discord",
+      "author": "Eministar",
+      "date": "2026-05-18T16:40:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/76d175dfd296b4168657d668c7e3e5954fb74624"
+    },
+    {
+      "buildId": "build-a8aeaf0866",
+      "commit": "a8aeaf0866374d217dbf11affd69de5f74c595c7",
+      "shortCommit": "a8aeaf0866",
+      "subject": "feat: enhance Card and PageHeader components with improved styling and layout",
+      "author": "Eministar",
+      "date": "2026-05-18T16:30:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a8aeaf0866374d217dbf11affd69de5f74c595c7"
+    },
+    {
+      "buildId": "build-9661f2ae8a",
+      "commit": "9661f2ae8a415b7754ed41076efe88abc271c2ce",
+      "shortCommit": "9661f2ae8a",
+      "subject": "feat: ensure Prisma client generation on startup if missing",
+      "author": "Eministar",
+      "date": "2026-05-17T21:46:50Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9661f2ae8a415b7754ed41076efe88abc271c2ce"
+    },
+    {
+      "buildId": "build-0d4b1ab61f",
+      "commit": "0d4b1ab61ff862a8dd68f0339f6ce2a6e90685ae",
+      "shortCommit": "0d4b1ab61f",
+      "subject": "feat: implement user group membership management and enhance upload handling",
+      "author": "Eministar",
+      "date": "2026-05-17T21:40:18Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0d4b1ab61ff862a8dd68f0339f6ce2a6e90685ae"
+    },
+    {
+      "buildId": "build-03b96f8e7b",
+      "commit": "03b96f8e7b8dbd0676a1f1c6b50a9014f878b71e",
+      "shortCommit": "03b96f8e7b",
+      "subject": "feat: enhance markdown signature styling with improved layout and effects",
+      "author": "Eministar",
+      "date": "2026-05-17T17:10:33Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/03b96f8e7b8dbd0676a1f1c6b50a9014f878b71e"
+    },
+    {
+      "buildId": "build-86b4f02e7b",
+      "commit": "86b4f02e7b61e5656168e86f336700e69086bd61",
+      "shortCommit": "86b4f02e7b",
+      "subject": "feat: update HR guidelines and enhance markdown signature styling",
+      "author": "Eministar",
+      "date": "2026-05-17T16:28:15Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/86b4f02e7b61e5656168e86f336700e69086bd61"
+    },
+    {
+      "buildId": "build-feca0d40ae",
+      "commit": "feca0d40ae2ffccf18a196a46d51c435e39e1e3a",
+      "shortCommit": "feca0d40ae",
+      "subject": "refactor: enhance rank grouping logic to include empty ranks based on filters",
+      "author": "Eministar",
+      "date": "2026-05-16T21:15:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/feca0d40ae2ffccf18a196a46d51c435e39e1e3a"
+    },
+    {
+      "buildId": "build-613541eb11",
+      "commit": "613541eb1149bb6d1ea82b35e5f63c00399a858f",
+      "shortCommit": "613541eb11",
+      "subject": "added smaller ux improvements",
+      "author": "Eministar",
+      "date": "2026-05-16T20:42:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/613541eb1149bb6d1ea82b35e5f63c00399a858f"
+    },
+    {
+      "buildId": "build-4d8660f9db",
+      "commit": "4d8660f9db69ea47cd24718b0b4783bf102d9da6",
+      "shortCommit": "4d8660f9db",
+      "subject": "refactor: streamline training change handling in Discord integration",
+      "author": "Eministar",
+      "date": "2026-05-16T20:33:56Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4d8660f9db69ea47cd24718b0b4783bf102d9da6"
+    },
+    {
+      "buildId": "build-9967e63306",
+      "commit": "9967e633066d1bfa8d01da27c36d7b893c3b6ba9",
+      "shortCommit": "9967e63306",
+      "subject": "feat: add training change tracking to Discord event messages",
+      "author": "Eministar",
+      "date": "2026-05-16T20:29:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9967e633066d1bfa8d01da27c36d7b893c3b6ba9"
+    },
+    {
+      "buildId": "build-705a22a499",
+      "commit": "705a22a49973cc82eb6f1c1a36ddbb7abd3ffed9",
+      "shortCommit": "705a22a499",
+      "subject": "refactor: adjust padding and widths in dashboard components for improved layout",
+      "author": "Eministar",
+      "date": "2026-05-16T20:23:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/705a22a49973cc82eb6f1c1a36ddbb7abd3ffed9"
+    },
+    {
+      "buildId": "build-ce7e2924f4",
+      "commit": "ce7e2924f44214324732a55315206c6f1756e2f4",
+      "shortCommit": "ce7e2924f4",
+      "subject": "feat: add confirmation modals for training overrides and sanction deletions",
+      "author": "Eministar",
+      "date": "2026-05-16T20:19:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ce7e2924f44214324732a55315206c6f1756e2f4"
+    },
+    {
+      "buildId": "build-f217053301",
+      "commit": "f2170533014b0ac5edfa9a0f1fb0fd9118e5ce26",
+      "shortCommit": "f217053301",
+      "subject": "docs: update HR document header with date for clarity",
+      "author": "Eministar",
+      "date": "2026-05-16T20:08:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f2170533014b0ac5edfa9a0f1fb0fd9118e5ce26"
+    },
+    {
+      "buildId": "build-9829723d54",
+      "commit": "9829723d54e5198c041c36a7e62c3a7883e115f5",
+      "shortCommit": "9829723d54",
+      "subject": "refactor: simplify training availability checks and update related logic",
+      "author": "Eministar",
+      "date": "2026-05-16T20:08:02Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9829723d54e5198c041c36a7e62c3a7883e115f5"
+    },
+    {
+      "buildId": "build-40f1702e87",
+      "commit": "40f1702e872042b19c873cfcc833d3a644fd1f69",
+      "shortCommit": "40f1702e87",
+      "subject": "feat: add minimum rank requirement for trainings and update related logic",
+      "author": "Eministar",
+      "date": "2026-05-16T20:01:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/40f1702e872042b19c873cfcc833d3a644fd1f69"
+    },
+    {
+      "buildId": "build-f7988d43b1",
+      "commit": "f7988d43b13df6a4a95256ffeeb482ba9d8873dd",
+      "shortCommit": "f7988d43b1",
+      "subject": "refactor: update HR guidelines and restructure sections for clarity",
+      "author": "Eministar",
+      "date": "2026-05-16T18:37:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f7988d43b13df6a4a95256ffeeb482ba9d8873dd"
+    },
+    {
+      "buildId": "build-76087891ef",
+      "commit": "76087891ef66f28d3805a91ec8fc8448e172a040",
+      "shortCommit": "76087891ef",
+      "subject": "Automate sanction penalties",
+      "author": "Eministar",
+      "date": "2026-05-16T16:03:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/76087891ef66f28d3805a91ec8fc8448e172a040"
+    },
+    {
+      "buildId": "build-4a2091ade2",
+      "commit": "4a2091ade2d3eda430cf8a4d878ca3c8365646a3",
+      "shortCommit": "4a2091ade2",
+      "subject": "Improve patrol board workflow",
+      "author": "Eministar",
+      "date": "2026-05-15T15:04:35Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4a2091ade2d3eda430cf8a4d878ca3c8365646a3"
+    },
+    {
+      "buildId": "build-7124b8f39a",
+      "commit": "7124b8f39a53de7473fc6e83b1103361c5e9d861",
+      "shortCommit": "7124b8f39a",
+      "subject": "Add patrol board",
+      "author": "Eministar",
+      "date": "2026-05-15T14:26:23Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7124b8f39a53de7473fc6e83b1103361c5e9d861"
+    },
+    {
+      "buildId": "build-b0fdd9957f",
+      "commit": "b0fdd9957f091018aa5789f7d72dd05c6ffadbbd",
+      "shortCommit": "b0fdd9957f",
+      "subject": "feat: add support for automatic role synchronization on Discord member join",
+      "author": "Eministar",
+      "date": "2026-05-14T11:46:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b0fdd9957f091018aa5789f7d72dd05c6ffadbbd"
+    },
+    {
+      "buildId": "build-cedb94a330",
+      "commit": "cedb94a330f4cbb0ea2c780b6251597ca663f782",
+      "shortCommit": "cedb94a330",
+      "subject": "feat: add validation for absence end date to ensure it is in the future",
+      "author": "Eministar",
+      "date": "2026-05-13T12:57:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cedb94a330f4cbb0ea2c780b6251597ca663f782"
+    },
+    {
+      "buildId": "build-458de34aac",
+      "commit": "458de34aac126d7e25eb677c89b2cd2bdf86f7e6",
+      "shortCommit": "458de34aac",
+      "subject": "add hr planning features",
+      "author": "Eministar",
+      "date": "2026-05-11T17:28:06Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/458de34aac126d7e25eb677c89b2cd2bdf86f7e6"
+    },
+    {
+      "buildId": "build-63e433c125",
+      "commit": "63e433c12534e772a359c85c557e240fd650ac6d",
+      "shortCommit": "63e433c125",
+      "subject": "feat: enhance Discord webhook event handling with improved description formatting and time display",
+      "author": "Eministar",
+      "date": "2026-05-11T12:59:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/63e433c12534e772a359c85c557e240fd650ac6d"
+    },
+    {
+      "buildId": "build-a99c77d572",
+      "commit": "a99c77d5724a25aae4193d73e465ee3c32e5245f",
+      "shortCommit": "a99c77d572",
+      "subject": "feat: refactor Discord webhook event handling to use embeds and improve field management",
+      "author": "Eministar",
+      "date": "2026-05-11T12:36:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a99c77d5724a25aae4193d73e465ee3c32e5245f"
+    },
+    {
+      "buildId": "build-139ab333e3",
+      "commit": "139ab333e3da81c3dbfc4ebee62e3d4f52039a04",
+      "shortCommit": "139ab333e3",
+      "subject": "feat: enhance Discord webhook event handling with new payload structure and component support",
+      "author": "Eministar",
+      "date": "2026-05-11T12:19:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/139ab333e3da81c3dbfc4ebee62e3d4f52039a04"
+    },
+    {
+      "buildId": "build-da2288eccb",
+      "commit": "da2288eccbb4a649b3af040219915428744f5aba",
+      "shortCommit": "da2288eccb",
+      "subject": "feat: fixed small ui bug",
+      "author": "Eministar",
+      "date": "2026-05-10T15:01:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/da2288eccbb4a649b3af040219915428744f5aba"
+    },
+    {
+      "buildId": "build-b81c9fe32f",
+      "commit": "b81c9fe32ff2c6afe6446114be56858411d26d61",
+      "shortCommit": "b81c9fe32f",
+      "subject": "feat: refactor Discord integration and add UnitBadges component for officer units",
+      "author": "Eministar",
+      "date": "2026-05-10T14:35:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b81c9fe32ff2c6afe6446114be56858411d26d61"
+    },
+    {
+      "buildId": "build-a23e78cda5",
+      "commit": "a23e78cda55af3615fa170093a79f825454fb721",
+      "shortCommit": "a23e78cda5",
+      "subject": "deleted wrong files",
+      "author": "Eministar",
+      "date": "2026-05-09T23:02:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a23e78cda55af3615fa170093a79f825454fb721"
+    },
+    {
+      "buildId": "build-8754b9261b",
+      "commit": "8754b9261b5593ce3d9e42d79f2c66614d00dec0",
+      "shortCommit": "8754b9261b",
+      "subject": "feat: simplify authorization requirements for user management actions",
+      "author": "Eministar",
+      "date": "2026-05-09T20:22:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8754b9261b5593ce3d9e42d79f2c66614d00dec0"
+    },
+    {
+      "buildId": "build-39c00fc64f",
+      "commit": "39c00fc64fe7f34a7b77c24f462ac53a067af4c9",
+      "shortCommit": "39c00fc64f",
+      "subject": "feat: improve API response handling and update permission resolution logic",
+      "author": "Eministar",
+      "date": "2026-05-09T20:12:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/39c00fc64fe7f34a7b77c24f462ac53a067af4c9"
+    },
+    {
+      "buildId": "build-d93087628e",
+      "commit": "d93087628e68a2bc74df4a9bf24b5e5411e8d85f",
+      "shortCommit": "d93087628e",
+      "subject": "feat: make user-referencing fields nullable with ON DELETE SET NULL",
+      "author": "Eministar",
+      "date": "2026-05-09T19:54:00Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d93087628e68a2bc74df4a9bf24b5e5411e8d85f"
+    },
+    {
+      "buildId": "build-6ee70d2a6a",
+      "commit": "6ee70d2a6a48bb58ed52b4648b55e7ba86efc117",
+      "shortCommit": "6ee70d2a6a",
+      "subject": "feat: add promotion and demotion list management with modal integration",
+      "author": "Eministar",
+      "date": "2026-05-09T19:34:42Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6ee70d2a6a48bb58ed52b4648b55e7ba86efc117"
+    },
+    {
+      "buildId": "build-19155ee228",
+      "commit": "19155ee228fc3b907e3cea2bdf8e153493e53b4f",
+      "shortCommit": "19155ee228",
+      "subject": "feat: enhance player online status tracking and display last seen information",
+      "author": "Eministar",
+      "date": "2026-05-07T11:55:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/19155ee228fc3b907e3cea2bdf8e153493e53b4f"
+    },
+    {
+      "buildId": "build-12875489ab",
+      "commit": "12875489ab18db0472c81158a33edadd5e274e91",
+      "shortCommit": "12875489ab",
+      "subject": "fix: allow arbitrary upload file types",
+      "author": "Eministar",
+      "date": "2026-05-07T11:19:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/12875489ab18db0472c81158a33edadd5e274e91"
+    },
+    {
+      "buildId": "build-8be11d1670",
+      "commit": "8be11d1670ba0d0dc50eae1349e3cf8a2b60261c",
+      "shortCommit": "8be11d1670",
+      "subject": "feat: add sanction lifecycle management",
+      "author": "Eministar",
+      "date": "2026-05-07T11:17:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8be11d1670ba0d0dc50eae1349e3cf8a2b60261c"
+    },
+    {
+      "buildId": "build-e25e9670f4",
+      "commit": "e25e9670f4997e63157888e178370a58c6f47993",
+      "shortCommit": "e25e9670f4",
+      "subject": "feat: add sanctions and upload management",
+      "author": "Eministar",
+      "date": "2026-05-07T10:50:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e25e9670f4997e63157888e178370a58c6f47993"
+    },
+    {
+      "buildId": "build-424a5a424e",
+      "commit": "424a5a424e06be3202f668b4a6f15a14619965d7",
+      "shortCommit": "424a5a424e",
+      "subject": "feat: enhance player online tracking and update duty metrics in dashboard",
+      "author": "Eministar",
+      "date": "2026-05-07T10:17:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/424a5a424e06be3202f668b4a6f15a14619965d7"
+    },
+    {
+      "buildId": "build-e89c4408a5",
+      "commit": "e89c4408a5c03fb9a91bd3df1d5372a26adb4376",
+      "shortCommit": "e89c4408a5",
+      "subject": "Fix Discord interaction routing",
+      "author": "Eministar",
+      "date": "2026-05-06T17:44:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e89c4408a5c03fb9a91bd3df1d5372a26adb4376"
+    },
+    {
+      "buildId": "build-f4cb724b19",
+      "commit": "f4cb724b19fb2586854917d6b8c1c96d9bfb1632",
+      "shortCommit": "f4cb724b19",
+      "subject": "feat: implement absence expiry checker and enhance Discord notifications for duty inactivity",
+      "author": "Eministar",
+      "date": "2026-05-06T14:46:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f4cb724b19fb2586854917d6b8c1c96d9bfb1632"
+    },
+    {
+      "buildId": "build-e614ed331e",
+      "commit": "e614ed331e16701f77c6059b2599be8ce35a8a2d",
+      "shortCommit": "e614ed331e",
+      "subject": "feat: add checks for existing duty sessions during clock-in and clock-out",
+      "author": "Eministar",
+      "date": "2026-05-06T12:23:23Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e614ed331e16701f77c6059b2599be8ce35a8a2d"
+    },
+    {
+      "buildId": "build-45a29b1a57",
+      "commit": "45a29b1a57000a41968fe94c0255cd89fb144cbc",
+      "shortCommit": "45a29b1a57",
+      "subject": "feat: implement duty activity check with direct messaging and auto clock-out functionality",
+      "author": "Eministar",
+      "date": "2026-05-06T12:21:06Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/45a29b1a57000a41968fe94c0255cd89fb144cbc"
+    },
+    {
+      "buildId": "build-29478e3a54",
+      "commit": "29478e3a545f54696892453357a3a1818463dec9",
+      "shortCommit": "29478e3a54",
+      "subject": "Abmeldungen für Officers und Notizlöschung",
+      "author": "Eministar",
+      "date": "2026-05-05T20:11:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/29478e3a545f54696892453357a3a1818463dec9"
+    },
+    {
+      "buildId": "build-ee3c33eab8",
+      "commit": "ee3c33eab8d2c7679e9f7946433d52e93d3bf770",
+      "shortCommit": "ee3c33eab8",
+      "subject": "fix interaction whitelist due to 401",
+      "author": "Eministar",
+      "date": "2026-05-05T16:29:08Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ee3c33eab8d2c7679e9f7946433d52e93d3bf770"
+    },
+    {
+      "buildId": "build-bd84898c14",
+      "commit": "bd84898c14e16fdaaec680ee45f86a7de6371060",
+      "shortCommit": "bd84898c14",
+      "subject": "chore: update version to 0.1.3 in package.json and release.ts",
+      "author": "Eministar",
+      "date": "2026-05-05T16:24:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bd84898c14e16fdaaec680ee45f86a7de6371060"
+    },
+    {
+      "buildId": "build-bde10e91b0",
+      "commit": "bde10e91b0d718efd1ac388890d23952c821261f",
+      "shortCommit": "bde10e91b0",
+      "subject": "feat: enhance Discord interaction handling with new functions for follow-up messages and improved logging",
+      "author": "Eministar",
+      "date": "2026-05-05T16:22:50Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bde10e91b0d718efd1ac388890d23952c821261f"
+    },
+    {
+      "buildId": "build-574281cf50",
+      "commit": "574281cf509fa1893d6489151d2892eb955faa8e",
+      "shortCommit": "574281cf50",
+      "subject": "Fix Discord panel interactions",
+      "author": "Eministar",
+      "date": "2026-05-05T16:08:10Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/574281cf509fa1893d6489151d2892eb955faa8e"
+    },
+    {
+      "buildId": "build-cd61c8ec1e",
+      "commit": "cd61c8ec1e7cd3426daee6c0b17871365dc660ac",
+      "shortCommit": "cd61c8ec1e",
+      "subject": "Fix promotion undo request",
+      "author": "Eministar",
+      "date": "2026-05-05T16:00:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cd61c8ec1e7cd3426daee6c0b17871365dc660ac"
+    },
+    {
+      "buildId": "build-cb290229af",
+      "commit": "cb290229afcd86a4ce71267d481c22bd95c97177",
+      "shortCommit": "cb290229af",
+      "subject": "Add absence workflow and HR fixes",
+      "author": "Eministar",
+      "date": "2026-05-05T15:53:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cb290229afcd86a4ce71267d481c22bd95c97177"
+    },
+    {
+      "buildId": "build-0587d654ab",
+      "commit": "0587d654ab7d84158a6e833582897b7e9d6c65d7",
+      "shortCommit": "0587d654ab",
+      "subject": "feat: enhance role and permission checks in authentication and add createdBy field to rank change entries for better tracking",
+      "author": "Eministar",
+      "date": "2026-05-05T12:39:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0587d654ab7d84158a6e833582897b7e9d6c65d7"
+    },
+    {
+      "buildId": "build-038e28f288",
+      "commit": "038e28f288fb7a82b6a847dcbf049ef910323d53",
+      "shortCommit": "038e28f288",
+      "subject": "feat: enhance role and permission checks in authentication and add createdBy field to rank change entries for improved tracking",
+      "author": "Eministar",
+      "date": "2026-05-05T12:37:54Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/038e28f288fb7a82b6a847dcbf049ef910323d53"
+    },
+    {
+      "buildId": "build-4435f80725",
+      "commit": "4435f8072569263767332de6d76e637a5b82e69f",
+      "shortCommit": "4435f80725",
+      "subject": "feat: improve error handling and logging in API routes for better debugging and response accuracy",
+      "author": "Eministar",
+      "date": "2026-05-04T18:55:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4435f8072569263767332de6d76e637a5b82e69f"
+    },
+    {
+      "buildId": "build-026039a71a",
+      "commit": "026039a71a6ac4d40fdd10ac18561cc22cd4e900",
+      "shortCommit": "026039a71a",
+      "subject": "feat: enhance authentication and permissions handling for improved role and permission checks",
+      "author": "Eministar",
+      "date": "2026-05-04T18:31:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/026039a71a6ac4d40fdd10ac18561cc22cd4e900"
+    },
+    {
+      "buildId": "build-6167b67b6c",
+      "commit": "6167b67b6c31ac14e2043c22ccf21f43a31f5b1d",
+      "shortCommit": "6167b67b6c",
+      "subject": "feat: add OrdnungConfig interface and normalization functions for improved configuration handling",
+      "author": "Eministar",
+      "date": "2026-05-04T17:57:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6167b67b6c31ac14e2043c22ccf21f43a31f5b1d"
+    },
+    {
+      "buildId": "build-db3ef301c5",
+      "commit": "db3ef301c5f5fb66f15f6e45040ef444b01993af",
+      "shortCommit": "db3ef301c5",
+      "subject": "feat: add HR regulations and sanction catalog with configuration for improved compliance management",
+      "author": "Eministar",
+      "date": "2026-05-04T17:29:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/db3ef301c5f5fb66f15f6e45040ef444b01993af"
+    },
+    {
+      "buildId": "build-9d3ddc191c",
+      "commit": "9d3ddc191c859e725e2101c88fe93c0d6b44e066",
+      "shortCommit": "9d3ddc191c",
+      "subject": "feat: add badge number display and stripping functions for improved officer data handling",
+      "author": "Eministar",
+      "date": "2026-05-04T17:16:07Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9d3ddc191c859e725e2101c88fe93c0d6b44e066"
+    },
+    {
+      "buildId": "build-7a19ba29b9",
+      "commit": "7a19ba29b90a9805539fe992d571b473ba00ea39",
+      "shortCommit": "7a19ba29b9",
+      "subject": "feat: improve Discord embed officer field formatting for better clarity",
+      "author": "Eministar",
+      "date": "2026-05-04T16:30:53Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7a19ba29b90a9805539fe992d571b473ba00ea39"
+    },
+    {
+      "buildId": "build-8d565d050e",
+      "commit": "8d565d050eef49616f9b0fde98461c0e3b039ba5",
+      "shortCommit": "8d565d050e",
+      "subject": "feat: enhance Discord embed formatting and improve field structure for officer events",
+      "author": "Eministar",
+      "date": "2026-05-04T16:14:34Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8d565d050eef49616f9b0fde98461c0e3b039ba5"
+    },
+    {
+      "buildId": "build-2c9cda7dea",
+      "commit": "2c9cda7dead745686674f871aea86addb50ba274",
+      "shortCommit": "2c9cda7dea",
+      "subject": "feat: implement full sync functionality for Discord roles with improved error handling and user feedback",
+      "author": "Eministar",
+      "date": "2026-05-04T15:57:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2c9cda7dead745686674f871aea86addb50ba274"
+    },
+    {
+      "buildId": "build-237f22eaca",
+      "commit": "237f22eaca5d319b79cde4d3e313e1858686c598",
+      "shortCommit": "237f22eaca",
+      "subject": "feat: update version to 0.1.2 and enhance initialization logic for settings and Discord data",
+      "author": "Eministar",
+      "date": "2026-05-04T15:39:33Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/237f22eaca5d319b79cde4d3e313e1858686c598"
+    },
+    {
+      "buildId": "build-6463412515",
+      "commit": "64634125152e281ec4f3d92274b7318f02fcbeae",
+      "shortCommit": "6463412515",
+      "subject": "feat: implement rate-limiting and caching for Discord API requests",
+      "author": "Eministar",
+      "date": "2026-05-04T15:34:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/64634125152e281ec4f3d92274b7318f02fcbeae"
+    },
+    {
+      "buildId": "build-2de2b0b3bc",
+      "commit": "2de2b0b3bcb737604684b572acd49d832bf89115",
+      "shortCommit": "2de2b0b3bc",
+      "subject": "feat: enhance error handling for chunk load issues with automatic reload functionality",
+      "author": "Eministar",
+      "date": "2026-05-04T15:05:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2de2b0b3bcb737604684b572acd49d832bf89115"
+    },
+    {
+      "buildId": "build-eae57f76dd",
+      "commit": "eae57f76dd06973fcf446fc644e5112f6ed743dc",
+      "shortCommit": "eae57f76dd",
+      "subject": "feat: enhance Discord event handling with structured metadata and improved embed formatting",
+      "author": "Eministar",
+      "date": "2026-05-04T14:57:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/eae57f76dd06973fcf446fc644e5112f6ed743dc"
+    },
+    {
+      "buildId": "build-b7ed4e957c",
+      "commit": "b7ed4e957cab351f1092d6917883478df506faf5",
+      "shortCommit": "b7ed4e957c",
+      "subject": "feat: refactor dashboard layout and introduce DashboardShell component",
+      "author": "Eministar",
+      "date": "2026-05-03T23:28:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b7ed4e957cab351f1092d6917883478df506faf5"
+    },
+    {
+      "buildId": "build-8b1b738f46",
+      "commit": "8b1b738f469c1c6e7f4cfc7ccc7dfd8acce17db6",
+      "shortCommit": "8b1b738f46",
+      "subject": "feat: implement badge number release for terminated officers and enhance badge number parsing",
+      "author": "Eministar",
+      "date": "2026-05-03T23:17:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8b1b738f469c1c6e7f4cfc7ccc7dfd8acce17db6"
+    },
+    {
+      "buildId": "build-8fc13ed4e6",
+      "commit": "8fc13ed4e6527a45988c37fcfd9731a31232f933",
+      "shortCommit": "8fc13ed4e6",
+      "subject": "feat: exclude terminated officers from badge number assignments",
+      "author": "Eministar",
+      "date": "2026-05-03T23:09:45Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8fc13ed4e6527a45988c37fcfd9731a31232f933"
+    },
+    {
+      "buildId": "build-3a84b38b95",
+      "commit": "3a84b38b95dfc5051dec8b9d80493c809d44f2b4",
+      "shortCommit": "3a84b38b95",
+      "subject": "feat: add officer ID to ListEntry and update permissions for rank change execution",
+      "author": "Eministar",
+      "date": "2026-05-03T23:04:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3a84b38b95dfc5051dec8b9d80493c809d44f2b4"
+    },
+    {
+      "buildId": "build-740f868000",
+      "commit": "740f868000622d3af46ae714af00c770aa2bab07",
+      "shortCommit": "740f868000",
+      "subject": "feat: implement fallback for badge number assignment during promotion",
+      "author": "Eministar",
+      "date": "2026-05-03T22:56:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/740f868000622d3af46ae714af00c770aa2bab07"
+    },
+    {
+      "buildId": "build-9e1c626260",
+      "commit": "9e1c6262601671f7984bedb84651682fc074e6df",
+      "shortCommit": "9e1c626260",
+      "subject": "feat: refactor layout and provider structure for improved readability",
+      "author": "Eministar",
+      "date": "2026-05-03T22:20:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9e1c6262601671f7984bedb84651682fc074e6df"
+    },
+    {
+      "buildId": "build-ceda9749cb",
+      "commit": "ceda9749cb4d740791a51cc23f54496d2b2f8e69",
+      "shortCommit": "ceda9749cb",
+      "subject": "feat(discord): admin duty log channel and cleaner hire/embeds",
+      "author": "Eministar",
+      "date": "2026-05-03T19:50:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ceda9749cb4d740791a51cc23f54496d2b2f8e69"
+    },
+    {
+      "buildId": "build-fbb3d97387",
+      "commit": "fbb3d97387dfe5522bcbb7a83778ef7a3ddd8fff",
+      "shortCommit": "fbb3d97387",
+      "subject": "bump version to 0.0.3",
+      "author": "Eministar",
+      "date": "2026-05-03T19:21:02Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fbb3d97387dfe5522bcbb7a83778ef7a3ddd8fff"
+    },
+    {
+      "buildId": "build-5c3900ae76",
+      "commit": "5c3900ae76e3bb4c19e7ce6ac7e1fbabac618fb9",
+      "shortCommit": "5c3900ae76",
+      "subject": "Clean up loading animation",
+      "author": "Eministar",
+      "date": "2026-05-03T15:51:39Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/5c3900ae76e3bb4c19e7ce6ac7e1fbabac618fb9"
+    },
+    {
+      "buildId": "build-64e0c6c4a2",
+      "commit": "64e0c6c4a2b3629727903bc52294a89cae3eb060",
+      "shortCommit": "64e0c6c4a2",
+      "subject": "Add absence status automation",
+      "author": "Eministar",
+      "date": "2026-05-03T15:34:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/64e0c6c4a2b3629727903bc52294a89cae3eb060"
+    },
+    {
+      "buildId": "build-eedac42c8c",
+      "commit": "eedac42c8c998eba3142d625179adef3e6ee1b55",
+      "shortCommit": "eedac42c8c",
+      "subject": "Add FiveM playtime tracking",
+      "author": "Eministar",
+      "date": "2026-05-03T15:24:35Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/eedac42c8c998eba3142d625179adef3e6ee1b55"
+    },
+    {
+      "buildId": "build-97ddf7ac34",
+      "commit": "97ddf7ac34c9f9d99246f6c287019b96d0a7e89c",
+      "shortCommit": "97ddf7ac34",
+      "subject": "Add duty time tracking",
+      "author": "Eministar",
+      "date": "2026-05-03T15:18:30Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/97ddf7ac34c9f9d99246f6c287019b96d0a7e89c"
+    },
+    {
+      "buildId": "build-dfa03955b9",
+      "commit": "dfa03955b93a2d039481edefbc6210669079ad6a",
+      "shortCommit": "dfa03955b9",
+      "subject": "Improve Discord HR embeds",
+      "author": "Eministar",
+      "date": "2026-05-03T15:06:18Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/dfa03955b93a2d039481edefbc6210669079ad6a"
+    },
+    {
+      "buildId": "build-7ff490d53c",
+      "commit": "7ff490d53c3b8c46e0979b20854649658e9b0c16",
+      "shortCommit": "7ff490d53c",
+      "subject": "HR: Sanktionskatalog LSPD Penal Grades I–V ergänzt und erweitert",
+      "author": "Eministar",
+      "date": "2026-05-03T12:56:43Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7ff490d53c3b8c46e0979b20854649658e9b0c16"
+    },
+    {
+      "buildId": "build-6991026552",
+      "commit": "69910265522cea7a2bc4f91d386b2099de168e4a",
+      "shortCommit": "6991026552",
+      "subject": "Add HR sanktionskatalog page",
+      "author": "Eministar",
+      "date": "2026-05-03T00:54:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/69910265522cea7a2bc4f91d386b2099de168e4a"
+    },
+    {
+      "buildId": "build-f85b8cbce6",
+      "commit": "f85b8cbce6aa52c682d210e6b5275b297474977c",
+      "shortCommit": "f85b8cbce6",
+      "subject": "Add live data refresh",
+      "author": "Eministar",
+      "date": "2026-05-02T13:58:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f85b8cbce6aa52c682d210e6b5275b297474977c"
+    },
+    {
+      "buildId": "build-c5298977c0",
+      "commit": "c5298977c033878a35cd75f0b61b0cfe1a6eeee6",
+      "shortCommit": "c5298977c0",
+      "subject": "Improve Discord HR synchronization",
+      "author": "Eministar",
+      "date": "2026-05-01T17:39:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c5298977c033878a35cd75f0b61b0cfe1a6eeee6"
+    },
+    {
+      "buildId": "build-78d14d32b7",
+      "commit": "78d14d32b786965839b2b11569ad3444e12cbd7f",
+      "shortCommit": "78d14d32b7",
+      "subject": "fix(db): store SystemSetting.value as TEXT for long JSON payloads",
+      "author": "Eministar",
+      "date": "2026-04-30T23:11:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/78d14d32b786965839b2b11569ad3444e12cbd7f"
+    },
+    {
+      "buildId": "build-1fb2b19741",
+      "commit": "1fb2b19741ea71ad10ba46a72aeb20a707c28083",
+      "shortCommit": "1fb2b19741",
+      "subject": "Fix Next chunk handling during deploy",
+      "author": "Eministar",
+      "date": "2026-04-30T23:00:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1fb2b19741ea71ad10ba46a72aeb20a707c28083"
+    },
+    {
+      "buildId": "build-00292c112c",
+      "commit": "00292c112c52d3bf38bb31f69c62b83193350ca4",
+      "shortCommit": "00292c112c",
+      "subject": "Serve Next static assets directly",
+      "author": "Eministar",
+      "date": "2026-04-30T22:55:49Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/00292c112c52d3bf38bb31f69c62b83193350ca4"
+    },
+    {
+      "buildId": "build-e25ea32aca",
+      "commit": "e25ea32aca3b63298d9278d739fe853ae58ecbb6",
+      "shortCommit": "e25ea32aca",
+      "subject": "Simplify Discord role selection UI",
+      "author": "Eministar",
+      "date": "2026-04-30T22:42:29Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e25ea32aca3b63298d9278d739fe853ae58ecbb6"
+    },
+    {
+      "buildId": "build-1ba9286995",
+      "commit": "1ba9286995b742cdcb6c7d8fc1e47f13e83a338b",
+      "shortCommit": "1ba9286995",
+      "subject": "Deduplicate Discord role dropdowns",
+      "author": "Eministar",
+      "date": "2026-04-30T22:40:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1ba9286995b742cdcb6c7d8fc1e47f13e83a338b"
+    },
+    {
+      "buildId": "build-0465d33c96",
+      "commit": "0465d33c968d6b10defce5bea663fe08bcced07b",
+      "shortCommit": "0465d33c96",
+      "subject": "Fix Discord REST configuration diagnostics",
+      "author": "Eministar",
+      "date": "2026-04-30T22:37:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0465d33c968d6b10defce5bea663fe08bcced07b"
+    },
+    {
+      "buildId": "build-c5b4e74a8d",
+      "commit": "c5b4e74a8de606e7cda8c5516a11f28347408847",
+      "shortCommit": "c5b4e74a8d",
+      "subject": "Keep Discord bot online via gateway",
+      "author": "Eministar",
+      "date": "2026-04-30T22:15:28Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c5b4e74a8de606e7cda8c5516a11f28347408847"
+    },
+    {
+      "buildId": "build-b030432f0e",
+      "commit": "b030432f0ecabd2064537cf66a9c8c4b71746f68",
+      "shortCommit": "b030432f0e",
+      "subject": "Avoid interactive Discord user constraint deploy",
+      "author": "Eministar",
+      "date": "2026-04-30T21:25:30Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b030432f0ecabd2064537cf66a9c8c4b71746f68"
+    },
+    {
+      "buildId": "build-96e49e58ee",
+      "commit": "96e49e58ee90cf651cc9c6652bffacf87b275185",
+      "shortCommit": "96e49e58ee",
+      "subject": "Move Discord role mapping into admin tabs",
+      "author": "Eministar",
+      "date": "2026-04-30T20:39:28Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/96e49e58ee90cf651cc9c6652bffacf87b275185"
+    },
+    {
+      "buildId": "build-4c3abfe43c",
+      "commit": "4c3abfe43c226d0efaba17e13934e308868de039",
+      "shortCommit": "4c3abfe43c",
+      "subject": "Add Discord account linking",
+      "author": "Eministar",
+      "date": "2026-04-30T20:31:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4c3abfe43c226d0efaba17e13934e308868de039"
+    },
+    {
+      "buildId": "build-1fe50d42f0",
+      "commit": "1fe50d42f0c6d45a1fd1619e77a71f2908833aca",
+      "shortCommit": "1fe50d42f0",
+      "subject": "Add Discord HR integration",
+      "author": "Eministar",
+      "date": "2026-04-30T20:26:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1fe50d42f0c6d45a1fd1619e77a71f2908833aca"
+    },
+    {
+      "buildId": "build-91d09ef596",
+      "commit": "91d09ef59666916d400a4c7477652b5cbdbcfc51",
+      "shortCommit": "91d09ef596",
+      "subject": "Fix badge blacklist blocking",
+      "author": "Eministar",
+      "date": "2026-04-30T20:00:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/91d09ef59666916d400a4c7477652b5cbdbcfc51"
+    },
+    {
+      "buildId": "build-721ae46db5",
+      "commit": "721ae46db5c522f18a02b63b04a2a8e43eaa82e3",
+      "shortCommit": "721ae46db5",
+      "subject": "Fix permission precedence",
+      "author": "Eministar",
+      "date": "2026-04-30T19:13:32Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/721ae46db5c522f18a02b63b04a2a8e43eaa82e3"
+    },
+    {
+      "buildId": "build-3db1921da2",
+      "commit": "3db1921da22705d743e97856b4ff04b709cf0543",
+      "shortCommit": "3db1921da2",
+      "subject": "Disable Next image disk cache on Plesk",
+      "author": "Eministar",
+      "date": "2026-04-30T18:03:31Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3db1921da22705d743e97856b4ff04b709cf0543"
+    },
+    {
+      "buildId": "build-76b6672f0f",
+      "commit": "76b6672f0fa53ec22b68cb53a6eb5ca4480a2bce",
+      "shortCommit": "76b6672f0f",
+      "subject": "Handle stale Next chunks after deploy",
+      "author": "Eministar",
+      "date": "2026-04-30T17:21:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/76b6672f0fa53ec22b68cb53a6eb5ca4480a2bce"
+    },
+    {
+      "buildId": "build-65b19fbe3c",
+      "commit": "65b19fbe3c46798f76ef1ffa6476ff3684d1533b",
+      "shortCommit": "65b19fbe3c",
+      "subject": "Send build status logs to webhook",
+      "author": "Eministar",
+      "date": "2026-04-30T17:03:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/65b19fbe3c46798f76ef1ffa6476ff3684d1533b"
+    },
+    {
+      "buildId": "build-c23dcc7a1d",
+      "commit": "c23dcc7a1d28e34a4cc5bc6ebc45743e7873b529",
+      "shortCommit": "c23dcc7a1d",
+      "subject": "Improve training audit log details",
+      "author": "Eministar",
+      "date": "2026-04-30T16:58:32Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c23dcc7a1d28e34a4cc5bc6ebc45743e7873b529"
+    },
+    {
+      "buildId": "build-47124e993a",
+      "commit": "47124e993ab932832806e8dc08bf7a6a95c157f0",
+      "shortCommit": "47124e993a",
+      "subject": "Add Discord webhook monitoring",
+      "author": "Eministar",
+      "date": "2026-04-30T16:51:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/47124e993ab932832806e8dc08bf7a6a95c157f0"
+    },
+    {
+      "buildId": "build-05eb0c5c6c",
+      "commit": "05eb0c5c6c263a4176b9db8778ec1ec1fec5569e",
+      "shortCommit": "05eb0c5c6c",
+      "subject": "Make live backup schema-drift tolerant",
+      "author": "Eministar",
+      "date": "2026-04-30T16:43:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/05eb0c5c6c263a4176b9db8778ec1ec1fec5569e"
+    },
+    {
+      "buildId": "build-cb3e3e4487",
+      "commit": "cb3e3e4487934f1403caa15a5ca7b293907cc32e",
+      "shortCommit": "cb3e3e4487",
+      "subject": "Harden loading screen sizing",
+      "author": "Eministar",
+      "date": "2026-04-30T16:34:40Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/cb3e3e4487934f1403caa15a5ca7b293907cc32e"
+    },
+    {
+      "buildId": "build-301f822bd2",
+      "commit": "301f822bd22f783e97b49a47a1db7361e1f1f862",
+      "shortCommit": "301f822bd2",
+      "subject": "Add direct user permissions",
+      "author": "Eministar",
+      "date": "2026-04-30T16:32:30Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/301f822bd22f783e97b49a47a1db7361e1f1f862"
+    },
+    {
+      "buildId": "build-8b643dd246",
+      "commit": "8b643dd2468e8c89f6816f9e1c52fbb6b5d6c1ee",
+      "shortCommit": "8b643dd246",
+      "subject": "Polish dashboard footer and guards",
+      "author": "Eministar",
+      "date": "2026-04-30T16:22:28Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8b643dd2468e8c89f6816f9e1c52fbb6b5d6c1ee"
+    },
+    {
+      "buildId": "build-7d1cc8ca08",
+      "commit": "7d1cc8ca08b334634eaeb014e78b2e0209130b64",
+      "shortCommit": "7d1cc8ca08",
+      "subject": "Add officer search to rank change lists",
+      "author": "Eministar",
+      "date": "2026-04-30T16:18:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7d1cc8ca08b334634eaeb014e78b2e0209130b64"
+    },
+    {
+      "buildId": "build-72b6f13eb0",
+      "commit": "72b6f13eb0f81074f0d34382413bbef7c63c6f09",
+      "shortCommit": "72b6f13eb0",
+      "subject": "Add badge number blacklist",
+      "author": "Eministar",
+      "date": "2026-04-30T16:16:20Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/72b6f13eb0f81074f0d34382413bbef7c63c6f09"
+    },
+    {
+      "buildId": "build-3da874bf42",
+      "commit": "3da874bf42c0ab9bb4d8ac0a42f58a9d044789a8",
+      "shortCommit": "3da874bf42",
+      "subject": "Split officer training permissions",
+      "author": "Eministar",
+      "date": "2026-04-30T15:22:00Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3da874bf42c0ab9bb4d8ac0a42f58a9d044789a8"
+    },
+    {
+      "buildId": "build-bb31edf541",
+      "commit": "bb31edf541207d9e05b7cf632c6476a2d617a9e8",
+      "shortCommit": "bb31edf541",
+      "subject": "Update version label to 0.0.2",
+      "author": "Eministar",
+      "date": "2026-04-30T14:12:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bb31edf541207d9e05b7cf632c6476a2d617a9e8"
+    },
+    {
+      "buildId": "build-86b2110a34",
+      "commit": "86b2110a34356bf73c88f59e97da84c241c1b20c",
+      "shortCommit": "86b2110a34",
+      "subject": "Tighten group permissions and list execution",
+      "author": "Eministar",
+      "date": "2026-04-29T21:29:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/86b2110a34356bf73c88f59e97da84c241c1b20c"
+    },
+    {
+      "buildId": "build-608e898dbb",
+      "commit": "608e898dbb69546128af6bbed60958a6c74ff080",
+      "shortCommit": "608e898dbb",
+      "subject": "Add granular read permissions",
+      "author": "Eministar",
+      "date": "2026-04-29T21:23:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/608e898dbb69546128af6bbed60958a6c74ff080"
+    },
+    {
+      "buildId": "build-624645d24d",
+      "commit": "624645d24d849452712f78bbdae92be5406b1306",
+      "shortCommit": "624645d24d",
+      "subject": "Fix Windows Plesk startup",
+      "author": "Eministar",
+      "date": "2026-04-29T21:07:55Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/624645d24d849452712f78bbdae92be5406b1306"
+    },
+    {
+      "buildId": "build-8b0349f393",
+      "commit": "8b0349f3939eeb661f425b7b186d067f39d59362",
+      "shortCommit": "8b0349f393",
+      "subject": "Fix live update backup commit",
+      "author": "Eministar",
+      "date": "2026-04-29T21:04:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8b0349f3939eeb661f425b7b186d067f39d59362"
+    },
+    {
+      "buildId": "build-819bbcc720",
+      "commit": "819bbcc72074eed3e8d2b7af30e085af149b15dd",
+      "shortCommit": "819bbcc720",
+      "subject": "Refine permissions and officer management",
+      "author": "Eministar",
+      "date": "2026-04-29T20:53:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/819bbcc72074eed3e8d2b7af30e085af149b15dd"
+    },
+    {
+      "buildId": "build-1401225ab6",
+      "commit": "1401225ab66a757e3b746b43d700ee20d98c3126",
+      "shortCommit": "1401225ab6",
+      "subject": "feat(db): add import-officer-training.sql (354 OfficerTraining rows)",
+      "author": "Eministar",
+      "date": "2026-04-29T16:25:33Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/1401225ab66a757e3b746b43d700ee20d98c3126"
+    },
+    {
+      "buildId": "build-df0309cd8b",
+      "commit": "df0309cd8b53ffde94ecd40032ba9c40f51d4b4a",
+      "shortCommit": "df0309cd8b",
+      "subject": "chore: standalone import-officers.sql only (embedded rows, drop generator mjs)",
+      "author": "Eministar",
+      "date": "2026-04-29T16:19:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/df0309cd8b53ffde94ecd40032ba9c40f51d4b4a"
+    },
+    {
+      "buildId": "build-8e5e0560de",
+      "commit": "8e5e0560debbdf04f5e1fd6efc9c6dd0e932d88d",
+      "shortCommit": "8e5e0560de",
+      "subject": "chore: add MySQL import SQL for officers from phpMyAdmin JSON",
+      "author": "Eministar",
+      "date": "2026-04-29T16:18:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/8e5e0560debbdf04f5e1fd6efc9c6dd0e932d88d"
+    },
+    {
+      "buildId": "build-ac79302b0b",
+      "commit": "ac79302b0b94560d6b324f1150a3804e54bf8e47",
+      "shortCommit": "ac79302b0b",
+      "subject": "feat(iis): web.config + start.js listens on iisnode named pipes",
+      "author": "Eministar",
+      "date": "2026-04-29T16:00:41Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ac79302b0b94560d6b324f1150a3804e54bf8e47"
+    },
+    {
+      "buildId": "build-81e45a688f",
+      "commit": "81e45a688fc89daa1d38edfc6a27d323165a9c68",
+      "shortCommit": "81e45a688f",
+      "subject": "fix(start): avoid NaN PORT under IIS/iisnode (empty PORT string)",
+      "author": "Eministar",
+      "date": "2026-04-29T15:56:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/81e45a688fc89daa1d38edfc6a27d323165a9c68"
+    },
+    {
+      "buildId": "build-59a280bfc4",
+      "commit": "59a280bfc40d8967d1d63f82ef596fadf31dd37d",
+      "shortCommit": "59a280bfc4",
+      "subject": "fix(plesk): pass project dir to nextStart for correct .next resolution",
+      "author": "Eministar",
+      "date": "2026-04-29T15:55:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/59a280bfc40d8967d1d63f82ef596fadf31dd37d"
+    },
+    {
+      "buildId": "build-fabeb1d627",
+      "commit": "fabeb1d6275f1591dbdd4fb68de5d92e061b19f4",
+      "shortCommit": "fabeb1d627",
+      "subject": "feat(plesk): add start.js for Node.js Application Startup File",
+      "author": "Eministar",
+      "date": "2026-04-29T15:53:02Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fabeb1d6275f1591dbdd4fb68de5d92e061b19f4"
+    },
+    {
+      "buildId": "build-88e253e2ef",
+      "commit": "88e253e2efbe685690f27370971760a3e1de6c7a",
+      "shortCommit": "88e253e2ef",
+      "subject": "fix: production-safe start for Plesk; add Plesk hosting notes",
+      "author": "Eministar",
+      "date": "2026-04-29T15:51:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/88e253e2efbe685690f27370971760a3e1de6c7a"
+    },
+    {
+      "buildId": "build-0077bebf42",
+      "commit": "0077bebf425db92eddcf2bb36242b6d8674d2415",
+      "shortCommit": "0077bebf42",
+      "subject": "Add Windows deploy scripts; Pin ESLint 9; postinstall prisma generate",
+      "author": "Eministar",
+      "date": "2026-04-29T15:31:05Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0077bebf425db92eddcf2bb36242b6d8674d2415"
+    },
+    {
+      "buildId": "build-69a92a6357",
+      "commit": "69a92a6357055a3aa53cdbf6d535fd6a613e0232",
+      "shortCommit": "69a92a6357",
+      "subject": "switch from middleware to proxy",
+      "author": "Eministar",
+      "date": "2026-04-29T15:16:03Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/69a92a6357055a3aa53cdbf6d535fd6a613e0232"
+    },
+    {
+      "buildId": "build-065559231a",
+      "commit": "065559231a168e0c3d82eb4d4c0fbe7ac504a987",
+      "shortCommit": "065559231a",
+      "subject": "Add Prisma delegate compatibility aliases",
+      "author": "Eministar",
+      "date": "2026-04-29T15:04:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/065559231a168e0c3d82eb4d4c0fbe7ac504a987"
+    },
+    {
+      "buildId": "build-723e43f3b6",
+      "commit": "723e43f3b616efe73c4cc3046b54e85a9a024ec9",
+      "shortCommit": "723e43f3b6",
+      "subject": "added scripts",
+      "author": "Eministar",
+      "date": "2026-04-29T14:58:23Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/723e43f3b616efe73c4cc3046b54e85a9a024ec9"
+    },
+    {
+      "buildId": "build-db1988029e",
+      "commit": "db1988029e8777fb2cb8e22c6e32afc108d36b70",
+      "shortCommit": "db1988029e",
+      "subject": "Fix production build validation issues",
+      "author": "Eministar",
+      "date": "2026-04-29T14:45:50Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/db1988029e8777fb2cb8e22c6e32afc108d36b70"
+    },
+    {
+      "buildId": "build-9b2d35a5e7",
+      "commit": "9b2d35a5e7c527b52517f426c7edc8c1decc5d9b",
+      "shortCommit": "9b2d35a5e7",
+      "subject": "fixed nav bar items and added new version label",
+      "author": "Eministar",
+      "date": "2026-04-29T14:41:53Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9b2d35a5e7c527b52517f426c7edc8c1decc5d9b"
+    },
+    {
+      "buildId": "build-56a40f13c6",
+      "commit": "56a40f13c6b278b9f1ac08f2d30db21543a6e3bb",
+      "shortCommit": "56a40f13c6",
+      "subject": "fixed nav bar items and added new version label",
+      "author": "Eministar",
+      "date": "2026-04-29T14:38:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/56a40f13c6b278b9f1ac08f2d30db21543a6e3bb"
+    },
+    {
+      "buildId": "build-54418d3fad",
+      "commit": "54418d3fad6cd2a7287759cbe83ffb5dde58b779",
+      "shortCommit": "54418d3fad",
+      "subject": "fixed nav bar items and added new version label",
+      "author": "Eministar",
+      "date": "2026-04-29T14:20:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/54418d3fad6cd2a7287759cbe83ffb5dde58b779"
+    },
+    {
+      "buildId": "build-b316c71e1e",
+      "commit": "b316c71e1e6ce70476d2b6b350b9a146b91ce7cb",
+      "shortCommit": "b316c71e1e",
+      "subject": "fixed nav bar items and added new version label",
+      "author": "Eministar",
+      "date": "2026-04-29T14:00:37Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b316c71e1e6ce70476d2b6b350b9a146b91ce7cb"
+    },
+    {
+      "buildId": "build-321b6cf960",
+      "commit": "321b6cf960cca522061758832062d098ad0600cc",
+      "shortCommit": "321b6cf960",
+      "subject": "fix db discord id",
+      "author": "Eministar",
+      "date": "2026-04-29T13:57:01Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/321b6cf960cca522061758832062d098ad0600cc"
+    },
+    {
+      "buildId": "build-67b73bc90c",
+      "commit": "67b73bc90c2a57a514560b3dbfd7795c14a551b7",
+      "shortCommit": "67b73bc90c",
+      "subject": "fix db discord id",
+      "author": "Eministar",
+      "date": "2026-04-29T13:54:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/67b73bc90c2a57a514560b3dbfd7795c14a551b7"
+    },
+    {
+      "buildId": "build-ceb8caa590",
+      "commit": "ceb8caa590fb4a0d66243f49ec7516a665461361",
+      "shortCommit": "ceb8caa590",
+      "subject": "feat(db): JSON-Backups unter .backup mit db:backup und Hook vor db push",
+      "author": "Eministar",
+      "date": "2026-04-29T13:46:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ceb8caa590fb4a0d66243f49ec7516a665461361"
+    },
+    {
+      "buildId": "build-bbc44e64a5",
+      "commit": "bbc44e64a548d4098a0ab98c2e0d7301345bccab",
+      "shortCommit": "bbc44e64a5",
+      "subject": "feat: Officer-Overflow-Fix + Academy/HR Task-Module mit Officer-Zuweisung",
+      "author": "Eministar",
+      "date": "2026-04-29T13:36:29Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/bbc44e64a548d4098a0ab98c2e0d7301345bccab"
+    },
+    {
+      "buildId": "build-05d6850b35",
+      "commit": "05d6850b3573d23f007601aeb61353aa7c1ec97d",
+      "shortCommit": "05d6850b35",
+      "subject": "feat: Officer-Overflow-Fix + Academy/HR Task-Module mit Officer-Zuweisung",
+      "author": "Eministar",
+      "date": "2026-04-27T13:16:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/05d6850b3573d23f007601aeb61353aa7c1ec97d"
+    },
+    {
+      "buildId": "build-54099343c5",
+      "commit": "54099343c5805b3f423ed5caee5097bac9efa25f",
+      "shortCommit": "54099343c5",
+      "subject": "Merge branch 'main' of https://github.com/Eministar/lspd-hr",
+      "author": "Eministar",
+      "date": "2026-04-26T21:32:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/54099343c5805b3f423ed5caee5097bac9efa25f"
+    },
+    {
+      "buildId": "build-ee13f26e7e",
+      "commit": "ee13f26e7e509ee0e12d7ca30c5bfa01999d8100",
+      "shortCommit": "ee13f26e7e",
+      "subject": "feat: Officer-Overflow-Fix + Academy/HR Task-Module mit Officer-Zuweisung",
+      "author": "Eministar",
+      "date": "2026-04-26T21:32:07Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ee13f26e7e509ee0e12d7ca30c5bfa01999d8100"
+    },
+    {
+      "buildId": "build-417a4e9d54",
+      "commit": "417a4e9d54a0891b8a974dd5f5f1327a384ced99",
+      "shortCommit": "417a4e9d54",
+      "subject": "Update README.md",
+      "author": "Eministar",
+      "date": "2026-04-26T21:12:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/417a4e9d54a0891b8a974dd5f5f1327a384ced99"
+    },
+    {
+      "buildId": "build-6a25372461",
+      "commit": "6a253724617e6ce42308c3fec1f4be979791776b",
+      "shortCommit": "6a25372461",
+      "subject": "a new design was added",
+      "author": "Eministar",
+      "date": "2026-04-24T16:14:02Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/6a253724617e6ce42308c3fec1f4be979791776b"
+    },
+    {
+      "buildId": "build-2bef698c30",
+      "commit": "2bef698c30b6624c3a4184241985835bd18dd9df",
+      "shortCommit": "2bef698c30",
+      "subject": "Upgrade all deps to latest: Prisma 7, TypeScript 6, ESLint 10, React 19.2.5",
+      "author": "Eministar",
+      "date": "2026-04-23T20:38:44Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2bef698c30b6624c3a4184241985835bd18dd9df"
+    },
+    {
+      "buildId": "build-3fb7ec3a7d",
+      "commit": "3fb7ec3a7d809fed8e7b81b6801782ac8ba28ecb",
+      "shortCommit": "3fb7ec3a7d",
+      "subject": "Update deps: react 19.2.5, @types/node 25, remove deprecated @types/bcryptjs",
+      "author": "Eministar",
+      "date": "2026-04-23T20:34:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3fb7ec3a7d809fed8e7b81b6801782ac8ba28ecb"
+    },
+    {
+      "buildId": "build-c69e6e3689",
+      "commit": "c69e6e3689435899ca2c7712723b1827972aef77",
+      "shortCommit": "c69e6e3689",
+      "subject": "Add shield logo to login, sidebar and favicon",
+      "author": "Eministar",
+      "date": "2026-04-23T20:31:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c69e6e3689435899ca2c7712723b1827972aef77"
+    },
+    {
+      "buildId": "build-76a4c145bc",
+      "commit": "76a4c145bcd75f8dad07f62f740163a91dd050eb",
+      "shortCommit": "76a4c145bc",
+      "subject": "Fix blank page: add server-side redirect to /login in middleware",
+      "author": "Eministar",
+      "date": "2026-04-23T20:30:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/76a4c145bcd75f8dad07f62f740163a91dd050eb"
+    },
+    {
+      "buildId": "build-3eb7c65cb9",
+      "commit": "3eb7c65cb932dda4ff268c3b41a7c33a722c6079",
+      "shortCommit": "3eb7c65cb9",
+      "subject": "Switch to MySQL with Prisma 6 - auto schema sync on start",
+      "author": "Eministar",
+      "date": "2026-04-23T20:24:48Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/3eb7c65cb932dda4ff268c3b41a7c33a722c6079"
+    },
+    {
+      "buildId": "build-7bae0a0e79",
+      "commit": "7bae0a0e79de83cf8e551300a026636eed69043f",
+      "shortCommit": "7bae0a0e79",
+      "subject": "Fix: init DB and seed on every server start",
+      "author": "Eministar",
+      "date": "2026-04-23T20:19:38Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7bae0a0e79de83cf8e551300a026636eed69043f"
+    },
+    {
+      "buildId": "build-4b8d161f83",
+      "commit": "4b8d161f834e0e2d2d15c8ed8dcf296bfe672a18",
+      "shortCommit": "4b8d161f83",
+      "subject": "Add shield logo to login, sidebar and favicon",
+      "author": "Eministar",
+      "date": "2026-04-23T20:15:35Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4b8d161f834e0e2d2d15c8ed8dcf296bfe672a18"
+    },
+    {
+      "buildId": "build-30b16df132",
+      "commit": "30b16df1326ba5d5fbf0c27d3575388cb6560080",
+      "shortCommit": "30b16df132",
+      "subject": "Add shield logo to login, sidebar and favicon",
+      "author": "Eministar",
+      "date": "2026-04-23T20:13:51Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/30b16df1326ba5d5fbf0c27d3575388cb6560080"
+    },
+    {
+      "buildId": "build-0e43a75547",
+      "commit": "0e43a755479abf5824209a32a7c0151e26a99797",
+      "shortCommit": "0e43a75547",
+      "subject": "feat: fix",
+      "author": "Eministar",
+      "date": "2026-04-23T20:09:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0e43a755479abf5824209a32a7c0151e26a99797"
+    },
+    {
+      "buildId": "build-027f965ba0",
+      "commit": "027f965ba00d655a6b51e8c3fff7f07a727b1639",
+      "shortCommit": "027f965ba0",
+      "subject": "feat: implement static effects handling across components for improved performance and accessibility",
+      "author": "Eministar",
+      "date": "2026-04-23T20:07:20Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/027f965ba00d655a6b51e8c3fff7f07a727b1639"
+    },
+    {
+      "buildId": "build-44aa13d39d",
+      "commit": "44aa13d39ddd68daef25b18556544aa5061ba22a",
+      "shortCommit": "44aa13d39d",
+      "subject": "feat: implement static effects handling across components for improved performance and accessibility",
+      "author": "Eministar",
+      "date": "2026-04-23T20:04:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/44aa13d39ddd68daef25b18556544aa5061ba22a"
+    }
+  ]
+}

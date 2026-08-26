@@ -6,17 +6,17 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 
 ## Überblick
 
-| Grade | Maximale Geldstrafe | Suspendierung / Sonstiges    |
-| ----- | ------------------- | ---------------------------- |
-| I     | 10.000 $            | keine weiteren Maßnahmen     |
-| II    | 20.000 $            | bis 48 h                     |
-| III   | 40.000 $            | unbefristet möglich          |
-| IV    | 60.000 $            | unbefristet; ggf. Entlassung |
-| V     | 85.000 $            | Entlassung                   |
+| Grade | Geldstrafe (wählbar) | SG-Runden (wählbar) | Suspendierung / Sonstiges    |
+| ----- | -------------------- | ------------------- | ---------------------------- |
+| I     | 10.000 $             | 1                   | keine weiteren Maßnahmen     |
+| II    | 20.000 $             | 2                   | bis 48 h                     |
+| III   | 40.000 $             | 3                   | unbefristet möglich          |
+| IV    | 60.000 $             | 4                   | unbefristet; ggf. Entlassung |
+| V     | 85.000 $             | 5                   | Entlassung                   |
 
 ## Allgemeine Hinweise
 
-- **Anwendung:** Maßnahmen sind an Schwere, Vorsatz und Wiederholung anzupassen; mehrere gleichzeitige Verstöße können in einer höheren Stufe zusammengefasst werden.
+- **Anwendung:** Beim Ausstellen wird je Penal Grade entweder die Geldstrafe oder die hinterlegte Anzahl an SG-Runden ausgewählt. Die Grade-Folge (z. B. Suspendierung oder Entlassung) bleibt zusätzlich dokumentiert.
 - **Dokumentation:** Jede Sanktion ist sachlich zu begründen und nachvollziehbar zu dokumentieren (Datum, Tathergang, einschlägige Vorschriften).
 - **Stellungnahme:** Betroffene sollen, soweit zumutbar, Gelegenheit zur Einlassung erhalten, bevor eine schwerwiegende Maßnahme (ab Grade III) festgesetzt wird.
 - **Kumulation:** Wiederholte Verstöße der niedrigeren Grade können als Eskalation in eine höhere Penal-Stufe eingestuft werden.
@@ -26,6 +26,8 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 ## Penal Grade I
 
 **Maximale Geldstrafe:** 10.000 $
+
+**Alternative:** 1 SG-Runde
 
 **Weitere Maßnahmen:** keine
 
@@ -43,6 +45,8 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 ## Penal Grade II
 
 **Maximale Geldstrafe:** 20.000 $
+
+**Alternative:** 2 SG-Runden
 
 **Weitere Maßnahmen:** maximale Suspendierung von 48 Stunden
 
@@ -66,6 +70,8 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 
 **Maximale Geldstrafe:** 40.000 $
 
+**Alternative:** 3 SG-Runden
+
 **Weitere Maßnahmen:** unbefristete Suspendierung möglich
 
 **Begründung (Auswahl, nicht abschließend):**
@@ -87,6 +93,8 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 
 **Maximale Geldstrafe:** 60.000 $
 
+**Alternative:** 4 SG-Runden
+
 **Weitere Maßnahmen:** unbefristete Suspendierung; gegebenenfalls Entlassung
 
 **Begründung (Auswahl, nicht abschließend):**
@@ -107,6 +115,8 @@ Diese Datei ist die zentrale Quelle für den Sanktionskatalog der HR-Abteilung. 
 ## Penal Grade V
 
 **Maximale Geldstrafe:** 85.000 $
+
+**Alternative:** 5 SG-Runden
 
 **Weitere Maßnahmen:** Entlassung
 

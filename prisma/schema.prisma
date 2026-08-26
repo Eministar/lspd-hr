@@ -30,6 +30,7 @@ enum TaskModule {
   SRU
   AIR_SUPPORT
   DETECTIVE
+  INTERNAL_AFFAIRS
 }
 
 enum TaskStatus {
@@ -214,6 +215,7 @@ model User {
   personFilesCreated        PersonFile[]              @relation("PersonFileCreator")
   reportsRecorded           Report[]                  @relation("ReportRecorder")
   reportUpdatesAuthored     ReportUpdate[]            @relation("ReportUpdateAuthor")
+  officerSearchesCreated    OfficerSearch[]           @relation("OfficerSearchCreator")
   transferRequestsCreated   TransferRequest[]         @relation("TransferRequestCreator")
   transferRequestsSignedHr  TransferRequest[]         @relation("TransferRequestHrSigner")
   transferRequestsSignedOf  TransferRequest[]         @relation("TransferRequestOfficerSigner")
@@ -249,10 +251,45 @@ model Unit {
   modules          Json?
   /// Zusätzliche Rechte, die diese Unit ihren Mitgliedern gewährt (analog UserGroup.permissions).
   permissions      Json     @default("[]")
+  /// Optionaler Discord-Rang dieser konkreten Unterunit (z. B. "HR Senior Officer").
+  discordRoleId    String?
+  /// Zugehörige Unitgruppe. Gruppierte Units erben Module, Rechte und Navigation von der Gruppe.
+  groupId          String?
+  /// Leitungs-Unterunits erhalten automatisch Leitungsrecht und die gemeinsame Leitungsrolle der Gruppe.
+  isLeadership     Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   userAssignments UserUnitAssignment[]
+  group           UnitGroup?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, sortOrder])
+}
+
+/// Übergeordnete fachliche Unit. Sie bündelt beliebig viele Unterunits/Ränge
+/// und steuert deren gemeinsame Module, Navigation und Discord-Rollen.
+model UnitGroup {
+  id                      String   @id @default(cuid())
+  key                     String   @unique
+  name                    String
+  description             String?  @db.Text
+  color                   String   @default("#d4af37")
+  icon                    String   @default("briefcase")
+  sortOrder               Int      @default(0)
+  active                  Boolean  @default(true)
+  showInNavigation        Boolean  @default(false)
+  modules                 Json?
+  permissions             Json     @default("[]")
+  /// Gemeinsame Discord-Rolle für alle Mitglieder eines Unterrangs dieser Gruppe.
+  memberDiscordRoleId     String?
+  /// Gemeinsame Discord-Rolle für Mitglieder aller als Leitung markierten Unterränge.
+  leadershipDiscordRoleId String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  units Unit[]
+
+  @@index([active, sortOrder])
 }
 
 /// Direkte Zuweisung einer Unit an einen Login-User (unabhängig vom Officer-Status).
@@ -276,10 +313,10 @@ model Rank {
   internalNumber Int?     @unique
   color          String   @default("#3B82F6")
   /// Inklusiver Zahlenbereich für Dienstnummern (nur Ziffern / Prefix+Ziffern). Null = kein autom. Bereich.
-  badgeMin  Int?
-  badgeMax  Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  badgeMin       Int?
+  badgeMax       Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   officers            Officer[]
   minimumForTrainings Training[]            @relation("TrainingMinimumRank")
@@ -571,8 +608,27 @@ model Officer {
   contracts         Contract[]
   jobApplication    JobApplication?       @relation("OfficerJobApplication")
   transferRequests  TransferRequest[]     @relation("OfficerTransferRequests")
+  searches          OfficerSearch[]
 
   @@index([badgeNumber])
+}
+
+/// Chronologischer Internal-Affairs-Eintrag zu einer durchgeführten
+/// Officer-Durchsuchung. Der erfassende Benutzer wird automatisch gespeichert.
+model OfficerSearch {
+  id                   String   @id @default(cuid())
+  officerId            String
+  officer              Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  conductedAt          DateTime
+  prohibitedItemsFound Boolean  @default(false)
+  foundItems           String   @db.Text
+  notes                String?  @db.Text
+  createdById          String?
+  createdBy            User?    @relation("OfficerSearchCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt            DateTime @default(now())
+
+  @@index([officerId, conductedAt])
+  @@index([createdById])
 }
 
 model CalendarEvent {
@@ -784,7 +840,9 @@ model Sanction {
   officer             Officer?       @relation(fields: [officerId], references: [id], onDelete: SetNull)
   reason              String         @db.Text
   penalGrade          String
+  measureType         String         @default("FINE")
   fineAmount          Int?
+  sgRounds            Int?
   penalty             String?        @db.Text
   status              SanctionStatus @default(OPEN)
   dueAt               DateTime?
@@ -835,6 +893,8 @@ model AuditLog {
   newValue  String?  @db.Text
   details   String?  @db.Text
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model ChangeSet {

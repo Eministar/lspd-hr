@@ -9,11 +9,14 @@ import {
   deleteSanctionDiscordMessage,
   dueAtFromDeadlineDays,
   escalateSanction,
-  formatFineAmount,
   getSanctionById,
+  isSanctionMeasureType,
+  normalizeSanctionMeasureType,
   parseDeadlineDays,
   parseDueAt,
   penalGradeLabel,
+  sanctionMeasureLabel,
+  resolveSanctionMeasure,
   resolveSanctionPenalty,
   sanctionInclude,
   sanctionStatusLabel,
@@ -26,7 +29,7 @@ function sanctionSummary(sanction: NonNullable<Awaited<ReturnType<typeof getSanc
   const officerName = sanction.officer
     ? `${sanction.officer.firstName} ${sanction.officer.lastName}`
     : `${sanction.previousFirstName ?? ''} ${sanction.previousLastName ?? ''}`.trim() || 'Unbekannter Officer'
-  return `${officerName}: ${penalGradeLabel(sanction.penalGrade)} · Geldstrafe: ${formatFineAmount(sanction.fineAmount)} · Status: ${sanctionStatusLabel(sanction.status)}`
+  return `${officerName}: ${penalGradeLabel(sanction.penalGrade)} · ${sanctionMeasureLabel(sanction)} · Status: ${sanctionStatusLabel(sanction.status)}`
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
@@ -72,24 +75,41 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const data: Record<string, unknown> = {}
     const changes: string[] = []
 
-    if ('penalGrade' in body) {
-      const penalGrade = cleanSanctionText(body.penalGrade).toUpperCase()
+    if ('penalGrade' in body || 'measureType' in body) {
+      const penalGrade = 'penalGrade' in body
+        ? cleanSanctionText(body.penalGrade).toUpperCase()
+        : existing.penalGrade
       if (!PENAL_GRADES.has(penalGrade)) return error('Penal Grade ist erforderlich')
       const penaltyRule = resolveSanctionPenalty(penalGrade)
       if (!penaltyRule) return error('Penal Grade ist erforderlich')
+
+      const previousMeasureType = normalizeSanctionMeasureType(existing.measureType)
+      const measureType = 'measureType' in body ? body.measureType : previousMeasureType
+      if (!isSanctionMeasureType(measureType)) return error('Maßnahme ist ungültig')
+      const selectedMeasure = resolveSanctionMeasure(penaltyRule, measureType)
+
       if (penalGrade !== existing.penalGrade) {
         data.penalGrade = penalGrade
-        data.fineAmount = penaltyRule.fineAmount
-        data.penalty = penaltyRule.penalty
         changes.push(`Penal Grade: ${penalGradeLabel(existing.penalGrade)} → ${penalGradeLabel(penalGrade)}`)
       }
-      if (penaltyRule.fineAmount !== existing.fineAmount) {
-        data.fineAmount = penaltyRule.fineAmount
-        changes.push(`Geldstrafe: ${formatFineAmount(existing.fineAmount)} → ${formatFineAmount(penaltyRule.fineAmount)}`)
+      if (existing.measureType !== measureType) {
+        data.measureType = measureType
+        if (measureType !== previousMeasureType) {
+          changes.push(`Maßnahme: ${sanctionMeasureLabel(existing)} → ${selectedMeasure.label}`)
+        }
+      }
+      if (selectedMeasure.fineAmount !== existing.fineAmount) {
+        data.fineAmount = selectedMeasure.fineAmount
+      }
+      if (selectedMeasure.sgRounds !== existing.sgRounds) {
+        data.sgRounds = selectedMeasure.sgRounds
       }
       if (penaltyRule.penalty !== existing.penalty) {
         data.penalty = penaltyRule.penalty
-        changes.push(`Maßnahme: ${existing.penalty ?? '—'} → ${penaltyRule.penalty}`)
+        changes.push(`Grade-Folge: ${existing.penalty ?? '—'} → ${penaltyRule.penalty}`)
+      }
+      if (measureType === previousMeasureType && (selectedMeasure.fineAmount !== existing.fineAmount || selectedMeasure.sgRounds !== existing.sgRounds)) {
+        changes.push(`Maßnahme angepasst: ${sanctionMeasureLabel(existing)} → ${selectedMeasure.label}`)
       }
     }
 

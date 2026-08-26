@@ -7,7 +7,7 @@ import { createAuditLog } from '@/lib/audit'
 import { isUniqueConstraintError } from '@/lib/prisma-errors'
 import { hasPermission } from '@/lib/permissions'
 import { normalizeUnitKeys, officerUnitKeys } from '@/lib/officer-units'
-import { getManagedUnitKeysForUser, hasOfficerWriteAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
+import { getManagedUnitKeysForUser, hasGlobalAdministratorAccess, hasOfficerWriteAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
 import { findBadgeNumberConflict, releaseTerminatedBadgeNumber, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import {
   collectUsedBadgeInts,
@@ -179,7 +179,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json()
     if (!body || typeof body !== 'object' || Array.isArray(body)) return error('Ungültige Anfrage')
     const canWriteOfficer = hasOfficerWriteAccess(user)
-    const unitLeadershipOnly = !canWriteOfficer && hasPermission(user, 'unit-leadership:manage')
+    const globalAdministrator = hasGlobalAdministratorAccess(user)
+    const hasUnitLeadership = hasPermission(user, 'unit-leadership:manage')
+    const unitLeadershipOnly = !canWriteOfficer && hasUnitLeadership
     if (unitLeadershipOnly) {
       const invalidField = Object.keys(body).find((key) => key !== 'unit' && key !== 'units')
       if (invalidField) return error('Unit-Leitung darf nur Unit-Zuweisungen ändern', 403)
@@ -245,8 +247,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (missing) return error('Unit nicht gefunden')
     }
 
-    if (unitLeadershipOnly) {
-      if (unitKeys === undefined) return error('Unit-Zuweisung ist erforderlich')
+    if (unitLeadershipOnly && unitKeys === undefined) return error('Unit-Zuweisung ist erforderlich')
+
+    // Auch HR-/Officer-Schreibrechte dürfen die Unit-Grenze nicht umgehen:
+    // Nur ein globaler Administrator darf Units außerhalb der eigenen
+    // markierten Leitungsgruppe vergeben oder entfernen.
+    if (unitKeys !== undefined && !globalAdministrator) {
       const managedUnitKeys = await getManagedUnitKeysForUser(user)
       const leadershipError = unitLeadershipChangeError(officerUnitKeys(existing), unitKeys, managedUnitKeys)
       if (leadershipError) return error(leadershipError, 403)

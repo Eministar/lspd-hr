@@ -7,9 +7,11 @@ import {
   PENAL_GRADES,
   cleanSanctionText,
   dueAtFromDeadlineDays,
-  formatFineAmount,
+  isSanctionMeasureType,
+  normalizeSanctionMeasureType,
   parseDeadlineDays,
   penalGradeLabel,
+  resolveSanctionMeasure,
   resolveSanctionPenalty,
   sanctionInclude,
   syncSanctionDiscordMessage,
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest) {
     const officerId = cleanSanctionText(body.officerId)
     const reason = cleanSanctionText(body.reason)
     const penalGrade = cleanSanctionText(body.penalGrade).toUpperCase()
+    const measureType = normalizeSanctionMeasureType(body.measureType)
     const deadlineDays = parseDeadlineDays(body.deadlineDays)
 
     if (!officerId) return error('Officer ist erforderlich')
@@ -71,6 +74,10 @@ export async function POST(req: NextRequest) {
     if (deadlineDays === undefined) return error('Frist muss zwischen 1 und 365 Tagen liegen')
     const penaltyRule = resolveSanctionPenalty(penalGrade)
     if (!penaltyRule) return error('Penal Grade ist erforderlich')
+    if (body.measureType !== undefined && !isSanctionMeasureType(body.measureType)) {
+      return error('Maßnahme ist ungültig')
+    }
+    const selectedMeasure = resolveSanctionMeasure(penaltyRule, measureType)
 
     const officer = await prisma.officer.findUnique({
       where: { id: officerId },
@@ -84,7 +91,9 @@ export async function POST(req: NextRequest) {
         officerId,
         reason,
         penalGrade,
-        fineAmount: penaltyRule.fineAmount,
+        measureType: selectedMeasure.measureType,
+        fineAmount: selectedMeasure.fineAmount,
+        sgRounds: selectedMeasure.sgRounds,
         penalty: penaltyRule.penalty,
         dueAt: dueAtFromDeadlineDays(deadlineDays),
         issuedByUserId: user.id,
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       officerId,
       newValue: penalGradeLabel(penalGrade),
-      details: `${officer.firstName} ${officer.lastName}: ${penalGradeLabel(penalGrade)} · Geldstrafe: ${formatFineAmount(penaltyRule.fineAmount)} · Maßnahme: ${penaltyRule.penalty} · Frist: ${deadlineDays ? `${deadlineDays} Tage` : '—'} · Grund: ${reason}`,
+      details: `${officer.firstName} ${officer.lastName}: ${penalGradeLabel(penalGrade)} · ${selectedMeasure.label} · Grade-Folge: ${penaltyRule.penalty} · Frist: ${deadlineDays ? `${deadlineDays} Tage` : '—'} · Grund: ${reason}`,
     })
 
     await syncSanctionDiscordMessage(sanction)

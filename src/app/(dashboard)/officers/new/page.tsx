@@ -17,7 +17,7 @@ import { useApi } from '@/hooks/use-api'
 import { ArrowLeft, FileSignature } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 
 interface Rank {
@@ -52,13 +52,20 @@ function splitApplicantName(value: string) {
 export default function NewOfficerPage() {
   const router = useRouter()
   const { addToast } = useToast()
+  const { user } = useAuth()
+  const canCreate = hasPermission(user, 'officers:write')
+  const globalAdministrator = Boolean(
+    user && (
+      user.groups.some((group) => ['admin', 'administration', 'administrator'].includes(group.name.toLowerCase())) ||
+      PERMISSIONS.every((permission) => user.permissions.includes(permission))
+    ),
+  )
+  const canAssignUnits = globalAdministrator || hasPermission(user, 'unit-leadership:manage')
   const { data: ranks } = useFetch<Rank[]>('/api/ranks')
-  const { data: units } = useFetch<Unit[]>('/api/units?active=true')
+  const { data: units } = useFetch<Unit[]>(canAssignUnits ? '/api/units?active=true&forAssignment=true' : null)
   const { data: applications } = useFetch<LinkableApplication[]>('/api/applications/linkable')
   const { data: contractTemplates } = useFetch<ContractTemplateOption[]>('/api/contract-templates?active=true')
   const { execute, loading } = useApi()
-  const { user } = useAuth()
-  const canCreate = hasPermission(user, 'officers:write')
 
   /** Werte, die zuletzt aus einer Bewerbung übernommen wurden. */
   const autofilledRef = useRef<{ firstName: string; lastName: string; discordId: string } | null>(null)
@@ -258,7 +265,13 @@ export default function NewOfficerPage() {
                 </div>
               )}
 
-              <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
+              {canAssignUnits ? (
+                <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
+              ) : (
+                <div className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/30 px-3 py-3 text-[11px] leading-5 text-[#7188a1]">
+                  Unit-Zuweisungen können nur markierte Unit-Leitungen ihrer eigenen Gruppe oder globale Administratoren vornehmen.
+                </div>
+              )}
             </div>
           </div>
 

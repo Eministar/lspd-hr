@@ -5,6 +5,7 @@ import { success, error, unauthorized, notFound, forbidden } from '@/lib/api-res
 import { sanitizePermissions } from '@/lib/permissions'
 import { getDiscordConfig, getDiscordGuildMember, addDiscordRoleToMember, removeDiscordRoleFromMember } from '@/lib/discord-integration'
 import { serializeDiscordBackedUser, upsertDiscordUser } from '@/lib/discord-auth'
+import { getManagedUnitKeysForUser, hasGlobalAdministratorAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
 
 function serializeUser<T extends {
   permissions: unknown
@@ -38,7 +39,7 @@ async function ensureUserId(id: string) {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAuth(['ADMIN'], ['users:manage'])
+    const currentUser = await requireAuth(['ADMIN'], ['users:manage'])
     const { id: rawId } = await params
     const id = await ensureUserId(rawId)
     const body = await req.json()
@@ -73,9 +74,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if ('unitIds' in body && Array.isArray(body.unitIds)) {
       const requestedUnitIds = body.unitIds.filter((uid: unknown): uid is string => typeof uid === 'string' && uid.length > 0)
       const validUnits = requestedUnitIds.length > 0
-        ? await prisma.unit.findMany({ where: { id: { in: requestedUnitIds } }, select: { id: true } })
+        ? await prisma.unit.findMany({ where: { id: { in: requestedUnitIds } }, select: { id: true, key: true } })
         : []
       const validUnitIds = validUnits.map((u) => u.id)
+
+      if (!hasGlobalAdministratorAccess(currentUser)) {
+        const [existingAssignments, managedUnitKeys] = await Promise.all([
+          prisma.userUnitAssignment.findMany({
+            where: { userId: id },
+            select: { unit: { select: { key: true } } },
+          }),
+          getManagedUnitKeysForUser(currentUser),
+        ])
+        const leadershipError = unitLeadershipChangeError(
+          existingAssignments.map((assignment) => assignment.unit.key),
+          validUnits.map((unit) => unit.key),
+          managedUnitKeys,
+        )
+        if (leadershipError) return error(leadershipError, 403)
+      }
 
       await prisma.$transaction(async (tx) => {
         await tx.userUnitAssignment.deleteMany({ where: { userId: id } })

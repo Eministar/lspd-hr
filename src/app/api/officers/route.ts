@@ -9,6 +9,7 @@ import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-he
 import { nextBadgeForRank, normalizeBadgeNumber } from '@/lib/badge-number'
 import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadgeNumberConflicts } from '@/lib/badge-blacklist'
 import { normalizeUnitKeys } from '@/lib/officer-units'
+import { getManagedUnitKeysForUser, hasGlobalAdministratorAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
 import { eligibleTrainingsForRank, withOfficerTrainingRows } from '@/lib/officer-trainings'
 import {
   canCheckDiscordGuildMembers,
@@ -148,6 +149,12 @@ export async function POST(req: NextRequest) {
       const activeKeys = new Set(activeUnits.map((unit) => unit.key))
       const missing = unitKeys.find((key) => !activeKeys.has(key))
       if (missing) return error('Unit nicht gefunden')
+    }
+
+    if (unitKeys.length > 0 && !hasGlobalAdministratorAccess(user)) {
+      const managedUnitKeys = await getManagedUnitKeysForUser(user)
+      const leadershipError = unitLeadershipChangeError([], unitKeys, managedUnitKeys)
+      if (leadershipError) return error(leadershipError, 403)
     }
 
     const officer = await prisma.officer.create({

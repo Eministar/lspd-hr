@@ -17,7 +17,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useAuth } from '@/context/auth-context'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import { hasPermission } from '@/lib/permissions'
-import { PENAL_GRADES, SANCTION_CATALOG, formatFineAmount, penalGradeLabel, resolveSanctionPenalty } from '@/lib/sanction-catalog'
+import { PENAL_GRADES, SANCTION_CATALOG, formatFineAmount, normalizeSanctionMeasureType, penalGradeLabel, resolveSanctionPenalty, type SanctionMeasureType } from '@/lib/sanction-catalog'
 import { cn } from '@/lib/utils'
 
 /** Serverantwort von `GET /api/sanctions` — Karte plus Officer-Bezug. */
@@ -40,6 +40,7 @@ interface SanctionListItem extends SanctionRecord {
 
 interface EditForm {
   penalGrade: string
+  measureType: SanctionMeasureType
   reason: string
   dueAt: string
 }
@@ -135,7 +136,7 @@ export default function SanktionenPage() {
   // Fristen werden gegen diese Zeitbasis geprüft; sie tickt minütlich nach.
   const [nowMs, setNowMs] = useState<number | null>(null)
   const [editing, setEditing] = useState<SanctionListItem | null>(null)
-  const [editForm, setEditForm] = useState<EditForm>({ penalGrade: 'I', reason: '', dueAt: '' })
+  const [editForm, setEditForm] = useState<EditForm>({ penalGrade: 'I', measureType: 'FINE', reason: '', dueAt: '' })
   const [toDelete, setToDelete] = useState<SanctionListItem | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -180,6 +181,8 @@ export default function SanktionenPage() {
           officer.rankName ?? '',
           sanction.reason,
           sanction.penalty ?? '',
+          sanction.measureType ?? '',
+          sanction.sgRounds === null || sanction.sgRounds === undefined ? '' : String(sanction.sgRounds),
           sanction.issuedBy?.displayName ?? '',
         ].join(' ').toLowerCase()
         return haystack.includes(needle)
@@ -214,8 +217,8 @@ export default function SanktionenPage() {
     }
   }
 
-  const handleMarkPaid = (id: string) =>
-    runAction('Sanktion als bezahlt markiert', () =>
+  const handleMarkPaid = (id: string, measureType?: string | null) =>
+    runAction(normalizeSanctionMeasureType(measureType) === 'SG_ROUNDS' ? 'Sanktion als erledigt markiert' : 'Sanktion als bezahlt markiert', () =>
       execute(`/api/sanctions/${id}`, { method: 'PATCH', body: JSON.stringify({ action: 'MARK_PAID' }) }),
     )
 
@@ -228,6 +231,7 @@ export default function SanktionenPage() {
     setEditing(sanction)
     setEditForm({
       penalGrade: PENAL_GRADES.has(sanction.penalGrade) ? sanction.penalGrade : 'I',
+      measureType: normalizeSanctionMeasureType(sanction.measureType),
       reason: sanction.reason,
       dueAt: sanction.dueAt?.split('T')[0] ?? '',
     })
@@ -240,6 +244,7 @@ export default function SanktionenPage() {
         method: 'PATCH',
         body: JSON.stringify({
           penalGrade: editForm.penalGrade,
+          measureType: editForm.measureType,
           reason: editForm.reason.trim(),
           dueAt: editForm.dueAt || null,
         }),
@@ -326,7 +331,7 @@ export default function SanktionenPage() {
                     officer={cardOfficer(sanction)}
                     canSanction={canManage && !busy}
                     variant={sanction.status === 'OPEN' ? 'open' : 'history'}
-                    onPaid={sanction.status === 'OPEN' ? () => void handleMarkPaid(sanction.id) : undefined}
+                    onPaid={sanction.status === 'OPEN' ? () => void handleMarkPaid(sanction.id, sanction.measureType) : undefined}
                     onEscalate={sanction.status === 'OPEN' ? () => void handleEscalate(sanction.id) : undefined}
                     onEdit={() => openEdit(sanction)}
                     onDelete={() => setToDelete(sanction)}
@@ -365,15 +370,34 @@ export default function SanktionenPage() {
               options={EDIT_PENAL_GRADE_OPTIONS}
             />
 
+            <Select
+              label="Maßnahme"
+              value={editForm.measureType}
+              onValueChange={(measureType) => setEditForm({ ...editForm, measureType: measureType as SanctionMeasureType })}
+              options={[
+                { value: 'FINE', label: `Geldstrafe · ${formatFineAmount(editRule.fineAmount)}` },
+                { value: 'SG_ROUNDS', label: `SG-Runden · ${editRule.sgRounds}` },
+              ]}
+            />
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
                 <p className="text-[12.5px] font-medium text-[#9fb0c4]">Geldstrafe</p>
-                <p className="mt-1 text-[14px] font-semibold text-[#d4af37]">{formatFineAmount(editRule.fineAmount)}</p>
+                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'FINE' ? 'text-[#d4af37]' : 'text-[#4a6585]')}>
+                  {editForm.measureType === 'FINE' ? formatFineAmount(editRule.fineAmount) : 'Nicht ausgewählt'}
+                </p>
               </div>
               <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-                <p className="text-[12.5px] font-medium text-[#9fb0c4]">Maßnahme</p>
-                <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{editRule.penalty}</p>
+                <p className="text-[12.5px] font-medium text-[#9fb0c4]">SG-Runden</p>
+                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'SG_ROUNDS' ? 'text-[#7dd3fc]' : 'text-[#4a6585]')}>
+                  {editForm.measureType === 'SG_ROUNDS' ? editRule.sgRounds : 'Nicht ausgewählt'}
+                </p>
               </div>
+            </div>
+
+            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Zusätzliche Grade-Folge</p>
+              <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{editRule.penalty}</p>
             </div>
 
             <DateField label="Frist" value={editForm.dueAt} onChange={(dueAt) => setEditForm({ ...editForm, dueAt })} />

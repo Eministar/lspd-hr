@@ -1,6 +1,6 @@
 {
   "name": "lspd-hr-dashboard",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "private": true,
   "engines": {
     "node": "22.x"
@@ -21,6 +21,7 @@
     "db:normalize-badges": "node scripts/normalize-badge-numbers.js",
     "db:backfill-case-numbers": "node scripts/backfill-application-case-numbers.js",
     "db:restore-discord-settings": "npx tsx scripts/restore-discord-settings.ts",
+    "release:sync": "tsx scripts/sync-commit-legend.ts",
     "db:studio": "npx prisma studio",
     "db:setup": "npm run db:backup && npx prisma db push && npx tsx prisma/seed.ts",
     "db:backup": "npx tsx prisma/backup.ts"

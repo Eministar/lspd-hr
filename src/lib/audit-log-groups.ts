@@ -39,6 +39,10 @@ export const AUDIT_LOG_GROUPS = {
     label: 'Patrol Board',
     actions: ['PATROL_BOARD_CREATED', 'PATROL_BOARD_UPDATED', 'PATROL_BOARD_DELETED'],
   },
+  internalAffairs: {
+    label: 'Internal Affairs',
+    actions: ['OFFICER_SEARCH_CREATED', 'OFFICER_SEARCH_DELETED'],
+  },
   system: {
     label: 'System & API',
     actions: [

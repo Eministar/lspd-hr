@@ -7,13 +7,24 @@ import {
 } from './discord-integration'
 import { prisma } from './prisma'
 import {
-  PENAL_GRADES,
   formatFineAmount,
+  normalizeSanctionMeasureType,
   penalGradeLabel,
+  sanctionMeasureLabel,
   resolveSanctionPenalty,
 } from './sanction-catalog'
 
-export { PENAL_GRADES, formatFineAmount, penalGradeLabel, resolveSanctionPenalty }
+export {
+  PENAL_GRADES,
+  formatFineAmount,
+  isSanctionMeasureType,
+  normalizeSanctionMeasureType,
+  penalGradeLabel,
+  sanctionMeasureLabel,
+  resolveSanctionPenalty,
+  resolveSanctionMeasure,
+  type SanctionMeasureType,
+} from './sanction-catalog'
 export const SANCTION_STATUSES = new Set(['OPEN', 'PAID', 'ESCALATED'])
 
 export const sanctionInclude = {
@@ -108,6 +119,7 @@ function sanctionDeadlineValue(sanction: SanctionWithRelations) {
 }
 
 function sanctionDiscordFields(sanction: SanctionWithRelations): DiscordField[] {
+  const measureType = normalizeSanctionMeasureType(sanction.measureType)
   const fields: DiscordField[] = [
     { name: 'Grund', value: sanction.reason, inline: false },
     {
@@ -115,10 +127,16 @@ function sanctionDiscordFields(sanction: SanctionWithRelations): DiscordField[] 
       value: `\`${sanction.penalGrade}\` · ${penalGradeLabel(sanction.penalGrade)}`,
       inline: true,
     },
-    { name: 'Geldstrafe', value: `**${formatFineAmount(sanction.fineAmount)}**`, inline: true },
+    {
+      name: 'Maßnahme',
+      value: measureType === 'SG_ROUNDS'
+        ? `**${sanction.sgRounds ?? '—'} SG-Runden**`
+        : `**Geldstrafe: ${formatFineAmount(sanction.fineAmount)}**`,
+      inline: true,
+    },
   ]
   if (sanction.penalty) {
-    fields.push({ name: 'Maßnahme', value: sanction.penalty, inline: false })
+    fields.push({ name: 'Grade-Folge', value: sanction.penalty, inline: false })
   }
   fields.push({ name: 'Frist', value: sanctionDeadlineValue(sanction), inline: true })
   fields.push({ name: 'Status', value: sanctionStatusLabel(sanction.status), inline: true })
@@ -182,10 +200,18 @@ export async function escalateSanction(
   if (source.status !== 'OPEN') return null
 
   const now = options?.now ?? new Date()
-  const doubledFine = source.fineAmount === null ? null : Math.min(source.fineAmount * 2, 2_147_483_647)
+  const measureType = normalizeSanctionMeasureType(source.measureType)
+  const sourceRule = resolveSanctionPenalty(source.penalGrade)
+  const sourceRounds = source.sgRounds ?? sourceRule?.sgRounds ?? null
+  const doubledFine = measureType === 'FINE' && source.fineAmount !== null
+    ? Math.min(source.fineAmount * 2, 2_147_483_647)
+    : null
+  const doubledRounds = measureType === 'SG_ROUNDS' && sourceRounds !== null
+    ? Math.min(sourceRounds * 2, 2_147_483_647)
+    : null
   const actorUserId = options?.actorUserId || source.issuedByUserId
-  const originalFine = formatFineAmount(source.fineAmount)
-  const newFine = formatFineAmount(doubledFine)
+  const originalMeasure = sanctionMeasureLabel({ measureType, fineAmount: source.fineAmount, sgRounds: sourceRounds })
+  const newMeasure = sanctionMeasureLabel({ measureType, fineAmount: doubledFine, sgRounds: doubledRounds })
   const dueText = source.dueAt ? formatDateTime(source.dueAt) : 'ohne Frist'
   const officer = officerSnapshot(source)
 
@@ -205,7 +231,9 @@ export async function escalateSanction(
         officerId: source.officerId,
         reason: `Nicht bezahlt bis ${dueText}. Ursprünglicher Grund: ${source.reason}`,
         penalGrade: source.penalGrade,
+        measureType,
         fineAmount: doubledFine,
+        sgRounds: doubledRounds,
         penalty: source.penalty
           ? `${source.penalty}\nAutomatische Verdopplung wegen nicht bezahlter Sanktion.`
           : 'Automatische Verdopplung wegen nicht bezahlter Sanktion.',
@@ -230,7 +258,7 @@ export async function escalateSanction(
   await Promise.all([
     syncSanctionDiscordMessage(original, {
       description: 'Sanktion wurde nicht bezahlt. Es wurde eine weitere Sanktion erstellt.',
-      note: `Geldstrafe: ${originalFine} → ${newFine}`,
+      note: `Maßnahme: ${originalMeasure} → ${newMeasure}`,
     }),
     syncSanctionDiscordMessage(createdSanction, {
       description: 'Automatische Folgesanktion wegen nicht bezahlter Sanktion.',
@@ -241,9 +269,9 @@ export async function escalateSanction(
     action: options?.manual ? 'SANCTION_ESCALATED_MANUALLY' : 'SANCTION_AUTO_ESCALATED',
     userId: actorUserId,
     officerId: source.officerId ?? undefined,
-    oldValue: originalFine,
-    newValue: newFine,
-    details: `${sanctionOfficerName(source)}: Sanktion nicht bezahlt, Geldstrafe verdoppelt (${originalFine} → ${newFine})`,
+    oldValue: originalMeasure,
+    newValue: newMeasure,
+    details: `${sanctionOfficerName(source)}: Sanktion nicht bezahlt, Maßnahme verdoppelt (${originalMeasure} → ${newMeasure})`,
   })
 
   return { original, createdSanction }

@@ -807,7 +807,10 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Unit-Rollen</p>
+                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Individuelle Unit-Rollen</p>
+                <p className="mb-3 text-[11px] leading-5 text-[#58718c]">
+                  Für gruppierte Units pflegst du die Rangrolle direkt unter „Units verwalten“. Diese Liste bleibt für eigenständige oder ältere Units verfügbar.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {discordData?.units.map((unit) => (
                       <Select

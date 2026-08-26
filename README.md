@@ -155,7 +155,7 @@ curl -X POST https://deine-domain/api/officers \
 curl -X POST https://deine-domain/api/sanctions \
   -H "Authorization: Bearer lspd_…" \
   -H "Content-Type: application/json" \
-  -d '{"officerId":"ckabc…","reason":"Dienstvergehen","penalGrade":"C","deadlineDays":14}'
+  -d '{"officerId":"ckabc…","reason":"Dienstvergehen","penalGrade":"III","measureType":"SG_ROUNDS","deadlineDays":14}'
 
 # Beförderungs-Liste ausführen
 curl -X POST https://deine-domain/api/rank-change-lists/{id}/execute \

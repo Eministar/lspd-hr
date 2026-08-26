@@ -1,13 +1,20 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
+import { requireAuth } from '@/lib/auth'
+import { queueAllOfficerRoleSync } from '@/lib/discord-integration'
 import { automaticPermissionsForRoleNames } from '@/lib/permissions'
+import { prisma } from '@/lib/prisma'
 import {
   composeUnitPermissions,
   sanitizeUnitIcon,
   sanitizeUnitModules,
 } from '@/lib/unit-modules'
+
+function discordRoleId(value: unknown) {
+  if (value === null || value === undefined || value === '') return null
+  return typeof value === 'string' && /^\d{17,22}$/.test(value.trim()) ? value.trim() : undefined
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -34,6 +41,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (typeof body.active === 'boolean') data.active = body.active
     if (typeof body.showInNavigation === 'boolean') data.showInNavigation = body.showInNavigation
 
+    if ('discordRoleId' in body) {
+      const roleId = discordRoleId(body.discordRoleId)
+      if (roleId === undefined) return error('Discord-Rollen-ID ist ungültig')
+      data.discordRoleId = roleId
+    }
+    if ('groupId' in body) {
+      const groupId = typeof body.groupId === 'string' && body.groupId.trim() ? body.groupId.trim() : null
+      if (groupId && !await prisma.unitGroup.findUnique({ where: { id: groupId }, select: { id: true } })) {
+        return error('Unitgruppe wurde nicht gefunden')
+      }
+      data.groupId = groupId
+      if (!groupId) data.isLeadership = false
+      if (groupId) data.showInNavigation = false
+    }
+    if (existing.groupId && !('groupId' in body)) data.showInNavigation = false
+    if (typeof body.isLeadership === 'boolean') {
+      const resultingGroupId = 'groupId' in data ? data.groupId : existing.groupId
+      data.isLeadership = Boolean(resultingGroupId) && body.isLeadership
+    }
+
     const modules = 'modules' in body ? sanitizeUnitModules(body.modules) : sanitizeUnitModules(existing.modules)
     if ('modules' in body) data.modules = modules
     if (Array.isArray(body.permissions) || 'modules' in body) {
@@ -50,6 +77,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const unit = await prisma.unit.update({ where: { id }, data })
+    const syncRelevantChange = unit.groupId !== existing.groupId
+      || unit.isLeadership !== existing.isLeadership
+      || unit.discordRoleId !== existing.discordRoleId
+      || unit.active !== existing.active
+    if (syncRelevantChange) {
+      queueAllOfficerRoleSync({
+        extraManagedRoleIds: existing.discordRoleId && existing.discordRoleId !== unit.discordRoleId
+          ? [existing.discordRoleId]
+          : [],
+      })
+    }
     return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules) })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
@@ -75,9 +113,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
         ],
       },
     })
-    if (officerCount > 0) return error('Unit wird noch von Officers verwendet')
+    const directUserCount = await prisma.userUnitAssignment.count({ where: { unitId: id } })
+    if (officerCount > 0 || directUserCount > 0) {
+      const usages = [
+        officerCount > 0 ? `${officerCount} Officer${officerCount === 1 ? '' : 's'}` : '',
+        directUserCount > 0 ? `${directUserCount} Benutzer${directUserCount === 1 ? '' : 'n'}` : '',
+      ].filter(Boolean).join(' und ')
+      return error(`Unit wird noch von ${usages} verwendet. Entferne zuerst die Zuweisungen.`)
+    }
 
     await prisma.unit.delete({ where: { id } })
+    if (unit.discordRoleId) queueAllOfficerRoleSync({ extraManagedRoleIds: [unit.discordRoleId] })
     return success({ message: 'Unit gelöscht' })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'

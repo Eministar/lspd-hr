@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { success, error, unauthorized , forbidden } from '@/lib/api-response'
 import { actionsForGroup, allGroupedActions } from '@/lib/audit-log-groups'
 import type { Prisma } from '@/generated/prisma/client'
+import { runAuditLogCleanup } from '@/lib/audit-log-retention'
 
 function clampNumber(raw: string | null, fallback: number, min: number, max: number) {
   const parsed = Number.parseInt(raw ?? '', 10)
@@ -14,6 +15,9 @@ function clampNumber(raw: string | null, fallback: number, min: number, max: num
 export async function GET(req: NextRequest) {
   try {
     await requireAuth(['ADMIN', 'HR', 'LEADERSHIP'], ['logs:view'])
+    void runAuditLogCleanup().catch((cleanupError) => {
+      console.error('[AuditLogs] Automatische Bereinigung fehlgeschlagen:', cleanupError)
+    })
 
     const { searchParams } = new URL(req.url)
     // `parseInt` liefert bei Müll NaN — das würde Prisma mit einem 500er

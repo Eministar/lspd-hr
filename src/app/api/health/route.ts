@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSetupStatus } from '@/lib/setup'
+import { runAuditLogCleanup } from '@/lib/audit-log-retention'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +63,11 @@ function overallCode(checks: HealthCheck[]): HealthCode {
 async function databaseCheck() {
   const { prisma } = await import('@/lib/prisma')
   await prisma.$queryRaw`SELECT 1`
+  // Health-Checks laufen typischerweise ohnehin regelmäßig und dienen damit
+  // als zusätzlicher Trigger für die tägliche, markerbasierte Bereinigung.
+  void runAuditLogCleanup().catch((error) => {
+    console.error('[Health] Audit-Protokoll-Bereinigung fehlgeschlagen:', error)
+  })
   const [users, officers] = await Promise.all([
     prisma.user.count(),
     prisma.officer.count(),
@@ -194,6 +200,7 @@ async function discordSyncCheck() {
     ...Object.values(config.rankRoleMap),
     ...Object.values(config.trainingRoleMap),
     ...Object.values(config.unitRoleMap),
+    ...config.unitGroups.flatMap((group) => [group.memberDiscordRoleId, group.leadershipDiscordRoleId]),
   ].filter(Boolean))
   const [totalOfficers, linkedOfficers] = await Promise.all([
     prisma.officer.count({ where: { status: { not: 'TERMINATED' } } }),

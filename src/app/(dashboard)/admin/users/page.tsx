@@ -44,6 +44,7 @@ interface UnitOption {
   name: string
   key: string
   active: boolean
+  group?: { name: string } | null
 }
 
 const READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
@@ -245,7 +246,7 @@ export default function UsersPage() {
                     key={unit.id}
                     checked={selectedUnitIds.includes(unit.id)}
                     onCheckedChange={(checked) => toggleUnit(unit.id, checked)}
-                    label={unit.name}
+                    label={unit.group ? `${unit.group.name} · ${unit.name}` : unit.name}
                     className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
                   />
                 ))}

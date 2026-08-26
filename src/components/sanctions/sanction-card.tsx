@@ -4,14 +4,16 @@ import Link from 'next/link'
 import { Check, Edit, Gavel, Trash2, TrendingUp, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { displayBadgeNumber } from '@/lib/badge-number'
-import { penalGradeLabel } from '@/lib/sanction-catalog'
+import { normalizeSanctionMeasureType, penalGradeLabel } from '@/lib/sanction-catalog'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
 
 export interface SanctionRecord {
   id: string
   reason: string
   penalGrade: string
+  measureType?: string | null
   fineAmount: number | null
+  sgRounds?: number | null
   penalty: string | null
   status: 'OPEN' | 'PAID' | 'ESCALATED'
   dueAt: string | null
@@ -122,6 +124,7 @@ export function SanctionCard({
   onDelete?: () => void
 }) {
   const cfg = SANCTION_STATUS_CONFIG[sanction.status]
+  const measureType = normalizeSanctionMeasureType(sanction.measureType)
   const showActions = canSanction && (onPaid || onEdit || onEscalate || onDelete)
 
   return (
@@ -143,7 +146,12 @@ export function SanctionCard({
               {sanctionStatusLabel(sanction.status)}
             </span>
           </div>
-          {sanction.fineAmount !== null && sanction.fineAmount > 0 && (
+          {measureType === 'SG_ROUNDS' ? (
+            <div className="flex items-baseline gap-1 rounded-[6px] border border-[#38bdf8]/20 bg-[#38bdf8]/10 px-2.5 py-1">
+              <span className="text-[13px] font-bold tabular-nums text-[#7dd3fc]">{sanction.sgRounds ?? '—'}</span>
+              <span className="text-[10px] font-medium text-[#67b9df]">SG-Runden</span>
+            </div>
+          ) : sanction.fineAmount !== null && sanction.fineAmount > 0 && (
             <div className="flex items-baseline gap-1 rounded-[6px] bg-[#d4af37]/10 border border-[#d4af37]/20 px-2.5 py-1">
               <span className="text-[13px] font-bold tabular-nums text-[#d4af37]">
                 {new Intl.NumberFormat('de-DE').format(sanction.fineAmount)}
@@ -156,11 +164,11 @@ export function SanctionCard({
         {/* Divider */}
         <div className="h-px bg-white/[0.05] mb-3" />
 
-        {/* Body: penalty + reason */}
+        {/* Body: grade consequence + reason */}
         {sanction.penalty && (
           <div className="mb-2 flex gap-2">
             <span className="mt-[2px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#94a3b8]" />
-            <p className="text-[12.5px] font-medium text-[#cbd5e1] leading-relaxed">{sanction.penalty}</p>
+            <p className="text-[12.5px] font-medium text-[#cbd5e1] leading-relaxed">Grade-Folge: {sanction.penalty}</p>
           </div>
         )}
         <p className="text-[12.5px] leading-relaxed text-[#8ea4bd]">{sanction.reason}</p>
@@ -179,7 +187,7 @@ export function SanctionCard({
           <div className="mt-3.5 flex flex-wrap gap-1.5 border-t border-white/[0.06] pt-3.5">
             {variant === 'open' && onPaid && (
               <Button size="sm" onClick={onPaid}>
-                <Check size={12} strokeWidth={2.5} /> Als bezahlt markieren
+                <Check size={12} strokeWidth={2.5} /> {measureType === 'SG_ROUNDS' ? 'Als erledigt markieren' : 'Als bezahlt markieren'}
               </Button>
             )}
             {onEdit && (

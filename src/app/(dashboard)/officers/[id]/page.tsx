@@ -29,7 +29,7 @@ import {
   getFlagLabel,
   getFlagColor,
 } from '@/lib/utils'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber } from '@/lib/badge-number'
@@ -38,8 +38,10 @@ import {
   PENAL_GRADES,
   SANCTION_CATALOG,
   formatFineAmount,
+  normalizeSanctionMeasureType,
   penalGradeLabel,
   resolveSanctionPenalty,
+  type SanctionMeasureType,
 } from '@/lib/sanction-catalog'
 import { CONTRACT_STATUS_META, type ContractStatusValue } from '@/lib/contracts'
 import { SanctionCard, type SanctionRecord } from '@/components/sanctions/sanction-card'
@@ -175,6 +177,7 @@ interface OfficerForm {
 }
 interface SanctionForm {
   penalGrade: string
+  measureType: SanctionMeasureType
   reason: string
   deadlineDays: string
   dueAt: string
@@ -202,6 +205,7 @@ const EMPTY_OFFICER_FORM: OfficerForm = {
 
 const EMPTY_SANCTION_FORM: SanctionForm = {
   penalGrade: 'I',
+  measureType: 'FINE',
   reason: '',
   deadlineDays: '7',
   dueAt: '',
@@ -276,7 +280,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const { execute } = useApi()
   const canViewOfficer = hasPermission(user, 'officers:view')
   const canEditOfficer = hasPermission(user, 'officers:write')
-  const canManageOfficerUnits = canEditOfficer || hasPermission(user, 'unit-leadership:manage')
+  const globalAdministrator = Boolean(
+    user && (
+      user.groups.some((group) => ['admin', 'administration', 'administrator'].includes(group.name.toLowerCase())) ||
+      PERMISSIONS.every((permission) => user.permissions.includes(permission))
+    ),
+  )
+  const canManageOfficerUnits = globalAdministrator || hasPermission(user, 'unit-leadership:manage')
   const canEditTrainings = hasPermission(user, 'officer-trainings:manage')
   const canDeleteOfficer = hasPermission(user, 'officers:delete')
   const canBlockPromotion = hasPermission(user, 'officers:promotion-block')
@@ -288,7 +298,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
   const canViewContracts = canManageContracts || hasPermission(user, 'contracts:view')
   const { data: officer, loading, refetch, setData: setOfficer } = useFetch<OfficerDetail>(canViewOfficer ? `/api/officers/${id}` : null)
   const { data: ranks } = useFetch<Rank[]>(canEditOfficer || canRankChange ? '/api/ranks' : null)
-  const { data: units } = useFetch<Unit[]>(canManageOfficerUnits ? '/api/units?active=true' : null)
+  const { data: units } = useFetch<Unit[]>(canManageOfficerUnits ? '/api/units?active=true&forAssignment=true' : null)
   // Up- und D-Ranks laufen über dieselben Listen; auswählbar sind offene Listen,
   // deren Einreichungen noch nicht geschlossen wurden.
   const { data: rankChangeLists } = useFetch<RankChangeList[]>(canRankChange ? '/api/rank-change-lists' : null)
@@ -435,6 +445,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     setEditingSanction(sanction)
     setSanctionForm({
       penalGrade: PENAL_GRADES.has(sanction.penalGrade) ? sanction.penalGrade : 'I',
+      measureType: normalizeSanctionMeasureType(sanction.measureType),
       reason: sanction.reason,
       deadlineDays: '',
       dueAt: sanction.dueAt?.split('T')[0] ?? '',
@@ -498,6 +509,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         body: JSON.stringify({
           ...(isEditingSanction ? {} : { officerId: id }),
           penalGrade: sanctionForm.penalGrade,
+          measureType: sanctionForm.measureType,
           reason: sanctionForm.reason.trim(),
           ...(isEditingSanction
             ? { dueAt: sanctionForm.dueAt || null }
@@ -512,13 +524,13 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const handleMarkSanctionPaid = async (sanctionId: string) => {
+  const handleMarkSanctionPaid = async (sanctionId: string, measureType?: string | null) => {
     try {
       await execute(`/api/sanctions/${sanctionId}`, {
         method: 'PATCH',
         body: JSON.stringify({ action: 'MARK_PAID' }),
       })
-      addToast({ type: 'success', title: 'Sanktion als bezahlt markiert' })
+      addToast({ type: 'success', title: normalizeSanctionMeasureType(measureType) === 'SG_ROUNDS' ? 'Sanktion als erledigt markiert' : 'Sanktion als bezahlt markiert' })
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -800,7 +812,17 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
+                      {canManageOfficerUnits ? (
+                        <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
+                      ) : (
+                        <div>
+                          <p className="mb-2 block text-[12.5px] font-medium text-[#9fb0c4]">Units</p>
+                          <div className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/30 px-3 py-2.5">
+                            <UnitBadges officer={officer} units={units ?? undefined} emptyClassName="text-[12px]" />
+                            <p className="mt-1.5 text-[10px] text-[#58718c]">Nur markierte Unit-Leitungen oder Administratoren dürfen Units ändern.</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
@@ -1110,7 +1132,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               <div className="space-y-2.5">
                 {openSanctions.map((sanction) => (
                   <SanctionCard key={sanction.id} sanction={sanction} canSanction={canSanction}
-                    onPaid={() => handleMarkSanctionPaid(sanction.id)}
+                    onPaid={() => handleMarkSanctionPaid(sanction.id, sanction.measureType)}
                     onEdit={() => openEditSanctionModal(sanction)}
                     onEscalate={() => handleEscalateSanction(sanction.id)}
                     onDelete={() => setSanctionToDelete(sanction)}
@@ -1337,15 +1359,34 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             options={PENAL_GRADE_OPTIONS}
           />
 
+          <Select
+            label="Maßnahme"
+            value={sanctionForm.measureType}
+            onValueChange={(measureType) => setSanctionForm({ ...sanctionForm, measureType: measureType as SanctionMeasureType })}
+            options={[
+              { value: 'FINE', label: `Geldstrafe · ${formatFineAmount(selectedSanctionRule.fineAmount)}` },
+              { value: 'SG_ROUNDS', label: `SG-Runden · ${selectedSanctionRule.sgRounds}` },
+            ]}
+          />
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
               <p className="text-[12.5px] font-medium text-[#9fb0c4]">Geldstrafe</p>
-              <p className="mt-1 text-[14px] font-semibold text-[#d4af37]">{formatFineAmount(selectedSanctionRule.fineAmount)}</p>
+              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'FINE' ? 'text-[#d4af37]' : 'text-[#4a6585]')}>
+                {sanctionForm.measureType === 'FINE' ? formatFineAmount(selectedSanctionRule.fineAmount) : 'Nicht ausgewählt'}
+              </p>
             </div>
             <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Maßnahme</p>
-              <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{selectedSanctionRule.penalty}</p>
+              <p className="text-[12.5px] font-medium text-[#9fb0c4]">SG-Runden</p>
+              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'SG_ROUNDS' ? 'text-[#7dd3fc]' : 'text-[#4a6585]')}>
+                {sanctionForm.measureType === 'SG_ROUNDS' ? selectedSanctionRule.sgRounds : 'Nicht ausgewählt'}
+              </p>
             </div>
+          </div>
+
+          <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
+            <p className="text-[12.5px] font-medium text-[#9fb0c4]">Zusätzliche Grade-Folge</p>
+            <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{selectedSanctionRule.penalty}</p>
           </div>
 
           {editingSanction ? (

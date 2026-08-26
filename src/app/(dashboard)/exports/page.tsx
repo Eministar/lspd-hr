@@ -22,7 +22,7 @@ interface Officer {
 const exports = [
   { title: 'Officer-Roster', description: 'Alle Officers als CSV', href: '/api/exports?type=officers&format=csv' },
   { title: 'Wochenbericht Dienstzeiten', description: 'Spielzeit und Sessions der aktuellen Woche als CSV', href: '/api/exports?type=duty-week&format=csv' },
-  { title: 'Sanktionen', description: 'Sanktionsliste mit Status, Fristen und Geldstrafen als CSV', href: '/api/exports?type=sanctions&format=csv' },
+  { title: 'Sanktionen', description: 'Sanktionsliste mit Status, Fristen, Geldstrafen oder SG-Runden als CSV', href: '/api/exports?type=sanctions&format=csv' },
   { title: 'Beförderungen / Degradierungen', description: 'Rangwechsel-Historie als CSV', href: '/api/exports?type=promotions&format=csv' },
 ]
 

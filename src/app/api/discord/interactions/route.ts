@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { getUserByDiscordId } from '@/lib/auth'
 import { getAllowDuplicateBadgeNumbers, getBadgePrefix } from '@/lib/settings-helpers'
 import {
   findBadgeNumberConflict,
@@ -24,6 +25,7 @@ import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 import { DISCORD_COMMANDS } from '@/lib/discord-commands'
 import { eligibleTrainingsForRank, isTrainingAvailableForRank } from '@/lib/officer-trainings'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
+import { getManagedUnitKeysForUser, hasGlobalAdministratorAccess, unitLeadershipChangeError } from '@/lib/unit-leadership'
 
 export const runtime = 'nodejs'
 
@@ -321,6 +323,21 @@ async function unitKeysFromText(value: string) {
   return normalizeUnitKeys(units.filter(Boolean).map((unit) => unit!.key))
 }
 
+async function unitAssignmentError(
+  actor: ReturnType<typeof actorFromInteraction>,
+  existingUnits: string[],
+  nextUnits: string[],
+  discordAdministrator: boolean,
+) {
+  if (discordAdministrator) return null
+
+  const appUser = actor.discordId ? await getUserByDiscordId(actor.discordId) : null
+  if (appUser && hasGlobalAdministratorAccess(appUser)) return null
+
+  const managedUnitKeys = appUser ? await getManagedUnitKeysForUser(appUser) : []
+  return unitLeadershipChangeError(existingUnits, nextUnits, managedUnitKeys)
+}
+
 async function systemUserId() {
   const user = await prisma.user.findFirst({ select: { id: true }, orderBy: { createdAt: 'asc' } })
   if (!user) throw new Error('Es existiert kein Dashboard-Benutzer für Log-Einträge.')
@@ -425,7 +442,11 @@ function runDeferred(interaction: DiscordInteraction, label: string, work: () =>
   return deferEphemeral()
 }
 
-async function performHire(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performHire(
+  options: DiscordOption[] | undefined,
+  actor: ReturnType<typeof actorFromInteraction>,
+  discordAdministrator: boolean,
+) {
   const discordId = userOption(options, 'discord')
   const firstName = textOption(options, 'vorname')
   const lastName = textOption(options, 'nachname')
@@ -454,6 +475,11 @@ async function performHire(options: DiscordOption[] | undefined, actor: ReturnTy
   await releaseTerminatedBadgeNumberConflicts(badgeNumber, prefix)
 
   const unitKeys = await unitKeysFromText(textOption(options, 'units'))
+  if (unitKeys.length > 0) {
+    const leadershipError = await unitAssignmentError(actor, [], unitKeys, discordAdministrator)
+    if (leadershipError) return leadershipError
+  }
+
   const officer = await prisma.officer.create({
     data: {
       discordId,
@@ -593,7 +619,11 @@ async function performTraining(options: DiscordOption[] | undefined, actor: Retu
   return `${training.label} wurde für ${officer.firstName} ${officer.lastName} auf ${completed ? 'abgeschlossen' : 'offen'} gesetzt.`
 }
 
-async function performUnit(options: DiscordOption[] | undefined, actor: ReturnType<typeof actorFromInteraction>) {
+async function performUnit(
+  options: DiscordOption[] | undefined,
+  actor: ReturnType<typeof actorFromInteraction>,
+  discordAdministrator: boolean,
+) {
   const discordId = userOption(options, 'discord')
   const action = textOption(options, 'aktion')
   const unit = await findUnit(textOption(options, 'unit'))
@@ -606,6 +636,9 @@ async function performUnit(options: DiscordOption[] | undefined, actor: ReturnTy
     : action === 'remove'
       ? current.filter((key) => key !== unit.key)
       : Array.from(new Set([...current, unit.key]))
+
+  const leadershipError = await unitAssignmentError(actor, current, next, discordAdministrator)
+  if (leadershipError) return leadershipError
 
   const updated = await prisma.officer.update({
     where: { id: officer.id },
@@ -976,13 +1009,13 @@ export async function POST(req: NextRequest) {
   const options = interaction.data?.options
   switch (commandName) {
     case 'lspd-einstellung':
-      return runDeferred(interaction, `Command: ${commandName}`, () => performHire(options, actor))
+      return runDeferred(interaction, `Command: ${commandName}`, () => performHire(options, actor, hasAdminPermission(interaction.member?.permissions)))
     case 'lspd-beförderung':
       return runDeferred(interaction, `Command: ${commandName}`, () => performPromotion(options, actor))
     case 'lspd-ausbildung':
       return runDeferred(interaction, `Command: ${commandName}`, () => performTraining(options, actor))
     case 'lspd-unit':
-      return runDeferred(interaction, `Command: ${commandName}`, () => performUnit(options, actor))
+      return runDeferred(interaction, `Command: ${commandName}`, () => performUnit(options, actor, hasAdminPermission(interaction.member?.permissions)))
     case 'lspd-kündigung':
       return runDeferred(interaction, `Command: ${commandName}`, () => performTermination(options, actor))
     case 'lspd-abmeldung':

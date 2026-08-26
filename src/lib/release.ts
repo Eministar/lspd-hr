@@ -1,14 +1,27 @@
 /**
  * Anzeige-Label (semver + Status). Bei Release `package.json` `"version"` anpassen.
  */
-export const APP_VERSION_LABEL = '1.1.2'
+export const APP_VERSION_LABEL = '1.1.3'
 
-/** Kurzes Build-Kürzel (Git-SHA, CI-Id, …). */
-export function releaseBuildShort(): string {
+/**
+ * Stabiler Bezeichner des aktuell ausgelieferten Commits.
+ *
+ * `next.config.ts` injiziert die SHA beim Build. Der Fallback ist bewusst
+ * nicht mehr `local`: Auch ein lokaler Build bleibt damit eindeutig einem
+ * Commit zugeordnet (oder wird transparent als `unknown` markiert).
+ */
+export function releaseBuildId(): string {
   const bid =
     typeof process.env.NEXT_PUBLIC_BUILD_ID === 'string' ? process.env.NEXT_PUBLIC_BUILD_ID.trim() : ''
-  if (!bid) return 'local'
-  if (bid === 'local') return 'local'
-  if (bid.length <= 10) return bid
-  return `${bid.slice(0, 10)}…`
+
+  if (!bid || bid.toLowerCase() === 'local') return 'unknown'
+  return bid
+}
+
+/** Anzeige-Kürzel der Build-ID für Footer und Release-Historie. */
+export function releaseBuildShort(): string {
+  const bid = releaseBuildId()
+  if (bid === 'unknown') return 'build-unknown'
+  const short = bid.length <= 10 ? bid : bid.slice(0, 10)
+  return `build-${short}`
 }

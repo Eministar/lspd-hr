@@ -53,6 +53,7 @@ const PRIMARY_KEYS: Record<string, string[]> = {
 const MODEL_DEPENDENCIES: Record<string, string[]> = {
   UserGroupMembership: ['User', 'UserGroup'],
   UserUnitAssignment: ['User', 'Unit'],
+  Unit: ['UnitGroup'],
   TierRank: ['Tier', 'Rank'],
   FormQuestion: ['FormTest'],
   FormResponse: ['FormTest'],

@@ -7,6 +7,7 @@ export const UNIT_MODULE_KEYS = [
   'sru',
   'air_support',
   'detective',
+  'internal_affairs',
 ] as const
 
 export type UnitModuleKey = (typeof UNIT_MODULE_KEYS)[number]
@@ -129,6 +130,16 @@ export const UNIT_MODULES: UnitModuleDefinition[] = [
     icon: 'fingerprint',
     viewPermission: 'detective:view',
     managePermissions: ['detective:manage'],
+  },
+  {
+    key: 'internal_affairs',
+    label: 'Internal Affairs',
+    shortLabel: 'IA',
+    description: 'Interne Dokumente und nachvollziehbare Durchsuchungsakten aller Officers.',
+    href: '/internal-affairs',
+    icon: 'search',
+    viewPermission: 'internal-affairs:view',
+    managePermissions: ['internal-affairs:manage'],
   },
 ]
 

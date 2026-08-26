@@ -60,6 +60,8 @@ const actionLabels: Record<string, string> = {
   PATROL_BOARD_CREATED: 'Patrol Board erstellt',
   PATROL_BOARD_UPDATED: 'Patrol Board bearbeitet',
   PATROL_BOARD_DELETED: 'Patrol Board gelöscht',
+  OFFICER_SEARCH_CREATED: 'Durchsuchung eingetragen',
+  OFFICER_SEARCH_DELETED: 'Durchsuchung gelöscht',
   API_TOKEN_CREATED: 'API-Token erstellt',
   API_TOKEN_REVOKED: 'API-Token widerrufen',
   API_TOKEN_HARD_DELETED: 'API-Token gelöscht',
@@ -78,6 +80,7 @@ const groupChipStyles: Record<AuditLogGroupKey | 'other', string> = {
   note: 'bg-[#2b2a12] text-[#d9d276]',
   calendar: 'bg-[#101f33] text-[#8aa8d8]',
   patrol: 'bg-[#0f2d3a] text-[#6cc3e8]',
+  internalAffairs: 'bg-[#0b2938] text-[#7dd3fc]',
   system: 'bg-[#22232b] text-[#a3a8c2]',
   other: 'bg-[#0f2340] text-[#888]',
 }

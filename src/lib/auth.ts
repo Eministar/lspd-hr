@@ -213,17 +213,55 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
   const { userId, discordId } = params
   const unitPermsLists: unknown[] = []
   const seenUnitIds = new Set<string>()
+  const seenGroupIds = new Set<string>()
+
+  const addUnitAccess = (unit: {
+    id: string
+    key: string
+    name: string
+    permissions: unknown
+    isLeadership?: boolean
+    group?: {
+      id: string
+      key: string
+      name: string
+      permissions: unknown
+      active: boolean
+    } | null
+  }) => {
+    if (seenUnitIds.has(unit.id)) return
+    if (unit.group) {
+      if (!unit.group.active) return
+      if (!seenGroupIds.has(unit.group.id)) {
+        seenGroupIds.add(unit.group.id)
+        unitPermsLists.push(unit.group.permissions)
+        unitPermsLists.push(automaticPermissionsForRoleNames([unit.group.key, unit.group.name]))
+      }
+      if (unit.isLeadership) unitPermsLists.push(['unit-leadership:manage'])
+    } else {
+      unitPermsLists.push(unit.permissions)
+      unitPermsLists.push(automaticPermissionsForRoleNames([unit.key, unit.name]))
+    }
+    seenUnitIds.add(unit.id)
+  }
 
   const directAssignments = await prisma.userUnitAssignment.findMany({
     where: { userId, unit: { active: true } },
-    select: { unit: { select: { id: true, key: true, name: true, permissions: true } } },
+    select: {
+      unit: {
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          permissions: true,
+          isLeadership: true,
+          group: { select: { id: true, key: true, name: true, permissions: true, active: true } },
+        },
+      },
+    },
   })
   for (const assignment of directAssignments) {
-    if (!seenUnitIds.has(assignment.unit.id)) {
-      seenUnitIds.add(assignment.unit.id)
-      unitPermsLists.push(assignment.unit.permissions)
-      unitPermsLists.push(automaticPermissionsForRoleNames([assignment.unit.key, assignment.unit.name]))
-    }
+    addUnitAccess(assignment.unit)
   }
 
   if (discordId) {
@@ -235,14 +273,17 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
     if (keys.length > 0) {
       const units = await prisma.unit.findMany({
         where: { key: { in: keys }, active: true },
-        select: { id: true, key: true, name: true, permissions: true },
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          permissions: true,
+          isLeadership: true,
+          group: { select: { id: true, key: true, name: true, permissions: true, active: true } },
+        },
       })
       for (const unit of units) {
-        if (!seenUnitIds.has(unit.id)) {
-          seenUnitIds.add(unit.id)
-          unitPermsLists.push(unit.permissions)
-          unitPermsLists.push(automaticPermissionsForRoleNames([unit.key, unit.name]))
-        }
+        addUnitAccess(unit)
       }
     }
   }
@@ -292,6 +333,11 @@ async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | nul
     groups: groups.map((g) => ({ id: g.id, name: g.name })),
     permissions,
   }
+}
+
+/** Lädt den effektiven Dashboard-User für signierte Discord-Interactions. */
+export async function getUserByDiscordId(discordId: string) {
+  return loadUserByDiscordId(discordId)
 }
 
 async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {

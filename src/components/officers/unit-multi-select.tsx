@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 interface UnitOption {
   key: string
   name: string
+  group?: { name: string } | null
 }
 
 interface UnitMultiSelectProps {
@@ -16,6 +17,13 @@ interface UnitMultiSelectProps {
 
 export function UnitMultiSelect({ label = 'Units', value, units, onChange }: UnitMultiSelectProps) {
   const selected = new Set(value)
+  const groupedUnits = Array.from((units ?? []).reduce((groups, unit) => {
+    const groupName = unit.group?.name ?? 'Eigenständige Units'
+    const current = groups.get(groupName) ?? []
+    current.push(unit)
+    groups.set(groupName, current)
+    return groups
+  }, new Map<string, UnitOption[]>()).entries())
 
   const toggle = (key: string, checked: boolean) => {
     if (checked) {
@@ -28,14 +36,21 @@ export function UnitMultiSelect({ label = 'Units', value, units, onChange }: Uni
   return (
     <div>
       <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">{label}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/35 p-3">
-        {(units ?? []).map((unit) => (
-          <Checkbox
-            key={unit.key}
-            checked={selected.has(unit.key)}
-            onCheckedChange={(checked) => toggle(unit.key, checked)}
-            label={unit.name}
-          />
+      <div className="space-y-3 rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/35 p-3">
+        {groupedUnits.map(([groupName, groupUnits]) => (
+          <div key={groupName}>
+            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.11em] text-[#607994]">{groupName}</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {groupUnits.map((unit) => (
+                <Checkbox
+                  key={unit.key}
+                  checked={selected.has(unit.key)}
+                  onCheckedChange={(checked) => toggle(unit.key, checked)}
+                  label={unit.name}
+                />
+              ))}
+            </div>
+          </div>
         ))}
         {(!units || units.length === 0) && (
           <p className="text-[12.5px] text-[#4a6585]">Keine aktiven Units vorhanden</p>

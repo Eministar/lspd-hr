@@ -9,6 +9,7 @@ import {
   Shield, GraduationCap, UserCog, Settings, LogOut, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
   ClipboardList, Megaphone, FileText, Gavel,
+  History,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -54,7 +55,7 @@ const mainNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { name: 'Ränge', href: '/admin/ranks', icon: Shield, permission: 'ranks:manage' },
   { name: 'Ausbildungen', href: '/admin/trainings', icon: GraduationCap, permission: 'trainings:manage' },
-  { name: 'Units & Module', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
+  { name: 'Units verwalten', href: '/admin/units', icon: Briefcase, permission: 'units:manage' },
   { name: 'Benutzer', href: '/admin/users', icon: UserCog, permission: 'users:manage' },
   { name: 'Benutzergruppen', href: '/admin/user-groups', icon: Users, permission: 'groups:manage' },
   { name: 'API-Tokens', href: '/admin/api-tokens', icon: KeyRound, permission: 'groups:manage' },
@@ -66,6 +67,7 @@ const adminNav: NavItem[] = [
 
 const accountNav: NavItem[] = [
   { name: 'Mein Konto', href: '/account', icon: KeyRound },
+  { name: 'Build-Historie', href: '/releases', icon: History },
 ]
 
 function isActivePath(pathname: string, href: string) {

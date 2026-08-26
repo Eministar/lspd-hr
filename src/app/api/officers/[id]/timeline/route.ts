@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { sessionDurationMs } from '@/lib/duty-times'
 import { PROBATION_ENTRY_RATING_LABELS, PROBATION_STATUS_LABELS, PROBATION_TYPE_LABELS } from '@/lib/probations'
+import { sanctionMeasureLabel } from '@/lib/sanction-catalog'
 
 type TimelineItem = {
   id: string
@@ -85,7 +86,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       title: `Sanktion ${sanction.penalGrade}`,
       description: sanction.reason,
       createdAt: sanction.createdAt,
-      meta: { status: sanction.status, fineAmount: sanction.fineAmount, actor: sanction.issuedBy?.displayName ?? 'Gelöscht' },
+      meta: { status: sanction.status, measure: sanctionMeasureLabel(sanction), actor: sanction.issuedBy?.displayName ?? 'Gelöscht' },
     })
   }
 

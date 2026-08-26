@@ -1,5 +1,7 @@
 import { APP_VERSION_LABEL, releaseBuildShort } from '@/lib/release'
 import { GITHUB_REPO_URL } from '@/lib/site'
+import Link from 'next/link'
+import { History } from 'lucide-react'
 
 function GitHubLogo({ className }: { className?: string }) {
   return (
@@ -31,7 +33,13 @@ export function AppFooter() {
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span>Version {APP_VERSION_LABEL}</span>
-          <span className="font-mono text-[#4f6680]">{releaseBuildShort()}</span>
+          <Link
+            href="/releases"
+            className="inline-flex items-center gap-1 font-mono text-[#8ea4bd] transition-colors hover:text-[#e2c45d]"
+            title="Build-Historie öffnen"
+          >
+            <History size={11} /> {releaseBuildShort()}
+          </Link>
           <a
             href={GITHUB_REPO_URL}
             target="_blank"

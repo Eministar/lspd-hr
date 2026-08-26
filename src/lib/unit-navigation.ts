@@ -13,7 +13,7 @@ import {
 } from '@/lib/unit-modules'
 import type { CurrentUser } from '@/lib/auth'
 
-const BOOTSTRAP_SETTING = 'units.navigationBootstrapped.v1'
+const BOOTSTRAP_SETTING = 'units.navigationBootstrapped.v2'
 
 const DEFAULT_NAVIGATION_UNITS: {
   key: string
@@ -22,6 +22,7 @@ const DEFAULT_NAVIGATION_UNITS: {
   color: string
   icon: UnitIconKey
   module: UnitModuleKey
+  defaultAccess?: 'view' | 'manage'
   sortOrder: number
 }[] = [
   { key: 'ACADEMY', name: 'Recruitment & Training', description: 'Ausbildung, Recruiting und Nachwuchsarbeit.', color: '#d4af37', icon: 'graduation-cap', module: 'academy', sortOrder: 10 },
@@ -30,6 +31,7 @@ const DEFAULT_NAVIGATION_UNITS: {
   { key: 'SRU', name: 'S.R.U.', description: 'Taktische Einsatz- und Spezialaufgaben.', color: '#dc2626', icon: 'shield', module: 'sru', sortOrder: 40 },
   { key: 'AIR_SUPPORT', name: 'Air-Support Division', description: 'Luftunterstützung und Flugdienst.', color: '#38bdf8', icon: 'plane', module: 'air_support', sortOrder: 50 },
   { key: 'DETECTIVE', name: 'Detective Unit', description: 'Ermittlungen und Fallbearbeitung.', color: '#a78bfa', icon: 'fingerprint', module: 'detective', sortOrder: 60 },
+  { key: 'INTERNAL_AFFAIRS', name: 'Internal Affairs', description: 'Interne Ermittlungen, Dokumentation und Durchsuchungsakten.', color: '#0ea5e9', icon: 'search', module: 'internal_affairs', defaultAccess: 'manage', sortOrder: 70 },
 ]
 
 let bootstrapPromise: Promise<void> | null = null
@@ -65,7 +67,7 @@ async function bootstrapDefaultNavigationUnits() {
     const selectedModules: UnitModuleSelection = existing
       ? sanitizeUnitModules(existing.modules)
       : {}
-    if (!selectedModules[blueprint.module]) selectedModules[blueprint.module] = 'view'
+    if (!selectedModules[blueprint.module]) selectedModules[blueprint.module] = blueprint.defaultAccess ?? 'view'
 
     if (existing) {
       await prisma.unit.update({
@@ -144,12 +146,27 @@ function userAccessForModule(user: CurrentUser, key: UnitModuleKey) {
 
 export async function listNavigationUnitsForUser(user: CurrentUser): Promise<NavigationUnit[]> {
   await ensureDefaultNavigationUnits()
-  const units = await prisma.unit.findMany({
-    where: { active: true, showInNavigation: true },
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-  })
+  const [groups, standaloneUnits] = await Promise.all([
+    prisma.unitGroup.findMany({
+      where: { active: true, showInNavigation: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    }),
+    prisma.unit.findMany({
+      where: { active: true, showInNavigation: true, groupId: null },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    }),
+  ])
 
-  return units.flatMap((unit) => {
+  const navigationFor = (unit: {
+    id: string
+    key: string
+    name: string
+    description: string | null
+    color: string
+    icon: string
+    sortOrder: number
+    modules: unknown
+  }): NavigationUnit | null => {
     const selection = sanitizeUnitModules(unit.modules)
     const modules = (Object.keys(selection) as UnitModuleKey[]).flatMap((key) => {
       const access = userAccessForModule(user, key)
@@ -165,9 +182,9 @@ export async function listNavigationUnitsForUser(user: CurrentUser): Promise<Nav
         access,
       } satisfies NavigationModule]
     })
-    if (modules.length === 0) return []
+    if (modules.length === 0) return null
 
-    return [{
+    return {
       id: unit.id,
       key: unit.key,
       name: unit.name,
@@ -177,8 +194,18 @@ export async function listNavigationUnitsForUser(user: CurrentUser): Promise<Nav
       sortOrder: unit.sortOrder,
       href: modules.length === 1 ? modules[0].href : `/units/${encodeURIComponent(unit.key)}`,
       modules,
-    } satisfies NavigationUnit]
+    } satisfies NavigationUnit
+  }
+
+  const grouped = groups.flatMap((group) => {
+    const navigationUnit = navigationFor(group)
+    return navigationUnit ? [navigationUnit] : []
   })
+  const standalone = standaloneUnits.flatMap((unit) => {
+    const navigationUnit = navigationFor(unit)
+    return navigationUnit ? [navigationUnit] : []
+  })
+  return [...grouped, ...standalone].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'de'))
 }
 
 export async function getNavigationUnitForUser(user: CurrentUser, key: string) {

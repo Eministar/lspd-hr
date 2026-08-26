@@ -4,6 +4,7 @@ import { runOfficerStatusAutomation } from '@/lib/absence-status'
 import { syncDiscordAbsenceStatusMessage, syncDiscordDutyStatusMessage } from '@/lib/discord-integration'
 import { queueDiscordWebhookEvent } from '@/lib/discord-webhook'
 import { runSanctionDeadlineAutomation } from '@/lib/sanctions'
+import { runAuditLogCleanup } from '@/lib/audit-log-retention'
 
 export const runtime = 'nodejs'
 
@@ -20,9 +21,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const [result, sanctionResult] = await Promise.all([
+    const [result, sanctionResult, auditLogCleanup] = await Promise.all([
       runOfficerStatusAutomation({ force: true }),
       runSanctionDeadlineAutomation(),
+      runAuditLogCleanup(),
     ])
     const panelResults = await Promise.allSettled([
       syncDiscordAbsenceStatusMessage(),
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
     return success({
       ...result,
       ...sanctionResult,
+      auditLogCleanup,
       panelsUpdated: panelResults.filter((item) => item.status === 'fulfilled').length,
     })
   } catch (e: unknown) {

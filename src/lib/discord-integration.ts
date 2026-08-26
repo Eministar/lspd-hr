@@ -88,6 +88,7 @@ export type DiscordConfig = {
   rankRoleMap: Record<string, string>
   trainingRoleMap: Record<string, string>
   unitRoleMap: Record<string, string>
+  unitGroups: DiscordUnitGroup[]
   /// Ebenen: eine Discord-Rolle, die Officer mit einem der zugewiesenen Ränge
   /// automatisch erhalten. Aus der DB (Tier/TierRank) geladen.
   tiers: DiscordTier[]
@@ -96,6 +97,15 @@ export type DiscordConfig = {
 export type DiscordTier = {
   discordRoleId: string
   rankIds: string[]
+}
+
+export type DiscordUnitGroup = {
+  key: string
+  active: boolean
+  memberDiscordRoleId: string
+  leadershipDiscordRoleId: string
+  unitKeys: string[]
+  leadershipUnitKeys: string[]
 }
 
 type OfficerForDiscord = {
@@ -699,13 +709,23 @@ async function discordFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function getDiscordConfig(): Promise<DiscordConfig> {
-  const [rows, tierRows] = await Promise.all([
+  const [rows, tierRows, unitRows, unitGroupRows] = await Promise.all([
     prisma.systemSetting.findMany({
       where: { key: { in: Object.values(DISCORD_SETTING_KEYS) } },
     }),
     prisma.tier.findMany({
       where: { discordRoleId: { not: null } },
       select: { discordRoleId: true, ranks: { select: { rankId: true } } },
+    }),
+    prisma.unit.findMany({ select: { key: true, discordRoleId: true } }),
+    prisma.unitGroup.findMany({
+      select: {
+        key: true,
+        active: true,
+        memberDiscordRoleId: true,
+        leadershipDiscordRoleId: true,
+        units: { select: { key: true, isLeadership: true } },
+      },
     }),
   ])
   const map = Object.fromEntries(rows.map((row) => [row.key, row.value]))
@@ -732,6 +752,24 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
   const dbAdminRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.adminRoleIds], []))
   const envContractAuditorRoles = cleanRoleIds(envContractAuditorRoleIds())
   const dbContractAuditorRoles = cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.contractAuditorRoleIds], []))
+  const legacyUnitRoleMap = cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {}))
+  const unitRoleMap = {
+    ...legacyUnitRoleMap,
+    ...Object.fromEntries(
+      unitRows.map((unit) => [
+        unit.key,
+        unit.discordRoleId && /^\d{17,22}$/.test(unit.discordRoleId) ? unit.discordRoleId : '',
+      ]),
+    ),
+  }
+  const unitGroups: DiscordUnitGroup[] = unitGroupRows.map((group) => ({
+    key: group.key,
+    active: group.active,
+    memberDiscordRoleId: snowflake(group.memberDiscordRoleId),
+    leadershipDiscordRoleId: snowflake(group.leadershipDiscordRoleId),
+    unitKeys: group.units.map((unit) => unit.key),
+    leadershipUnitKeys: group.units.filter((unit) => unit.isLeadership).map((unit) => unit.key),
+  }))
 
   return {
     guildId: envFirst(envGuildId(), map[DISCORD_SETTING_KEYS.guildId]),
@@ -759,7 +797,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     ),
     rankRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.rankRoleMap], {})),
     trainingRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.trainingRoleMap], {})),
-    unitRoleMap: cleanRoleMap(parseJson(map[DISCORD_SETTING_KEYS.unitRoleMap], {})),
+    unitRoleMap,
+    unitGroups,
     tiers,
   }
 }
@@ -916,6 +955,7 @@ export function managedDiscordRoleIds(config: DiscordConfig, extraManagedRoleIds
     ...Object.values(config.rankRoleMap),
     ...Object.values(config.trainingRoleMap),
     ...Object.values(config.unitRoleMap),
+    ...config.unitGroups.flatMap((group) => [group.memberDiscordRoleId, group.leadershipDiscordRoleId]),
     ...config.tiers.map((tier) => tier.discordRoleId),
     config.promotionBlockRoleId,
     ...extraManagedRoleIds,
@@ -935,10 +975,22 @@ function dashboardGroupIdsForRoles(roleIds: string[], config: DiscordConfig) {
 function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
   if (officer.status === 'TERMINATED') return []
 
+  const assignedUnitKeys = officerUnitKeys(officer)
+  const assignedUnitSet = new Set(assignedUnitKeys)
+  const unitGroupRoles = config.unitGroups
+    .filter((group) => group.active && group.unitKeys.some((unitKey) => assignedUnitSet.has(unitKey)))
+    .flatMap((group) => [
+      group.memberDiscordRoleId,
+      group.leadershipUnitKeys.some((unitKey) => assignedUnitSet.has(unitKey))
+        ? group.leadershipDiscordRoleId
+        : '',
+    ])
+
   return Array.from(new Set([
     ...config.employeeRoleIds,
     config.rankRoleMap[officer.rankId],
-    ...officerUnitKeys(officer).map((unitKey) => config.unitRoleMap[unitKey]),
+    ...assignedUnitKeys.map((unitKey) => config.unitRoleMap[unitKey]),
+    ...unitGroupRoles,
     ...(officer.trainings ?? [])
       .filter((training) => training.completed)
       .map((training) => config.trainingRoleMap[training.trainingId]),

@@ -5,7 +5,7 @@ import { error, unauthorized } from '@/lib/api-response'
 import { getDutyTimesSnapshot, formatDuration } from '@/lib/duty-times'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
-import { formatFineAmount, penalGradeLabel } from '@/lib/sanction-catalog'
+import { formatFineAmount, normalizeSanctionMeasureType, penalGradeLabel } from '@/lib/sanction-catalog'
 import { withOfficerTrainingRows } from '@/lib/officer-trainings'
 import { PROBATION_STATUS_LABELS, PROBATION_TYPE_LABELS } from '@/lib/probations'
 
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
     const rows = [
-      ['Datum', 'Officer', 'Dienstnummer', 'Rang', 'Penal Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Frist', 'Grund', 'Ausgestellt von'],
+      ['Datum', 'Officer', 'Dienstnummer', 'Rang', 'Penal Grade', 'Status', 'Maßnahme', 'Geldstrafe', 'SG-Runden', 'Grade-Folge', 'Frist', 'Grund', 'Ausgestellt von'],
       ...sanctions.map((sanction) => [
         formatDateTime(sanction.createdAt),
         sanction.officer ? `${sanction.officer.firstName} ${sanction.officer.lastName}` : `${sanction.previousFirstName ?? ''} ${sanction.previousLastName ?? ''}`.trim(),
@@ -127,7 +127,8 @@ export async function GET(req: NextRequest) {
         sanction.officer?.rank.name ?? sanction.previousRank ?? '',
         penalGradeLabel(sanction.penalGrade),
         sanction.status,
-        formatFineAmount(sanction.fineAmount),
+        normalizeSanctionMeasureType(sanction.measureType) === 'FINE' ? formatFineAmount(sanction.fineAmount) : '',
+        normalizeSanctionMeasureType(sanction.measureType) === 'SG_ROUNDS' ? String(sanction.sgRounds ?? '') : '',
         sanction.penalty ?? '',
         formatDateTime(sanction.dueAt),
         sanction.reason,
@@ -217,7 +218,7 @@ export async function GET(req: NextRequest) {
           },
           { title: 'Ausbildungen', rows: [['Ausbildung', 'Status'], ...officerWithTrainingRows.trainings.map((item) => [item.training.label, item.completed ? 'Abgeschlossen' : 'Offen'])] },
           { title: 'Rangverlauf', rows: [['Datum', 'Von', 'Nach', 'Notiz'], ...officer.promotionLogs.map((item) => [formatDateTime(item.createdAt), item.oldRank.name, item.newRank.name, item.note ?? ''])] },
-          { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Geldstrafe', 'Maßnahme', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), penalGradeLabel(item.penalGrade), item.status, formatFineAmount(item.fineAmount), item.penalty ?? '', item.reason])] },
+          { title: 'Sanktionen', rows: [['Datum', 'Grade', 'Status', 'Maßnahme', 'Grade-Folge', 'Grund'], ...officer.sanctions.map((item) => [formatDateTime(item.createdAt), penalGradeLabel(item.penalGrade), item.status, normalizeSanctionMeasureType(item.measureType) === 'SG_ROUNDS' ? `${item.sgRounds ?? '—'} SG-Runden` : formatFineAmount(item.fineAmount), item.penalty ?? '', item.reason])] },
           { title: 'Notizen', rows: [['Datum', 'Titel', 'Inhalt'], ...officer.officerNotes.map((item) => [formatDateTime(item.createdAt), item.title ?? '', item.content])] },
         ],
       ), { headers: { 'content-type': 'text/html; charset=utf-8' } })

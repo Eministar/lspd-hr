@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { CurrentUser } from '@/lib/auth'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { officerUnitKeys } from '@/lib/officer-units'
 
 function normalizedSet(value: string[]) {
@@ -19,26 +19,76 @@ export function hasOfficerWriteAccess(user: CurrentUser) {
   return user.groups.some((group) => ['admin', 'administration', 'hr'].includes(group.name.toLowerCase()))
 }
 
+/**
+ * Globale Administratoren dürfen Unit-Zuweisungen über alle Gruppen hinweg
+ * bearbeiten. Das ist absichtlich enger als `officers:write`: HR- oder andere
+ * Fachberechtigungen sollen niemals die Gruppen-Grenze einer Unit-Leitung
+ * aushebeln können.
+ */
+export function hasGlobalAdministratorAccess(user: CurrentUser) {
+  const hasAdministratorGroup = user.groups.some((group) =>
+    ['admin', 'administration', 'administrator'].includes(group.name.toLowerCase()),
+  )
+  return hasAdministratorGroup || PERMISSIONS.every((permission) => user.permissions.includes(permission))
+}
+
 export async function getManagedUnitKeysForUser(user: CurrentUser): Promise<string[]> {
-  if (!hasPermission(user, 'unit-leadership:manage') || !user.discordId) return []
+  if (!hasPermission(user, 'unit-leadership:manage')) return []
 
-  const linkedOfficer = await prisma.officer.findFirst({
-    where: {
-      discordId: user.discordId,
-      status: { not: 'TERMINATED' },
-    },
-    select: {
-      unit: true,
-      units: true,
-    },
+  const [linkedOfficer, directAssignments] = await Promise.all([
+    user.discordId
+      ? prisma.officer.findFirst({
+          where: {
+            discordId: user.discordId,
+            status: { not: 'TERMINATED' },
+          },
+          select: { unit: true, units: true },
+        })
+      : Promise.resolve(null),
+    prisma.userUnitAssignment.findMany({
+      where: { userId: user.id, unit: { active: true } },
+      select: {
+        unit: {
+          select: {
+            key: true,
+            isLeadership: true,
+            groupId: true,
+            group: { select: { active: true } },
+          },
+        },
+      },
+    }),
+  ])
+
+  const ownKeys = new Set([
+    ...(linkedOfficer ? officerUnitKeys(linkedOfficer) : []),
+    ...directAssignments.map((assignment) => assignment.unit.key),
+  ])
+  if (ownKeys.size === 0) return []
+
+  const ownUnits = await prisma.unit.findMany({
+    where: { key: { in: Array.from(ownKeys) }, active: true },
+    select: { key: true, isLeadership: true, groupId: true, group: { select: { active: true } } },
   })
+  const leadershipGroupIds = ownUnits
+    .filter((unit) => unit.isLeadership && unit.groupId && unit.group?.active)
+    .map((unit) => unit.groupId as string)
+  const standaloneLeadershipKeys = ownUnits
+    .filter((unit) => unit.isLeadership && !unit.groupId && unit.group?.active !== false)
+    .map((unit) => unit.key)
 
-  return linkedOfficer ? officerUnitKeys(linkedOfficer) : []
+  if (leadershipGroupIds.length === 0) return standaloneLeadershipKeys
+
+  const groupUnits = await prisma.unit.findMany({
+    where: { groupId: { in: leadershipGroupIds }, active: true },
+    select: { key: true },
+  })
+  return Array.from(new Set([...standaloneLeadershipKeys, ...groupUnits.map((unit) => unit.key)]))
 }
 
 export function unitLeadershipChangeError(existingUnits: string[], nextUnits: string[], managedUnits: string[]) {
   const managed = normalizedSet(managedUnits)
-  if (managed.size === 0) return 'Keine verknüpfte Unit für Unit-Leitung'
+  if (managed.size === 0) return 'Nur markierte Unit-Leitungen oder globale Administratoren dürfen Units zuweisen'
 
   const existingUnmanaged = existingUnits.filter((key) => !managed.has(key))
   const nextUnmanaged = nextUnits.filter((key) => !managed.has(key))

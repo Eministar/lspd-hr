@@ -5,6 +5,7 @@ import { hasPermission } from '@/lib/permissions'
 import { getDutyTimesSnapshot } from '@/lib/duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from '@/lib/absence-status'
 import { eligibleTrainingsForRank, isTrainingAvailableForRank } from '@/lib/officer-trainings'
+import { runAuditLogCleanup } from '@/lib/audit-log-retention'
 
 const RECENT_WINDOW_DAYS = 30
 const STATUS_LABELS: Record<string, string> = {
@@ -31,6 +32,9 @@ export async function GET() {
   // unnötig verlangsamen. Ergebnis basiert auf dem zuletzt gespeicherten Stand.
   void runOfficerStatusAutomation().catch((err) => {
     console.error('[Stats] Status-Automation fehlgeschlagen:', err)
+  })
+  void runAuditLogCleanup().catch((err) => {
+    console.error('[Stats] Audit-Protokoll-Bereinigung fehlgeschlagen:', err)
   })
 
   const canViewLogs = hasPermission(user, 'logs:view')

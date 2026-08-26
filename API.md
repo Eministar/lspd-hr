@@ -332,10 +332,15 @@ Stellt eine neue Sanktion aus. Discord-Statusaktualisierung erfolgt automatisch.
 {
   "officerId": "ckabc",
   "reason": "Dienstvergehen",
-  "penalGrade": "C",
+  "penalGrade": "III",
+  "measureType": "SG_ROUNDS",
   "deadlineDays": 14
 }
 ```
+
+`measureType` ist entweder `FINE` (Geldstrafe) oder `SG_ROUNDS` (die je Penal
+Grade hinterlegte Anzahl an SG-Runden). Wird das Feld bei älteren Integrationen
+weggelassen, wird `FINE` verwendet.
 
 ### `PATCH /api/sanctions/{id}` 🔒 `sanctions:manage`
 Status ändern (z. B. `PAID`, `ESCALATED`).

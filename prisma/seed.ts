@@ -163,6 +163,7 @@ async function main() {
     { key: 'ACADEMY', name: 'Recruitment & Training', sortOrder: 4, color: '#d4af37' },
     { key: 'SRU', name: 'S.W.U.', sortOrder: 5, color: '#dc2626' },
     { key: 'AIR_SUPPORT', name: 'Air-Support Division', sortOrder: 6, color: '#38bdf8' },
+    { key: 'INTERNAL_AFFAIRS', name: 'Internal Affairs', sortOrder: 7, color: '#0ea5e9' },
   ]
 
   for (const unit of units) {
