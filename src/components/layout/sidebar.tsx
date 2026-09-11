@@ -9,8 +9,7 @@ import {
   Shield, GraduationCap, UserCog, Settings, LogOut, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
   ClipboardList, Megaphone, FileText, Gavel,
-  History,
-} from 'lucide-react'
+  History, DatabaseZap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
@@ -62,6 +61,7 @@ const adminNav: NavItem[] = [
   { name: 'Exporte', href: '/exports', icon: Download, permission: 'exports:view' },
   { name: 'Update senden', href: '/admin/update-announcer', icon: Megaphone, permission: 'updates:send' },
   { name: 'Uploads', href: '/admin/uploads', icon: Upload, permission: 'settings:manage' },
+  { name: 'Ausweich-Datenbank', href: '/admin/failover', icon: DatabaseZap, permission: 'settings:manage' },
   { name: 'Einstellungen', href: '/admin/settings', icon: Settings, permission: 'settings:manage' },
 ]
 

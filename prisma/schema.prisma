@@ -626,7 +626,7 @@ model Officer {
   transferRequests    TransferRequest[]     @relation("OfficerTransferRequests")
   searches            OfficerSearch[]
   internalAffairsDaws InternalAffairsDaw[]
-  legalCases          LegalCase[]          @relation("OfficerLegalCases")
+  legalCases          LegalCase[]           @relation("OfficerLegalCases")
 
   @@index([badgeNumber])
 }
@@ -1672,12 +1672,12 @@ model LegalCase {
   /// `[{ sanctionId, reason, penalGrade, measureType, fineAmount, sgRounds, createdAt, dueAt }]`.
   sanctions Json @default("[]")
 
-  filedAt    DateTime?
-  closedAt   DateTime?
+  filedAt     DateTime?
+  closedAt    DateTime?
   createdById String?
-  createdBy   User?    @relation("LegalCaseCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdBy   User?     @relation("LegalCaseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   /// Zugehörige Sammelaktion ("Alle offenen Sanktionen gekündigter Mitarbeiter").
   batchId String?
@@ -1705,4 +1705,37 @@ model LegalCaseBatch {
   cases LegalCase[] @relation("LegalCaseBatchCases")
 
   @@index([createdAt])
+}
+
+/// Schreib-Journal des Notbetriebs.
+///
+/// Wird ausschließlich in der Standby-Datenbank gefüllt: solange die App auf
+/// den Standby umgeschaltet ist, protokolliert jede Mutation hier ihre
+/// Operation. Beim Zurückschalten spielt `replayJournal()` die Einträge nach
+/// `seq` geordnet gegen die Haupt-Datenbank ab.
+///
+/// Bewusst ohne Fremdschlüssel und ohne Beziehungen: das Journal muss auch
+/// dann schreibbar sein, wenn der referenzierte Datensatz in der Haupt-DB gar
+/// nicht existiert. Backup und Restore überspringen dieses Modell.
+model FailoverJournalEntry {
+  seq       Int       @id @default(autoincrement())
+  /// Prisma-Modellname, z.B. "Officer".
+  model     String
+  /// Prisma-Operation, z.B. "create", "update", "delete", "updateMany".
+  operation String
+  /// Die an die Operation übergebenen Argumente als JSON.
+  args      Json
+  /// Zeitpunkt der Schreiboperation im Notbetrieb.
+  createdAt DateTime  @default(now())
+  /// Gesetzt, sobald der Eintrag erfolgreich gegen die Haupt-DB gelaufen ist.
+  appliedAt DateTime?
+  /// Fehlermeldung des letzten Abspielversuchs; null solange kein Fehler auftrat.
+  error     String?   @db.Text
+  /// false = beim Abspielen können neue IDs entstehen (nested writes /
+  /// createMany ohne explizite IDs). Der Admin-Bereich hebt solche Einträge hervor.
+  exact     Boolean   @default(true)
+  /// Vom Betreiber bewusst übersprungen (zählt nicht mehr als offen).
+  skipped   Boolean   @default(false)
+
+  @@index([appliedAt, seq])
 }

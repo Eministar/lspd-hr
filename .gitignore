@@ -60,3 +60,5 @@ next-env.d.ts
 .claude/
 
 .idea/
+# lokaler Failover-Zustand (welche DB gerade aktiv ist)
+/.failover/

@@ -24,7 +24,10 @@
     "release:sync": "tsx scripts/sync-commit-legend.ts",
     "db:studio": "npx prisma studio",
     "db:setup": "npm run db:backup && npx prisma db push && npx tsx prisma/seed.ts",
-    "db:backup": "npx tsx prisma/backup.ts"
+    "db:backup": "npx tsx prisma/backup.ts",
+    "db:restore-standby": "npx tsx prisma/restore.ts --target=standby",
+    "db:push-standby": "node scripts/push-standby-schema.js",
+    "db:sync-standby": "npx tsx scripts/sync-standby.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

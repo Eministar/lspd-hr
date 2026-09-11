@@ -1,6 +1,5 @@
 import { PrismaClient } from '@/generated/prisma/client'
-import { PrismaMariaDb } from '@prisma/adapter-mariadb'
-import { completeMutationCapture, prepareMutationCapture, type SnapshotClient } from './change-history-tracking'
+import { activeClient } from './db-failover'
 
 // Server können je nach generiertem Prisma-Client camelCase oder lowercase Delegates typisieren.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,71 +125,16 @@ const delegateAliases: Record<string, string> = {
   probationentry: 'probationEntry',
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-  prismaTracked: PrismaClient | undefined
-  prismaCompat: PrismaClientCompat | undefined
-}
+// Je Client genau ein Kompatibilitäts-Proxy — sonst entstünde bei jedem
+// Zugriff auf `prisma.*` ein neues Proxy-Objekt.
+const compatCache = new WeakMap<PrismaClient, PrismaClientCompat>()
 
-function intEnv(name: string, fallback: number) {
-  const raw = process.env[name]?.trim()
-  const parsed = raw ? Number(raw) : NaN
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
-}
-
-/**
- * Baut eine explizite mariadb-Pool-Konfiguration aus der DATABASE_URL.
- *
- * Der Adapter-Default ist `connectionLimit=10`, was für ein Dashboard mit
- * mehreren pollenden Endpunkten + Hintergrund-Sync (bis zu 8 parallele
- * Verbindungen) zu knapp ist → Pool-Timeouts. Größe und Acquire-Timeout sind
- * jetzt per Env steuerbar; `acquireTimeout` sorgt außerdem für schnelles
- * Fehlschlagen statt minutenlangem Hängen.
- */
-function buildPoolConfig(url: string) {
-  const u = new URL(url)
-  return {
-    host: u.hostname,
-    port: u.port ? Number(u.port) : 3306,
-    user: decodeURIComponent(u.username),
-    password: decodeURIComponent(u.password),
-    database: u.pathname.replace(/^\//, ''),
-    connectionLimit: intEnv('DB_CONNECTION_LIMIT', 15),
-    acquireTimeout: intEnv('DB_POOL_ACQUIRE_TIMEOUT_MS', 12_000),
-  }
-}
-
-function createPrismaClient() {
-  const url = process.env.DATABASE_URL?.trim()
-  if (!url) {
-    throw new Error(
-      '[Prisma] DATABASE_URL fehlt oder ist leer. .env im Projektroot prüfen und den Node-Prozess neu starten.',
-    )
-  }
-  const adapter = new PrismaMariaDb(buildPoolConfig(url))
-  const client = new PrismaClient({
-    adapter,
-    log: [{ emit: 'event', level: 'query' }, { emit: 'stdout', level: 'warn' }, { emit: 'stdout', level: 'error' }],
-  })
-
-  // Slow-Query-Diagnose: hilft, einen echten Verbindungs-Leak (eine Query
-  // hängt lange und hält ihre Connection) von reiner Contention zu unterscheiden.
-  const slowMs = intEnv('DB_SLOW_QUERY_MS', 1_500)
-  try {
-    // Das Query-Event ist nur typisiert, wenn `log` es enthält (tut es oben).
-    ;(client as unknown as { $on: (e: 'query', cb: (ev: { duration: number; query: string }) => void) => void }).$on(
-      'query',
-      (event) => {
-        if (event.duration >= slowMs) {
-          console.warn(`[Prisma][slow-query] ${event.duration}ms :: ${event.query}`)
-        }
-      },
-    )
-  } catch {
-    // Query-Logging ist optional — Fehler hier dürfen den Client nicht blockieren.
-  }
-
-  return client
+function compatClientFor(client: PrismaClient): PrismaClientCompat {
+  const cached = compatCache.get(client)
+  if (cached) return cached
+  const created = createPrismaCompatClient(client)
+  compatCache.set(client, created)
+  return created
 }
 
 function createPrismaCompatClient(client: PrismaClient): PrismaClientCompat {
@@ -205,45 +149,22 @@ function createPrismaCompatClient(client: PrismaClient): PrismaClientCompat {
   }) as PrismaClientCompat
 }
 
-function createTrackedPrismaClient(baseClient: PrismaClient): PrismaClient {
-  const snapshotClient = baseClient as unknown as SnapshotClient
-  return baseClient.$extends({
-    query: {
-      $allModels: {
-        async $allOperations({ model, operation, args, query }) {
-          const capture = await prepareMutationCapture({
-            client: snapshotClient,
-            model,
-            operation,
-            args,
-          })
-          const result = await query(args)
-          await completeMutationCapture(snapshotClient, capture, result)
-          return result
-        },
-      },
-    },
-  }) as unknown as PrismaClient
-}
-
 /**
- * Ein Client pro Node-Prozess (auch in Production), aber bewusst lazy.
+ * Der im ganzen Code genutzte Zugang zur Datenbank.
  *
- * Eine noch nicht eingerichtete Installation muss Next bauen und den
- * Setup-/Health-Endpunkt ausliefern können. Erst der erste echte Zugriff auf
- * einen Prisma-Delegate benötigt deshalb DATABASE_URL.
+ * Welcher Client dahintersteht, entscheidet bei jedem Zugriff
+ * `db-failover.ts`: im Normalbetrieb die Haupt-Datenbank, im Notbetrieb die
+ * Standby-Datenbank. Für aufrufenden Code ändert sich dadurch nichts — auch
+ * `$transaction` und die Fluent-API bleiben unverändert, weil das Umschalten
+ * über eine Prisma-Erweiterung und nicht über einen Promise-Wrapper läuft.
+ *
+ * Bewusst lazy: eine noch nicht eingerichtete Installation muss Next bauen und
+ * den Setup-/Health-Endpunkt ausliefern können. Erst der erste echte Zugriff
+ * auf einen Delegate benötigt DATABASE_URL.
  */
-function getPrismaClient() {
-  const prismaClient = globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient())
-  const trackedPrismaClient = globalForPrisma.prismaTracked
-    ?? (globalForPrisma.prismaTracked = createTrackedPrismaClient(prismaClient))
-  return globalForPrisma.prismaCompat
-    ?? (globalForPrisma.prismaCompat = createPrismaCompatClient(trackedPrismaClient))
-}
-
 export const prisma = new Proxy({} as PrismaClientCompat, {
   get(_target, prop) {
-    const client = getPrismaClient()
+    const client = compatClientFor(activeClient())
     const value = Reflect.get(client, prop, client)
     return typeof value === 'function' ? value.bind(client) : value
   },

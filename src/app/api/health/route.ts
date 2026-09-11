@@ -81,6 +81,56 @@ async function databaseCheck() {
   }
 }
 
+/**
+ * Zustand der Ausweich-Datenbank.
+ *
+ * Bewusst unkritisch eingestuft: ein fehlender Standby macht die Installation
+ * nicht kaputt. Ein laufender Notbetrieb dagegen ist ein Zustand, der auffallen
+ * muss — er wird deshalb als DEGRADED gemeldet.
+ */
+async function failoverCheck() {
+  const { activeMode, getState, isFailoverConfigured, openJournalCount, pingDatabase } = await import('@/lib/db-failover')
+
+  if (!isFailoverConfigured()) {
+    return {
+      code: 'UNCONFIGURED' as const,
+      ok: false,
+      message: 'Keine Ausweich-Datenbank eingerichtet (DATABASE_URL_STANDBY fehlt)',
+    }
+  }
+
+  const standby = await pingDatabase('standby')
+  const mode = activeMode()
+
+  if (mode === 'standby') {
+    const open = await openJournalCount()
+    return {
+      code: 'DEGRADED' as const,
+      ok: false,
+      message: 'Notbetrieb aktiv — die App arbeitet auf der Ausweich-Datenbank',
+      details: { since: getState().since, reason: getState().reason, offeneJournalEintraege: open },
+    }
+  }
+
+  if (!standby.ok) {
+    return {
+      code: 'DEGRADED' as const,
+      ok: false,
+      message: 'Ausweich-Datenbank nicht erreichbar',
+      details: { error: standby.error },
+    }
+  }
+
+  const { readStandbySyncStatus } = await import('@/lib/standby-sync-job')
+  const lastSync = readStandbySyncStatus()
+  return {
+    code: 'OK' as const,
+    ok: true,
+    message: 'Ausweich-Datenbank bereit',
+    details: { letzterAbgleich: lastSync?.finishedAt ?? null, zeilen: lastSync?.rows ?? null },
+  }
+}
+
 async function authCheck() {
   const { getDiscordConfig } = await import('@/lib/discord-integration')
   const config = await getDiscordConfig()
@@ -255,6 +305,7 @@ export async function GET() {
 
   const checks = await Promise.all([
     timedCheck('database', true, databaseCheck),
+    timedCheck('database.failover', false, failoverCheck),
     timedCheck('auth.login', true, authCheck),
     timedCheck('duty-times.api', false, dutyTimesCheck),
     timedCheck('discord.api', false, discordCheck),

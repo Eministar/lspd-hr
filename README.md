@@ -226,6 +226,74 @@ Dann: **http://localhost:3000** — Login nach Seed: `admin` / `admin123`
 | `npm run db:push` | Schema an die DB |
 | `npm run db:seed` | Admin, Ränge, Ausbildungen, Units, Benutzergruppen |
 | `npm run db:studio` | Prisma Studio |
+| `npm run db:backup` | JSON-Snapshot aller Tabellen nach `.backup/` |
+| `npm run db:push-standby` | Schema in der Ausweich-Datenbank anlegen |
+| `npm run db:sync-standby` | Einmaliger Abgleich Haupt-DB → Backup-Datei → Ausweich-DB |
+| `npm run db:restore-standby` | `.backup/latest.json` in die Ausweich-DB einspielen |
+
+---
+
+## 🗄️ · Ausweich-Datenbank (Notbetrieb)
+
+Eine zweite, **eigenständige** MariaDB kann einspringen, wenn die Haupt-Datenbank
+nicht erreichbar ist. Die beiden Datenbanken sind zu keinem Zeitpunkt miteinander
+verbunden — es gibt keine Replikation. Der Abgleich läuft ausschließlich über die
+JSON-Backups: die App schreibt stündlich einen Snapshot der Haupt-Datenbank und
+spielt genau diesen Snapshot in die Ausweich-Datenbank ein.
+
+### Einrichten
+
+```bash
+# 1. In der .env eintragen
+DATABASE_URL_STANDBY="mysql://user:pass@zweiter-host:3306/lspd_hr"
+
+# 2. Schema dort einmalig anlegen
+npm run db:push-standby
+
+# 3. Erstbefüllung
+npm run db:sync-standby
+```
+
+Ohne `DATABASE_URL_STANDBY` ist die gesamte Mechanik aus und die App verhält sich
+unverändert.
+
+### Wie umgeschaltet wird
+
+| | |
+| --- | --- |
+| **Automatisch** | Nach `DB_FAILOVER_ERROR_THRESHOLD` Verbindungsfehlern in Folge (Standard 3). Fachliche Fehler wie ein doppelter Unique-Key lösen das nie aus. |
+| **Von Hand** | Admin → **Ausweich-Datenbank** → *In den Notbetrieb schalten* |
+| **Zurück** | Immer nur von Hand, und erst wenn das Schreib-Journal abgespielt ist |
+
+Der Umschaltzustand liegt in `.failover/state.json`, **nicht** in einer Datenbank —
+sonst könnte ein Neustart während des Ausfalls nicht wissen, dass er im Notbetrieb
+weiterlaufen soll.
+
+### Schreib-Journal
+
+Im Notbetrieb wird jede Schreiboperation zusätzlich in der Ausweich-Datenbank
+protokolliert (Tabelle `FailoverJournalEntry`). Beim Zurückschalten spielt der
+Admin-Bereich diese Einträge der Reihe nach gegen die Haupt-Datenbank ab. Für
+`create`, `update` und `upsert` wird das tatsächliche Ergebnis gespeichert — die im
+Notbetrieb erzeugten IDs bleiben dadurch erhalten und spätere Einträge, die sich
+darauf beziehen, passen weiterhin.
+
+Fehlgeschlagene Einträge halten die übrigen nicht auf; sie werden im Admin-Bereich
+mit ihrer Fehlermeldung aufgelistet und lassen sich einzeln überspringen.
+
+### Grenzen (bewusst in Kauf genommen)
+
+- **Datenverlust bis zu einem Sync-Intervall.** Was zwischen dem letzten Abgleich
+  und dem Ausfall geschrieben wurde, fehlt im Notbetrieb. Takt über
+  `DB_STANDBY_SYNC_CRON` einstellbar.
+- **Rohes SQL wird nicht protokolliert.** `$executeRaw` landet nicht im Journal. Im
+  Projekt betrifft das nur zwei idempotente Reparatur-Statements in
+  `src/lib/unit-navigation.ts` — keine Benutzerdaten.
+- **Abgebrochene Transaktionen.** Journal-Einträge entstehen direkt nach der
+  einzelnen Operation. Bricht eine umgebende Transaktion danach ab, kann ein
+  Eintrag eine Änderung beschreiben, die verworfen wurde.
+- **`createMany` ohne vorgegebene IDs** bekommt beim Abspielen neue IDs. Solche
+  Einträge sind im Admin-Bereich als unsicher markiert.
 
 ---
 
