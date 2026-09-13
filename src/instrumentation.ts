@@ -6,6 +6,9 @@ export async function register() {
   // Läuft auch für die Edge-Runtime; dort gibt es weder Dateisystem noch Cron.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
+  const { ensureDailyBackupScheduler } = await import('./lib/daily-backup-job')
+  ensureDailyBackupScheduler()
+
   const { ensureStandbySyncScheduler } = await import('./lib/standby-sync-job')
   ensureStandbySyncScheduler()
 }

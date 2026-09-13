@@ -40,31 +40,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#061426] bg-pattern p-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-40%] left-[-20%] w-[80%] h-[80%] rounded-full bg-[#d4af37]/[0.03] blur-[100px]" />
-        <div className="absolute bottom-[-30%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#071b33]/[0.04] blur-[80px]" />
-      </div>
-
+    <main className="login-layout">
+      <section className="login-intro">
+        <div className="flex items-center gap-3 text-[#e4c477]">
+          <Image src="/shield.webp" alt="LSPD Wappen" width={48} height={48} priority />
+          <span className="text-[14px] font-semibold">Los Santos Police Department</span>
+        </div>
+        <div>
+          <h1>Gemeinsam im Einsatz.</h1>
+          <p>Dein Department. Deine Übersicht. Personal, Ausbildung und täglicher Dienst an einem Ort.</p>
+        </div>
+        <p className="mt-12 text-[12px]">Personal- und Einsatzverwaltung des LSPD</p>
+      </section>
+      <section className="login-access" aria-label="Anmeldung">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[360px] relative z-10"
+        className="w-full max-w-[420px] relative z-10"
       >
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center justify-center h-[88px] w-[88px] rounded-[20px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 mb-5 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.15),0_1px_3px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(212,175,55,0.08)]"
-          >
-            <Image src="/shield.webp" alt="LSPD" width={72} height={72} className="rounded-full" priority />
-          </motion.div>
-          <h1 className="text-[18px] font-semibold text-white tracking-[-0.01em]">LSPD Department</h1>
-          <p className="text-[12px] font-medium text-[#d4af37]/80 mt-1 tracking-[0.04em]">Discord Authentifizierung</p>
+        <div className="mb-7">
+          <h2 className="text-[30px] font-semibold text-white">Willkommen zurück.</h2>
+          <p className="text-[14px] text-[#a6b5c3] mt-2">Melde dich an, um deinen Dienst zu organisieren.</p>
         </div>
-
         <div className="glass-panel-elevated rounded-[16px] p-6">
           <div className="flex items-start gap-3 mb-5">
             <div className="h-10 w-10 rounded-[10px] bg-[#5865f2]/15 flex items-center justify-center text-[#8ea1ff]">
@@ -107,10 +105,11 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <p className="text-center text-[10.5px] text-[#4a6585] mt-8 tracking-[0.06em] uppercase font-medium">
+        <p className="text-center text-[10.5px] text-[#a6b5c3] mt-8 font-medium">
           Los Santos Police Department
         </p>
       </motion.div>
-    </div>
+      </section>
+    </main>
   )
 }

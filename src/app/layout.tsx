@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import './department.css'
 import Providers from './providers'
 
 const siteUrl =

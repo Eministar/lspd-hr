@@ -226,7 +226,7 @@ Dann: **http://localhost:3000** — Login nach Seed: `admin` / `admin123`
 | `npm run db:push` | Schema an die DB |
 | `npm run db:seed` | Admin, Ränge, Ausbildungen, Units, Benutzergruppen |
 | `npm run db:studio` | Prisma Studio |
-| `npm run db:backup` | JSON-Snapshot aller Tabellen nach `.backup/` |
+| `npm run db:backup` | Vollsicherung aller Tabellen, Uploads und lokaler Konfiguration nach `.backup/` |
 | `npm run db:push-standby` | Schema in der Ausweich-Datenbank anlegen |
 | `npm run db:sync-standby` | Einmaliger Abgleich Haupt-DB → Backup-Datei → Ausweich-DB |
 | `npm run db:restore-standby` | `.backup/latest.json` in die Ausweich-DB einspielen |
@@ -357,3 +357,5 @@ Während des Updates wird die Seite kurz nicht erreichbar (~30–120 Sekunden). 
   />
   <p><sub>⭐ Wenn’s hilft — gerne ein Stern auf GitHub ⭐</sub></p>
 </div>
+
+Tägliche Vollsicherungen und Wiederherstellung: siehe [BACKUPS.md](BACKUPS.md).

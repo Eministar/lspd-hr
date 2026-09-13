@@ -104,7 +104,7 @@ export function VisitorPortal() {
   if (authLoading) return <PageLoader />
 
   return (
-    <main className="min-h-screen bg-[#061426] bg-pattern text-[#edf4fb]">
+    <main className="visitor-portal min-h-screen text-[#edf4fb]">
       <div className="mx-auto flex w-full max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 border-b border-[#18385f]/55 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <Link href="/besucherportal" className="flex min-w-0 items-center gap-3">
@@ -140,10 +140,10 @@ export function VisitorPortal() {
         </header>
 
         <section className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-stretch">
-          <div className="rounded-[18px] border border-[#1e3a5c]/55 bg-[#091e36]/74 p-5 shadow-[0_10px_34px_rgba(0,0,0,0.22)] sm:p-7">
-            <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]/80">Öffentlicher Bereich</p>
+          <div className="department-card p-6 sm:p-7">
+            <p className="mb-4 text-[13px] font-medium text-[#e4c477]">Öffentlicher Bereich</p>
             <h1 className="max-w-3xl text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[36px]">
-              Informationen für Besucher und Bewerber.
+              Dein Zugang zum LSPD.
             </h1>
             <p className="mt-4 max-w-2xl text-[13.5px] leading-6 text-[#9fb0c4]">
               Hier findest du Bewerbungen, veröffentlichte Pressemitteilungen und die sichtbare Mitarbeiterliste. Interne HR- und Polizeiinhalte bleiben im Dashboard.
@@ -170,7 +170,7 @@ export function VisitorPortal() {
             </div>
           </div>
 
-          <aside className="rounded-[18px] border border-[#1e3a5c]/55 bg-[#091e36]/74 p-5 shadow-[0_10px_34px_rgba(0,0,0,0.22)]">
+          <aside className="department-card p-6">
             {user ? (
               <div>
                 <div className="flex items-center gap-3">
@@ -224,7 +224,7 @@ export function VisitorPortal() {
           </aside>
         </section>
 
-        <section id="bewerbung" className="scroll-mt-section mb-6 rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/70 p-5">
+        <section id="bewerbung" className="scroll-mt-section mb-6 department-card p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="mb-2 flex items-center gap-2">
@@ -282,7 +282,7 @@ export function VisitorPortal() {
               </div>
 
               {selectedPress && (
-                <article className="overflow-hidden rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/70">
+                <article className="overflow-hidden department-card">
                   <div
                     className="aspect-[16/7] min-h-[220px] bg-[#102542] bg-cover bg-center"
                     style={selectedPress.imageUrl ? { backgroundImage: `url(${selectedPress.imageUrl})` } : undefined}
@@ -321,7 +321,7 @@ export function VisitorPortal() {
             detail={`${filteredOfficers.length} Mitarbeiter`}
           />
 
-          <div className="overflow-hidden rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/70">
+          <div className="overflow-hidden department-card">
             <div className="flex flex-col gap-3 border-b border-[#18385f]/60 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:w-[320px]">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />

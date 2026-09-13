@@ -77,10 +77,8 @@ function isActivePath(pathname: string, href: string) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 mb-1.5 mt-1 text-[9.5px] font-bold text-[#4a6585] uppercase tracking-[0.16em] flex items-center gap-1.5">
-      <span className="h-px flex-1 bg-gradient-to-r from-[#18385f]/60 to-transparent" />
+    <p className="department-nav-label">
       <span>{children}</span>
-      <span className="h-px flex-1 bg-gradient-to-l from-[#18385f]/60 to-transparent" />
     </p>
   )
 }
@@ -96,12 +94,13 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
   return (
     <Link
       href={item.href}
+      aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
       className={cn(
-        'group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-all duration-200 overflow-hidden',
+        'department-nav-link group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-colors duration-150 overflow-hidden',
         active
-          ? 'bg-gradient-to-r from-[#d4af37] to-[#c9a52f] text-[#071b33] font-semibold shadow-[0_2px_8px_rgba(212,175,55,0.25)]'
-          : 'text-[#8ea4bd] hover:bg-[#0d2444] hover:text-[#edf4fb] hover:translate-x-0.5'
+          ? 'font-semibold'
+          : 'text-[#a6b5c3] hover:bg-[#1e2d3b] hover:text-[#edf4fb]'
       )}
     >
       {!active && (
@@ -145,22 +144,10 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="relative h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_70%)]" />
-            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full relative" priority />
-          </div>
-          <div className="min-w-0">
-            <span className="block text-[15px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD</span>
-            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.14em] uppercase mt-0.5">Department</span>
-          </div>
-        </div>
-        <div className="relative mt-4 h-px bg-gradient-to-r from-transparent via-[#d4af37]/25 to-transparent">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] shadow-[0_0_6px_rgba(212,175,55,0.6)]" />
-        </div>
+      <div className="department-brand">
+        <Image src="/shield.webp" alt="LSPD Wappen" width={48} height={48} priority />
+        <div><strong>LSPD</strong><small>Personal & Einsatzverwaltung</small></div>
       </div>
-
       <nav className="flex-1 space-y-[2px] overflow-y-auto px-2.5 lg:pb-12">
         <SectionLabel>Navigation</SectionLabel>
         {mainNav
@@ -250,7 +237,7 @@ export function Sidebar() {
         <div className="w-9" aria-hidden />
       </div>
 
-      <aside className="hidden lg:flex lg:flex-col lg:w-[244px] lg:min-h-screen sidebar-gradient border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:w-[268px] lg:min-h-screen sidebar-gradient border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
         <NavContent pathname={pathname} onNavigate={closeMobile} user={user} logout={logout} />
       </aside>
 
@@ -269,7 +256,7 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: -260 }}
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-[244px] sidebar-gradient border-r border-[#d4af37]/10 z-50 shadow-2xl"
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-[268px] sidebar-gradient border-r border-[#d4af37]/10 z-50 shadow-2xl"
             >
               <button
                 onClick={() => setMobileOpen(false)}
@@ -283,7 +270,7 @@ export function Sidebar() {
         )}
       </AnimatePresence>
 
-      <div className="hidden lg:block lg:w-[244px] lg:shrink-0" />
+      <div className="hidden lg:block lg:w-[268px] lg:shrink-0" />
     </>
   )
 }

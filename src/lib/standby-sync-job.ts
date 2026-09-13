@@ -110,8 +110,8 @@ export async function runStandbySync(options: { force?: boolean } = {}): Promise
 
   const startedAt = new Date().toISOString()
   try {
-    const backup = await runBackup()
-    const summary = await restoreSnapshot({ targetUrl: url, snapshotPath: backup.latestPath })
+    const backup = await runBackup({ source: 'primary' })
+    const summary = await restoreSnapshot({ targetUrl: url, snapshotPath: backup.rotatedPath })
     const status: StandbySyncStatus = {
       startedAt,
       finishedAt: new Date().toISOString(),

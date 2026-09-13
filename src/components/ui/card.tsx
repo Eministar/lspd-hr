@@ -10,7 +10,7 @@ interface CardProps {
 export function Card({ children, className, padding = true }: CardProps) {
   return (
       <div className={cn(
-          'rounded-[16px] border border-[#1a3559]/55 bg-[#091e36]/70 backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.12),0_8px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(212,175,55,0.04)]',
+          'department-card',
           padding && 'p-5',
           className
       )}>

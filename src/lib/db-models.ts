@@ -12,7 +12,7 @@ import { Prisma } from '../generated/prisma/client'
  * jedes Modell automatisch dabei, sobald es im Schema steht.
  */
 
-/** Das Journal selbst gehört nie in ein Backup und wird nie zurückgespielt. */
+/** Das Journal wird archiviert, aber beim Standby-Sync nie zurückgespielt. */
 export const JOURNAL_MODEL = 'FailoverJournalEntry'
 
 /** Alle Modellnamen des Schemas in Schema-Reihenfolge, ohne das Journal. */

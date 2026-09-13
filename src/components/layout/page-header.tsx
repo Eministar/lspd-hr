@@ -9,11 +9,11 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, eyebrow, action }: PageHeaderProps) {
     return (
-        <div className="mb-7">
+        <div className="department-page-header">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0">
                     {eyebrow && (
-                        <p className="text-[10.5px] font-semibold text-[#d4af37]/80 uppercase tracking-[0.16em] mb-2">
+                        <p className="font-medium mb-2">
                             {eyebrow}
                         </p>
                     )}
@@ -24,7 +24,6 @@ export function PageHeader({ title, description, eyebrow, action }: PageHeaderPr
                 </div>
                 {action && <div className="shrink-0 flex flex-wrap gap-2">{action}</div>}
             </div>
-            <div className="mt-5 h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/15 to-transparent" />
         </div>
     )
 }

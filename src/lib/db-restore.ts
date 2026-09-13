@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises'
 import { PrismaClient } from '../generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
-import { DATA_MODEL_NAMES, resolveDelegate, tableName } from './db-models'
+import { DATA_MODEL_NAMES, JOURNAL_MODEL, resolveDelegate, tableName } from './db-models'
+import { verifyBackup } from './backup-verify'
 
 /**
  * Spielt einen JSON-Snapshot in eine Datenbank ein.
@@ -63,14 +64,14 @@ export type RestoreSummary = {
   totalRows: number
 }
 
-export function normalizeSnapshot(raw: unknown): { exportedAt: string | null; data: Record<string, unknown[]> } {
+export function normalizeSnapshot(raw: unknown, includeJournal = false): { exportedAt: string | null; data: Record<string, unknown[]> } {
   const snapshot = raw as { meta?: { exportedAt?: string; formatVersion?: number }; data?: Record<string, unknown> }
   const source = snapshot?.data
   if (!source || typeof source !== 'object') {
     throw new Error('Snapshot enthält kein "data"-Objekt — Datei unbrauchbar.')
   }
 
-  const known = new Set(DATA_MODEL_NAMES)
+  const known = new Set(includeJournal ? [...DATA_MODEL_NAMES, JOURNAL_MODEL] : DATA_MODEL_NAMES)
   const data: Record<string, unknown[]> = {}
 
   for (const [key, value] of Object.entries(source)) {
@@ -100,9 +101,12 @@ function poolConfigFor(url: string) {
 export async function restoreSnapshot(options: {
   targetUrl: string
   snapshotPath: string
+  includeJournal?: boolean
 }): Promise<RestoreSummary> {
   const raw = JSON.parse(await fs.readFile(options.snapshotPath, 'utf8'))
-  const { exportedAt, data } = normalizeSnapshot(raw)
+  if (raw.meta?.formatVersion === 3) await verifyBackup(options.snapshotPath)
+  const { exportedAt, data } = normalizeSnapshot(raw, options.includeJournal)
+  const models = options.includeJournal ? [...DATA_MODEL_NAMES, JOURNAL_MODEL] : DATA_MODEL_NAMES
 
   const prisma = new PrismaClient({ adapter: new PrismaMariaDb(poolConfigFor(options.targetUrl)) })
   const inserted: Record<string, number> = {}
@@ -113,7 +117,7 @@ export async function restoreSnapshot(options: {
 
     // Erst alles leeren, dann füllen: ein Datensatz, der im Snapshot nicht
     // mehr vorkommt (gelöscht), darf im Ziel nicht überleben.
-    for (const modelName of DATA_MODEL_NAMES) {
+    for (const modelName of models) {
       const delegate = resolveDelegate<{ deleteMany: (a?: unknown) => Promise<{ count: number }> }>(prisma, modelName)
       if (!delegate) continue
       try {
@@ -124,7 +128,7 @@ export async function restoreSnapshot(options: {
       }
     }
 
-    for (const modelName of DATA_MODEL_NAMES) {
+    for (const modelName of models) {
       const rows = data[modelName]
       if (!rows || rows.length === 0) {
         inserted[modelName] = 0

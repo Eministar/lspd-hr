@@ -12,6 +12,8 @@ import { SessionRecoveryScreen } from '@/components/auth/session-recovery-screen
 import { Button } from '@/components/ui/button'
 import { useFetch } from '@/hooks/use-fetch'
 import { ChangeHistoryControls } from '@/components/layout/change-history-controls'
+import { BackupStatus } from '@/components/layout/backup-status'
+import { hasPermission } from '@/lib/permissions'
 
 interface ActiveTestSession {
   sessionId: string
@@ -113,11 +115,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#061426]">
+    <div className="department-shell flex min-h-screen">
+      <a href="#workspace-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-[#e4c477] focus:text-[#101923] focus:p-3">Zum Inhalt springen</a>
       <Sidebar />
       <ChangeHistoryControls />
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <div className="w-full flex-1 px-3 pb-10 pt-16 sm:px-6 lg:px-8 lg:pt-6">
+        <header className="department-topbar">
+          <span><strong>LSPD</strong><span className="hidden sm:inline"> / Department-Verwaltung</span></span>
+          <div className="flex flex-wrap justify-end items-center gap-4">
+            {hasPermission(user, 'settings:manage') && <BackupStatus />}
+            <span className="hidden sm:inline truncate">{user.displayName}</span>
+          </div>
+        </header>
+        <div id="workspace-content" tabIndex={-1} className="department-content flex-1">
           {children}
         </div>
         <AppFooter />

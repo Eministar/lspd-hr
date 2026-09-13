@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import { MotionConfig } from 'framer-motion'
 import { ThemeProvider } from '@/context/theme-context'
 import { AuthProvider } from '@/context/auth-context'
 import { ToastProvider } from '@/components/ui/toast'
@@ -9,6 +10,7 @@ import { ScrollToTop } from '@/components/layout/scroll-to-top'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
+    <MotionConfig reducedMotion="user">
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
@@ -18,6 +20,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
+    </MotionConfig>
   )
 }
 

@@ -37,12 +37,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           defaultValue={visibleDefaultValue}
           onChange={handleChange}
           className={cn(
-            'w-full h-[36px] px-3 rounded-[9px] text-[13.5px]',
-            'bg-[#0a1a33]/60 text-[#edf4fb]',
-            'placeholder:text-[#4a6585]',
-            'border border-[#18385f]/70',
+            'w-full h-[40px] px-3 rounded-[9px] text-[13.5px]',
+            'bg-[#131e29] text-[#edf4fb]',
+            'placeholder:text-[#8a9daf]',
+            'border border-[#405264]',
             'focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
-            'transition-all duration-150',
+            'transition-[background-color,border-color,box-shadow] duration-150',
             error && 'border-red-900 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)]',
             className
           )}

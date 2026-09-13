@@ -22,11 +22,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={id}
           className={cn(
             'w-full px-3 py-2.5 rounded-[9px] text-[13.5px]',
-            'bg-[#0a1a33]/60 text-[#edf4fb]',
-            'placeholder:text-[#4a6585]',
-            'border border-[#18385f]/70',
+            'bg-[#131e29] text-[#edf4fb]',
+            'placeholder:text-[#8a9daf]',
+            'border border-[#405264]',
             'focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
-            'transition-all duration-150 resize-none',
+            'transition-[background-color,border-color,box-shadow] duration-150 resize-none',
             error && 'border-red-300',
             className
           )}

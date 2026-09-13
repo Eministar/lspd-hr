@@ -39,7 +39,8 @@ async function main() {
     throw new Error(`${target === 'standby' ? 'DATABASE_URL_STANDBY' : 'DATABASE_URL'} fehlt.`)
   }
 
-  const summary = await restoreSnapshot({ targetUrl: url, snapshotPath: file })
+  const includeJournal = process.argv.includes('--include-journal')
+  const summary = await restoreSnapshot({ targetUrl: url, snapshotPath: file, includeJournal })
   console.log(`Snapshot eingespielt in: ${target}`)
   console.log('Datei:', summary.snapshotPath)
   console.log('Stand:', summary.exportedAt ?? 'unbekannt')
@@ -47,7 +48,7 @@ async function main() {
   if (summary.skippedModels.length > 0) {
     console.warn('Nicht eingespielt:', summary.skippedModels.join(', '))
   }
-  console.log(`Das Journal (${JOURNAL_MODEL}) bleibt unangetastet.`)
+  console.log(includeJournal ? `Journal (${JOURNAL_MODEL}) wiederhergestellt.` : `Das Journal (${JOURNAL_MODEL}) bleibt unangetastet.`)
 }
 
 main().catch((e) => {
