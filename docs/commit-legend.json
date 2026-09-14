@@ -1,7 +1,25 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-09-14T14:00:13.993Z",
+  "generatedAt": "2026-09-14T14:26:13.500Z",
   "entries": [
+    {
+      "buildId": "build-9cf6c0281f",
+      "commit": "9cf6c0281fa4fe2e3002f0d8fdf7318588f67499",
+      "shortCommit": "9cf6c0281f",
+      "subject": "feat: streamline dashboard navigation and portal layout",
+      "author": "Eministar",
+      "date": "2026-09-14T14:25:22Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/9cf6c0281fa4fe2e3002f0d8fdf7318588f67499"
+    },
+    {
+      "buildId": "build-d2e4bccc28",
+      "commit": "d2e4bccc2854bc59840ace9cfdca33ae625cc7f4",
+      "shortCommit": "d2e4bccc28",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-09-14T14:00:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d2e4bccc2854bc59840ace9cfdca33ae625cc7f4"
+    },
     {
       "buildId": "build-37d96646de",
       "commit": "37d96646de1c7ac9d23d911ef1df81a4a2ea6aef",
