@@ -1,7 +1,25 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-09-14T14:26:13.500Z",
+  "generatedAt": "2026-09-14T17:33:14.424Z",
   "entries": [
+    {
+      "buildId": "build-4c5022f2a0",
+      "commit": "4c5022f2a0ea0893f31c86dfe74339e43647ecc4",
+      "shortCommit": "4c5022f2a0",
+      "subject": "fix: keep officer training columns readable with many trainings",
+      "author": "Eministar",
+      "date": "2026-09-14T14:34:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4c5022f2a0ea0893f31c86dfe74339e43647ecc4"
+    },
+    {
+      "buildId": "build-4ea1b7ed0e",
+      "commit": "4ea1b7ed0ea035cdc10e2e4f3b933b0f7e046a9e",
+      "shortCommit": "4ea1b7ed0e",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-09-14T14:26:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/4ea1b7ed0ea035cdc10e2e4f3b933b0f7e046a9e"
+    },
     {
       "buildId": "build-9cf6c0281f",
       "commit": "9cf6c0281fa4fe2e3002f0d8fdf7318588f67499",
