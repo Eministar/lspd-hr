@@ -309,7 +309,7 @@ function DraggableOfficerRow({
       <td className="px-2 py-2.5 font-mono text-[12px] text-[#b7c5d8] align-middle">
         {displayBadgeNumber(officer.badgeNumber)}
       </td>
-      <td className="px-3 py-2.5 align-middle min-w-0 overflow-hidden">
+      <td className="sticky left-0 z-[1] bg-[#131f2f] px-3 py-2.5 align-middle min-w-0 overflow-hidden shadow-[1px_0_0_#ffffff12]">
         <div className="flex min-w-0 items-center gap-2.5">
           <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank.color} />
           <Link
@@ -873,20 +873,27 @@ export default function OfficersPage() {
                       >
                         {/* Desktop / tablet: table view */}
                         <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
-                          <table className="lspd-table w-full table-fixed">
+                          {allTrainings.length > 0 && (
+                            <p className="border-b border-white/5 px-4 py-2 text-[11px] text-[#91a4bc]">
+                              {allTrainings.length} Ausbildungen · Bei Bedarf seitlich scrollen. Der Name bleibt sichtbar.
+                            </p>
+                          )}
+                          <div className="overflow-x-auto" role="region" aria-label={`Officers ${rank.name} – Ausbildungstabelle`} tabIndex={0}>
+                          <table className="lspd-table w-full table-fixed" style={{ minWidth: 815 + allTrainings.length * 112 }}>
                             <thead>
                               <tr>
                                 <th className="w-[3px] p-0" />
                                 <th className="w-[28px] px-1 py-2.5" />
                                 <th className="w-[58px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">DN</th>
-                                <th className="w-[170px] px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Name</th>
+                                <th scope="col" className="sticky left-0 z-[2] w-[170px] px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] shadow-[1px_0_0_#ffffff12]">Name</th>
                                 {allTrainings.map((t) => (
                                   <th
                                     key={t.id}
-                                    className="px-1.5 py-2.5 text-center text-[10.5px] font-medium text-[#6b8299]"
+                                    scope="col"
+                                    className="w-[112px] px-2 py-2.5 text-center text-[11px] font-medium text-[#6b8299]"
                                     title={t.label}
                                   >
-                                    <span className="block mx-auto max-w-full whitespace-normal break-words leading-tight">
+                                    <span lang="de" className="block mx-auto whitespace-normal break-words hyphens-auto leading-relaxed">
                                       {t.label}
                                     </span>
                                   </th>
@@ -926,6 +933,7 @@ export default function OfficersPage() {
                               )}
                             </tbody>
                           </table>
+                          </div>
                         </div>
 
                         {/* Mobile / tablet: card view */}
