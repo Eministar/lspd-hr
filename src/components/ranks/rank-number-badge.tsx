@@ -13,7 +13,7 @@ export function RankNumberBadge({
     <span
       title={`Interne Rangnummer ${number}`}
       className={cn(
-        'inline-flex shrink-0 items-center rounded-[6px] border border-[#d4af37]/25 bg-[#d4af37]/[0.07] px-1.5 py-0.5 font-mono text-[9.5px] font-semibold tracking-[0.04em] text-[#d8bd67]',
+        'inline-flex h-5 shrink-0 items-center rounded-full bg-white/[0.07] px-2 text-[11.5px] font-medium tabular-nums text-label-2',
         className,
       )}
     >

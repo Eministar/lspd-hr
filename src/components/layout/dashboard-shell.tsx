@@ -24,6 +24,21 @@ interface ActiveTestSession {
   expiresAt: string | null
 }
 
+function NoticeScreen({ title, text, children }: { title: string; text: string; children: React.ReactNode }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
+      <section className="lspd-sheet w-full max-w-md p-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15 text-gold">
+          <ShieldAlert size={24} strokeWidth={1.75} />
+        </div>
+        <h1 className="text-[20px] font-semibold tracking-[-0.02em] text-label">{title}</h1>
+        <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-label-2">{text}</p>
+        <div className="mt-6 flex justify-center">{children}</div>
+      </section>
+    </main>
+  )
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading, authError, refreshUser, clearClientCache } = useAuth()
   const pathname = usePathname()
@@ -51,23 +66,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     // bekommt er den Login mit Rücksprung auf genau diesen Link.
     if (isSharedFormTestLink) {
       return (
-        <main className="flex min-h-screen items-center justify-center bg-[#061426] px-4 py-10">
-          <section className="glass-panel-elevated w-full max-w-md rounded-[14px] border border-[#1e3a5c]/45 p-7 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#d4af37]/30 bg-[#d4af37]/12 text-[#d4af37]">
-              <ShieldAlert size={26} />
-            </div>
-            <h1 className="text-[19px] font-semibold text-white">Anmeldung erforderlich</h1>
-            <p className="mx-auto mt-2 max-w-sm text-[13px] leading-5 text-[#8ea4bd]">
-              Melde dich mit Discord an, um diesen Test zu öffnen. Danach landest du automatisch
-              wieder hier.
-            </p>
-            <div className="mt-5 flex justify-center">
-              <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
-                <Button>Zur Anmeldung</Button>
-              </Link>
-            </div>
-          </section>
-        </main>
+        <NoticeScreen
+          title="Anmeldung erforderlich"
+          text="Melde dich mit Discord an, um diesen Test zu öffnen. Danach landest du automatisch wieder hier."
+        >
+          <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
+            <Button size="lg">Zur Anmeldung</Button>
+          </Link>
+        </NoticeScreen>
       )
     }
 
@@ -86,31 +92,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   if (visitorOnly) {
     if (!isSharedFormTestLink) return <PageLoader />
     return (
-      <main className="min-h-screen bg-[#061426] px-3 pb-10 pt-6 sm:px-6 lg:px-8">{children}</main>
+      <main className="min-h-screen bg-canvas px-4 pb-10 pt-6 sm:px-6 lg:px-8">{children}</main>
     )
   }
 
   const activeTestPath = activeSession ? `/form-tests/${activeSession.shareToken}` : ''
   if (activeSession && pathname !== activeTestPath) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#061426] px-4 py-10">
-        <section className="glass-panel-elevated w-full max-w-xl rounded-[14px] border border-[#1e3a5c]/45 p-7 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#d4af37]/30 bg-[#d4af37]/12 text-[#d4af37]">
-            <ShieldAlert size={28} />
-          </div>
-          <h1 className="text-[20px] font-semibold text-white">Du hast gerade einen Test laufen.</h1>
-          <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-[#8ea4bd]">
-            Während der Test aktiv ist, kannst du keine andere Seite im Dashboard öffnen.
-          </p>
-          <div className="mt-5 flex justify-center">
-            <Link href={activeTestPath}>
-              <Button>
-                Test fortsetzen
-              </Button>
-            </Link>
-          </div>
-        </section>
-      </main>
+      <NoticeScreen
+        title="Du hast gerade einen Test laufen."
+        text="Während der Test aktiv ist, kannst du keine andere Seite im Dashboard öffnen."
+      >
+        <Link href={activeTestPath}>
+          <Button size="lg">Test fortsetzen</Button>
+        </Link>
+      </NoticeScreen>
     )
   }
 
@@ -119,9 +115,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <ChangeHistoryControls />
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <div className="lspd-content flex-1 px-4 pb-10 pt-16 sm:px-6 lg:px-8 lg:pt-8">
+        <div className="lspd-content flex-1 px-4 pb-12 pt-[76px] sm:px-6 lg:px-10 lg:pt-10">
           {hasPermission(user, 'settings:manage') && (
-            <div className="mb-3 flex justify-end"><BackupStatus /></div>
+            <div className="mb-2 flex justify-end"><BackupStatus /></div>
           )}
           {children}
         </div>

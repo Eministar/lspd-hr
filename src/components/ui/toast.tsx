@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -26,13 +26,13 @@ export function useToast() {
   return ctx
 }
 
-const icons = { success: CheckCircle, error: XCircle, warning: AlertCircle, info: Info }
+const icons = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info }
 
 const typeColors = {
-  success: 'text-emerald-400',
-  error: 'text-red-400',
-  warning: 'text-[#d4af37]',
-  info: 'text-blue-400',
+  success: 'text-green',
+  error: 'text-red',
+  warning: 'text-yellow',
+  info: 'text-blue',
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -51,26 +51,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 min-w-[280px] max-w-[340px]">
+      <div className="fixed bottom-5 right-5 z-[100] flex w-[min(360px,calc(100vw-2.5rem))] flex-col gap-2" aria-live="polite">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => {
             const Icon = icons[toast.type]
             return (
               <motion.div
                 key={toast.id}
-                initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.2 }}
-                className="glass-panel-elevated rounded-[12px] flex items-start gap-2.5 px-4 py-3"
+                layout
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 500, damping: 38 } }}
+                exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
+                className="lspd-popover flex items-start gap-3 rounded-[12px] px-3.5 py-3"
+                role="status"
               >
-                <Icon size={16} className={`mt-0.5 shrink-0 ${typeColors[toast.type]}`} strokeWidth={1.75} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-white">{toast.title}</p>
-                  {toast.message && <p className="text-[11.5px] text-[#8ea4bd] mt-0.5">{toast.message}</p>}
+                <Icon size={18} className={`mt-px shrink-0 ${typeColors[toast.type]}`} strokeWidth={2} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-semibold text-label">{toast.title}</p>
+                  {toast.message && <p className="mt-0.5 text-[12.5px] leading-snug text-label-2">{toast.message}</p>}
                 </div>
-                <button onClick={() => removeToast(toast.id)} className="p-0.5 text-[#6b8299] hover:text-[#d4af37] shrink-0">
-                  <X size={12} />
+                <button
+                  onClick={() => removeToast(toast.id)}
+                  aria-label="Hinweis schließen"
+                  className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-label-3 transition-colors hover:bg-white/[0.08] hover:text-label"
+                >
+                  <X size={13} strokeWidth={2.25} />
                 </button>
               </motion.div>
             )

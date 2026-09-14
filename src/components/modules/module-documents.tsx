@@ -50,7 +50,7 @@ interface ModuleDocumentsProps {
   canManage: boolean
 }
 
-const COLOR_PRESETS = ['#d4af37', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fbbf24', '#06b6d4', '#f97316']
+const COLOR_PRESETS = ['#d4af37', '#4a90f0', '#32d74b', '#ff453a', '#bf5af2', '#ffd60a', '#06b6d4', '#ff9f0a']
 type ViewMode = 'edit' | 'split' | 'preview'
 
 function preview(text: string) {
@@ -309,7 +309,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
           fullscreen ? 'h-full' : 'h-[min(72vh,760px)] min-h-[560px]',
       )}>
         {viewMode !== 'preview' && (
-            <div className="relative flex min-h-0 flex-col border-r border-[#18385f]/45 bg-[#04101f]/60">
+            <div className="relative flex min-h-0 flex-col border-r border-line bg-canvas">
           <textarea
               ref={textareaRef}
               value={content}
@@ -327,16 +327,16 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
               }}
               readOnly={!canManage}
               spellCheck
-              className="h-full min-h-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent p-6 font-mono text-[13.5px] leading-[1.75] text-[#edf4fb] outline-none placeholder:text-[#3d556f] selection:bg-[#d4af37]/30"
+              className="h-full min-h-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent p-6 font-mono text-[13.5px] leading-[1.75] text-label outline-none placeholder:text-label-4 selection:bg-gold/30"
               placeholder="Markdown schreiben…&#10;&#10;# Überschrift&#10;**fett** *kursiv*&#10;- Liste"
           />
             </div>
         )}
         {viewMode !== 'edit' && (
-            <div className="min-h-0 overflow-y-auto bg-gradient-to-b from-[#071a30]/40 to-[#04101f]/30 p-6">
+            <div className="min-h-0 overflow-y-auto bg-white/[0.03] p-6">
               <article
-                  className="markdown-document mx-auto max-w-3xl rounded-[14px] border border-[#18385f]/55 bg-[#071426]/80 p-7 shadow-[0_18px_50px_rgba(0,0,0,0.25)]"
-                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p class="text-[#536b86] italic">Vorschau erscheint hier...</p>' }}
+                  className="markdown-document mx-auto max-w-3xl rounded-[12px] border border-line bg-canvas p-7 shadow-[0_18px_50px_rgba(0,0,0,0.25)]"
+                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p class="text-label-4 italic">Vorschau erscheint hier...</p>' }}
               />
             </div>
         )}
@@ -345,16 +345,16 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
 
   const directDocumentView = (
     <div className={cn(
-      'flex min-h-0 items-center justify-center overflow-y-auto bg-gradient-to-b from-[#071a30]/40 to-[#04101f]/30 p-6',
+      'flex min-h-0 items-center justify-center overflow-y-auto bg-white/[0.03] p-6',
       fullscreen ? 'h-full' : 'h-[min(72vh,760px)] min-h-[560px]',
     )}>
-      <div className="w-full max-w-xl rounded-[18px] border border-[#d4af37]/25 bg-[#071426]/90 p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.28)]">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]">
+      <div className="w-full max-w-xl rounded-[16px] border border-gold/25 bg-canvas p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.28)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] border border-gold/30 bg-gold/10 text-gold">
           <ExternalLink size={25} strokeWidth={1.8} />
         </div>
-        <p className="mt-4 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[#d4af37]/80">Externer Dokument-Link</p>
-        <h3 className="mt-1.5 text-[18px] font-semibold text-white">{title}</h3>
-        <p className="mx-auto mt-2 max-w-md text-[12px] leading-5 text-[#8ea4bd]">
+        <p className="mt-4 text-[11px] font-bold text-gold/80">Externer Dokument-Link</p>
+        <h3 className="mt-1.5 text-[18px] font-semibold text-label">{title}</h3>
+        <p className="mx-auto mt-2 max-w-md text-[12px] leading-5 text-label-2">
           Dieses Dokument wird direkt im Browser geöffnet. Der Markdown-Editor ist für diesen Eintrag deaktiviert.
         </p>
         {directUrl ? (
@@ -362,20 +362,20 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
             href={directUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mx-auto mt-5 inline-flex h-10 items-center gap-2 rounded-[10px] bg-gradient-to-b from-[#d4af37] to-[#c29d32] px-4 text-[13px] font-semibold text-[#071b33] shadow-[0_4px_16px_rgba(212,175,55,0.18)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/60"
+            className="mx-auto mt-5 inline-flex h-10 items-center gap-2 rounded-[10px] bg-gold px-4 text-[13px] font-semibold text-ink transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
           >
             <ExternalLink size={15} />
             Dokument im Browser öffnen
           </a>
         ) : (
-          <p className="mt-5 text-[12px] text-[#fca5a5]">Der Link ist noch nicht gültig. Bitte eine vollständige HTTP- oder HTTPS-Adresse speichern.</p>
+          <p className="mt-5 text-[12px] text-red">Der Link ist noch nicht gültig. Bitte eine vollständige HTTP- oder HTTPS-Adresse speichern.</p>
         )}
-        {directUrl && <p className="mt-4 break-all font-mono text-[10px] leading-4 text-[#536b86]">{directUrl}</p>}
+        {directUrl && <p className="mt-4 break-all font-mono text-[11px] leading-4 text-label-4">{directUrl}</p>}
         {content.trim() && (
-          <details className="mt-6 border-t border-[#18385f]/60 pt-4 text-left">
-            <summary className="cursor-pointer text-[11px] font-semibold text-[#8ea4bd]">Interne Notizen anzeigen</summary>
+          <details className="mt-6 border-t border-line pt-4 text-left">
+            <summary className="cursor-pointer text-[11px] font-semibold text-label-2">Interne Notizen anzeigen</summary>
             <article
-              className="markdown-document mt-3 rounded-[10px] border border-[#18385f]/50 bg-[#04101f]/60 p-4 text-[12px] leading-5"
+              className="markdown-document mt-3 rounded-[10px] border border-line bg-canvas p-4 text-[12px] leading-5"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </details>
@@ -389,7 +389,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
           type="button"
           onClick={onClick}
           title={label}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] text-[#8ea4bd] transition-colors hover:bg-[#102542] hover:text-[#d4af37]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] text-label-2 transition-colors hover:bg-surface-2 hover:text-gold-bright"
       >
         {icon}
       </button>
@@ -397,13 +397,13 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
 
   const editorPanel = (
       <section className={cn(
-          'glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 overflow-hidden',
+          'glass-panel-elevated rounded-[12px] border border-line overflow-hidden',
           fullscreen && 'fixed inset-4 z-50 flex min-h-0 flex-col',
       )}>
         {selectedDocument ? (
             <div className="flex h-full min-h-0 flex-col">
               {/* Title bar */}
-              <div className="border-b border-[#18385f]/45 bg-gradient-to-r from-[#071a30]/80 to-[#091e36]/60 p-4 space-y-3">
+              <div className="border-b border-line bg-surface p-4 space-y-3">
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
                   <Input label="Titel" value={title} onChange={(e) => { setDirty(true); setTitle(e.target.value) }} disabled={!canManage} required />
                   <Select label="Ordner" value={folderId} onValueChange={(v) => { setDirty(true); setFolderId(v) }} options={folderOptions} disabled={!canManage} />
@@ -432,15 +432,15 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                       href={directUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-[#d4af37]/35 bg-[#d4af37]/10 px-3 text-[11.5px] font-semibold text-[#e2c45d] transition-colors hover:bg-[#d4af37]/16 hover:text-white"
+                      className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-gold/35 bg-gold/10 px-3 text-[11.5px] font-semibold text-gold transition-colors hover:bg-gold/16 hover:text-label"
                     >
                       <ExternalLink size={13} /> Öffnen
                     </a>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-[#6b8299]">
+                <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-label-3">
               <span className="inline-flex items-center gap-1.5">
-                <span className={cn('h-1.5 w-1.5 rounded-full', dirty ? 'bg-[#fbbf24] animate-pulse' : 'bg-[#34d399]')} />
+                <span className={cn('h-1.5 w-1.5 rounded-full', dirty ? 'bg-yellow animate-pulse' : 'bg-green')} />
                 {dirty ? 'Ungespeicherte Änderungen' : 'Aktuell'}
               </span>
                   <span>·</span>
@@ -449,32 +449,32 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                   <span>{charCount} Zeichen</span>
                   <span>·</span>
                   <span>Aktualisiert {relativeTime(selectedDocument.updatedAt)}{selectedDocument.updatedBy ? ` von ${selectedDocument.updatedBy.displayName}` : ''}</span>
-                  <span className="ml-auto hidden md:inline text-[#536b86]">⌘/Ctrl + S zum Speichern</span>
+                  <span className="ml-auto hidden md:inline text-label-4">⌘/Ctrl + S zum Speichern</span>
                 </div>
               </div>
 
               {/* Toolbar */}
-              <div className="flex flex-wrap items-center gap-1 border-b border-[#18385f]/45 bg-[#061426]/70 px-3 py-1.5">
+              <div className="flex flex-wrap items-center gap-1 border-b border-line bg-canvas px-3 py-1.5">
                 {canManage && !directUrl && (
                     <>
-                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
+                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-line">
                         {toolbarBtn(<Heading1 size={15} />, 'Überschrift 1', toolbarActions.heading1)}
                         {toolbarBtn(<Heading2 size={15} />, 'Überschrift 2', toolbarActions.heading2)}
                         {toolbarBtn(<Heading3 size={15} />, 'Überschrift 3', toolbarActions.heading3)}
                       </div>
-                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
+                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-line">
                         {toolbarBtn(<Bold size={15} />, 'Fett', toolbarActions.bold)}
                         {toolbarBtn(<Italic size={15} />, 'Kursiv', toolbarActions.italic)}
                         {toolbarBtn(<Strikethrough size={15} />, 'Durchgestrichen', toolbarActions.strike)}
                         {toolbarBtn(<Code size={15} />, 'Code', toolbarActions.code)}
                       </div>
-                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
+                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-line">
                         {toolbarBtn(<List size={15} />, 'Aufzählung', toolbarActions.unorderedList)}
                         {toolbarBtn(<ListOrdered size={15} />, 'Nummeriert', toolbarActions.orderedList)}
                         {toolbarBtn(<ListTodo size={15} />, 'Aufgabe', toolbarActions.checklist)}
                         {toolbarBtn(<Quote size={15} />, 'Zitat', toolbarActions.quote)}
                       </div>
-                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-[#18385f]/60">
+                      <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-line">
                         {toolbarBtn(<Link2 size={15} />, 'Link', toolbarActions.link)}
                         {toolbarBtn(<Table2 size={15} />, 'Tabelle', toolbarActions.table)}
                       </div>
@@ -492,19 +492,19 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                         title={label}
                         className={cn(
                           'inline-flex h-8 items-center gap-1.5 rounded-[7px] px-2.5 text-[11.5px] font-medium transition-colors',
-                          viewMode === mode ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-[#8ea4bd] hover:bg-[#102542] hover:text-white',
+                          viewMode === mode ? 'bg-gold/15 text-gold' : 'text-label-2 hover:bg-surface-2 hover:text-label',
                         )}
                       >
                         <Icon size={13} /> {label}
                       </button>
                     )
                   })}
-                  {directUrl && <span className="inline-flex h-8 items-center gap-1.5 px-2 text-[11px] font-semibold text-[#d4af37]"><ExternalLink size={13} /> Browseransicht</span>}
+                  {directUrl && <span className="inline-flex h-8 items-center gap-1.5 px-2 text-[11px] font-semibold text-gold"><ExternalLink size={13} /> Browseransicht</span>}
                   <button
                       type="button"
                       onClick={() => setFullscreen((v) => !v)}
                       title={fullscreen ? 'Vollbild verlassen' : 'Vollbild'}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] text-[#8ea4bd] transition-colors hover:bg-[#102542] hover:text-white ml-1"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] text-label-2 transition-colors hover:bg-surface-2 hover:text-label ml-1"
                   >
                     {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                   </button>
@@ -515,11 +515,11 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
             </div>
         ) : (
             <div className="flex min-h-[680px] flex-col items-center justify-center text-center px-6">
-              <div className="rounded-full bg-[#d4af37]/10 p-5 mb-4">
-                <FileText size={32} className="text-[#d4af37]/70" />
+              <div className="rounded-full bg-gold/10 p-5 mb-4">
+                <FileText size={32} className="text-gold/70" />
               </div>
-              <p className="text-[14px] font-semibold text-[#dbe6f3] mb-1">Kein Dokument ausgewählt</p>
-              <p className="text-[12.5px] text-[#8ea4bd] mb-4 max-w-xs">Wähle ein Dokument aus der Seitenleiste oder erstelle ein neues.</p>
+              <p className="text-[14px] font-semibold text-label mb-1">Kein Dokument ausgewählt</p>
+              <p className="text-[12.5px] text-label-2 mb-4 max-w-xs">Wähle ein Dokument aus der Seitenleiste oder erstelle ein neues.</p>
               {canManage && <Button size="sm" onClick={() => setDocModalOpen(true)}><Plus size={13} /> Neues Dokument</Button>}
             </div>
         )}
@@ -539,35 +539,35 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
             ) : undefined}
         />
 
-        {fullscreen && <div className="fixed inset-0 bg-[#03070d]/85 backdrop-blur-sm z-40" onClick={() => setFullscreen(false)} />}
+        {fullscreen && <div className="fixed inset-0 bg-canvas backdrop-blur-sm z-40" onClick={() => setFullscreen(false)} />}
 
         <div className={cn('grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4', fullscreen && 'lg:grid-cols-1')}>
           {!fullscreen && (
-              <aside className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 overflow-hidden">
-                <div className="border-b border-[#18385f]/45 px-3 py-2.5 space-y-2">
+              <aside className="glass-panel-elevated rounded-[12px] border border-line overflow-hidden">
+                <div className="border-b border-line px-3 py-2.5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-[#8ea4bd]">Ablage</p>
+                    <p className="text-[11px] font-semibold text-label-2">Ablage</p>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10.5px] text-[#536b86]">{allDocuments.length}</span>
-                      <button type="button" onClick={refetch} className="p-1 rounded-[6px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/70" title="Aktualisieren">
+                      <span className="text-[11px] text-label-4">{allDocuments.length}</span>
+                      <button type="button" onClick={refetch} className="p-1 rounded-[6px] text-label-3 hover:text-gold-bright hover:bg-surface-2" title="Aktualisieren">
                         <RefreshCw size={12} />
                       </button>
                     </div>
                   </div>
                   <div className="relative">
-                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#536b86]" />
+                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-label-4" />
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Suchen…"
-                        className="h-8 w-full rounded-[7px] border border-[#18385f]/60 bg-[#04101f] pl-7 pr-2 text-[12px] text-[#edf4fb] placeholder:text-[#536b86] outline-none focus:border-[#d4af37]/40"
+                        className="h-8 w-full rounded-[7px] border border-line bg-canvas pl-7 pr-2 text-[12px] text-label placeholder:text-label-4 outline-none focus:border-gold/40"
                     />
                   </div>
                 </div>
                 <div className="max-h-[640px] overflow-y-auto p-1.5">
                   {filteredLoose.length > 0 && (
                       <div className="mb-2">
-                        <p className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wider text-[#536b86] font-semibold">Ohne Ordner</p>
+                        <p className="px-2 pt-2 pb-1 text-[11px] text-label-4 font-semibold">Ohne Ordner</p>
                         {filteredLoose.map((doc) => (
                             <DocumentButton key={doc.id} document={doc} active={selectedId === doc.id} onClick={() => selectDocument(doc.id)} />
                         ))}
@@ -581,17 +581,17 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                           <button
                               type="button"
                               onClick={() => toggleFolder(folder.id)}
-                              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] hover:bg-[#102542]/55 transition-colors group"
+                              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[7px] hover:bg-surface-2 transition-colors group"
                           >
-                            <ChevronRight size={11} className={cn('text-[#536b86] transition-transform', !collapsed && 'rotate-90')} />
+                            <ChevronRight size={11} className={cn('text-label-4 transition-transform', !collapsed && 'rotate-90')} />
                             <Folder size={12} style={{ color: folder.color }} />
-                            <span className="flex-1 truncate text-left text-[12px] font-semibold text-[#dbe6f3]">{folder.name}</span>
-                            <span className="text-[10px] text-[#536b86]">{folder.documents.length}</span>
+                            <span className="flex-1 truncate text-left text-[12px] font-semibold text-label">{folder.name}</span>
+                            <span className="text-[11px] text-label-4">{folder.documents.length}</span>
                           </button>
                           {!collapsed && (
-                              <div className="ml-1.5 pl-2 border-l border-[#18385f]/40">
+                              <div className="ml-1.5 pl-2 border-l border-line">
                                 {folder.documents.length === 0 ? (
-                                    <p className="px-2 py-1.5 text-[10.5px] text-[#536b86] italic">Leer</p>
+                                    <p className="px-2 py-1.5 text-[11px] text-label-4 italic">Leer</p>
                                 ) : (
                                     folder.documents.map((doc) => (
                                         <DocumentButton key={doc.id} document={doc} color={folder.color} active={selectedId === doc.id} onClick={() => selectDocument(doc.id)} />
@@ -604,8 +604,8 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                   })}
                   {allDocuments.length === 0 && (
                       <div className="py-12 text-center px-4">
-                        <FileText size={22} className="mx-auto mb-2 text-[#4a6585]" />
-                        <p className="text-[12px] text-[#8ea4bd] mb-3">Noch keine Dokumente</p>
+                        <FileText size={22} className="mx-auto mb-2 text-label-4" />
+                        <p className="text-[12px] text-label-2 mb-3">Noch keine Dokumente</p>
                         {canManage && (
                             <Button size="sm" variant="secondary" onClick={() => setDocModalOpen(true)}>
                               <Plus size={12} /> Erstellen
@@ -614,7 +614,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                       </div>
                   )}
                   {allDocuments.length > 0 && search && filteredLoose.length === 0 && filteredFolders.every((f) => f.documents.length === 0) && (
-                      <p className="py-8 text-center text-[11.5px] text-[#536b86]">Keine Treffer für {search}</p>
+                      <p className="py-8 text-center text-[11.5px] text-label-4">Keine Treffer für {search}</p>
                   )}
                 </div>
               </aside>
@@ -647,7 +647,7 @@ export function ModuleDocuments({ module, title: pageTitle, description, emptyDo
                 onChange={(e) => setDocForm({ ...docForm, externalUrl: e.target.value })}
                 placeholder="https://drive.google.com/..."
               />
-              <p className="mt-1.5 text-[10.5px] leading-4 text-[#607994]">
+              <p className="mt-1.5 text-[11px] leading-4 text-label-3">
                 Mit einem Link öffnet sich der Eintrag direkt im Browser statt im Markdown-Editor.
               </p>
             </div>
@@ -669,17 +669,17 @@ function DocumentButton({ document, color, active, onClick }: { document: Module
           className={cn(
               'w-full rounded-[8px] px-2.5 py-2 text-left transition-all group relative',
               active
-                  ? 'bg-gradient-to-r from-[#d4af37]/15 to-[#d4af37]/5 border border-[#d4af37]/30 shadow-[0_2px_10px_rgba(212,175,55,0.08)]'
-                  : 'border border-transparent hover:bg-[#102542]/60',
+                  ? 'bg-white/[0.06] border border-gold/30 '
+                  : 'border border-transparent hover:bg-surface-2',
           )}
       >
-        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[2px] rounded-r bg-[#d4af37]" />}
+        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[2px] rounded-r bg-gold" />}
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color ?? '#d4af37' }} />
-          <p className={cn('truncate text-[12.5px] font-medium flex-1', active ? 'text-white' : 'text-[#edf4fb]')}>{document.title}</p>
-          {document.externalUrl && <ExternalLink size={11} className="shrink-0 text-[#d4af37]" aria-label="Direktlink" />}
+          <p className={cn('truncate text-[12.5px] font-medium flex-1', active ? 'text-label' : 'text-label')}>{document.title}</p>
+          {document.externalUrl && <ExternalLink size={11} className="shrink-0 text-gold" aria-label="Direktlink" />}
         </div>
-        <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#6b8299] pl-3.5">{document.externalUrl ? 'Direkt im Browser öffnen' : preview(document.content)}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-label-3 pl-3.5">{document.externalUrl ? 'Direkt im Browser öffnen' : preview(document.content)}</p>
       </button>
   )
 }

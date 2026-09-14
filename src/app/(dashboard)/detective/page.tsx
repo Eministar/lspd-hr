@@ -36,7 +36,7 @@ export default function DetectivePage() {
         { value: 'OTHER', label: 'Sonstiges' },
       ]}
       defaultType="MEETING"
-      color="#a78bfa"
+      color="#bf5af2"
       viewPermission="detective:view"
       managePermission="detective:manage"
     />

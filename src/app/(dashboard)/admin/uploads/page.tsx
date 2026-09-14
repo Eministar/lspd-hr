@@ -114,28 +114,28 @@ export default function AdminUploadsPage() {
         }
       />
 
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-        <div className="divide-y divide-[#18385f]">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
+        <div className="divide-y divide-line">
           {(uploads ?? []).map((upload) => {
             const Icon = uploadIcon(upload.extension)
             const isImage = ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG'].includes(upload.extension)
 
             return (
-              <div key={upload.filename} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors">
+              <div key={upload.filename} className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-2 transition-colors">
                 <div className={cn(
-                  'h-10 w-10 shrink-0 overflow-hidden rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33] flex items-center justify-center',
-                  isImage && 'bg-[#061426]',
+                  'h-10 w-10 shrink-0 overflow-hidden rounded-[9px] border border-line bg-surface flex items-center justify-center',
+                  isImage && 'bg-canvas',
                 )}>
                   {isImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={upload.url} alt="" className="h-full w-full object-cover" loading="lazy" />
                   ) : (
-                    <Icon size={17} className="text-[#d4af37]" strokeWidth={1.75} />
+                    <Icon size={17} className="text-gold" strokeWidth={1.75} />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-medium text-[#edf4fb]">{upload.filename}</p>
-                  <p className="mt-0.5 text-[11.5px] text-[#6b8299]">
+                  <p className="truncate text-[13.5px] font-medium text-label">{upload.filename}</p>
+                  <p className="mt-0.5 text-[11.5px] text-label-3">
                     {upload.extension || 'DATEI'} · {formatBytes(upload.size)} · {formatDateTime(upload.modifiedAt)}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function AdminUploadsPage() {
                   <Link
                     href={upload.url}
                     target="_blank"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#8ea4bd] transition-colors hover:bg-[#0a1a33] hover:text-[#d4af37]"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-label-2 transition-colors hover:bg-surface hover:text-gold-bright"
                     title="Öffnen"
                   >
                     <ExternalLink size={14} strokeWidth={1.8} />
@@ -151,7 +151,7 @@ export default function AdminUploadsPage() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(upload)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#8ea4bd] transition-colors hover:bg-[#1c1111] hover:text-[#f87171]"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-label-2 transition-colors hover:bg-red/14 hover:text-red"
                     title="Löschen"
                   >
                     <Trash2 size={14} strokeWidth={1.8} />
@@ -163,8 +163,8 @@ export default function AdminUploadsPage() {
 
           {(uploads ?? []).length === 0 && (
             <div className="px-5 py-14 text-center">
-              <Upload size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Uploads vorhanden</p>
+              <Upload size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-3">Keine Uploads vorhanden</p>
             </div>
           )}
         </div>
@@ -172,8 +172,8 @@ export default function AdminUploadsPage() {
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Upload löschen">
         <div className="space-y-4">
-          <p className="text-[13px] text-[#888]">
-            <strong className="text-[#eee]">{deleteTarget?.filename}</strong> wird dauerhaft gelöscht.
+          <p className="text-[13px] text-label-2">
+            <strong className="text-label">{deleteTarget?.filename}</strong> wird dauerhaft gelöscht.
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setDeleteTarget(null)}>Abbrechen</Button>

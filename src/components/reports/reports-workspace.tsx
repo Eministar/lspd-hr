@@ -221,7 +221,7 @@ export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: 
       />
 
       {loadError && (
-        <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111] px-4 py-3 text-[12.5px] text-[#fca5a5]">
+        <div className="rounded-[12px] border border-red/30 bg-red/14 px-4 py-3 text-[12.5px] text-red">
           {loadError}
         </div>
       )}
@@ -242,23 +242,23 @@ export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: 
         />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[340px_1fr]">
-          <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 lg:sticky lg:top-4">
-            <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">{isInternalAffairs ? 'Ermittlungsakten' : 'Vorgänge'}</p>
-              <span className="text-[10.5px] text-[#536b86]">
+          <aside className="overflow-hidden rounded-[12px] border border-line bg-surface lg:sticky lg:top-4">
+            <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
+              <p className="text-[11px] font-semibold text-label-2">{isInternalAffairs ? 'Ermittlungsakten' : 'Vorgänge'}</p>
+              <span className="text-[11px] text-label-4">
                 {filtered.length}
                 {filtered.length !== (reports?.length ?? 0) && ` / ${reports?.length ?? 0}`}
               </span>
             </div>
 
-            <div className="space-y-2 border-b border-[#18385f]/45 px-2.5 py-2.5">
+            <div className="space-y-2 border-b border-line px-2.5 py-2.5">
               <div className="relative">
-                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-label-4" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={isInternalAffairs ? 'Aktenzeichen, Name, Ermittlungsart' : 'Aktenzeichen, Name, Tatvorwurf'}
-                  className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+                  className="h-[34px] w-full rounded-[8px] border border-line bg-surface pl-8 pr-3 text-[13px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
                 />
               </div>
               <div className="flex flex-wrap gap-1">
@@ -282,7 +282,7 @@ export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: 
                 />
               ))}
               {filtered.length === 0 && (
-                <p className="px-3 py-8 text-center text-[12px] text-[#6b8299]">
+                <p className="px-3 py-8 text-center text-[12px] text-label-3">
                   Kein Vorgang passt zu Suche und Filter.
                 </p>
               )}
@@ -334,7 +334,7 @@ export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: 
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label htmlFor="incidentAt" className="block text-[12.5px] font-medium text-[#9fb0c4]">
+              <label htmlFor="incidentAt" className="block text-[12.5px] font-medium text-label-2">
                 Tatzeitpunkt
               </label>
               <input
@@ -342,7 +342,7 @@ export function ReportsWorkspace({ canManage, canDelete, context = 'reports' }: 
                 type="datetime-local"
                 value={form.incidentAt}
                 onChange={(event) => setForm({ ...form, incidentAt: event.target.value })}
-                className="h-[36px] w-full rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33] px-3 text-[13.5px] text-[#edf4fb] outline-none transition-colors focus:border-[#d4af37]"
+                className="h-[36px] w-full rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-label outline-none transition-colors focus:border-gold"
               />
             </div>
             <Input
@@ -463,18 +463,18 @@ export function ReportDetail({
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+      <div className="rounded-[12px] border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-[6px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold tracking-wide text-[#d4af37]">
+          <span className="rounded-[6px] border border-gold/30 bg-gold/10 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold tracking-wide text-gold">
             {report.caseNumber}
           </span>
           <Badge variant={meta.variant}>{meta.label}</Badge>
-          <span className="text-[11.5px] text-[#6b8299]">Aktualisiert {formatDateTime(report.updatedAt)}</span>
+          <span className="text-[11.5px] text-label-3">Aktualisiert {formatDateTime(report.updatedAt)}</span>
           {canDelete && (
             <button
               type="button"
               onClick={remove}
-              className="ml-auto inline-flex items-center gap-1 rounded-[7px] border border-[#7f1d1d]/50 px-2 py-1 text-[11.5px] font-medium text-[#fca5a5] transition-colors hover:bg-[#2a1620]/60"
+              className="ml-auto inline-flex items-center gap-1 rounded-[7px] border border-red/15 px-2 py-1 text-[11.5px] font-medium text-red transition-colors hover:bg-red/8"
             >
               <Trash2 size={11} />
               Löschen
@@ -482,7 +482,7 @@ export function ReportDetail({
           )}
         </div>
 
-        <h2 className="mt-3 whitespace-pre-wrap text-[17px] font-semibold leading-6 text-white">{report.charge}</h2>
+        <h2 className="mt-3 whitespace-pre-wrap text-[17px] font-semibold leading-6 text-label">{report.charge}</h2>
 
         <dl className="mt-3 grid gap-2 sm:grid-cols-3">
           <MetaItem icon={CalendarClock} label="Tatzeit" value={report.incidentAt ? formatDateTime(report.incidentAt) : '—'} />
@@ -491,9 +491,9 @@ export function ReportDetail({
         </dl>
       </div>
 
-      <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+      <div className="rounded-[12px] border border-line bg-surface p-4">
         <SectionTitle icon={FileText} title="Sachverhalt" />
-        <p className="whitespace-pre-wrap text-[13px] leading-6 text-[#dbe6f3]">{report.description}</p>
+        <p className="whitespace-pre-wrap text-[13px] leading-6 text-label">{report.description}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -509,7 +509,7 @@ export function ReportDetail({
       </div>
 
       {attachments.length > 0 && (
-        <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+        <div className="rounded-[12px] border border-line bg-surface p-4">
           <SectionTitle icon={FileText} title={isInternalAffairs ? 'Beweise / Bilder' : 'Beweisbilder'} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {attachments.map((attachment) => (
@@ -518,11 +518,11 @@ export function ReportDetail({
                 href={attachment.url}
                 target="_blank"
                 rel="noreferrer"
-                className="overflow-hidden rounded-[10px] border border-[#18385f]/60 bg-[#071a30]/55"
+                className="overflow-hidden rounded-[10px] border border-line bg-surface"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={attachment.url} alt={attachment.label} className="h-28 w-full object-cover" />
-                <p className="truncate px-2 py-1.5 text-[11.5px] text-[#8ea4bd]">{attachment.label}</p>
+                <p className="truncate px-2 py-1.5 text-[11.5px] text-label-2">{attachment.label}</p>
               </a>
             ))}
           </div>
@@ -530,7 +530,7 @@ export function ReportDetail({
       )}
 
       {canManage && (
-        <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+        <div className="rounded-[12px] border border-line bg-surface p-4">
           <SectionTitle icon={Gavel} title="Status & Vermerk" />
           <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
             <Select
@@ -549,7 +549,7 @@ export function ReportDetail({
               disabled={saving}
             />
           </div>
-          <p className="mt-2 text-[11.5px] text-[#6b8299]">{REPORT_STATUS_META[status].description}</p>
+          <p className="mt-2 text-[11.5px] text-label-3">{REPORT_STATUS_META[status].description}</p>
           <div className="mt-3 flex justify-end">
             <Button size="sm" onClick={addUpdate} loading={saving}>
               <Save size={13} />
@@ -559,27 +559,27 @@ export function ReportDetail({
         </div>
       )}
 
-      <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+      <div className="rounded-[12px] border border-line bg-surface p-4">
         <SectionTitle icon={ScrollText} title="Verlauf" />
         <div className="space-y-2">
           {(report.updates ?? []).map((update) => (
-            <div key={update.id} className="rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3">
+            <div key={update.id} className="rounded-[10px] border border-line bg-surface p-3">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 {update.status && (
                   <Badge variant={REPORT_STATUS_META[update.status].variant}>
                     {REPORT_STATUS_META[update.status].shortLabel}
                   </Badge>
                 )}
-                <span className="text-[11.5px] text-[#8ea4bd]">
+                <span className="text-[11.5px] text-label-2">
                   {update.author?.displayName || update.authorName || 'System'}
                 </span>
-                <span className="text-[11px] text-[#536b86]">{formatDateTime(update.createdAt)}</span>
+                <span className="text-[11px] text-label-4">{formatDateTime(update.createdAt)}</span>
               </div>
-              <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{update.note}</p>
+              <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-label">{update.note}</p>
             </div>
           ))}
           {(report.updates ?? []).length === 0 && (
-            <p className="py-4 text-center text-[12px] text-[#6b8299]">Noch keine Einträge.</p>
+            <p className="py-4 text-center text-[12px] text-label-3">Noch keine Einträge.</p>
           )}
         </div>
       </div>
@@ -597,17 +597,17 @@ function PersonCard({
   showIdCard?: boolean
 }) {
   return (
-    <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">{title}</p>
+    <div className="rounded-[12px] border border-line bg-surface p-4">
+      <p className="mb-3 text-[11px] font-semibold text-label-2">{title}</p>
 
       {person ? (
         <>
           <div className="flex items-start gap-3">
             <PersonAvatar person={person} size="lg" />
             <div className="min-w-0 flex-1">
-              <p className="font-mono text-[11px] font-semibold text-[#d4af37]">{person.fileNumber}</p>
-              <p className="truncate text-[15px] font-semibold text-white">{personDisplayName(person) || '—'}</p>
-              <p className="mt-0.5 truncate text-[12px] text-[#8ea4bd]">{person.phone || 'Keine Telefonnummer'}</p>
+              <p className="font-mono text-[11px] font-semibold text-gold">{person.fileNumber}</p>
+              <p className="truncate text-[15px] font-semibold text-label">{personDisplayName(person) || '—'}</p>
+              <p className="mt-0.5 truncate text-[12px] text-label-2">{person.phone || 'Keine Telefonnummer'}</p>
               {person.wanted && <Badge variant="danger" className="mt-1.5">Zur Fahndung ausgeschrieben</Badge>}
             </div>
           </div>
@@ -617,7 +617,7 @@ function PersonCard({
               href={person.idCardImageUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 block overflow-hidden rounded-[10px] border border-[#18385f]/60"
+              className="mt-3 block overflow-hidden rounded-[10px] border border-line"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={person.idCardImageUrl} alt="Personalausweis" className="h-32 w-full object-cover" />
@@ -626,13 +626,13 @@ function PersonCard({
 
           <Link
             href={`/anzeigen/akten/${person.id}`}
-            className="mt-3 inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-[#17375f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40"
+            className="mt-3 inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-surface-2 px-3 text-[12.5px] font-medium text-label shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
           >
             Akte öffnen
           </Link>
         </>
       ) : (
-        <p className="py-3 text-[12.5px] text-[#6b8299]">Keine Person hinterlegt.</p>
+        <p className="py-3 text-[12.5px] text-label-3">Keine Person hinterlegt.</p>
       )}
     </div>
   )
@@ -656,14 +656,14 @@ function AttachmentEditor({
   }
 
   return (
-    <section className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
-      <p className="text-[13px] font-semibold text-white">{title}</p>
-      <p className="mt-0.5 text-[11.5px] text-[#6b8299]">Optionale Fotos zum Vorgang (max. 12).</p>
+    <section className="rounded-[12px] border border-line bg-white/[0.03] p-3.5">
+      <p className="text-[13px] font-semibold text-label">{title}</p>
+      <p className="mt-0.5 text-[11.5px] text-label-3">Optionale Fotos zum Vorgang (max. 12).</p>
 
       {attachments.length > 0 && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {attachments.map((attachment, index) => (
-            <div key={attachment.id} className="overflow-hidden rounded-[9px] border border-[#18385f]/60">
+            <div key={attachment.id} className="overflow-hidden rounded-[9px] border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={attachment.url} alt={attachment.label} className="h-20 w-full object-cover" />
               <input
@@ -671,12 +671,12 @@ function AttachmentEditor({
                 onChange={(event) => onChange(attachments.map((item, itemIndex) => (
                   itemIndex === index ? { ...item, label: event.target.value } : item
                 )))}
-                className="w-full bg-[#071a30]/70 px-2 py-1 text-[11px] text-[#dbe6f3] outline-none"
+                className="w-full bg-surface px-2 py-1 text-[11px] text-label outline-none"
               />
               <button
                 type="button"
                 onClick={() => onChange(attachments.filter((_, itemIndex) => itemIndex !== index))}
-                className="w-full bg-[#2a1620]/60 py-1 text-[11px] font-medium text-[#fca5a5]"
+                className="w-full bg-red/8 py-1 text-[11px] font-medium text-red"
               >
                 Entfernen
               </button>
@@ -712,20 +712,20 @@ function ReportListItem({
       href={`/anzeigen/intern/${report.id}`}
       className={cn(
         'block w-full rounded-[9px] border px-3 py-2.5 text-left transition-colors',
-        active ? 'border-[#d4af37]/35 bg-[#d4af37]/12' : 'border-transparent hover:bg-[#102542]/60',
+        active ? 'border-gold/35 bg-gold/12' : 'border-transparent hover:bg-surface-2',
       )}
     >
       <div className="flex items-start gap-2.5">
         <PersonAvatar person={report.suspect} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-[10.5px] font-semibold tracking-wide text-[#d4af37]">
+          <p className="truncate font-mono text-[11px] font-semibold tracking-wide text-gold">
             {report.caseNumber}
           </p>
-          <p className="truncate text-[13px] font-semibold text-white">
+          <p className="truncate text-[13px] font-semibold text-label">
             {personDisplayName(report.suspect) || 'Unbekannte Person'}
           </p>
-          <p className="mt-0.5 truncate text-[11.5px] text-[#8ea4bd]">{report.charge}</p>
-          <p className="mt-0.5 truncate text-[11px] text-[#536b86]">{formatDateTime(report.createdAt)}</p>
+          <p className="mt-0.5 truncate text-[11.5px] text-label-2">{report.charge}</p>
+          <p className="mt-0.5 truncate text-[11px] text-label-4">{formatDateTime(report.createdAt)}</p>
         </div>
         <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
       </div>
@@ -743,12 +743,12 @@ function MetaItem({
   value: string
 }) {
   return (
-    <div className="rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[#4a6585]">
-        <Icon size={12} className="text-[#d4af37]" />
+    <div className="rounded-[10px] border border-line bg-surface px-3 py-2">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-label-4">
+        <Icon size={12} className="text-gold" />
         {label}
       </div>
-      <p className="mt-1 truncate text-[12.5px] text-[#dbe6f3]">{value}</p>
+      <p className="mt-1 truncate text-[12.5px] text-label">{value}</p>
     </div>
   )
 }
@@ -756,17 +756,17 @@ function MetaItem({
 export function SectionTitle({ icon: Icon, title }: { icon: typeof FileText; title: string }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <Icon size={15} className="text-[#d4af37]" />
-      <h3 className="text-[14px] font-semibold text-white">{title}</h3>
+      <Icon size={15} className="text-gold" />
+      <h3 className="text-[14px] font-semibold text-label">{title}</h3>
     </div>
   )
 }
 
 export function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[12px] border border-white/[0.04] bg-[#091e36]/70 px-4 py-3">
-      <p className="text-[20px] font-semibold leading-tight text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[11px] text-[#8ea4bd]">{label}</p>
+    <div className="rounded-[12px] border border-white/[0.04] bg-surface px-4 py-3">
+      <p className="text-[20px] font-semibold leading-tight text-label tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[11px] text-label-2">{label}</p>
     </div>
   )
 }
@@ -787,8 +787,8 @@ export function FilterChip({
       className={cn(
         'rounded-[7px] border px-2 py-1 text-[11px] font-medium transition-colors',
         active
-          ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
-          : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+          ? 'border-gold/45 bg-gold/14 text-gold'
+          : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
       )}
     >
       {label}
@@ -798,10 +798,10 @@ export function FilterChip({
 
 export function EmptyState({ title, hint }: { title: string; hint: string }) {
   return (
-    <section className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 py-14 text-center">
-      <ScrollText size={28} className="mx-auto mb-3 text-[#4a6585]" />
-      <p className="text-[14px] font-semibold text-white">{title}</p>
-      {hint && <p className="mt-1 text-[12.5px] text-[#8ea4bd]">{hint}</p>}
+    <section className="rounded-[12px] border border-line bg-surface py-14 text-center">
+      <ScrollText size={28} className="mx-auto mb-3 text-label-4" />
+      <p className="text-[14px] font-semibold text-label">{title}</p>
+      {hint && <p className="mt-1 text-[12.5px] text-label-2">{hint}</p>}
     </section>
   )
 }

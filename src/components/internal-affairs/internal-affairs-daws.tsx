@@ -357,7 +357,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
         description="Eigenständiges DAW- und Ermittlungssystem der Internal Affairs zur Erfassung von Dienstvergehen, Sanktionen und Dienstanweisungen."
         action={
           canManage && (
-            <Button onClick={openCreateModal} className="bg-[#0ea5e9] text-white hover:bg-[#0284c7]">
+            <Button onClick={openCreateModal} className="bg-cyan text-label hover:bg-cyan/28">
               <Plus size={16} className="mr-2" /> Neue DAW verfassen
             </Button>
           )
@@ -365,9 +365,9 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
       />
 
       {/* Filterleiste */}
-      <div className="flex flex-col gap-3 rounded-xl border border-[#18385f]/60 bg-[#091b33]/60 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#607994]" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-label-3" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -396,10 +396,10 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
       {/* Liste der DAWs */}
       {filteredDaws.length === 0 ? (
-        <div className="rounded-2xl border border-[#18385f]/50 bg-[#08182f]/50 p-12 text-center">
-          <ShieldAlert className="mx-auto h-12 w-12 text-[#607994]" />
-          <p className="mt-3 text-base font-semibold text-white">Keine Akten gefunden</p>
-          <p className="mt-1 text-xs text-[#8ea4bd]">
+        <div className="rounded-2xl border border-line bg-surface p-12 text-center">
+          <ShieldAlert className="mx-auto h-12 w-12 text-label-3" />
+          <p className="mt-3 text-base font-semibold text-label">Keine Akten gefunden</p>
+          <p className="mt-1 text-xs text-label-2">
             {search || statusFilter !== 'ALL' || categoryFilter !== 'ALL'
               ? 'Passe deine Filterkriterien an, um Ergebnisse anzuzeigen.'
               : 'Es wurden bisher keine Dienstaufsichtswarnungen oder Disziplinarakten angelegt.'}
@@ -432,44 +432,44 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             return (
               <div
                 key={item.id}
-                className="group flex flex-col justify-between rounded-xl border border-[#18385f]/60 bg-[#08182f]/80 p-4 transition-all hover:border-[#0ea5e9]/50 hover:bg-[#0b203c]"
+                className="group flex flex-col justify-between rounded-xl border border-line bg-surface p-4 transition-all hover:border-cyan/30 hover:bg-surface"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-mono text-[11px] font-bold text-[#0ea5e9]">
+                    <span className="font-mono text-[11px] font-bold text-cyan">
                       {item.caseNumber || 'DAW-ENTWURF'}
                     </span>
-                    <Badge variant={statusConfig.badgeVariant} className="text-[10px] font-medium">
+                    <Badge variant={statusConfig.badgeVariant} className="text-[11px] font-medium">
                       {statusConfig.label}
                     </Badge>
                   </div>
 
-                  <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-white group-hover:text-[#7dd3fc]">
+                  <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-label group-hover:text-cyan">
                     {item.title}
                   </h3>
 
                   <div className="mt-2.5 flex items-center gap-1.5">
-                    <Badge variant={catConfig.badgeVariant} className="text-[10px]">
+                    <Badge variant={catConfig.badgeVariant} className="text-[11px]">
                       {catConfig.label}
                     </Badge>
                     {item.penalGrade && (
-                      <Badge variant="danger" className="text-[10px]">
+                      <Badge variant="danger" className="text-[11px]">
                         {item.penalGrade.replace('_', ' ')}
                       </Badge>
                     )}
                   </div>
 
                   {/* Betroffener Officer */}
-                  <div className="mt-3.5 flex items-center gap-2.5 rounded-lg border border-[#18385f]/40 bg-[#051224]/60 p-2.5">
+                  <div className="mt-3.5 flex items-center gap-2.5 rounded-lg border border-line bg-canvas p-2.5">
                     <OfficerAvatar
                       officer={avatarOfficer}
                       size="sm"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-white">
+                      <p className="truncate text-xs font-semibold text-label">
                         {officerName}
                       </p>
-                      <p className="truncate text-[10.5px] text-[#8ea4bd]">
+                      <p className="truncate text-[11px] text-label-2">
                         {badge} · {rankName}
                       </p>
                     </div>
@@ -478,26 +478,26 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                   {/* Tatvorwurf Zusammenfassung */}
                   {item.allegation && (
                     <div className="mt-3">
-                      <p className="text-[10.5px] font-semibold text-[#8ea4bd]">Tatvorwurf:</p>
-                      <p className="line-clamp-2 text-xs text-[#cbd5e1]">{item.allegation}</p>
+                      <p className="text-[11px] font-semibold text-label-2">Tatvorwurf:</p>
+                      <p className="line-clamp-2 text-xs text-label-2">{item.allegation}</p>
                     </div>
                   )}
 
                   {/* Sanktionen / Maßnahmen */}
                   {(item.fineAmount || item.sgRounds || item.suspensionHours || item.sanctionSummary) && (
-                    <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10.5px]">
+                    <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px]">
                       {item.fineAmount ? (
-                        <span className="rounded bg-[#0f2d4e] px-2 py-0.5 font-medium text-emerald-300">
+                        <span className="rounded bg-surface-2 px-2 py-0.5 font-medium text-emerald-300">
                           {item.fineAmount.toLocaleString('de-DE')} $
                         </span>
                       ) : null}
                       {item.sgRounds ? (
-                        <span className="rounded bg-[#0f2d4e] px-2 py-0.5 font-medium text-amber-300">
+                        <span className="rounded bg-surface-2 px-2 py-0.5 font-medium text-amber-300">
                           {item.sgRounds} SG-Runden
                         </span>
                       ) : null}
                       {item.suspensionHours ? (
-                        <span className="rounded bg-[#0f2d4e] px-2 py-0.5 font-medium text-rose-300">
+                        <span className="rounded bg-surface-2 px-2 py-0.5 font-medium text-rose-300">
                           {item.suspensionHours}h Suspendierung
                         </span>
                       ) : null}
@@ -506,14 +506,14 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-[#18385f]/40 pt-3 text-[11px] text-[#607994]">
+                <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-[11px] text-label-3">
                   <span>{formatDateTime(item.createdAt)}</span>
                   <div className="flex items-center gap-1">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => openDetail(item)}
-                      className="h-7 px-2 text-xs text-[#7dd3fc] hover:bg-[#0ea5e9]/10"
+                      className="h-7 px-2 text-xs text-cyan hover:bg-cyan/10"
                     >
                       <Eye size={13} className="mr-1" /> Details
                     </Button>
@@ -522,7 +522,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                         size="sm"
                         variant="ghost"
                         onClick={() => openEditModal(item)}
-                        className="h-7 px-2 text-xs text-[#cbd5e1] hover:bg-white/5"
+                        className="h-7 px-2 text-xs text-label-2 hover:bg-white/5"
                       >
                         <FileEdit size={13} />
                       </Button>
@@ -544,7 +544,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Titel / Betreff *</label>
+              <label className="text-xs font-semibold text-label-2">Titel / Betreff *</label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -555,7 +555,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Kategorie *</label>
+              <label className="text-xs font-semibold text-label-2">Kategorie *</label>
               <Select
                 value={form.category}
                 onValueChange={(val) => setForm({ ...form, category: val })}
@@ -567,7 +567,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Betroffener Officer</label>
+              <label className="text-xs font-semibold text-label-2">Betroffener Officer</label>
               <Select
                 value={form.officerId}
                 onValueChange={(val) => setForm({ ...form, officerId: val })}
@@ -577,7 +577,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Fallnummer (optional)</label>
+              <label className="text-xs font-semibold text-label-2">Fallnummer (optional)</label>
               <Input
                 value={form.caseNumber}
                 onChange={(e) => setForm({ ...form, caseNumber: e.target.value })}
@@ -588,7 +588,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#8ea4bd]">Tatvorwurf / Verstoß</label>
+            <label className="text-xs font-semibold text-label-2">Tatvorwurf / Verstoß</label>
             <Input
               value={form.allegation}
               onChange={(e) => setForm({ ...form, allegation: e.target.value })}
@@ -598,7 +598,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#8ea4bd]">Sachverhalt / Ausführliche Schilderung</label>
+            <label className="text-xs font-semibold text-label-2">Sachverhalt / Ausführliche Schilderung</label>
             <Textarea
               value={form.statement}
               onChange={(e) => setForm({ ...form, statement: e.target.value })}
@@ -609,12 +609,12 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           </div>
 
           {/* Sanktionen & Strafmaß */}
-          <div className="rounded-xl border border-[#18385f]/70 bg-[#08182f]/80 p-3.5 space-y-3">
-            <p className="text-xs font-bold text-[#7dd3fc]">Sanktion & Disziplinarmaßnahme (Penal Grade)</p>
+          <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3">
+            <p className="text-xs font-bold text-cyan">Sanktion & Disziplinarmaßnahme (Penal Grade)</p>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold text-[#8ea4bd]">Penal Grade</label>
+                <label className="text-xs font-semibold text-label-2">Penal Grade</label>
                 <Select
                   value={form.penalGrade}
                   onValueChange={(val) => setForm({ ...form, penalGrade: val })}
@@ -625,7 +625,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#8ea4bd]">Status der Akte</label>
+                <label className="text-xs font-semibold text-label-2">Status der Akte</label>
                 <Select
                   value={form.status}
                   onValueChange={(val) => setForm({ ...form, status: val })}
@@ -638,7 +638,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
-                <label className="text-xs font-semibold text-[#8ea4bd]">Geldstrafe ($)</label>
+                <label className="text-xs font-semibold text-label-2">Geldstrafe ($)</label>
                 <Input
                   type="number"
                   value={form.fineAmount}
@@ -648,7 +648,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#8ea4bd]">SG-Runden</label>
+                <label className="text-xs font-semibold text-label-2">SG-Runden</label>
                 <Input
                   type="number"
                   value={form.sgRounds}
@@ -658,7 +658,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#8ea4bd]">Suspendierung (Std.)</label>
+                <label className="text-xs font-semibold text-label-2">Suspendierung (Std.)</label>
                 <Input
                   type="number"
                   value={form.suspensionHours}
@@ -670,7 +670,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Zusätzliche Auflagen / Bemerkung zur Sanktion</label>
+              <label className="text-xs font-semibold text-label-2">Zusätzliche Auflagen / Bemerkung zur Sanktion</label>
               <Input
                 value={form.sanctionSummary}
                 onChange={(e) => setForm({ ...form, sanctionSummary: e.target.value })}
@@ -682,7 +682,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Tatzeitpunkt</label>
+              <label className="text-xs font-semibold text-label-2">Tatzeitpunkt</label>
               <Input
                 type="datetime-local"
                 value={form.incidentAt}
@@ -691,7 +691,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#8ea4bd]">Frist / Zahlungsziel</label>
+              <label className="text-xs font-semibold text-label-2">Frist / Zahlungsziel</label>
               <Input
                 type="datetime-local"
                 value={form.deadlineAt}
@@ -702,7 +702,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#8ea4bd]">Beweise & Anhänge (URLs, eine pro Zeile)</label>
+            <label className="text-xs font-semibold text-label-2">Beweise & Anhänge (URLs, eine pro Zeile)</label>
             <Textarea
               value={form.evidenceUrls}
               onChange={(e) => setForm({ ...form, evidenceUrls: e.target.value })}
@@ -713,7 +713,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#8ea4bd]">Abschlussvermerk / Ergebnis (optional)</label>
+            <label className="text-xs font-semibold text-label-2">Abschlussvermerk / Ergebnis (optional)</label>
             <Textarea
               value={form.resolutionNote}
               onChange={(e) => setForm({ ...form, resolutionNote: e.target.value })}
@@ -727,7 +727,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={saving} className="bg-[#0ea5e9] text-white hover:bg-[#0284c7]">
+            <Button type="submit" disabled={saving} className="bg-cyan text-label hover:bg-cyan/28">
               {saving ? 'Speichert...' : editingItem ? 'Änderungen speichern' : 'DAW anlegen'}
             </Button>
           </div>
@@ -742,12 +742,12 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
           title={`Fallakte: ${viewingItem.caseNumber || 'Entwurf'}`}
         >
           <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#18385f]/40 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
               <div>
-                <span className="font-mono text-xs font-bold text-[#0ea5e9]">
+                <span className="font-mono text-xs font-bold text-cyan">
                   {viewingItem.caseNumber || 'DAW-ENTWURF'}
                 </span>
-                <h2 className="text-base font-bold text-white">{viewingItem.title}</h2>
+                <h2 className="text-base font-bold text-label">{viewingItem.title}</h2>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={(STATUS_META[viewingItem.status] || STATUS_META.OPEN).badgeVariant} className="text-xs font-semibold">
@@ -757,7 +757,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             </div>
 
             {/* Officer Box */}
-            <div className="rounded-xl border border-[#18385f]/60 bg-[#08182f] p-3.5 flex items-center gap-3">
+            <div className="rounded-xl border border-line bg-surface p-3.5 flex items-center gap-3">
               <OfficerAvatar
                 officer={{
                   firstName: viewingItem.officer?.firstName || viewingItem.previousFirstName || '',
@@ -767,15 +767,15 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                 size="md"
               />
               <div>
-                <p className="text-xs text-[#8ea4bd]">Betroffener Officer</p>
-                <p className="font-bold text-white">
+                <p className="text-xs text-label-2">Betroffener Officer</p>
+                <p className="font-bold text-label">
                   {viewingItem.officer
                     ? `${viewingItem.officer.firstName} ${viewingItem.officer.lastName}`
                     : viewingItem.previousFirstName
                     ? `${viewingItem.previousFirstName} ${viewingItem.previousLastName}`
                     : 'Nicht zugewiesen'}
                 </p>
-                <p className="text-xs text-[#7dd3fc]">
+                <p className="text-xs text-cyan">
                   Dienstnummer: {viewingItem.officer ? displayBadgeNumber(viewingItem.officer.badgeNumber) : viewingItem.previousBadgeNumber || '—'} · Rang: {viewingItem.officer?.rank.name || viewingItem.previousRank || '—'}
                 </p>
               </div>
@@ -783,16 +783,16 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
             {/* Tatvorwurf & Sachverhalt */}
             {viewingItem.allegation && (
-              <div className="rounded-xl border border-[#18385f]/40 bg-[#051224]/70 p-3.5">
-                <p className="text-xs font-bold text-[#8ea4bd]">Tatvorwurf / Anschuldigung:</p>
-                <p className="mt-1 text-white">{viewingItem.allegation}</p>
+              <div className="rounded-xl border border-line bg-canvas p-3.5">
+                <p className="text-xs font-bold text-label-2">Tatvorwurf / Anschuldigung:</p>
+                <p className="mt-1 text-label">{viewingItem.allegation}</p>
               </div>
             )}
 
             {viewingItem.statement && (
-              <div className="rounded-xl border border-[#18385f]/40 bg-[#051224]/70 p-3.5">
-                <p className="text-xs font-bold text-[#8ea4bd]">Sachverhalt & Ermittlungsbericht:</p>
-                <p className="mt-1 whitespace-pre-wrap text-xs text-[#cbd5e1] leading-relaxed">
+              <div className="rounded-xl border border-line bg-canvas p-3.5">
+                <p className="text-xs font-bold text-label-2">Sachverhalt & Ermittlungsbericht:</p>
+                <p className="mt-1 whitespace-pre-wrap text-xs text-label-2 leading-relaxed">
                   {viewingItem.statement}
                 </p>
               </div>
@@ -809,17 +809,17 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                     </Badge>
                   )}
                   {viewingItem.fineAmount ? (
-                    <span className="rounded bg-[#0f2d4e] px-2.5 py-1 font-semibold text-emerald-300">
+                    <span className="rounded bg-surface-2 px-2.5 py-1 font-semibold text-emerald-300">
                       Geldstrafe: {viewingItem.fineAmount.toLocaleString('de-DE')} $
                     </span>
                   ) : null}
                   {viewingItem.sgRounds ? (
-                    <span className="rounded bg-[#0f2d4e] px-2.5 py-1 font-semibold text-amber-300">
+                    <span className="rounded bg-surface-2 px-2.5 py-1 font-semibold text-amber-300">
                       SG: {viewingItem.sgRounds} Runden
                     </span>
                   ) : null}
                   {viewingItem.suspensionHours ? (
-                    <span className="rounded bg-[#0f2d4e] px-2.5 py-1 font-semibold text-rose-300">
+                    <span className="rounded bg-surface-2 px-2.5 py-1 font-semibold text-rose-300">
                       Suspendierung: {viewingItem.suspensionHours} Stunden
                     </span>
                   ) : null}
@@ -834,8 +834,8 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
 
             {/* Beweise */}
             {viewingItem.evidence && viewingItem.evidence.length > 0 && (
-              <div className="rounded-xl border border-[#18385f]/40 bg-[#051224]/70 p-3.5 space-y-2">
-                <p className="text-xs font-bold text-[#8ea4bd]">Beweismittel & Links:</p>
+              <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-2">
+                <p className="text-xs font-bold text-label-2">Beweismittel & Links:</p>
                 <div className="flex flex-col gap-1.5">
                   {viewingItem.evidence.map((ev, idx) => (
                     <a
@@ -843,7 +843,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
                       href={ev.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-[#0ea5e9] hover:underline"
+                      className="inline-flex items-center gap-1.5 text-xs text-cyan hover:underline"
                     >
                       <Link2 size={13} /> {ev.title || ev.url} <ExternalLink size={11} />
                     </a>
@@ -856,12 +856,12 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
             {viewingItem.resolutionNote && (
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5">
                 <p className="text-xs font-bold text-emerald-300">Abschlussvermerk / Ergebnis:</p>
-                <p className="mt-1 text-xs text-[#cbd5e1] whitespace-pre-wrap">{viewingItem.resolutionNote}</p>
+                <p className="mt-1 text-xs text-label-2 whitespace-pre-wrap">{viewingItem.resolutionNote}</p>
               </div>
             )}
 
             {/* Metadaten */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#18385f]/40 pt-3 text-[11px] text-[#607994]">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-[11px] text-label-3">
               <div>
                 Erstellt am {formatDateTime(viewingItem.createdAt)} von {viewingItem.createdBy?.displayName || 'Unbekannt'}
               </div>
@@ -914,7 +914,7 @@ export function InternalAffairsDawsWorkspace({ canManage }: { canManage: boolean
         size="sm"
       >
         <div className="space-y-3">
-          <p className="text-sm text-[#cbd5e1]">
+          <p className="text-sm text-label-2">
             Möchtest du diesen Internal-Affairs-Eintrag wirklich unwiderruflich löschen?
           </p>
           <div className="flex justify-end gap-2 pt-2">

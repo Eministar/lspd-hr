@@ -75,19 +75,19 @@ const actionLabels: Record<string, string> = {
 }
 
 const groupChipStyles: Record<AuditLogGroupKey | 'other', string> = {
-  officer: 'bg-[#10263f] text-[#7fb3e8]',
-  rank: 'bg-[#1d2a10] text-[#a3d977]',
-  termination: 'bg-[#331416] text-[#e88a8a]',
-  sanction: 'bg-[#33240f] text-[#e8b969]',
-  training: 'bg-[#122b28] text-[#6fd0c3]',
-  probation: 'bg-[#241533] text-[#c39ae8]',
-  note: 'bg-[#2b2a12] text-[#d9d276]',
-  calendar: 'bg-[#101f33] text-[#8aa8d8]',
-  patrol: 'bg-[#0f2d3a] text-[#6cc3e8]',
-  internalAffairs: 'bg-[#0b2938] text-[#7dd3fc]',
-  legal: 'bg-[#251438] text-[#c4b5fd]',
-  system: 'bg-[#22232b] text-[#a3a8c2]',
-  other: 'bg-[#0f2340] text-[#888]',
+  officer: 'bg-surface-2 text-label-2',
+  rank: 'bg-green/14 text-green',
+  termination: 'bg-red/14 text-red',
+  sanction: 'bg-gold/12 text-gold',
+  training: 'bg-cyan/14 text-cyan',
+  probation: 'bg-purple/14 text-purple',
+  note: 'bg-yellow/14 text-gold',
+  calendar: 'bg-surface text-label-2',
+  patrol: 'bg-surface-2 text-cyan',
+  internalAffairs: 'bg-surface text-cyan',
+  legal: 'bg-purple/14 text-indigo',
+  system: 'bg-surface-2 text-label-2',
+  other: 'bg-surface-2 text-label-2',
 }
 
 export default function LogsPage() {
@@ -125,7 +125,7 @@ export default function LogsPage() {
   const hasFilter = !!debouncedSearch || !!groupFilter
 
   const filterClass =
-    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
+    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-surface text-label-2 border border-line focus:outline-none focus:border-gold transition-all'
 
   return (
     <div>
@@ -135,14 +135,14 @@ export default function LogsPage() {
         <div className="relative flex-1">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-label-4"
             strokeWidth={1.75}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Suche nach Name, Dienstnummer, Nutzer oder Details..."
-            className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
+            className={cn(filterClass, 'w-full pl-9 placeholder:text-label-4')}
           />
         </div>
         <Select
@@ -158,10 +158,10 @@ export default function LogsPage() {
         />
       </div>
 
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
         {logs.length > 0 ? (
           <>
-            <div className="divide-y divide-[#18385f]">
+            <div className="divide-y divide-line">
               {logs.map((log, i) => {
                 const label = actionLabels[log.action] || log.action
                 const group = groupForAction(log.action)
@@ -178,37 +178,37 @@ export default function LogsPage() {
                       <span className={cn('inline-flex items-center px-2 py-[3px] rounded-[5px] text-[11px] font-medium', groupChipStyles[group])}>
                         {groupLabel}
                       </span>
-                      <span className="inline-flex items-center px-2 py-[3px] rounded-[5px] text-[11px] font-medium bg-[#0f2340] text-[#888]">
+                      <span className="inline-flex items-center px-2 py-[3px] rounded-[5px] text-[11px] font-medium bg-surface-2 text-label-2">
                         {label}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       {log.officer && (
-                        <p className="text-[13px] font-medium text-[#eee]">
+                        <p className="text-[13px] font-medium text-label">
                           {log.officer.firstName} {log.officer.lastName}
-                          <span className="text-[#bbb] font-normal ml-1">({displayBadgeNumber(log.officer.badgeNumber)})</span>
+                          <span className="text-label-3 font-normal ml-1">({displayBadgeNumber(log.officer.badgeNumber)})</span>
                         </p>
                       )}
                       {log.details && (
-                        <p className="text-[12.5px] text-[#888] mt-0.5">{log.details}</p>
+                        <p className="text-[12.5px] text-label-2 mt-0.5">{log.details}</p>
                       )}
                       {log.oldValue && log.newValue && (
-                        <p className="text-[12px] text-[#aaa] mt-0.5">
+                        <p className="text-[12px] text-label-3 mt-0.5">
                           {log.oldValue} → {log.newValue}
                         </p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[12px] text-[#999]">{formatDateTime(log.createdAt)}</p>
-                      <p className="text-[11px] text-[#4a6585]">{log.user?.displayName ?? 'Gelöscht'}</p>
+                      <p className="text-[12px] text-label-3">{formatDateTime(log.createdAt)}</p>
+                      <p className="text-[11px] text-label-4">{log.user?.displayName ?? 'Gelöscht'}</p>
                     </div>
                   </motion.div>
                 )
               })}
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-[#18385f]">
-                <p className="text-[12px] text-[#999]">Seite {page + 1} von {totalPages}</p>
+              <div className="flex items-center justify-between px-5 py-3 border-t border-line">
+                <p className="text-[12px] text-label-3">Seite {page + 1} von {totalPages}</p>
                 <div className="flex gap-1.5">
                   <Button variant="secondary" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
                     <ChevronLeft size={13} /> Zurück
@@ -222,8 +222,8 @@ export default function LogsPage() {
           </>
         ) : (
           <div className="text-center py-20">
-            <ScrollText size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-            <p className="text-[13px] text-[#999]">
+            <ScrollText size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+            <p className="text-[13px] text-label-3">
               {hasFilter ? 'Keine Treffer für die aktuelle Suche' : 'Keine Protokolleinträge'}
             </p>
           </div>

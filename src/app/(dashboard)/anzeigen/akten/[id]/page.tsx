@@ -22,7 +22,7 @@ export default function PersonFileDetailPage({ params }: { params: Promise<{ id:
     <div className="mx-auto max-w-5xl space-y-4 pb-2">
       <Link
         href="/anzeigen?tab=files"
-        className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#8ea4bd] transition-colors hover:text-white"
+        className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-label-2 transition-colors hover:text-label"
       >
         <ArrowLeft size={14} />
         Alle Personenakten

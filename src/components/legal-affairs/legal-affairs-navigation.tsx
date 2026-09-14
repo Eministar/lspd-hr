@@ -25,10 +25,10 @@ export function LegalAffairsNavigation({ active }: { active: LegalAffairsSection
             href={section.href}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'inline-flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/35',
+              'inline-flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple/21',
               isActive
-                ? 'border-[#8b5cf6]/40 bg-[#8b5cf6]/10 text-[#c4b5fd]'
-                : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                ? 'border-purple/24 bg-purple/10 text-indigo'
+                : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
             )}
           >
             <Icon size={14} strokeWidth={2} />

@@ -42,10 +42,10 @@ export function sanctionStatusLabel(status: SanctionRecord['status']) {
 }
 
 export function sanctionStatusClass(status: SanctionRecord['status']) {
-  if (status === 'PAID') return 'border-[#166534]/60 bg-[#052e1a]/60 text-[#86efac]'
-  if (status === 'ESCALATED') return 'border-[#7f1d1d]/60 bg-[#2a1212]/60 text-[#fca5a5]'
-  if (status === 'IN_COURT') return 'border-[#6d28d9]/60 bg-[#1a1030]/60 text-[#c4b5fd]'
-  return 'border-[#b45309]/50 bg-[#1d1608]/70 text-[#fbbf24]'
+  if (status === 'PAID') return 'border-green/18 bg-green/8 text-green'
+  if (status === 'ESCALATED') return 'border-red/18 bg-red/8 text-red'
+  if (status === 'IN_COURT') return 'border-purple/36 bg-purple/8 text-indigo'
+  return 'border-orange/30 bg-gold/8 text-yellow'
 }
 
 export function sanctionDueLabel(sanction: SanctionRecord) {
@@ -57,28 +57,28 @@ export function sanctionDueLabel(sanction: SanctionRecord) {
 
 const SANCTION_STATUS_CONFIG = {
   OPEN: {
-    accent: 'bg-[#d97706]',
+    accent: 'bg-orange/28',
     glow: 'shadow-[0_0_0_1px_rgba(217,119,6,0.2)]',
-    border: 'border-[#d97706]/25',
-    bg: 'bg-[#0d0a02]',
+    border: 'border-orange/15',
+    bg: 'bg-gold/12',
   },
   PAID: {
-    accent: 'bg-[#16a34a]',
+    accent: 'bg-green/28',
     glow: 'shadow-[0_0_0_1px_rgba(22,163,74,0.15)]',
-    border: 'border-[#16a34a]/20',
-    bg: 'bg-[#020d04]',
+    border: 'border-green/12',
+    bg: 'bg-green/14',
   },
   ESCALATED: {
-    accent: 'bg-[#dc2626]',
+    accent: 'bg-red',
     glow: 'shadow-[0_0_0_1px_rgba(220,38,38,0.2)]',
-    border: 'border-[#dc2626]/25',
-    bg: 'bg-[#0d0202]',
+    border: 'border-red/15',
+    bg: 'bg-red/14',
   },
   IN_COURT: {
-    accent: 'bg-[#8b5cf6]',
+    accent: 'bg-purple',
     glow: 'shadow-[0_0_0_1px_rgba(139,92,246,0.2)]',
-    border: 'border-[#8b5cf6]/25',
-    bg: 'bg-[#0a0616]',
+    border: 'border-purple/15',
+    bg: 'bg-indigo/14',
   },
 } as const
 
@@ -88,12 +88,12 @@ function OfficerHeader({ officer }: { officer: SanctionCardOfficer }) {
 
   const content = (
     <>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#0f2340]">
-        <User size={13} className="text-[#8ea4bd]" strokeWidth={1.75} />
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-surface-2">
+        <User size={13} className="text-label-2" strokeWidth={1.75} />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-semibold text-[#edf4fb]">{name}</span>
-        {meta && <span className="block truncate text-[11px] text-[#4a6585]">{meta}</span>}
+        <span className="block truncate text-[13px] font-semibold text-label">{name}</span>
+        {meta && <span className="block truncate text-[11px] text-label-4">{meta}</span>}
       </span>
     </>
   )
@@ -147,24 +147,24 @@ export function SanctionCard({
         <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-[6px] bg-white/[0.04] px-2.5 py-1">
-              <Gavel size={11} className="text-[#f59e0b] shrink-0" strokeWidth={2} />
-              <span className="text-[12.5px] font-bold tracking-wide text-[#edf4fb]">{penalGradeLabel(sanction.penalGrade)}</span>
+              <Gavel size={11} className="text-yellow shrink-0" strokeWidth={2} />
+              <span className="text-[12.5px] font-bold tracking-wide text-label">{penalGradeLabel(sanction.penalGrade)}</span>
             </div>
-            <span className={cn('rounded-full border px-2.5 py-[2px] text-[10.5px] font-semibold tracking-wide', sanctionStatusClass(sanction.status))}>
+            <span className={cn('rounded-full border px-2.5 py-[2px] text-[11px] font-semibold tracking-wide', sanctionStatusClass(sanction.status))}>
               {sanctionStatusLabel(sanction.status)}
             </span>
           </div>
           {measureType === 'SG_ROUNDS' ? (
-            <div className="flex items-baseline gap-1 rounded-[6px] border border-[#38bdf8]/20 bg-[#38bdf8]/10 px-2.5 py-1">
-              <span className="text-[13px] font-bold tabular-nums text-[#7dd3fc]">{sanction.sgRounds ?? '—'}</span>
-              <span className="text-[10px] font-medium text-[#67b9df]">SG-Runden</span>
+            <div className="flex items-baseline gap-1 rounded-[6px] border border-cyan/12 bg-cyan/10 px-2.5 py-1">
+              <span className="text-[13px] font-bold tabular-nums text-cyan">{sanction.sgRounds ?? '—'}</span>
+              <span className="text-[11px] font-medium text-label-2">SG-Runden</span>
             </div>
           ) : sanction.fineAmount !== null && sanction.fineAmount > 0 && (
-            <div className="flex items-baseline gap-1 rounded-[6px] bg-[#d4af37]/10 border border-[#d4af37]/20 px-2.5 py-1">
-              <span className="text-[13px] font-bold tabular-nums text-[#d4af37]">
+            <div className="flex items-baseline gap-1 rounded-[6px] bg-gold/10 border border-gold/20 px-2.5 py-1">
+              <span className="text-[13px] font-bold tabular-nums text-gold">
                 {new Intl.NumberFormat('de-DE').format(sanction.fineAmount)}
               </span>
-              <span className="text-[10px] font-medium text-[#b8973a]">$</span>
+              <span className="text-[11px] font-medium text-gold">$</span>
             </div>
           )}
         </div>
@@ -175,19 +175,19 @@ export function SanctionCard({
         {/* Body: grade consequence + reason */}
         {sanction.penalty && (
           <div className="mb-2 flex gap-2">
-            <span className="mt-[2px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#94a3b8]" />
-            <p className="text-[12.5px] font-medium text-[#cbd5e1] leading-relaxed">Grade-Folge: {sanction.penalty}</p>
+            <span className="mt-[2px] h-1.5 w-1.5 shrink-0 rounded-full bg-surface-4" />
+            <p className="text-[12.5px] font-medium text-label-2 leading-relaxed">Grade-Folge: {sanction.penalty}</p>
           </div>
         )}
-        <p className="text-[12.5px] leading-relaxed text-[#8ea4bd]">{sanction.reason}</p>
+        <p className="text-[12.5px] leading-relaxed text-label-2">{sanction.reason}</p>
 
         {/* Footer metadata */}
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[11px] text-[#4a6585]">{formatDate(sanction.createdAt)}</span>
-          <span className="text-[10px] text-[#2a4a6a]">·</span>
-          <span className="text-[11px] text-[#4a6585]">{sanction.issuedBy?.displayName ?? 'Gelöscht'}</span>
-          <span className="text-[10px] text-[#2a4a6a]">·</span>
-          <span className="text-[11px] text-[#4a6585]">{sanctionDueLabel(sanction)}</span>
+          <span className="text-[11px] text-label-4">{formatDate(sanction.createdAt)}</span>
+          <span className="text-[11px] text-label-4">·</span>
+          <span className="text-[11px] text-label-4">{sanction.issuedBy?.displayName ?? 'Gelöscht'}</span>
+          <span className="text-[11px] text-label-4">·</span>
+          <span className="text-[11px] text-label-4">{sanctionDueLabel(sanction)}</span>
         </div>
 
         {/* Action bar */}

@@ -109,16 +109,16 @@ interface TaskBoardProps {
 }
 
 const PRIORITY_META: Record<TaskPriority, { label: string; tone: string; dot: string }> = {
-  LOW: { label: 'Niedrig', tone: 'text-[#7d94b0] bg-[#102542]/70 border-[#234568]/60', dot: 'bg-[#7d94b0]' },
-  NORMAL: { label: 'Normal', tone: 'text-[#9fb0c4] bg-[#102542]/70 border-[#234568]/60', dot: 'bg-[#60a5fa]' },
-  HIGH: { label: 'Hoch', tone: 'text-[#fbbf24] bg-[#3a2c10]/50 border-[#fbbf24]/30', dot: 'bg-[#fbbf24]' },
-  URGENT: { label: 'Dringend', tone: 'text-[#fca5a5] bg-[#321218]/60 border-[#f87171]/30', dot: 'bg-[#f87171]' },
+  LOW: { label: 'Niedrig', tone: 'text-label-3 bg-surface-2 border-line', dot: 'bg-surface-4' },
+  NORMAL: { label: 'Normal', tone: 'text-label-2 bg-surface-2 border-line', dot: 'bg-blue' },
+  HIGH: { label: 'Hoch', tone: 'text-yellow bg-gold/6 border-yellow/18', dot: 'bg-yellow' },
+  URGENT: { label: 'Dringend', tone: 'text-red bg-red/8 border-red/18', dot: 'bg-red' },
 }
 
 const STATUS_META: Record<TaskStatus, { label: string; icon: LucideIcon; tone: string }> = {
-  OPEN: { label: 'Offen', icon: CircleDot, tone: 'text-[#9fb0c4]' },
-  IN_PROGRESS: { label: 'In Arbeit', icon: Loader2, tone: 'text-[#60a5fa]' },
-  COMPLETED: { label: 'Erledigt', icon: CheckCircle2, tone: 'text-[#34d399]' },
+  OPEN: { label: 'Offen', icon: CircleDot, tone: 'text-label-2' },
+  IN_PROGRESS: { label: 'In Arbeit', icon: Loader2, tone: 'text-blue' },
+  COMPLETED: { label: 'Erledigt', icon: CheckCircle2, tone: 'text-green' },
 }
 
 const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
@@ -150,7 +150,7 @@ const EMPTY_TASK_FORM: TaskFormState = {
   assigneeIds: [],
 }
 
-const COLOR_PRESETS = ['#d4af37', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fbbf24']
+const COLOR_PRESETS = ['#d4af37', '#4a90f0', '#32d74b', '#ff453a', '#bf5af2', '#ffd60a']
 
 function officerLabel(o: OfficerLite | OfficerForPicker) {
   return `${o.firstName} ${o.lastName}`
@@ -172,8 +172,8 @@ function StatChip({ icon: Icon, label, value, tone }: { icon: LucideIcon; label:
         <Icon size={16} strokeWidth={1.85} />
       </div>
       <div className="min-w-0">
-        <p className="text-[20px] font-semibold text-white tabular-nums leading-tight">{value}</p>
-        <p className="text-[11px] text-[#8ea4bd] mt-0.5">{label}</p>
+        <p className="text-[20px] font-semibold text-label tabular-nums leading-tight">{value}</p>
+        <p className="text-[11px] text-label-2 mt-0.5">{label}</p>
       </div>
     </div>
   )
@@ -182,19 +182,19 @@ function StatChip({ icon: Icon, label, value, tone }: { icon: LucideIcon; label:
 function AssigneePill({ officer, onRemove }: { officer: AssignmentOfficer; onRemove?: () => void }) {
   const initials = `${officer.firstName.charAt(0)}${officer.lastName.charAt(0)}`.toUpperCase()
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-[#0f2340] border border-[#1e3a5c]/60 text-[11.5px] text-[#dbe6f3]">
+    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-2 border border-line text-[11.5px] text-label">
       <span
-        className="h-4 w-4 rounded-full flex items-center justify-center text-[8.5px] font-bold text-[#071b33]"
+        className="h-4 w-4 rounded-full flex items-center justify-center text-[11px] font-semibold text-ink"
         style={{ backgroundColor: officer.rank?.color || '#d4af37' }}
       >
         {initials}
       </span>
       <Link
         href={`/officers/${officer.id}`}
-        className="hover:text-[#d4af37] transition-colors"
+        className="hover:text-gold-bright transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
-        {officerLabel(officer)} <span className="text-[10px] text-[#6b8299] font-mono">#{displayBadgeNumber(officer.badgeNumber)}</span>
+        {officerLabel(officer)} <span className="text-[11px] text-label-3 font-mono">#{displayBadgeNumber(officer.badgeNumber)}</span>
       </Link>
       {onRemove && (
         <button
@@ -203,7 +203,7 @@ function AssigneePill({ officer, onRemove }: { officer: AssignmentOfficer; onRem
             e.stopPropagation()
             onRemove()
           }}
-          className="text-[#6b8299] hover:text-red-400 transition-colors"
+          className="text-label-3 hover:text-red-400 transition-colors"
           aria-label="Entfernen"
         >
           <X size={11} strokeWidth={2.5} />
@@ -251,7 +251,7 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
 
   return (
     <div className="space-y-2">
-      <label className="block text-[12.5px] font-medium text-[#9fb0c4]">Zugewiesene Mitarbeiter</label>
+      <label className="block text-[12.5px] font-medium text-label-2">Zugewiesene Mitarbeiter</label>
       {selectedOfficers.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selectedOfficers.map((o) => (
@@ -262,21 +262,21 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
       <div className="relative">
         <Search
           size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-label-4"
           strokeWidth={1.75}
         />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Officer suchen…"
-          className="w-full h-[34px] pl-9 pr-3 rounded-[8px] text-[13px] bg-[#0a1a33]/60 text-[#edf4fb] border border-[#18385f]/70 focus:outline-none focus:border-[#d4af37] placeholder:text-[#4a6585] transition-all"
+          className="w-full h-[34px] pl-9 pr-3 rounded-[8px] text-[13px] bg-surface text-label border border-line focus:outline-none focus:border-gold placeholder:text-label-4 transition-all"
         />
       </div>
-      <div className="max-h-[220px] overflow-y-auto rounded-[10px] border border-[#18385f]/40 bg-[#081a32]/40">
+      <div className="max-h-[220px] overflow-y-auto rounded-[10px] border border-line bg-white/[0.03]">
         {filtered.length === 0 ? (
-          <p className="text-[12px] text-[#6b8299] text-center py-6">Keine Officers gefunden</p>
+          <p className="text-[12px] text-label-3 text-center py-6">Keine Officers gefunden</p>
         ) : (
-          <ul className="divide-y divide-[#18385f]/30">
+          <ul className="divide-y divide-line">
             {filtered.map((o) => {
               const checked = selectedSet.has(o.id)
               return (
@@ -286,15 +286,15 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
                     onClick={() => toggle(o.id)}
                     className={cn(
                       'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
-                      checked ? 'bg-[#d4af37]/8' : 'hover:bg-[#102542]/60',
+                      checked ? 'bg-gold/8' : 'hover:bg-surface-2',
                     )}
                   >
                     <span
                       className={cn(
                         'h-[16px] w-[16px] rounded-[4px] flex items-center justify-center transition-all',
                         checked
-                          ? 'bg-gradient-to-b from-[#d4af37] to-[#c29d32] text-[#071b33]'
-                          : 'border border-[#2a4a6e]',
+                          ? 'bg-gold text-ink'
+                          : 'border border-line',
                       )}
                     >
                       {checked && <CheckCircle2 size={11} strokeWidth={3} />}
@@ -303,11 +303,11 @@ function AssigneeManager({ officers, selected, onChange }: AssigneeManagerProps)
                       className="h-2 w-2 rounded-full shrink-0"
                       style={{ backgroundColor: o.rank.color }}
                     />
-                    <span className="flex-1 min-w-0 truncate text-[13px] text-[#edf4fb]">
+                    <span className="flex-1 min-w-0 truncate text-[13px] text-label">
                       {officerLabel(o)}
-                      <span className="text-[#6b8299] font-mono ml-1.5 text-[11px]">#{displayBadgeNumber(o.badgeNumber)}</span>
+                      <span className="text-label-3 font-mono ml-1.5 text-[11px]">#{displayBadgeNumber(o.badgeNumber)}</span>
                     </span>
-                    <span className="text-[11px] text-[#6b8299] truncate max-w-[120px]">{o.rank.name}</span>
+                    <span className="text-[11px] text-label-3 truncate max-w-[120px]">{o.rank.name}</span>
                   </button>
                 </li>
               )
@@ -596,15 +596,15 @@ export function TaskBoard({
       />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <StatChip icon={ListChecks} label="Aufgaben" value={stats.total} tone="bg-[#d4af37]/15 text-[#d4af37]" />
-        <StatChip icon={CircleDot} label="Offen" value={stats.open} tone="bg-[#1e3a5c]/40 text-[#9fb0c4]" />
-        <StatChip icon={Loader2} label="In Arbeit" value={stats.progress} tone="bg-[#1d3a66]/50 text-[#60a5fa]" />
-        <StatChip icon={CheckCircle2} label="Erledigt" value={stats.completed} tone="bg-[#0f3a2a]/50 text-[#34d399]" />
-        <StatChip icon={AlertCircle} label="Überfällig" value={stats.overdue} tone="bg-[#3a1818]/50 text-[#f87171]" />
+        <StatChip icon={ListChecks} label="Aufgaben" value={stats.total} tone="bg-gold/15 text-gold" />
+        <StatChip icon={CircleDot} label="Offen" value={stats.open} tone="bg-white/[0.03] text-label-2" />
+        <StatChip icon={Loader2} label="In Arbeit" value={stats.progress} tone="bg-surface-3 text-blue" />
+        <StatChip icon={CheckCircle2} label="Erledigt" value={stats.completed} tone="bg-green/7 text-green" />
+        <StatChip icon={AlertCircle} label="Überfällig" value={stats.overdue} tone="bg-red/7 text-red" />
       </div>
 
       <div className="flex items-center justify-between gap-2 mb-4">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-[#4a6585] font-semibold">{accentLabel}</p>
+        <p className="text-[11px] text-label-4 font-semibold">{accentLabel}</p>
         {canEdit && (
           <button
             type="button"
@@ -612,8 +612,8 @@ export function TaskBoard({
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-medium border transition-colors',
               showArchived
-                ? 'bg-[#d4af37]/12 border-[#d4af37]/35 text-[#d4af37]'
-                : 'bg-[#0a1a33]/60 border-[#18385f]/60 text-[#8ea4bd] hover:text-white hover:border-[#234568]',
+                ? 'bg-gold/12 border-gold/35 text-gold'
+                : 'bg-surface border-line text-label-2 hover:text-label hover:border-line',
             )}
           >
             {showArchived ? <ArchiveRestore size={11} /> : <Archive size={11} />}
@@ -623,9 +623,9 @@ export function TaskBoard({
       </div>
 
       {visibleLists.length === 0 ? (
-        <div className="glass-panel-elevated rounded-[14px] py-16 text-center border border-white/[0.04]">
-          <ListChecks size={28} className="mx-auto text-[#4a6585] mb-3" strokeWidth={1.5} />
-          <p className="text-[13px] text-[#9fb0c4] mb-4">Noch keine Listen vorhanden</p>
+        <div className="glass-panel-elevated rounded-[12px] py-16 text-center border border-white/[0.04]">
+          <ListChecks size={28} className="mx-auto text-label-4 mb-3" strokeWidth={1.5} />
+          <p className="text-[13px] text-label-2 mb-4">Noch keine Listen vorhanden</p>
           {canEdit && (
             <Button size="sm" onClick={openCreateList}>
               <Plus size={14} strokeWidth={2} />
@@ -648,10 +648,10 @@ export function TaskBoard({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 className={cn(
-                  'glass-panel-elevated rounded-[14px] border overflow-hidden',
+                  'glass-panel-elevated rounded-[12px] border overflow-hidden',
                   list.archived
-                    ? 'border-[#234568]/40 opacity-80'
-                    : 'border-[#1e3a5c]/40 shadow-sm shadow-black/10',
+                    ? 'border-line opacity-80'
+                    : 'border-line shadow-sm shadow-black/10',
                 )}
               >
                 <div
@@ -663,7 +663,7 @@ export function TaskBoard({
                   <button
                     type="button"
                     onClick={() => toggleCollapse(list.id)}
-                    className="mt-1 p-1 rounded-md text-[#6b8299] hover:text-[#d4af37] transition-colors"
+                    className="mt-1 p-1 rounded-md text-label-3 hover:text-gold-bright transition-colors"
                     aria-label={isCollapsed ? 'Liste ausklappen' : 'Liste einklappen'}
                   >
                     <ChevronDown
@@ -680,21 +680,21 @@ export function TaskBoard({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <h3 className="text-[14px] font-semibold text-white tracking-[-0.01em]">{list.title}</h3>
+                      <h3 className="text-[14px] font-semibold text-label tracking-[-0.01em]">{list.title}</h3>
                       {list.archived && (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-[0.12em] text-[#6b8299] bg-[#0a1a33]/60 px-2 py-0.5 rounded-full border border-[#18385f]/60">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-label-3 bg-surface px-2 py-0.5 rounded-full border border-line">
                           <Archive size={9} /> Archiv
                         </span>
                       )}
-                      <span className="text-[11.5px] text-[#7d94b0]">
+                      <span className="text-[11.5px] text-label-3">
                         {completedCount}/{totalCount} erledigt
                       </span>
                     </div>
                     {list.description && (
-                      <p className="text-[12.5px] text-[#9fb0c4] mt-0.5 leading-relaxed">{list.description}</p>
+                      <p className="text-[12.5px] text-label-2 mt-0.5 leading-relaxed">{list.description}</p>
                     )}
                     {totalCount > 0 && (
-                      <div className="mt-2.5 h-[5px] w-full max-w-[420px] bg-[#102542]/80 rounded-full overflow-hidden">
+                      <div className="mt-2.5 h-[5px] w-full max-w-[420px] bg-surface-2 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${progress}%` }}
@@ -711,7 +711,7 @@ export function TaskBoard({
                       <button
                         type="button"
                         onClick={() => openCreateTask(list.id)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-[7px] text-[11.5px] font-medium text-[#d4af37] hover:bg-[#d4af37]/10 transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-[7px] text-[11.5px] font-medium text-gold hover:bg-gold/10 transition-colors"
                       >
                         <Plus size={12} strokeWidth={2.2} />
                         Aufgabe
@@ -719,7 +719,7 @@ export function TaskBoard({
                       <button
                         type="button"
                         onClick={() => openEditList(list)}
-                        className="p-1.5 rounded-[7px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/50 transition-colors"
+                        className="p-1.5 rounded-[7px] text-label-3 hover:text-gold-bright hover:bg-surface-2 transition-colors"
                         aria-label="Liste bearbeiten"
                       >
                         <Pencil size={12} strokeWidth={1.85} />
@@ -727,7 +727,7 @@ export function TaskBoard({
                       <button
                         type="button"
                         onClick={() => archiveList(list)}
-                        className="p-1.5 rounded-[7px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/50 transition-colors"
+                        className="p-1.5 rounded-[7px] text-label-3 hover:text-gold-bright hover:bg-surface-2 transition-colors"
                         aria-label={list.archived ? 'Reaktivieren' : 'Archivieren'}
                       >
                         {list.archived ? (
@@ -739,7 +739,7 @@ export function TaskBoard({
                       <button
                         type="button"
                         onClick={() => deleteList(list)}
-                        className="p-1.5 rounded-[7px] text-[#6b8299] hover:text-red-400 hover:bg-[#321218]/40 transition-colors"
+                        className="p-1.5 rounded-[7px] text-label-3 hover:text-red-400 hover:bg-red/6 transition-colors"
                         aria-label="Liste löschen"
                       >
                         <Trash2 size={12} strokeWidth={1.85} />
@@ -757,14 +757,14 @@ export function TaskBoard({
                       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="border-t border-[#18385f]/40">
+                      <div className="border-t border-line">
                         {list.tasks.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <ListChecks size={20} className="text-[#4a6585] mb-2" strokeWidth={1.5} />
-                            <p className="text-[12.5px] text-[#7d94b0]">Noch keine Aufgaben</p>
+                            <ListChecks size={20} className="text-label-4 mb-2" strokeWidth={1.5} />
+                            <p className="text-[12.5px] text-label-3">Noch keine Aufgaben</p>
                           </div>
                         ) : (
-                          <ul className="divide-y divide-[#18385f]/30">
+                          <ul className="divide-y divide-line">
                             {list.tasks.map((task) => {
                               const status = STATUS_META[task.status]
                               const StatusIcon = status.icon
@@ -775,7 +775,7 @@ export function TaskBoard({
                                 <li
                                   key={task.id}
                                   className={cn(
-                                    'flex items-start gap-3 px-4 py-3 hover:bg-[#0f2340]/50 transition-colors',
+                                    'flex items-start gap-3 px-4 py-3 hover:bg-surface-2 transition-colors',
                                     task.status === 'COMPLETED' && 'opacity-75',
                                   )}
                                 >
@@ -786,10 +786,10 @@ export function TaskBoard({
                                     className={cn(
                                       'mt-0.5 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-150 shrink-0 border',
                                       task.status === 'COMPLETED'
-                                        ? 'bg-gradient-to-b from-[#34d399] to-[#10b981] border-emerald-500/50 text-[#04200f]'
+                                        ? 'bg-gradient-to-b from-green to-green/28 border-emerald-500/50 text-green/70'
                                         : task.status === 'IN_PROGRESS'
-                                          ? 'bg-[#1d3a66]/60 border-[#60a5fa]/50 text-[#60a5fa]'
-                                          : 'bg-[#0a1a33] border-[#234568]/70 text-[#7d94b0] hover:border-[#d4af37]/40',
+                                          ? 'bg-surface-3 border-blue/30 text-blue'
+                                          : 'bg-surface border-line text-label-3 hover:border-gold/40',
                                       !canEdit && 'cursor-not-allowed',
                                     )}
                                     aria-label="Status ändern"
@@ -805,15 +805,15 @@ export function TaskBoard({
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                       <p
                                         className={cn(
-                                          'text-[13px] font-medium text-white',
-                                          task.status === 'COMPLETED' && 'line-through text-[#7d94b0]',
+                                          'text-[13px] font-medium text-label',
+                                          task.status === 'COMPLETED' && 'line-through text-label-3',
                                         )}
                                       >
                                         {task.title}
                                       </p>
                                       <span
                                         className={cn(
-                                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium border',
+                                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[11px] font-medium border',
                                           priority.tone,
                                         )}
                                       >
@@ -823,11 +823,11 @@ export function TaskBoard({
                                         <span
                                           className={cn(
                                             'inline-flex items-center gap-1 text-[11px] font-medium',
-                                            overdue ? 'text-[#fca5a5]' : 'text-[#9fb0c4]',
+                                            overdue ? 'text-red' : 'text-label-2',
                                           )}
                                         >
                                           <Calendar size={10} strokeWidth={1.85} /> {formatDate(task.dueDate)}
-                                          {overdue && <AlertCircle size={10} strokeWidth={2} className="text-[#f87171]" />}
+                                          {overdue && <AlertCircle size={10} strokeWidth={2} className="text-red" />}
                                         </span>
                                       )}
                                       <span className={cn('inline-flex items-center gap-1 text-[11px]', status.tone)}>
@@ -835,7 +835,7 @@ export function TaskBoard({
                                       </span>
                                     </div>
                                     {task.description && (
-                                      <p className="text-[12px] text-[#9fb0c4] mt-1 whitespace-pre-wrap leading-relaxed">
+                                      <p className="text-[12px] text-label-2 mt-1 whitespace-pre-wrap leading-relaxed">
                                         {task.description}
                                       </p>
                                     )}
@@ -846,7 +846,7 @@ export function TaskBoard({
                                         ))}
                                       </div>
                                     )}
-                                    <p className="text-[10.5px] text-[#4a6585] mt-2">
+                                    <p className="text-[11px] text-label-4 mt-2">
                                       {task.createdBy?.displayName ?? 'Gelöscht'} · erstellt {formatDate(task.createdAt)}
                                     </p>
                                   </div>
@@ -856,7 +856,7 @@ export function TaskBoard({
                                       <button
                                         type="button"
                                         onClick={() => openEditTask(task)}
-                                        className="p-1.5 rounded-[7px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/50 transition-colors"
+                                        className="p-1.5 rounded-[7px] text-label-3 hover:text-gold-bright hover:bg-surface-2 transition-colors"
                                         aria-label="Aufgabe bearbeiten"
                                       >
                                         <Pencil size={12} strokeWidth={1.85} />
@@ -864,7 +864,7 @@ export function TaskBoard({
                                       <button
                                         type="button"
                                         onClick={() => deleteTask(task)}
-                                        className="p-1.5 rounded-[7px] text-[#6b8299] hover:text-red-400 hover:bg-[#321218]/40 transition-colors"
+                                        className="p-1.5 rounded-[7px] text-label-3 hover:text-red-400 hover:bg-red/6 transition-colors"
                                         aria-label="Aufgabe löschen"
                                       >
                                         <Trash2 size={12} strokeWidth={1.85} />

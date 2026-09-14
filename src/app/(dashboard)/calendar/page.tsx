@@ -53,8 +53,8 @@ const moduleMeta: Record<string, { label: string; color: string }> = {
   ACADEMY: { label: 'Recruitment & Training', color: '#d4af37' },
   HR: { label: 'HR', color: '#7c3aed' },
   SRU: { label: 'S.R.U.', color: '#dc2626' },
-  AIR_SUPPORT: { label: 'Air-Support Division', color: '#38bdf8' },
-  DETECTIVE: { label: 'Detective Unit', color: '#a78bfa' },
+  AIR_SUPPORT: { label: 'Air-Support Division', color: '#64d2ff' },
+  DETECTIVE: { label: 'Detective Unit', color: '#bf5af2' },
 }
 
 function localDateTimeValue(days = 0) {
@@ -144,7 +144,7 @@ export default function CalendarPage() {
         {(events ?? []).map((event) => (
           <div
             key={event.id}
-            className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4"
+            className="glass-panel-elevated rounded-[12px] border border-line p-4"
             style={{
               borderLeftWidth: 4,
               borderLeftColor: moduleMeta[event.module ?? '']?.color ?? '#d4af37',
@@ -153,7 +153,7 @@ export default function CalendarPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-[6px] border border-[#d4af37]/20 bg-[#d4af37]/8 px-2 py-0.5 text-[11px] font-semibold text-[#d4af37]">{event.type}</span>
+                  <span className="rounded-[6px] border border-gold/20 bg-gold/8 px-2 py-0.5 text-[11px] font-semibold text-gold">{event.type}</span>
                   {event.module && (
                     <span
                       className="rounded-[6px] border px-2 py-0.5 text-[11px] font-semibold"
@@ -166,21 +166,21 @@ export default function CalendarPage() {
                       {moduleMeta[event.module]?.label ?? event.module}
                     </span>
                   )}
-                  {event.discordAnnouncement && <Megaphone size={13} className="text-[#38bdf8]" />}
+                  {event.discordAnnouncement && <Megaphone size={13} className="text-cyan" />}
                 </div>
-                <h3 className="mt-2 text-[14px] font-semibold text-white">{event.title}</h3>
-                <p className="mt-1 text-[12px] text-[#8ea4bd]">{formatDateTime(event.startsAt)}{event.endsAt ? ` → ${formatDateTime(event.endsAt)}` : ''}</p>
+                <h3 className="mt-2 text-[14px] font-semibold text-label">{event.title}</h3>
+                <p className="mt-1 text-[12px] text-label-2">{formatDateTime(event.startsAt)}{event.endsAt ? ` → ${formatDateTime(event.endsAt)}` : ''}</p>
               </div>
               {canManage && (
-                <button type="button" onClick={() => deleteEvent(event.id)} className="rounded-[7px] p-1.5 text-[#6b8299] transition-colors hover:bg-[#321218]/60 hover:text-[#fca5a5]">
+                <button type="button" onClick={() => deleteEvent(event.id)} className="rounded-[7px] p-1.5 text-label-3 transition-colors hover:bg-red/8 hover:text-red">
                   <Trash2 size={14} />
                 </button>
               )}
             </div>
-            {event.location && <p className="mt-3 text-[12.5px] text-[#c7d4e4]">Ort: {event.location}</p>}
-            {event.description && <p className="mt-2 text-[12.5px] leading-relaxed text-[#b7c5d8]">{event.description}</p>}
+            {event.location && <p className="mt-3 text-[12.5px] text-label-2">Ort: {event.location}</p>}
+            {event.description && <p className="mt-2 text-[12.5px] leading-relaxed text-label-2">{event.description}</p>}
             {event.officer && (
-              <Link href={`/officers/${event.officer.id}`} className="mt-3 inline-flex text-[12px] text-[#d4af37] hover:text-white">
+              <Link href={`/officers/${event.officer.id}`} className="mt-3 inline-flex text-[12px] text-gold hover:text-label">
                 {event.officer.firstName} {event.officer.lastName} #{displayBadgeNumber(event.officer.badgeNumber)}
               </Link>
             )}
@@ -189,9 +189,9 @@ export default function CalendarPage() {
       </div>
 
       {(events ?? []).length === 0 && (
-        <div className="glass-panel-elevated rounded-[14px] p-12 text-center">
-          <CalendarDays size={28} className="mx-auto mb-3 text-[#d4af37]/35" />
-          <p className="text-[13px] text-[#8ea4bd]">Keine Termine vorhanden</p>
+        <div className="glass-panel-elevated rounded-[12px] p-12 text-center">
+          <CalendarDays size={28} className="mx-auto mb-3 text-gold/35" />
+          <p className="text-[13px] text-label-2">Keine Termine vorhanden</p>
         </div>
       )}
 
@@ -206,7 +206,7 @@ export default function CalendarPage() {
           <Input label="Ort optional" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           <Select label="Officer-Bezug" value={form.officerId} onValueChange={(officerId) => setForm({ ...form, officerId })} options={officerOptions} />
           <Textarea label="Beschreibung" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
-          <label className={cn('flex items-center gap-2 rounded-[9px] border border-[#18385f]/60 bg-[#0a1a33] px-3 py-2 text-[12.5px] text-[#b7c5d8]')}>
+          <label className={cn('flex items-center gap-2 rounded-[9px] border border-line bg-surface px-3 py-2 text-[12.5px] text-label-2')}>
             <input type="checkbox" checked={form.discordAnnouncement} onChange={(e) => setForm({ ...form, discordAnnouncement: e.target.checked })} />
             Discord-Ankündigung senden
           </label>

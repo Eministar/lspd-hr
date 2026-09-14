@@ -36,7 +36,7 @@ export default function InternalReportDetailPage({ params }: { params: Promise<{
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Link
           href="/anzeigen?tab=reports"
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#8ea4bd] transition-colors hover:text-white"
+          className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-label-2 transition-colors hover:text-label"
         >
           <ArrowLeft size={14} />
           Alle Anzeigen
@@ -47,7 +47,7 @@ export default function InternalReportDetailPage({ params }: { params: Promise<{
             href={`/anzeigen/${id}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#234568] px-3 text-[12px] font-medium text-[#dbe6f3] transition-colors hover:bg-[#102542]/70"
+            className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-line px-3 text-[12px] font-medium text-label transition-colors hover:bg-surface-2"
           >
             <ExternalLink size={13} />
             Öffentlichen Link öffnen
@@ -55,7 +55,7 @@ export default function InternalReportDetailPage({ params }: { params: Promise<{
           <button
             type="button"
             onClick={() => void copyPublicLink()}
-            className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#d4af37] px-3 text-[12px] font-semibold text-[#071b33] transition-colors hover:bg-[#dcba48]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-gold px-3 text-[12px] font-semibold text-ink transition-colors hover:bg-gold"
           >
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Link kopiert' : 'Link kopieren'}

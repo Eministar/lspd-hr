@@ -112,7 +112,7 @@ export function ContractTemplateEditor({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 bg-[#061426]/70 backdrop-blur-[2px]"
+                className="fixed inset-0 z-50 bg-black/55"
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
@@ -121,9 +121,9 @@ export function ContractTemplateEditor({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.15 }}
-                className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(1100px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[14px] border border-[#1e3a5c]/60 bg-[#071a30] shadow-2xl"
+                className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(1100px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden lspd-sheet"
               >
-                <header className="flex items-center justify-between gap-3 border-b border-[#18385f]/50 px-4 py-3">
+                <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
                   <Dialog.Title className="text-[15px] font-semibold text-white">
                     {isEditing ? 'Vertragsvorlage bearbeiten' : 'Neue Vertragsvorlage'}
                   </Dialog.Title>
@@ -132,7 +132,7 @@ export function ContractTemplateEditor({
                     <Dialog.Close asChild>
                       <button
                         type="button"
-                        className="rounded-[8px] p-1.5 text-[#8ea4bd] transition-colors hover:bg-[#102542] hover:text-white"
+                        className="rounded-[8px] p-1.5 text-label-2 transition-colors hover:bg-surface-3 hover:text-label"
                         aria-label="Schließen"
                       >
                         <X size={16} />
@@ -188,7 +188,7 @@ export function ContractTemplateEditor({
                         <div className="mb-2 flex items-center justify-between">
                           <div>
                             <h3 className="text-[13.5px] font-semibold text-white">Regelungen</h3>
-                            <p className="text-[11.5px] text-[#8ea4bd]">
+                            <p className="text-[11.5px] text-label-2">
                               Werden im Dokument automatisch als § 1, § 2, … nummeriert.
                             </p>
                           </div>
@@ -216,24 +216,24 @@ export function ContractTemplateEditor({
 
                         <div className="space-y-2.5">
                           {form.clauses.length === 0 && (
-                            <p className="rounded-[10px] border border-dashed border-[#234568]/60 px-3 py-6 text-center text-[12.5px] text-[#6b8299]">
+                            <p className="rounded-[10px] border border-dashed border-line-strong px-3 py-6 text-center text-[12.5px] text-label-3">
                               Noch keine Regelungen — füge die erste hinzu.
                             </p>
                           )}
                           {form.clauses.map((clause, index) => (
                             <div
                               key={clause.id}
-                              className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/45 p-3"
+                              className="rounded-[12px] border border-line bg-white/[0.03] p-3"
                             >
                               <div className="mb-2 flex items-center gap-2">
-                                <span className="shrink-0 rounded-[6px] bg-[#102542] px-2 py-1 text-[11px] font-semibold text-[#d4af37]">
+                                <span className="shrink-0 rounded-[6px] bg-surface-3 px-2 py-1 text-[11px] font-semibold text-gold">
                                   § {index + 1}
                                 </span>
                                 <input
                                   value={clause.title}
                                   onChange={(event) => updateClause(index, { title: event.target.value })}
                                   placeholder="Überschrift der Regelung"
-                                  className="h-[32px] min-w-0 flex-1 rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-2.5 text-[13px] text-[#edf4fb] outline-none focus:border-[#d4af37]"
+                                  className="h-[32px] min-w-0 flex-1 rounded-[8px] border border-line bg-surface-2 px-2.5 text-[13px] text-label outline-none focus:border-gold"
                                 />
                                 <RowActions
                                   onUp={() => onChange({ clauses: move(form.clauses, index, -1) })}
@@ -248,7 +248,7 @@ export function ContractTemplateEditor({
                                 onChange={(event) => updateClause(index, { body: event.target.value })}
                                 rows={4}
                                 placeholder="Text der Regelung (Markdown erlaubt)"
-                                className="w-full resize-none rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-2.5 py-2 font-mono text-[12.5px] text-[#edf4fb] outline-none focus:border-[#d4af37]"
+                                className="w-full resize-none rounded-[8px] border border-line bg-surface-2 px-2.5 py-2 font-mono text-[12.5px] text-label outline-none focus:border-gold"
                               />
                             </div>
                           ))}
@@ -269,7 +269,7 @@ export function ContractTemplateEditor({
                             <h3 className="text-[13.5px] font-semibold text-white">
                               Felder für den Mitarbeiter
                             </h3>
-                            <p className="text-[11.5px] text-[#8ea4bd]">
+                            <p className="text-[11.5px] text-label-2">
                               Was der Unterzeichner im Dokument ausfüllt. Unterschriftsfelder sind
                               immer Pflicht.
                             </p>
@@ -303,7 +303,7 @@ export function ContractTemplateEditor({
                           {form.fields.map((field, index) => (
                             <div
                               key={field.id}
-                              className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/45 p-3"
+                              className="rounded-[12px] border border-line bg-white/[0.03] p-3"
                             >
                               <div className="flex flex-wrap items-end gap-2">
                                 <div className="min-w-[180px] flex-1">
@@ -372,7 +372,7 @@ export function ContractTemplateEditor({
                   )}
                 </div>
 
-                <footer className="flex justify-end gap-2 border-t border-[#18385f]/50 px-4 py-3">
+                <footer className="flex justify-end gap-2 border-t border-line px-4 py-3">
                   <Button variant="secondary" size="sm" onClick={onClose}>
                     Abbrechen
                   </Button>
@@ -396,7 +396,7 @@ function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (view: ViewM
     { key: 'preview', label: 'Vorschau', icon: Eye },
   ]
   return (
-    <div className="flex gap-1 rounded-[8px] border border-[#18385f]/60 p-0.5">
+    <div className="flex gap-1 rounded-[8px] border border-line p-0.5">
       {modes.map((mode) => {
         const Icon = mode.icon
         return (
@@ -406,8 +406,8 @@ function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (view: ViewM
             onClick={() => onChange(mode.key)}
             className={
               view === mode.key
-                ? 'inline-flex items-center gap-1.5 rounded-[6px] bg-[#d4af37]/15 px-2.5 py-1 text-[12px] font-semibold text-[#d4af37]'
-                : 'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12px] text-[#8ea4bd] hover:text-white'
+                ? 'inline-flex items-center gap-1.5 rounded-[6px] bg-white/[0.03] px-2.5 py-1 text-[12px] font-semibold text-gold'
+                : 'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12px] text-label-2 hover:text-label'
             }
           >
             <Icon size={13} />
@@ -429,7 +429,7 @@ function RowActions({
   onDelete: () => void
 }) {
   const base =
-    'rounded-[7px] border border-[#234568]/70 p-1.5 text-[#8ea4bd] transition-colors hover:text-white'
+    'rounded-[7px] border border-line-strong p-1.5 text-label-2 transition-colors hover:text-label'
   return (
     <div className="flex shrink-0 gap-1">
       <button type="button" onClick={onUp} className={base} aria-label="Nach oben">
@@ -441,7 +441,7 @@ function RowActions({
       <button
         type="button"
         onClick={onDelete}
-        className={`${base} hover:border-[#7f1d1d] hover:text-[#fca5a5]`}
+        className={`${base} hover:border-red/40 hover:text-red`}
         aria-label="Entfernen"
       >
         <Trash2 size={14} />
@@ -453,14 +453,14 @@ function RowActions({
 function PlaceholderHelp() {
   const items = contractPlaceholderHelp()
   return (
-    <div className="rounded-[12px] border border-[#18385f]/50 bg-[#0a1a33]/40 p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8ea4bd]">
+    <div className="rounded-[12px] border border-line bg-white/[0.03] p-3">
+      <p className="text-[11px] font-semibold text-label-2">
         Platzhalter
       </p>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
         {items.map((item) => (
-          <span key={item.token} className="text-[11.5px] text-[#9fb0c4]">
-            <code className="rounded-[4px] bg-[#102542] px-1.5 py-0.5 font-mono text-[11px] text-[#d4af37]">
+          <span key={item.token} className="text-[11.5px] text-label-2">
+            <code className="rounded-[4px] bg-surface-3 px-1.5 py-0.5 font-mono text-[11px] text-gold">
               {item.token}
             </code>{' '}
             {item.description}

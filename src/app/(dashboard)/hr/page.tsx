@@ -54,14 +54,14 @@ function HrLinks() {
     <div className="flex gap-1.5">
       <Link
         href="/ordnungen"
-        className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] border border-[#234568] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-150 hover:bg-[#102542]/50 active:scale-[0.98]"
+        className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[12.5px] font-medium text-label shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-150 hover:bg-surface-2 active:scale-[0.98]"
       >
         <BookOpen size={14} strokeWidth={2} />
         Ordnungen
       </Link>
       <Link
         href="/ordnungen/sanktionskatalog"
-        className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] border border-[#234568] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-150 hover:bg-[#102542]/50 active:scale-[0.98]"
+        className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[12.5px] font-medium text-label shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-150 hover:bg-surface-2 active:scale-[0.98]"
       >
         <ScrollText size={14} strokeWidth={2} />
         Sanktionskatalog
@@ -99,8 +99,8 @@ export default function HrDepartmentPage() {
               className={cn(
                 'inline-flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[12.5px] font-semibold transition-colors',
                 active
-                  ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
-                  : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                  ? 'border-gold/45 bg-gold/14 text-gold'
+                  : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
               )}
             >
               <Icon size={14} strokeWidth={2} />

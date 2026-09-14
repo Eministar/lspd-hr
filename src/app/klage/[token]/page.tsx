@@ -46,7 +46,7 @@ export default function LegalCaseSharePage() {
   if (state.kind === 'loading') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-24 text-[#8ea4bd]">
+        <div className="flex flex-col items-center gap-3 py-24 text-label-2">
           <PdCloudLoader />
           <p className="text-[13px]">Klageschrift wird geladen…</p>
         </div>
@@ -73,11 +73,11 @@ export default function LegalCaseSharePage() {
     <Shell>
       <div className="contract-no-print mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]">
+          <p className="text-[11px] font-semibold text-gold">
             Los Santos Police Department
           </p>
-          <h1 className="mt-1 text-[20px] font-semibold text-white">{document.title}</h1>
-          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
+          <h1 className="mt-1 text-[20px] font-semibold text-label">{document.title}</h1>
+          <p className="mt-1 text-[12.5px] text-label-2">
             Aktenzeichen {document.caseNumber} · {document.status === 'FILED' ? 'Eingereicht' : document.status === 'CLOSED' ? 'Geschlossen' : 'Entwurf'}
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function LegalCaseSharePage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#061426] px-3 py-8 sm:px-6 lg:py-12">
+    <main className="min-h-screen bg-canvas px-3 py-8 sm:px-6 lg:py-12">
       <div className="mx-auto w-full max-w-[880px]">{children}</div>
     </main>
   )
@@ -110,12 +110,12 @@ function Notice({
   children?: React.ReactNode
 }) {
   return (
-    <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-8 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#d4af37]/30 bg-[#d4af37]/12 text-[#d4af37]">
+    <section className="glass-panel-elevated rounded-[12px] border border-line p-8 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[12px] border border-gold/30 bg-gold/12 text-gold">
         <AlertTriangle size={26} />
       </div>
-      <h1 className="text-[19px] font-semibold text-white">{title}</h1>
-      <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-[#8ea4bd]">{description}</p>
+      <h1 className="text-[19px] font-semibold text-label">{title}</h1>
+      <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-label-2">{description}</p>
       {children && <div className="mt-5 flex justify-center">{children}</div>}
     </section>
   )

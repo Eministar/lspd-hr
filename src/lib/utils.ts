@@ -49,22 +49,22 @@ export function getStatusLabel(status: string): string {
 
 export function getStatusDot(status: string): string {
   const colors: Record<string, string> = {
-    ACTIVE: 'bg-[#34d399]',
-    AWAY: 'bg-[#38bdf8]',
-    INACTIVE: 'bg-[#aaa]',
-    TERMINATED: 'bg-[#f87171]',
+    ACTIVE: 'bg-green',
+    AWAY: 'bg-cyan',
+    INACTIVE: 'bg-label-3',
+    TERMINATED: 'bg-red',
   }
-  return colors[status] || 'bg-[#aaa]'
+  return colors[status] || 'bg-label-3'
 }
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    ACTIVE: 'text-[#111] dark:text-[#eee]',
-    AWAY: 'text-[#888]',
-    INACTIVE: 'text-[#aaa]',
-    TERMINATED: 'text-[#aaa]',
+    ACTIVE: 'text-label dark:text-label',
+    AWAY: 'text-label-2',
+    INACTIVE: 'text-label-3',
+    TERMINATED: 'text-label-3',
   }
-  return colors[status] || 'text-[#888]'
+  return colors[status] || 'text-label-2'
 }
 
 export function getUnitLabel(unit: string | null | undefined): string {
@@ -82,21 +82,20 @@ export function getUnitLabel(unit: string | null | undefined): string {
 
 export function getUnitBadgeClass(unit: string | null | undefined): string {
   const map: Record<string, string> = {
-    HR_LEITUNG: 'bg-[#3a1f4d] text-[#e0c8ff] border-[#7c3aed]/40',
-    HR_TRAINEE: 'bg-[#1c2f4a] text-[#bcd0ee] border-[#3b82f6]/40',
-    HR_OFFICER: 'bg-[#1c3540] text-[#9eddee] border-[#06b6d4]/40',
-    ACADEMY: 'bg-[#3a2f17] text-[#f3d8a3] border-[#d4af37]/40',
-    SRU: 'bg-[#3a1818] text-[#f1b6b6] border-[#dc2626]/40',
-    AIR_SUPPORT: 'bg-[#0f2f3a] text-[#bae6fd] border-[#38bdf8]/40',
+    HR_LEITUNG: 'bg-purple/15 text-purple border-transparent',
+    HR_TRAINEE: 'bg-blue/15 text-blue border-transparent',
+    HR_OFFICER: 'bg-cyan/15 text-cyan border-transparent',
+    ACADEMY: 'bg-gold/15 text-gold-bright border-transparent',
+    SRU: 'bg-red/15 text-red border-transparent',
+    AIR_SUPPORT: 'bg-cyan/15 text-cyan border-transparent',
   }
-  if (!unit) return 'bg-transparent text-[#4a6585] border-transparent'
-  return map[unit] || 'bg-[#0f2340] text-[#b7c5d8] border-[#18385f]/60'
+  if (!unit) return 'bg-transparent text-label-4 border-transparent'
+  return map[unit] || 'bg-white/[0.07] text-label-2 border-transparent'
 }
 
 /**
  * Markierungen / Flags für Officers (rot/orange/gelb). Gibt einen Tooltip-Label,
- * eine Punkt-Farbe und eine vollständige Zeilen-Hervorhebung (links 3px Balken,
- * leichter Hintergrundfarb-Tönung) zurück.
+ * eine Punkt-Farbe und eine leichte Hintergrund-Tönung für die ganze Zeile zurück.
  */
 export function getFlagLabel(flag: string | null | undefined): string {
   if (!flag) return 'Keine Markierung'
@@ -112,20 +111,20 @@ export function getFlagLabel(flag: string | null | undefined): string {
 export function getFlagColor(flag: string | null | undefined): string {
   if (!flag) return 'transparent'
   const colors: Record<string, string> = {
-    RED: '#ef4444',
-    ORANGE: '#f97316',
-    YELLOW: '#facc15',
-    BLUE: '#38bdf8',
+    RED: '#ff453a',
+    ORANGE: '#ff9f0a',
+    YELLOW: '#ffd60a',
+    BLUE: '#64d2ff',
   }
   return colors[flag] || 'transparent'
 }
 
 export function getFlagDotClass(flag: string | null | undefined): string {
   const map: Record<string, string> = {
-    RED: 'bg-[#ef4444]',
-    ORANGE: 'bg-[#f97316]',
-    YELLOW: 'bg-[#facc15]',
-    BLUE: 'bg-[#38bdf8]',
+    RED: 'bg-red',
+    ORANGE: 'bg-orange',
+    YELLOW: 'bg-yellow',
+    BLUE: 'bg-cyan',
   }
   if (!flag) return 'bg-transparent'
   return map[flag] || 'bg-transparent'
@@ -133,10 +132,10 @@ export function getFlagDotClass(flag: string | null | undefined): string {
 
 export function getFlagRowClass(flag: string | null | undefined): string {
   const map: Record<string, string> = {
-    RED: 'bg-[rgba(239,68,68,0.07)] hover:bg-[rgba(239,68,68,0.12)]',
-    ORANGE: 'bg-[rgba(249,115,22,0.07)] hover:bg-[rgba(249,115,22,0.12)]',
-    YELLOW: 'bg-[rgba(250,204,21,0.07)] hover:bg-[rgba(250,204,21,0.12)]',
-    BLUE: 'bg-[rgba(56,189,248,0.07)] hover:bg-[rgba(56,189,248,0.12)]',
+    RED: 'bg-[rgba(255,69,58,0.07)] hover:bg-[rgba(255,69,58,0.12)]',
+    ORANGE: 'bg-[rgba(255,159,10,0.07)] hover:bg-[rgba(255,159,10,0.12)]',
+    YELLOW: 'bg-[rgba(255,214,10,0.07)] hover:bg-[rgba(255,214,10,0.12)]',
+    BLUE: 'bg-[rgba(100,210,255,0.07)] hover:bg-[rgba(100,210,255,0.12)]',
   }
   if (!flag) return ''
   return map[flag] || ''

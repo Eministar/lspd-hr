@@ -67,27 +67,27 @@ const steps = [
 
 function inputClass(valid?: boolean) {
   return [
-    'h-12 w-full rounded-xl border bg-[#071a31]/75 px-4 text-[13px] text-[#edf4fb] outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-[#506984]',
+    'h-12 w-full rounded-xl border bg-surface px-4 text-[13px] text-label outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-label-4',
     valid === true
-      ? 'border-[#34d399]/45 shadow-[0_0_0_3px_rgba(52,211,153,0.07)]'
-      : 'border-[#1b3a5f] focus:border-[#d4af37]/55 focus:bg-[#091e39] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
+      ? 'border-green/27 shadow-[0_0_0_3px_rgba(50,215,75,0.07)]'
+      : 'border-line focus:border-gold/80 focus:ring-[3px] focus:ring-gold/25',
   ].join(' ')
 }
 
 function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-3">
-      <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9cb0c7]">{children}</label>
-      {hint && <span className="text-[10.5px] text-[#5e7690]">{hint}</span>}
+      <label className="text-[11px] font-semibold text-label-2">{children}</label>
+      {hint && <span className="text-[11px] text-label-3">{hint}</span>}
     </div>
   )
 }
 
 function InlineMessage({ tone, children }: { tone: 'success' | 'error' | 'info'; children: React.ReactNode }) {
   const styles = {
-    success: 'border-[#34d399]/20 bg-[#34d399]/[0.07] text-[#8ce8c5]',
-    error: 'border-[#fb7185]/20 bg-[#fb7185]/[0.07] text-[#fda4af]',
-    info: 'border-[#38bdf8]/20 bg-[#38bdf8]/[0.06] text-[#9bdcf8]',
+    success: 'border-green/12 bg-green/[0.07] text-green',
+    error: 'border-red/12 bg-red/[0.07] text-red',
+    info: 'border-cyan/12 bg-cyan/[0.06] text-cyan',
   }
   const Icon = tone === 'success' ? CheckCircle2 : tone === 'error' ? CircleAlert : Radio
   return (
@@ -117,7 +117,7 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled || busy}
       whileTap={disabled || busy ? undefined : { scale: 0.98 }}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e2c24f] to-[#cba52d] px-5 text-[12.5px] font-bold text-[#07182c] shadow-[0_8px_24px_rgba(212,175,55,0.16),inset_0_1px_0_rgba(255,255,255,0.32)] transition-[filter,opacity] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 text-[12.5px] font-bold text-ink transition-[filter,opacity] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
     >
       {busy && <LoaderCircle size={15} className="animate-spin" />}
       {children}
@@ -132,7 +132,7 @@ function SecondaryButton({ children, onClick, disabled }: { children: React.Reac
       onClick={onClick}
       disabled={disabled}
       whileTap={disabled ? undefined : { scale: 0.98 }}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#234568] bg-[#0a203d]/70 px-4 text-[12.5px] font-semibold text-[#c7d5e5] transition-colors hover:border-[#37648f] hover:bg-[#102a4d] disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-[12.5px] font-semibold text-label-2 transition-colors hover:border-line-strong hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </motion.button>
@@ -296,14 +296,14 @@ export default function SetupPage() {
     if (step === 0) {
       return (
         <div className="flex min-h-[440px] flex-col justify-center py-8">
-          <div className="mb-7 inline-flex h-16 w-16 items-center justify-center rounded-[20px] border border-[#d4af37]/25 bg-[#d4af37]/[0.08] text-[#e2c24f] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
+          <div className="mb-7 inline-flex h-16 w-16 items-center justify-center rounded-[20px] border border-gold/25 bg-gold/[0.08] text-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
             <Sparkles size={26} strokeWidth={1.7} />
           </div>
-          <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.2em] text-[#d4af37]">Ersteinrichtung</p>
-          <h1 className="max-w-[620px] text-[32px] font-semibold leading-[1.12] tracking-[-0.035em] text-white sm:text-[40px]">
+          <p className="mb-3 text-[11px] font-bold text-gold">Ersteinrichtung</p>
+          <h1 className="max-w-[620px] text-[32px] font-semibold leading-[1.12] tracking-[-0.035em] text-label sm:text-[40px]">
             Willkommen in deinem neuen Department Dashboard.
           </h1>
-          <p className="mt-5 max-w-[600px] text-[14px] leading-7 text-[#8fa6bf]">
+          <p className="mt-5 max-w-[600px] text-[14px] leading-7 text-label-2">
             Wir verbinden jetzt Datenbank und Discord, laden deinen Bot live und richten den ersten geschützten Zugang ein. Die Zugangsdaten bleiben dabei ausschließlich auf diesem Server.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -314,10 +314,10 @@ export default function SetupPage() {
             ].map(([Icon, title, description]) => {
               const StepIcon = Icon as typeof Database
               return (
-                <div key={String(title)} className="rounded-2xl border border-[#18385f]/75 bg-[#081b34]/55 p-4">
-                  <StepIcon size={17} className="mb-3 text-[#d4af37]" />
-                  <p className="text-[12.5px] font-semibold text-[#e9f0f7]">{String(title)}</p>
-                  <p className="mt-1 text-[11px] text-[#607a96]">{String(description)}</p>
+                <div key={String(title)} className="rounded-2xl border border-line bg-surface p-4">
+                  <StepIcon size={17} className="mb-3 text-gold" />
+                  <p className="text-[12.5px] font-semibold text-label">{String(title)}</p>
+                  <p className="mt-1 text-[11px] text-label-3">{String(description)}</p>
                 </div>
               )
             })}
@@ -330,17 +330,17 @@ export default function SetupPage() {
       return (
         <div className="py-3">
           <div className="mb-7">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#38bdf8]/20 bg-[#38bdf8]/[0.07] text-[#7dd3fc]">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan/12 bg-cyan/[0.07] text-cyan">
               <Database size={21} />
             </div>
-            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-white">Datenbank verbinden</h2>
-            <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#8199b3]">MySQL oder MariaDB wird geprüft. Das Schema wird erst beim finalen Abschluss eingerichtet.</p>
+            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-label">Datenbank verbinden</h2>
+            <p className="mt-2 max-w-xl text-[13px] leading-6 text-label-2">MySQL oder MariaDB wird geprüft. Das Schema wird erst beim finalen Abschluss eingerichtet.</p>
           </div>
 
           <div>
             <FieldLabel hint="MySQL / MariaDB">Datenbank-URL</FieldLabel>
             <div className="relative">
-              <Database size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5d7792]" />
+              <Database size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-label-3" />
               <input
                 value={databaseUrl}
                 onChange={(event) => {
@@ -363,7 +363,7 @@ export default function SetupPage() {
             <PrimaryButton onClick={() => void testDatabase()} busy={busy === 'database'} disabled={!databaseUrl.trim()}>
               Verbindung testen
             </PrimaryButton>
-            <span className="inline-flex items-center gap-1.5 text-[10.5px] text-[#5d7691]"><LockKeyhole size={12} /> Wird nicht an den Browser zurückgesendet</span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-label-3"><LockKeyhole size={12} /> Wird nicht an den Browser zurückgesendet</span>
           </div>
 
           <div className="mt-5">
@@ -382,18 +382,18 @@ export default function SetupPage() {
       return (
         <div className="py-3">
           <div className="mb-7">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#5865f2]/25 bg-[#5865f2]/[0.09] text-[#9aa5ff]">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue/15 bg-blue/[0.09] text-blue">
               <Bot size={22} />
             </div>
-            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-white">Discord Bot koppeln</h2>
-            <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#8199b3]">Nach der Prüfung laden wir Bot-Profil, Anwendung und alle verbundenen Server automatisch.</p>
+            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-label">Discord Bot koppeln</h2>
+            <p className="mt-2 max-w-xl text-[13px] leading-6 text-label-2">Nach der Prüfung laden wir Bot-Profil, Anwendung und alle verbundenen Server automatisch.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <FieldLabel hint="Developer Portal → Bot">Bot-Token</FieldLabel>
               <div className="relative">
-                <KeyRound size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5d7792]" />
+                <KeyRound size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-label-3" />
                 <input
                   type={showBotToken ? 'text' : 'password'}
                   value={botToken}
@@ -411,7 +411,7 @@ export default function SetupPage() {
                 <button
                   type="button"
                   onClick={() => setShowBotToken((visible) => !visible)}
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#607995] transition-colors hover:bg-[#143052] hover:text-white"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-label-3 transition-colors hover:bg-surface-3 hover:text-label"
                   aria-label={showBotToken ? 'Token ausblenden' : 'Token anzeigen'}
                 >
                   {showBotToken ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -426,23 +426,23 @@ export default function SetupPage() {
             </div>
 
             {discord && discordValid && (
-              <div className="sm:col-span-2 flex items-center gap-4 rounded-2xl border border-[#34d399]/20 bg-[#34d399]/[0.055] p-4">
-                <Image src={discord.bot.avatarUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-[15px] bg-[#102744] object-cover" />
+              <div className="sm:col-span-2 flex items-center gap-4 rounded-2xl border border-green/12 bg-green/[0.055] p-4">
+                <Image src={discord.bot.avatarUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-[12px] bg-surface-2 object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-[14px] font-semibold text-white">{discord.bot.displayName}</p>
-                    <span className="rounded-md bg-[#5865f2]/20 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[#a9b1ff]">Bot</span>
+                    <p className="truncate text-[14px] font-semibold text-label">{discord.bot.displayName}</p>
+                    <span className="rounded-md bg-blue/20 px-1.5 py-0.5 text-[11px] font-semibold text-blue">Bot</span>
                   </div>
-                  <p className="mt-1 text-[11px] text-[#72908a]">Verifiziert · {discord.guilds.length} Server gefunden · App {discord.application.id}</p>
+                  <p className="mt-1 text-[11px] text-label-3">Verifiziert · {discord.guilds.length} Server gefunden · App {discord.application.id}</p>
                 </div>
-                <CheckCircle2 size={20} className="shrink-0 text-[#34d399]" />
+                <CheckCircle2 size={20} className="shrink-0 text-green" />
               </div>
             )}
 
             <div className="sm:col-span-2">
               <FieldLabel hint="Developer Portal → OAuth2">Client Secret</FieldLabel>
               <div className="relative">
-                <LockKeyhole size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5d7792]" />
+                <LockKeyhole size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-label-3" />
                 <input
                   type={showClientSecret ? 'text' : 'password'}
                   value={clientSecret}
@@ -455,7 +455,7 @@ export default function SetupPage() {
                 <button
                   type="button"
                   onClick={() => setShowClientSecret((visible) => !visible)}
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#607995] transition-colors hover:bg-[#143052] hover:text-white"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-label-3 transition-colors hover:bg-surface-3 hover:text-label"
                   aria-label={showClientSecret ? 'Secret ausblenden' : 'Secret anzeigen'}
                 >
                   {showClientSecret ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -476,18 +476,18 @@ export default function SetupPage() {
       return (
         <div className="py-3">
           <div className="mb-7">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#d4af37]/20 bg-[#d4af37]/[0.07] text-[#e2c24f]">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/20 bg-gold/[0.07] text-gold">
               <ShieldCheck size={22} />
             </div>
-            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-white">Server und Zugriff</h2>
-            <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#8199b3]">Wähle den Department-Server und mindestens eine Rolle, die den ersten Vollzugriff erhält.</p>
+            <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-label">Server und Zugriff</h2>
+            <p className="mt-2 max-w-xl text-[13px] leading-6 text-label-2">Wähle den Department-Server und mindestens eine Rolle, die den ersten Vollzugriff erhält.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <FieldLabel>{busy === 'guild' ? 'Server wird geladen …' : 'Discord-Server'}</FieldLabel>
               <div className="relative">
-                <Server size={15} className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[#5d7792]" />
+                <Server size={15} className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-label-3" />
                 <select
                   value={guildId}
                   disabled={busy === 'guild'}
@@ -498,29 +498,29 @@ export default function SetupPage() {
                   {discord?.guilds.map((guild) => <option key={guild.id} value={guild.id}>{guild.name}</option>)}
                 </select>
                 {busy === 'guild'
-                  ? <LoaderCircle size={15} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[#d4af37]" />
-                  : <ChevronDown size={15} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#607995]" />}
+                  ? <LoaderCircle size={15} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-gold" />
+                  : <ChevronDown size={15} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-label-3" />}
               </div>
             </div>
 
             {selectedGuild && discord?.roles.length ? (
               <div className="sm:col-span-2">
                 <FieldLabel hint={`${adminRoleIds.length} ausgewählt`}>Administrator-Rollen</FieldLabel>
-                <div className="max-h-[190px] overflow-y-auto rounded-2xl border border-[#18385f] bg-[#071a31]/65 p-2">
+                <div className="max-h-[190px] overflow-y-auto rounded-2xl border border-line bg-surface p-2">
                   {discord.roles.map((role) => {
                     const active = adminRoleIds.includes(role.id)
-                    const roleColor = role.color ? `#${role.color.toString(16).padStart(6, '0')}` : '#8ea4bd'
+                    const roleColor = role.color ? `#${role.color.toString(16).padStart(6, '0')}` : '#aab3bf'
                     return (
                       <button
                         type="button"
                         key={role.id}
                         onClick={() => toggleRole(role.id)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${active ? 'bg-[#d4af37]/10' : 'hover:bg-[#102744]/80'}`}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${active ? 'bg-gold/10' : 'hover:bg-surface-2'}`}
                       >
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: roleColor }} />
-                        <span className={`flex-1 truncate text-[12.5px] ${active ? 'font-semibold text-white' : 'text-[#9bb0c6]'}`}>{role.name}</span>
-                        {role.managed && <span className="text-[9px] uppercase tracking-wider text-[#506984]">Bot-Rolle</span>}
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${active ? 'border-[#d4af37] bg-[#d4af37] text-[#07182c]' : 'border-[#29496c] text-transparent'}`}>
+                        <span className={`flex-1 truncate text-[12.5px] ${active ? 'font-semibold text-label' : 'text-label-2'}`}>{role.name}</span>
+                        {role.managed && <span className="text-[11px] text-label-4">Bot-Rolle</span>}
+                        <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${active ? 'border-gold bg-gold text-ink' : 'border-line text-transparent'}`}>
                           <Check size={12} strokeWidth={3} />
                         </span>
                       </button>
@@ -533,7 +533,7 @@ export default function SetupPage() {
             <div className="sm:col-span-2">
               <FieldLabel hint="Für Discord OAuth">Öffentliche Website-URL</FieldLabel>
               <input value={siteUrl} onChange={(event) => setSiteUrl(event.target.value)} className={inputClass(/^https?:\/\//.test(siteUrl))} placeholder="https://dashboard.example.de" />
-              <p className="mt-2 text-[10.5px] leading-5 text-[#5b7490]">OAuth Redirect: <span className="font-mono text-[#7890aa]">{siteUrl.replace(/\/$/, '') || 'https://…'}/api/auth/discord/callback</span></p>
+              <p className="mt-2 text-[11px] leading-5 text-label-3">OAuth Redirect: <span className="font-mono text-label-3">{siteUrl.replace(/\/$/, '') || 'https://…'}/api/auth/discord/callback</span></p>
             </div>
 
             <div>
@@ -560,33 +560,33 @@ export default function SetupPage() {
     return (
       <div className="py-3">
         <div className="mb-7">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#34d399]/20 bg-[#34d399]/[0.07] text-[#5ee0b0]">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-green/12 bg-green/[0.07] text-green">
             <CheckCircle2 size={22} />
           </div>
-          <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-white">Bereit zum Einrichten</h2>
-          <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#8199b3]">Ein letzter Blick – danach werden Schema und geschützte Server-Konfiguration angelegt.</p>
+          <h2 className="text-[25px] font-semibold tracking-[-0.025em] text-label">Bereit zum Einrichten</h2>
+          <p className="mt-2 max-w-xl text-[13px] leading-6 text-label-2">Ein letzter Blick – danach werden Schema und geschützte Server-Konfiguration angelegt.</p>
         </div>
 
         <div className="space-y-3">
           {[
-            { icon: Database, title: databaseResult?.databaseName || 'Datenbank', value: databaseResult?.version || 'Verbindung geprüft', tone: '#7dd3fc' },
+            { icon: Database, title: databaseResult?.databaseName || 'Datenbank', value: databaseResult?.version || 'Verbindung geprüft', tone: '#64d2ff' },
             { icon: Bot, title: discord?.bot.displayName || 'Discord Bot', value: discord?.application.name || 'Anwendung geprüft', tone: '#a9b1ff', image: discord?.bot.avatarUrl },
             { icon: Server, title: selectedGuild?.name || 'Discord-Server', value: `${selectedRoles.map((role) => role.name).join(', ') || adminRoleIds.length + ' Admin-Rolle(n)'}`, tone: '#e2c24f' },
             { icon: LockKeyhole, title: 'Öffentliche URL', value: siteUrl, tone: '#8ce8c5' },
           ].map((item) => {
             const Icon = item.icon
             return (
-              <div key={item.title} className="flex items-center gap-3 rounded-2xl border border-[#18385f]/80 bg-[#081b34]/60 p-3.5">
+              <div key={item.title} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
                 {item.image ? (
                   <Image src={item.image} alt="" width={38} height={38} className="h-[38px] w-[38px] rounded-xl object-cover" />
                 ) : (
-                  <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#102744]" style={{ color: item.tone }}><Icon size={17} /></div>
+                  <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-surface-2" style={{ color: item.tone }}><Icon size={17} /></div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-semibold text-[#edf4fb]">{item.title}</p>
-                  <p className="mt-0.5 truncate text-[10.5px] text-[#627c98]">{item.value}</p>
+                  <p className="truncate text-[12.5px] font-semibold text-label">{item.title}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-label-3">{item.value}</p>
                 </div>
-                <CheckCircle2 size={16} className="shrink-0 text-[#34d399]" />
+                <CheckCircle2 size={16} className="shrink-0 text-green" />
               </div>
             )
           })}
@@ -603,24 +603,24 @@ export default function SetupPage() {
   const progress = completed ? 1 : step / (steps.length - 1)
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#04111f] text-[#edf4fb]">
+    <main className="relative min-h-screen overflow-hidden bg-canvas text-label">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(56,189,248,0.07),transparent_27%),radial-gradient(circle_at_88%_82%,rgba(212,175,55,0.075),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(100,210,255,0.07),transparent_27%),radial-gradient(circle_at_88%_82%,rgba(212,175,55,0.075),transparent_30%)]" />
         <div className="absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(255,255,255,.13)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.13)_1px,transparent_1px)] [background-size:52px_52px] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]" />
-        <div className="absolute left-[8%] top-[12%] h-48 w-48 rounded-full border border-[#d4af37]/10" />
-        <div className="absolute left-[8%] top-[12%] h-32 w-32 translate-x-8 translate-y-8 rounded-full border border-[#38bdf8]/10" />
+        <div className="absolute left-[8%] top-[12%] h-48 w-48 rounded-full border border-gold/10" />
+        <div className="absolute left-[8%] top-[12%] h-32 w-32 translate-x-8 translate-y-8 rounded-full border border-cyan/6" />
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center p-3 sm:p-6 lg:p-10">
-        <div className="grid w-full max-w-[1120px] overflow-hidden rounded-[28px] border border-white/[0.075] bg-[#07182c]/88 shadow-[0_30px_100px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-2xl lg:grid-cols-[300px_1fr]">
-          <aside className="relative border-b border-[#173453] bg-[#061528]/80 p-6 lg:border-b-0 lg:border-r lg:p-8">
+        <div className="grid w-full max-w-[1120px] overflow-hidden rounded-[28px] border border-white/[0.075] bg-surface shadow-[0_30px_100px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-2xl lg:grid-cols-[300px_1fr]">
+          <aside className="relative border-b border-line bg-surface p-6 lg:border-b-0 lg:border-r lg:p-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[15px] border border-[#d4af37]/25 bg-[#0b2443]">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[12px] border border-gold/25 bg-surface-2">
                 <Image src="/shield.webp" alt="LSPD" width={42} height={42} className="rounded-full" priority />
               </div>
               <div>
-                <p className="text-[13.5px] font-semibold text-white">LSPD Department</p>
-                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.17em] text-[#d4af37]/80">System Setup</p>
+                <p className="text-[13.5px] font-semibold text-label">LSPD Department</p>
+                <p className="mt-0.5 text-[11px] font-bold text-gold/80">System Setup</p>
               </div>
             </div>
 
@@ -643,11 +643,11 @@ export default function SetupPage() {
                     transition={reducedMotion ? { duration: 0 } : { type: 'spring', bounce: 0, duration: 0.45 }}
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-[15px] font-semibold text-white lg:text-[19px]">{completed ? '✓' : `${step + 1}/${steps.length}`}</div>
+                <div className="absolute inset-0 flex items-center justify-center text-[15px] font-semibold text-label lg:text-[19px]">{completed ? '✓' : `${step + 1}/${steps.length}`}</div>
               </div>
               <div className="min-w-0 lg:mt-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#607994]">Fortschritt</p>
-                <p className="mt-1 truncate text-[13px] font-semibold text-[#e4ecf5]">{completed ? 'Einsatzbereit' : steps[step].label}</p>
+                <p className="text-[11px] font-bold text-label-3">Fortschritt</p>
+                <p className="mt-1 truncate text-[13px] font-semibold text-label">{completed ? 'Einsatzbereit' : steps[step].label}</p>
               </div>
             </div>
 
@@ -657,18 +657,18 @@ export default function SetupPage() {
                 const current = index === step && !completed
                 const done = index < step || completed
                 return (
-                  <div key={item.label} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${current ? 'bg-[#102947]' : ''}`}>
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg border ${done ? 'border-[#34d399]/25 bg-[#34d399]/10 text-[#5ee0b0]' : current ? 'border-[#d4af37]/30 bg-[#d4af37]/10 text-[#e2c24f]' : 'border-[#1c3b5f] text-[#4e6985]'}`}>
+                  <div key={item.label} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${current ? 'bg-surface-2' : ''}`}>
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg border ${done ? 'border-green/15 bg-green/10 text-green' : current ? 'border-gold/30 bg-gold/10 text-gold' : 'border-line text-label-4'}`}>
                       {done ? <Check size={13} strokeWidth={2.7} /> : <Icon size={13} />}
                     </div>
-                    <span className={`text-[11.5px] ${current ? 'font-semibold text-white' : done ? 'text-[#9cb2c8]' : 'text-[#526c88]'}`}>{item.label}</span>
+                    <span className={`text-[11.5px] ${current ? 'font-semibold text-label' : done ? 'text-label-2' : 'text-label-4'}`}>{item.label}</span>
                   </div>
                 )
               })}
             </div>
 
-            <div className="absolute bottom-7 left-8 right-8 hidden rounded-xl border border-[#173657] bg-[#071a31]/65 p-3 lg:block">
-              <div className="flex items-center gap-2 text-[10.5px] font-medium text-[#8da4bb]"><LockKeyhole size={13} className="text-[#d4af37]" /> Lokale Server-Konfiguration</div>
+            <div className="absolute bottom-7 left-8 right-8 hidden rounded-xl border border-line bg-surface p-3 lg:block">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-label-2"><LockKeyhole size={13} className="text-gold" /> Lokale Server-Konfiguration</div>
             </div>
           </aside>
 
@@ -679,22 +679,22 @@ export default function SetupPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-1 flex-col items-center justify-center py-10 text-center"
               >
-                <div className="relative mb-7 flex h-24 w-24 items-center justify-center rounded-[30px] border border-[#34d399]/25 bg-[#34d399]/[0.08] text-[#5ee0b0] shadow-[0_0_60px_rgba(52,211,153,0.09)]">
+                <div className="relative mb-7 flex h-24 w-24 items-center justify-center rounded-[30px] border border-green/15 bg-green/[0.08] text-green shadow-[0_0_60px_rgba(50,215,75,0.09)]">
                   <CheckCircle2 size={42} strokeWidth={1.6} />
                 </div>
-                <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.19em] text-[#5ee0b0]">Einrichtung abgeschlossen</p>
-                <h1 className="max-w-lg text-[31px] font-semibold leading-tight tracking-[-0.035em] text-white">Das Department Dashboard ist einsatzbereit.</h1>
-                <p className="mt-4 max-w-md text-[13px] leading-6 text-[#829ab3]">Datenbank, Discord Bot und der erste Admin-Zugang sind eingerichtet. Nach dem Login kannst du Ränge, Ausbildungen und weitere Rollen konfigurieren.</p>
+                <p className="mb-3 text-[11px] font-bold text-green">Einrichtung abgeschlossen</p>
+                <h1 className="max-w-lg text-[31px] font-semibold leading-tight tracking-[-0.035em] text-label">Das Department Dashboard ist einsatzbereit.</h1>
+                <p className="mt-4 max-w-md text-[13px] leading-6 text-label-2">Datenbank, Discord Bot und der erste Admin-Zugang sind eingerichtet. Nach dem Login kannst du Ränge, Ausbildungen und weitere Rollen konfigurieren.</p>
                 <div className="mt-8">
                   <PrimaryButton onClick={() => window.location.assign('/login')}>Zum Discord-Login <ArrowRight size={15} /></PrimaryButton>
                 </div>
-                <p className="mt-5 max-w-sm text-[10.5px] leading-5 text-[#526d88]">Bei einem selbst betriebenen Bot-Gateway verbindet sich der Bot spätestens nach dem nächsten Prozess-Neustart dauerhaft.</p>
+                <p className="mt-5 max-w-sm text-[11px] leading-5 text-label-4">Bei einem selbst betriebenen Bot-Gateway verbindet sich der Bot spätestens nach dem nächsten Prozess-Neustart dauerhaft.</p>
               </motion.div>
             ) : (
               <>
                 <div className="mb-5 flex items-center justify-between lg:hidden">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#5f7894]">{steps[step].short}</p>
-                  <div className="flex gap-1.5">{steps.map((item, index) => <span key={item.label} className={`h-1.5 rounded-full transition-all ${index === step ? 'w-6 bg-[#d4af37]' : index < step ? 'w-1.5 bg-[#34d399]' : 'w-1.5 bg-[#244363]'}`} />)}</div>
+                  <p className="text-[11px] font-bold text-label-3">{steps[step].short}</p>
+                  <div className="flex gap-1.5">{steps.map((item, index) => <span key={item.label} className={`h-1.5 rounded-full transition-all ${index === step ? 'w-6 bg-gold' : index < step ? 'w-1.5 bg-green' : 'w-1.5 bg-surface-3'}`} />)}</div>
                 </div>
 
                 <div className="relative flex-1 overflow-hidden">
@@ -713,7 +713,7 @@ export default function SetupPage() {
                   </AnimatePresence>
                 </div>
 
-                <div className="mt-7 flex items-center justify-between gap-3 border-t border-[#173453]/75 pt-5">
+                <div className="mt-7 flex items-center justify-between gap-3 border-t border-line pt-5">
                   {step > 0 ? (
                     <SecondaryButton onClick={() => goTo(step - 1)} disabled={Boolean(busy)}><ArrowLeft size={14} /> Zurück</SecondaryButton>
                   ) : <span />}

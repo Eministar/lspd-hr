@@ -42,9 +42,9 @@ export default function LoginPage() {
   return (
     <main className="lspd-login">
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 30 }}
         className="lspd-login-content"
       >
         <div className="lspd-login-heading">
@@ -54,31 +54,31 @@ export default function LoginPage() {
           <h1>LSPD Department</h1>
           <p>Personal. Ausbildung. Einsatz.</p>
         </div>
-        <section className="lspd-login-card glass-panel-elevated" aria-labelledby="login-title">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 shrink-0 rounded-xl border border-[#8795ff]/20 bg-[#5865f2]/15 flex items-center justify-center text-[#a4b1ff]">
-              <MessageCircle size={20} strokeWidth={1.7} />
+        <section className="lspd-login-card" aria-labelledby="login-title">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo/20 text-indigo">
+              <MessageCircle size={19} strokeWidth={1.9} />
             </div>
             <div>
-              <h2 id="login-title" className="text-white">Willkommen zurück</h2>
-              <p className="text-[12px] text-[#8ea4bd] mt-0.5">Anmelden mit deinem Discord-Konto</p>
+              <h2 id="login-title">Willkommen zurück</h2>
+              <p className="mt-0.5 text-[13px] text-label-3">Anmelden mit deinem Discord-Konto</p>
             </div>
           </div>
           <p className="lspd-login-description">Deine Discord-Rollen bestimmen, auf welche Bereiche des Departments du zugreifen kannst.</p>
           {error && (
-            <div role="alert" className="mt-4 rounded-xl border border-red-400/25 bg-red-400/10 px-3 py-3 text-[13px] text-[#fca5a5]">{error}</div>
+            <div role="alert" className="mt-4 rounded-[10px] bg-red/12 px-3.5 py-3 text-[13px] text-red">{error}</div>
           )}
           <label className="lspd-login-remember">
             <input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} />
             Eingeloggt bleiben
           </label>
-          <Button type="button" className="w-full h-[46px] text-[14px]" onClick={startDiscordLogin}>
-            <ShieldCheck size={17} strokeWidth={1.9} />
+          <Button type="button" size="lg" className="h-11 w-full" onClick={startDiscordLogin}>
+            <ShieldCheck size={17} strokeWidth={2} />
             Mit Discord anmelden
           </Button>
-          <div className="mt-6 pt-5 border-t border-[#335276]/45 flex flex-col items-center gap-2">
-            <span className="text-[12px] text-[#8ea4bd]">Du möchtest dich beim LSPD bewerben?</span>
-            <Link href="/besucherportal" className="text-[13px] text-[#e5c777] font-medium rounded-md px-3 py-1.5 transition-colors hover:bg-[#d4af37]/10 hover:text-[#f8dfa4]">Zum Besucherportal</Link>
+          <div className="mt-6 flex flex-col items-center gap-1 border-t border-line pt-5">
+            <span className="text-[13px] text-label-3">Du möchtest dich beim LSPD bewerben?</span>
+            <Link href="/besucherportal" className="rounded-[7px] px-3 py-1.5 text-[13.5px] font-medium text-gold-bright transition-colors hover:bg-white/[0.06]">Zum Besucherportal</Link>
           </div>
         </section>
         <p className="lspd-login-footer">Los Santos Police Department</p>

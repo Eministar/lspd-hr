@@ -16,45 +16,45 @@ export default function AccountPage() {
       />
 
       <div className="space-y-4 max-w-xl">
-        <div className="glass-panel-elevated rounded-[14px] p-6">
+        <div className="glass-panel-elevated rounded-[12px] p-6">
           <div className="flex items-center gap-4">
             {user?.avatarUrl ? (
               <span
-                className="h-14 w-14 shrink-0 rounded-full bg-cover bg-center ring-1 ring-[#d4af37]/25"
+                className="h-14 w-14 shrink-0 rounded-full bg-cover bg-center ring-1 ring-gold/25"
                 style={{ backgroundImage: `url(${user.avatarUrl})` }}
                 aria-label={user.displayName}
               />
             ) : (
-              <div className="h-14 w-14 rounded-full bg-[#0f2340] flex items-center justify-center text-[#d4af37]">
+              <div className="h-14 w-14 rounded-full bg-surface-2 flex items-center justify-center text-gold">
                 <MessageCircle size={22} strokeWidth={1.75} />
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="truncate text-[15px] font-semibold text-[#eee]">{user?.displayName}</h3>
-              <p className="text-[12px] text-[#6b8299] mt-1">Discord-ID: {user?.discordId ?? 'nicht verbunden'}</p>
+              <h3 className="truncate text-[15px] font-semibold text-label">{user?.displayName}</h3>
+              <p className="text-[12px] text-label-3 mt-1">Discord-ID: {user?.discordId ?? 'nicht verbunden'}</p>
             </div>
           </div>
         </div>
 
-        <div className="glass-panel-elevated rounded-[14px] p-6">
+        <div className="glass-panel-elevated rounded-[12px] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-9 w-9 rounded-[9px] bg-[#0f2340] flex items-center justify-center text-[#d4af37]">
+            <div className="h-9 w-9 rounded-[9px] bg-surface-2 flex items-center justify-center text-gold">
               <ShieldCheck size={17} strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Berechtigungen</h3>
-              <p className="text-[11.5px] text-[#6b8299] mt-0.5">Gruppen werden bei jedem Login aus deinen Discord-Rollen berechnet.</p>
+              <h3 className="text-[13.5px] font-semibold text-label">Berechtigungen</h3>
+              <p className="text-[11.5px] text-label-3 mt-0.5">Gruppen werden bei jedem Login aus deinen Discord-Rollen berechnet.</p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {(user?.groups ?? []).map((group) => (
-              <span key={group.id} className="rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb]">
+              <span key={group.id} className="rounded-[7px] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-label">
                 {group.name}
               </span>
             ))}
             {(user?.groups ?? []).length === 0 && (
-              <span className="text-[12.5px] text-[#6b8299]">Keine Benutzergruppe aktiv</span>
+              <span className="text-[12.5px] text-label-3">Keine Benutzergruppe aktiv</span>
             )}
           </div>
         </div>

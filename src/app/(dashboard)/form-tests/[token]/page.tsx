@@ -295,10 +295,10 @@ export default function FormTestLinkPage() {
   if (!data) {
     return (
       <div className="mx-auto max-w-3xl">
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 px-6 py-16 text-center">
-          <FileQuestion size={30} className="mx-auto mb-3 text-[#4a6585]" />
-          <p className="text-[14px] font-semibold text-white">Test nicht verfügbar</p>
-          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-5 text-[#8ea4bd]">
+        <div className="glass-panel-elevated rounded-[12px] border border-line px-6 py-16 text-center">
+          <FileQuestion size={30} className="mx-auto mb-3 text-label-4" />
+          <p className="text-[14px] font-semibold text-label">Test nicht verfügbar</p>
+          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-5 text-label-2">
             {loadError ?? 'Der Link ist nicht aktiv oder nicht verfügbar.'}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -306,7 +306,7 @@ export default function FormTestLinkPage() {
               Erneut versuchen
             </Button>
           </div>
-          <p className="mx-auto mt-4 max-w-md text-[11.5px] leading-5 text-[#6b8299]">
+          <p className="mx-auto mt-4 max-w-md text-[11.5px] leading-5 text-label-3">
             Tipp: Der Link muss vollständig kopiert werden — angehängte Satzzeichen oder ein
             abgeschnittenes Ende machen ihn ungültig. Hilft das nicht, fordere den Link neu an.
           </p>
@@ -323,12 +323,12 @@ export default function FormTestLinkPage() {
           description={data.description ?? undefined}
           eyebrow={data.kind === 'SURVEY' ? 'Umfrage abgegeben' : 'Test abgegeben'}
         />
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#123026] text-[#86efac]">
+        <div className="glass-panel-elevated rounded-[12px] border border-line p-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[12px] bg-green/14 text-green">
             <CheckCircle2 size={28} />
           </div>
-          <h2 className="text-[17px] font-semibold text-white">Deine Abgabe wurde gespeichert</h2>
-          <p className="mt-2 text-[13px] text-[#8ea4bd]">
+          <h2 className="text-[17px] font-semibold text-label">Deine Abgabe wurde gespeichert</h2>
+          <p className="mt-2 text-[13px] text-label-2">
             Abgegeben am {formatDateTime(data.existingResponse.submittedAt)}
           </p>
           {data.existingResponse.maxScore > 0 && (
@@ -346,32 +346,32 @@ export default function FormTestLinkPage() {
       <div className="mx-auto max-w-3xl">
         <PageHeader title={data.title} description={data.description ?? undefined} eyebrow="Test" />
 
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-6">
+        <div className="glass-panel-elevated rounded-[12px] border border-line p-6">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-4 py-3">
-              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">
-                <ClipboardCheck size={13} className="text-[#d4af37]" />
+            <div className="rounded-[12px] border border-line bg-white/[0.03] px-4 py-3">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-label-3">
+                <ClipboardCheck size={13} className="text-gold" />
                 Umfang
               </div>
-              <p className="mt-1.5 text-[14px] font-semibold text-white">{data.questionCount} Frage(n)</p>
+              <p className="mt-1.5 text-[14px] font-semibold text-label">{data.questionCount} Frage(n)</p>
             </div>
-            <div className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-4 py-3">
-              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">
-                <Clock size={13} className="text-[#d4af37]" />
+            <div className="rounded-[12px] border border-line bg-white/[0.03] px-4 py-3">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-label-3">
+                <Clock size={13} className="text-gold" />
                 Zeitlimit
               </div>
-              <p className="mt-1.5 text-[14px] font-semibold text-white">
+              <p className="mt-1.5 text-[14px] font-semibold text-label">
                 {data.timeLimitMinutes ? `${data.timeLimitMinutes} Minuten` : 'Kein Zeitlimit'}
               </p>
             </div>
           </div>
 
-          <div className="mt-4 rounded-[12px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
+          <div className="mt-4 rounded-[12px] border border-gold/30 bg-gold/5 p-4">
             <div className="flex items-start gap-3">
-              <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[#d4af37]" />
+              <ShieldAlert size={18} className="mt-0.5 shrink-0 text-gold" />
               <div>
-                <p className="text-[13px] font-semibold text-white">Vor dem Start lesen</p>
-                <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-[#d8c68c]">
+                <p className="text-[13px] font-semibold text-label">Vor dem Start lesen</p>
+                <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-gold-bright">
                   <li>
                     {data.timeLimitMinutes
                       ? `Die Zeit läuft ab dem Klick auf „Test starten“ — ${data.timeLimitMinutes} Minuten, auch wenn du die Seite schließt.`
@@ -411,13 +411,13 @@ export default function FormTestLinkPage() {
         <div className="pointer-events-none fixed inset-0 z-[60]" style={watermarkStyle} aria-hidden="true" />
       )}
       {isActiveTest && (screenshotCover || windowObscured) && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-[#040d1a] px-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-[18px] border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]">
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[16px] border border-gold/30 bg-gold/10 text-gold">
             <ShieldAlert size={30} />
           </div>
           <div>
-            <p className="text-[16px] font-semibold text-white">Inhalt geschützt</p>
-            <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-5 text-[#8ea4bd]">
+            <p className="text-[16px] font-semibold text-label">Inhalt geschützt</p>
+            <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-5 text-label-2">
               Der Testinhalt wird ausgeblendet, sobald das Fenster verlassen wird oder ein Screenshot bzw. eine Aufnahme erkannt wird. Kehre zum Test-Tab zurück, um fortzufahren.
             </p>
           </div>
@@ -438,12 +438,12 @@ export default function FormTestLinkPage() {
       />
 
       {isActiveTest && (
-        <div className="mb-4 rounded-[14px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
+        <div className="mb-4 rounded-[12px] border border-gold/30 bg-gold/5 p-4">
           <div className="flex items-start gap-3">
-            <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[#d4af37]" />
+            <ShieldAlert size={18} className="mt-0.5 shrink-0 text-gold" />
             <div>
-              <p className="text-[13px] font-semibold text-white">Testmodus aktiv</p>
-              <p className="mt-1 text-[12.5px] leading-5 text-[#d8c68c]">
+              <p className="text-[13px] font-semibold text-label">Testmodus aktiv</p>
+              <p className="mt-1 text-[12.5px] leading-5 text-gold-bright">
                 Kopieren, Einfügen, Drucken, Rechtsklick und Tabwechsel werden blockiert oder protokolliert. Jeder Screenshot trägt sichtbar deinen Namen und deine Discord-ID – geleakte Aufnahmen sind dir eindeutig zuordenbar. Andere Dashboard-Seiten bleiben bis zur Abgabe gesperrt.
               </p>
             </div>
@@ -452,12 +452,12 @@ export default function FormTestLinkPage() {
       )}
 
       {focusWarning && isActiveTest && (
-        <div className="mb-4 rounded-[14px] border border-[#7f1d1d]/45 bg-[#2a1620]/55 p-4">
+        <div className="mb-4 rounded-[12px] border border-red/14 bg-red/8 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#fca5a5]" />
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red" />
             <div>
-              <p className="text-[13px] font-semibold text-white">Fokusverlust protokolliert</p>
-              <p className="mt-1 text-[12.5px] leading-5 text-[#f3b7b7]">
+              <p className="text-[13px] font-semibold text-label">Fokusverlust protokolliert</p>
+              <p className="mt-1 text-[12.5px] leading-5 text-red">
                 Der Test wurde verlassen oder das Fenster hat den Fokus verloren.
               </p>
             </div>
@@ -466,7 +466,7 @@ export default function FormTestLinkPage() {
       )}
 
       {data.kind === 'SURVEY' && data.anonymousResponses && (
-        <div className="mb-4 rounded-[14px] border border-[#1e3a5c]/45 bg-[#071a30]/55 p-4 text-[12.5px] leading-5 text-[#8ea4bd]">
+        <div className="mb-4 rounded-[12px] border border-line bg-surface p-4 text-[12.5px] leading-5 text-label-2">
           Diese Umfrage wird anonym ausgewertet. Deine Abgabe wird intern nur zur Vermeidung mehrfacher Abgaben erkannt.
         </div>
       )}
@@ -484,13 +484,13 @@ export default function FormTestLinkPage() {
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-5 rounded-[14px] border border-[#1e3a5c]/45 bg-[#061426]/90 p-3 backdrop-blur-md">
+      <div className="sticky bottom-0 mt-5 rounded-[12px] border border-line bg-canvas p-3 backdrop-blur-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-[12.5px] text-[#8ea4bd]">
-            <ClipboardCheck size={15} className="text-[#d4af37]" />
+          <div className="flex items-center gap-2 text-[12.5px] text-label-2">
+            <ClipboardCheck size={15} className="text-gold" />
             {data.questions.length} Frage(n)
             {isActiveTest && data.securityEventCount > 0 && (
-              <span className="text-[#d4af37]">· {data.securityEventCount} protokolliert</span>
+              <span className="text-gold">· {data.securityEventCount} protokolliert</span>
             )}
           </div>
           <Button onClick={submit} loading={submitting} disabled={!answeredRequired || timeExpired}>
@@ -517,18 +517,18 @@ function QuestionField({
   onChange: (value: unknown) => void
 }) {
   return (
-    <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
+    <section className="glass-panel-elevated rounded-[12px] border border-line p-4">
       <div className="mb-3 flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#102542] text-[11.5px] font-semibold text-[#d4af37]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-surface-2 text-[11.5px] font-semibold text-gold">
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[14px] font-semibold text-white">{question.title}</h2>
+            <h2 className="text-[14px] font-semibold text-label">{question.title}</h2>
             {question.required && <Badge variant="warning">Pflicht</Badge>}
             {showPoints && question.points > 0 && <Badge>{question.points} Punkte</Badge>}
           </div>
-          {question.description && <p className="mt-1 text-[12.5px] leading-5 text-[#8ea4bd]">{question.description}</p>}
+          {question.description && <p className="mt-1 text-[12.5px] leading-5 text-label-2">{question.description}</p>}
         </div>
       </div>
       <QuestionInput question={question} value={value} onChange={onChange} />
@@ -542,7 +542,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
       <input
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(event.target.value)}
-        className="h-[38px] w-full rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 text-[13.5px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+        className="h-[38px] w-full rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
         placeholder="Antwort eingeben"
       />
     )
@@ -554,7 +554,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(event.target.value)}
         rows={5}
-        className="w-full resize-none rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5 text-[13.5px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+        className="w-full resize-none rounded-[9px] border border-line bg-surface px-3 py-2.5 text-[13.5px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
         placeholder="Antwort eingeben"
       />
     )
@@ -564,7 +564,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
     const selected = typeof value === 'string' ? value : ''
     return (
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-[#5b7796]">Nur eine Antwort wählbar</p>
+        <p className="text-[11px] font-medium text-label-3">Nur eine Antwort wählbar</p>
         {(question.options?.choices ?? []).map((choice) => (
           <button
             key={choice}
@@ -573,11 +573,11 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
             className={cn(
               'flex w-full items-center gap-2 rounded-[10px] border px-3 py-2.5 text-left text-[13px] transition-colors',
               selected === choice
-                ? 'border-[#d4af37]/45 bg-[#d4af37]/12 text-white'
-                : 'border-[#18385f]/60 bg-[#0a1a33]/45 text-[#dbe6f3] hover:border-[#234568]',
+                ? 'border-gold/45 bg-gold/12 text-label'
+                : 'border-line bg-white/[0.03] text-label hover:border-line',
             )}
           >
-            <span className={cn('h-3.5 w-3.5 rounded-full border', selected === choice ? 'border-[#d4af37] bg-[#d4af37]' : 'border-[#4a6585]')} />
+            <span className={cn('h-3.5 w-3.5 rounded-full border', selected === choice ? 'border-gold bg-gold' : 'border-line-strong')} />
             {choice}
           </button>
         ))}
@@ -592,14 +592,14 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
     }
     return (
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-[#d4af37]/70">Mehrfachauswahl möglich</p>
+        <p className="text-[11px] font-medium text-gold-bright">Mehrfachauswahl möglich</p>
         {(question.options?.choices ?? []).map((choice) => (
           <Checkbox
             key={choice}
             checked={selected.includes(choice)}
             onCheckedChange={() => toggle(choice)}
             label={choice}
-            className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-3 py-2.5 hover:border-[#234568]"
+            className="rounded-[10px] border border-line bg-white/[0.03] px-3 py-2.5 hover:border-line"
           />
         ))}
       </div>
@@ -622,8 +622,8 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
             className={cn(
               'h-10 rounded-[9px] border text-[13px] font-semibold transition-colors',
               selected === item
-                ? 'border-[#d4af37]/45 bg-[#d4af37]/16 text-[#d4af37]'
-                : 'border-[#18385f]/60 bg-[#0a1a33]/45 text-[#9fb0c4] hover:border-[#234568]',
+                ? 'border-gold/45 bg-gold/16 text-gold'
+                : 'border-line bg-white/[0.03] text-label-2 hover:border-line',
             )}
           >
             {item}
@@ -631,7 +631,7 @@ function QuestionInput({ question, value, onChange }: { question: FormQuestion; 
         ))}
       </div>
       {(question.options?.minLabel || question.options?.maxLabel) && (
-        <div className="mt-2 flex justify-between gap-4 text-[11.5px] text-[#6b8299]">
+        <div className="mt-2 flex justify-between gap-4 text-[11.5px] text-label-3">
           <span>{question.options?.minLabel}</span>
           <span>{question.options?.maxLabel}</span>
         </div>

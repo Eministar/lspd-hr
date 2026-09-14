@@ -48,9 +48,9 @@ export function FormTestResponses({ testId }: { testId: string }) {
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader title="Abgaben" description="Die Auswertung konnte nicht geladen werden." eyebrow="Auswertung" />
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-14 text-center">
-          <Clipboard size={26} className="mx-auto mb-2 text-[#4a6585]" />
-          <p className="text-[13px] text-[#8ea4bd]">{loadError ?? 'Auswertung nicht verfügbar'}</p>
+        <div className="glass-panel-elevated rounded-[12px] border border-line py-14 text-center">
+          <Clipboard size={26} className="mx-auto mb-2 text-label-4" />
+          <p className="text-[13px] text-label-2">{loadError ?? 'Auswertung nicht verfügbar'}</p>
         </div>
       </div>
     )
@@ -81,9 +81,9 @@ export function FormTestResponses({ testId }: { testId: string }) {
       </div>
 
       {responses.length === 0 ? (
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-14 text-center">
-          <Clipboard size={26} className="mx-auto mb-2 text-[#4a6585]" />
-          <p className="text-[13px] text-[#8ea4bd]">Noch keine Abgaben vorhanden</p>
+        <div className="glass-panel-elevated rounded-[12px] border border-line py-14 text-center">
+          <Clipboard size={26} className="mx-auto mb-2 text-label-4" />
+          <p className="text-[13px] text-label-2">Noch keine Abgaben vorhanden</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -95,28 +95,28 @@ export function FormTestResponses({ testId }: { testId: string }) {
 
           <QuestionAnalytics questions={data.test.questions} responses={responses} />
 
-          <section className="glass-panel-elevated overflow-hidden rounded-[14px] border border-[#1e3a5c]/45">
-            <div className="border-b border-[#18385f]/45 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Abgaben</p>
+          <section className="glass-panel-elevated overflow-hidden rounded-[12px] border border-line">
+            <div className="border-b border-line px-4 py-3">
+              <p className="text-[11px] font-semibold text-label-2">Abgaben</p>
             </div>
-            <div className="divide-y divide-[#18385f]/35">
+            <div className="divide-y divide-line">
               {responses.map((response) => (
                 <Link
                   key={response.id}
                   href={`/form-tests/manage/${testId}/responses/${response.id}`}
-                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#102542]/55"
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-semibold text-white">
+                    <p className="truncate text-[13.5px] font-semibold text-label">
                       {response.respondent?.displayName ?? response.respondentName}
                     </p>
-                    <p className="mt-0.5 text-[11.5px] text-[#6b8299]">Abgegeben {formatDateTime(response.submittedAt)}</p>
+                    <p className="mt-0.5 text-[11.5px] text-label-3">Abgegeben {formatDateTime(response.submittedAt)}</p>
                   </div>
                   <Badge variant={response.reviewedAt ? 'success' : 'default'}>{responseScore(response)}</Badge>
                   <Badge variant={response.reviewedAt ? 'success' : 'warning'}>
                     {response.reviewedAt ? 'Bewertet' : 'Offen'}
                   </Badge>
-                  <span className="flex items-center gap-1 text-[12px] font-medium text-[#d4af37]">
+                  <span className="flex items-center gap-1 text-[12px] font-medium text-gold">
                     Öffnen
                     <ChevronRight size={14} />
                   </span>

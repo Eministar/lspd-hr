@@ -54,8 +54,8 @@ export function sortEntriesByRank<T extends Pick<RankChangeEntry, 'currentRank' 
 }
 
 export const DIRECTION_ACCENT: Record<RankChangeDirection, string> = {
-    PROMOTION: '#34d399',
-    DEMOTION: '#f87171',
+    PROMOTION: '#32d74b',
+    DEMOTION: '#ff453a',
 }
 
 export const DIRECTION_LABEL: Record<RankChangeDirection, string> = {
@@ -80,7 +80,7 @@ function DirectionPill({ direction }: { direction: RankChangeDirection }) {
     const Icon = direction === 'PROMOTION' ? ArrowUpRight : ArrowDownRight
     return (
         <span
-            className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+            className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
             style={{ borderColor: `${accent}40`, backgroundColor: `${accent}18`, color: accent }}
         >
             <Icon size={11} strokeWidth={2.5} />
@@ -107,13 +107,13 @@ function EntryVoteControls({
         icon: typeof ArrowUp
         activeClassName: string
     }[] = [
-        { vote: 'HIGHER', count: summary.higherVotes, label: 'Höher einstufen', icon: ArrowUp, activeClassName: 'bg-[#34d399]/18 text-[#6ee7b7]' },
-        { vote: 'CONFIRM', count: summary.confirmVotes, label: 'Vorschlag bestätigen', icon: Check, activeClassName: 'bg-[#d4af37]/18 text-[#f3d77a]' },
-        { vote: 'LOWER', count: summary.lowerVotes, label: 'Niedriger einstufen', icon: ArrowDown, activeClassName: 'bg-[#f87171]/18 text-[#fca5a5]' },
+        { vote: 'HIGHER', count: summary.higherVotes, label: 'Höher einstufen', icon: ArrowUp, activeClassName: 'bg-green/18 text-green' },
+        { vote: 'CONFIRM', count: summary.confirmVotes, label: 'Vorschlag bestätigen', icon: Check, activeClassName: 'bg-gold/18 text-gold-bright' },
+        { vote: 'LOWER', count: summary.lowerVotes, label: 'Niedriger einstufen', icon: ArrowDown, activeClassName: 'bg-red/18 text-red' },
     ]
 
     return (
-        <div className="inline-flex shrink-0 items-center gap-1 rounded-[8px] border border-[#1e3a5c]/55 bg-[#091b31]/70 p-1" role="group" aria-label="Abstimmung zur Rangänderung">
+        <div className="inline-flex shrink-0 items-center gap-1 rounded-[8px] border border-line bg-surface p-1" role="group" aria-label="Abstimmung zur Rangänderung">
             {buttons.map(({ vote, count, label, icon: Icon, activeClassName }) => {
                 const active = summary.currentUserVote === vote
                 return (
@@ -127,9 +127,9 @@ function EntryVoteControls({
                         title={active ? `${label} – Stimme entfernen` : label}
                         className={cn(
                             'inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-[6px] px-2 text-[11.5px] font-semibold tabular-nums transition-colors',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 disabled:cursor-not-allowed disabled:opacity-55',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-55',
                             active && activeClassName,
-                            !active && 'text-[#7e93ab] hover:bg-[#17375f]/70 hover:text-white',
+                            !active && 'text-label-3 hover:bg-surface-3 hover:text-label',
                         )}
                     >
                         <Icon size={13} strokeWidth={active ? 2.5 : 2} />
@@ -175,30 +175,30 @@ export function RankChangeListCard({
     const isClosed = list.submissionsClosed
     const canAddEntries = !isCompleted && !isClosed
     const progress = total > 0 ? Math.round((executed / total) * 100) : 0
-    const accent = isCompleted ? '#8ea4bd' : '#d4af37'
+    const accent = isCompleted ? '#aab3bf' : '#d4af37'
 
     const statusLabel = isCompleted ? 'Abgeschlossen' : isClosed ? 'Geschlossen' : 'Offen'
     const statusTone = isCompleted
-        ? 'bg-[#34d399]/14 text-[#34d399]'
+        ? 'bg-green/14 text-green'
         : isClosed
-            ? 'bg-[#8ea4bd]/14 text-[#b7c5d8]'
-            : 'bg-[#fbbf24]/14 text-[#fbbf24]'
-    const statusDot = isCompleted ? 'bg-[#34d399]' : isClosed ? 'bg-[#b7c5d8]' : 'bg-[#fbbf24]'
+            ? 'bg-white/[0.03] text-label-2'
+            : 'bg-yellow/14 text-yellow'
+    const statusDot = isCompleted ? 'bg-green' : isClosed ? 'bg-surface-4' : 'bg-yellow'
 
     return (
-        <div className="glass-panel-elevated rounded-[14px] overflow-hidden border border-[#1e3a5c]/45 transition-colors hover:border-[#234568]">
+        <div className="glass-panel-elevated rounded-[12px] overflow-hidden border border-line transition-colors hover:border-line">
             <button
                 onClick={onToggle}
-                className="w-full flex items-center gap-3.5 px-5 py-4 hover:bg-[#0f2340]/60 transition-colors text-left"
+                className="w-full flex items-center gap-3.5 px-5 py-4 hover:bg-surface-2 transition-colors text-left"
             >
-                <ChevronDown size={14} strokeWidth={2.5} className={cn('text-[#4a6585] transition-transform duration-200 shrink-0', !expanded && '-rotate-90')} />
+                <ChevronDown size={14} strokeWidth={2.5} className={cn('text-label-4 transition-transform duration-200 shrink-0', !expanded && '-rotate-90')} />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[14px] font-semibold text-white">{list.name}</span>
+                        <span className="text-[14px] font-semibold text-label">{list.name}</span>
                         {promotions > 0 && (
                             <span
-                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
-                                style={{ borderColor: '#34d39940', backgroundColor: '#34d39918', color: '#34d399' }}
+                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ borderColor: '#32d74b40', backgroundColor: '#32d74b18', color: '#32d74b' }}
                             >
                                 <ArrowUpRight size={11} strokeWidth={2.5} />
                                 {promotions} Up-Rank
@@ -206,36 +206,36 @@ export function RankChangeListCard({
                         )}
                         {demotions > 0 && (
                             <span
-                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
-                                style={{ borderColor: '#f8717140', backgroundColor: '#f8717118', color: '#f87171' }}
+                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ borderColor: '#ff453a40', backgroundColor: '#ff453a18', color: '#ff453a' }}
                             >
                                 <ArrowDownRight size={11} strokeWidth={2.5} />
                                 {demotions} D-Rank
                             </span>
                         )}
-                        <span className={cn('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide', statusTone)}>
+                        <span className={cn('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', statusTone)}>
                             <span className={cn('h-1.5 w-1.5 rounded-full', statusDot)} />
                             {statusLabel}
                         </span>
                     </div>
-                    <p className="text-[11.5px] text-[#8ea4bd] mt-1">
+                    <p className="text-[11.5px] text-label-2 mt-1">
                         {formatDate(list.createdAt)} · {list.createdBy?.displayName ?? 'Gelöscht'}
-                        {list.description && <span className="text-[#536b86]"> · {list.description}</span>}
+                        {list.description && <span className="text-label-4"> · {list.description}</span>}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                     {total > 0 && (
                         <div className="hidden sm:flex flex-col items-end gap-1">
-                            <div className="flex items-center gap-2 text-[10.5px] text-[#8ea4bd]">
-                                <span><span className="font-semibold text-white">{executed}</span>/{total} durchgeführt</span>
+                            <div className="flex items-center gap-2 text-[11px] text-label-2">
+                                <span><span className="font-semibold text-label">{executed}</span>/{total} durchgeführt</span>
                             </div>
-                            <div className="h-1 w-24 rounded-full bg-[#0f2340] overflow-hidden">
+                            <div className="h-1 w-24 rounded-full bg-surface-2 overflow-hidden">
                                 <div className="h-full transition-all" style={{ width: `${progress}%`, backgroundColor: accent }} />
                             </div>
                         </div>
                     )}
                     {pending > 0 && !isCompleted && (
-                        <span className="text-[10.5px] font-semibold text-[#fbbf24] bg-[#fbbf24]/12 px-2 py-1 rounded-[6px]">
+                        <span className="text-[11px] font-semibold text-yellow bg-yellow/12 px-2 py-1 rounded-[6px]">
               {pending} offen
             </span>
                     )}
@@ -243,7 +243,7 @@ export function RankChangeListCard({
             </button>
 
             {expanded && (
-                <div className="px-5 pb-4 border-t border-[#18385f]/40">
+                <div className="px-5 pb-4 border-t border-line">
                     {entries.length > 0 ? (
                         <div className="space-y-1.5 my-3">
                             {entries.map((entry) => {
@@ -254,40 +254,40 @@ export function RankChangeListCard({
                                         className={cn(
                                             'flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-[10px] border transition-colors',
                                             entry.executed
-                                                ? 'bg-[#0a1f30]/60 border-[#18385f]/30 opacity-80'
-                                                : 'bg-[#0f2340]/70 border-[#1e3a5c]/40 hover:border-[#234568]',
+                                                ? 'bg-surface border-line opacity-80'
+                                                : 'bg-surface-2 border-line hover:border-line',
                                         )}
                                     >
                                         <OfficerAvatar officer={entry.officer} ringColor={entry.proposedRank.color} />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-white hover:text-[#d4af37] transition-colors">
+                                                <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-label hover:text-gold-bright transition-colors">
                                                     {entry.officer.firstName} {entry.officer.lastName}
                                                 </Link>
-                                                <span className="text-[11px] text-[#8ea4bd]">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
+                                                <span className="text-[11px] text-label-2">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
                                                 {entry.newBadgeNumber && (
-                                                    <span className="text-[10.5px] text-[#8ea4bd]">
-                          → <span className="text-[#d4af37]">#{displayBadgeNumber(entry.newBadgeNumber)}</span>
+                                                    <span className="text-[11px] text-label-2">
+                          → <span className="text-gold">#{displayBadgeNumber(entry.newBadgeNumber)}</span>
                         </span>
                                                 )}
                                                 <DirectionPill direction={direction} />
                                             </div>
                                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                                 <RankPill name={entry.currentRank.name} color={entry.currentRank.color} />
-                                                <ArrowRight size={11} className="text-[#536b86]" />
+                                                <ArrowRight size={11} className="text-label-4" />
                                                 <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />
                                             </div>
                                             {entry.note && (
-                                                <p className="text-[11px] text-[#b7c5d8] mt-1.5 italic">„{entry.note}“</p>
+                                                <p className="text-[11px] text-label-2 mt-1.5 italic">„{entry.note}“</p>
                                             )}
-                                            <p className="text-[10.5px] text-[#536b86] mt-1">
-                                                Eingereicht von <span className="text-[#7e93ab]">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
+                                            <p className="text-[11px] text-label-4 mt-1">
+                                                Eingereicht von <span className="text-label-3">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
                                                 {entry.executed && (
                                                     <>
                                                         {' · '}Durchgeführt
                                                         {entry.executedAt && <> am {formatDate(entry.executedAt)}</>}
                                                         {' von '}
-                                                        <span className="text-[#7e93ab]">{entry.executedBy?.displayName ?? 'Unbekannt'}</span>
+                                                        <span className="text-label-3">{entry.executedBy?.displayName ?? 'Unbekannt'}</span>
                                                     </>
                                                 )}
                                             </p>
@@ -295,11 +295,11 @@ export function RankChangeListCard({
                                         <div className="ml-auto flex shrink-0 items-center gap-2">
                                             <Link
                                                 href={`/promotions/${entry.id}`}
-                                                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#234568]/70 bg-[#102542]/70 px-2.5 text-[11.5px] font-medium text-[#b7c5d8] transition-colors hover:border-[#d4af37]/45 hover:text-[#f3d77a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40"
+                                                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-line bg-surface-2 px-2.5 text-[11.5px] font-medium text-label-2 transition-colors hover:border-gold/45 hover:text-gold-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
                                                 title="Eintrag, Kommentare und Vorschläge öffnen"
                                             >
                                                 Details
-                                                <span className="inline-flex items-center gap-1 rounded-[5px] bg-[#07182c]/65 px-1.5 py-0.5 text-[10.5px] tabular-nums text-[#8ea4bd]">
+                                                <span className="inline-flex items-center gap-1 rounded-[5px] bg-surface px-1.5 py-0.5 text-[11px] tabular-nums text-label-2">
                                                     <MessageSquare size={11} /> {entry.commentCount}
                                                 </span>
                                                 <ChevronRight size={13} />
@@ -312,7 +312,7 @@ export function RankChangeListCard({
                                             />
                                             {entry.executed ? (
                                                 <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#34d399] bg-[#34d399]/12 px-2 py-1 rounded-[6px]">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green bg-green/12 px-2 py-1 rounded-[6px]">
                         ✓ Durchgeführt
                       </span>
                                                     {canExecute && direction === 'PROMOTION' && (
@@ -329,7 +329,7 @@ export function RankChangeListCard({
                                                     {canManage && (
                                                         <button
                                                             onClick={() => onRemove(entry.id)}
-                                                            className="p-1.5 rounded-[6px] hover:bg-[#321218]/60 text-[#536b86] hover:text-[#fca5a5] transition-colors"
+                                                            className="p-1.5 rounded-[6px] hover:bg-red/8 text-label-4 hover:text-red transition-colors"
                                                             title="Entfernen"
                                                         >
                                                             <X size={13} />
@@ -343,7 +343,7 @@ export function RankChangeListCard({
                             })}
                         </div>
                     ) : (
-                        <p className="text-[12px] text-[#536b86] italic py-3">
+                        <p className="text-[12px] text-label-4 italic py-3">
                             {filtered ? 'Keine Einträge passen zu Suche und Filter' : 'Noch keine Officers in dieser Liste'}
                         </p>
                     )}
@@ -368,7 +368,7 @@ export function RankChangeListCard({
                         </div>
                     )}
                     {isClosed && !isCompleted && (
-                        <p className="text-[11px] text-[#8ea4bd] pt-2">
+                        <p className="text-[11px] text-label-2 pt-2">
                             Einreichungen geschlossen{list.closedAt ? ` am ${formatDate(list.closedAt)}` : ''} — offene Einträge können weiterhin durchgeführt werden.
                         </p>
                     )}

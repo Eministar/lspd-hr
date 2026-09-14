@@ -1,115 +1,243 @@
-/* LSPD: navy glass, warm metallic accents, crisp information hierarchy. */
-:root {
-  --lspd-gold: #dfbd69;
-  --lspd-muted: #9cacc1;
-  --lspd-border: rgba(93, 131, 176, .23);
-  --lspd-surface: linear-gradient(145deg, rgba(17, 43, 75, .94), rgba(8, 25, 48, .96));
-}
-.lspd-workspace { background: radial-gradient(ellipse at 65% 0%, #102c4b 0%, #061426 62%); }
-.lspd-content { width: 100%; max-width: 1560px; margin-inline: auto; }
-.lspd-card, .glass-panel, .glass-panel-elevated {
-  background: var(--lspd-surface);
-  border: 1px solid var(--lspd-border);
-  box-shadow: 0 8px 28px #00000020, inset 0 1px 0 #b6d5ff08;
-}
-.lspd-card { border-radius: 16px; }
-.glass-panel-elevated { border-color: #d4af3738; box-shadow: 0 24px 80px #00000045, inset 0 1px 0 #f8df9c12; }
-.lspd-page-header { padding: 4px 0 24px; margin-bottom: 26px; border-bottom: 1px solid var(--lspd-border); position: relative; }
-.lspd-page-header::after { content: ''; width: 44px; height: 2px; position: absolute; bottom: -1px; left: 0; border-radius: 2px; background: var(--lspd-gold); }
-.lspd-page-header h1 { font-size: clamp(25px, 2.5vw, 32px); line-height: 1.2; letter-spacing: -.035em; }
-.lspd-page-header p { max-width: 68ch; }
-.lspd-sidebar { background: linear-gradient(160deg, #102b49 -30%, #081a31 48%, #051224); box-shadow: 8px 0 40px #00000012; }
-.lspd-sidebar nav { scrollbar-width: thin; scrollbar-color: #234569 transparent; }
-.lspd-sidebar nav::-webkit-scrollbar { display: block; width: 4px; }
-.lspd-sidebar nav::-webkit-scrollbar-thumb { background: #234569; border-radius: 4px; }
-.lspd-nav-label { margin: 4px 12px 8px; font-size: 10px; font-weight: 600; letter-spacing: .08em; color: #849bb6; }
-.lspd-nav-link { min-height: 40px; border: 1px solid transparent; }
-.lspd-nav-link[aria-current=page] { background: linear-gradient(110deg, #efcf7d, #cfaa49); box-shadow: 0 3px 14px #d4af3726, inset 0 1px 0 #fff4cf55; }
-.lspd-hero { border-color: #56718e55; }
-.lspd-hero::after { content: ''; position: absolute; top: 0; left: 28px; right: 28px; height: 1px; background: linear-gradient(90deg, transparent, #efd08780, transparent); pointer-events: none; }
-.lspd-kpi { min-height: 166px; background: var(--lspd-surface); border-color: var(--lspd-border); box-shadow: inset 0 1px 0 #ffffff08; }
-.lspd-kpi-number { font-size: 32px; font-weight: 650; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-.lspd-button { transition: background-color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out; }
-.lspd-field { box-shadow: inset 0 2px 4px #00000014; }
-.lspd-field:disabled { opacity: .55; cursor: not-allowed; }
-.lspd-modal-title { padding-right: 28px; font-size: 19px; letter-spacing: -.02em; }
-.lspd-table :where(th) { color: #b5c8de; background-color: #0d2744; font-size: 11px; font-weight: 600; }
-.lspd-table :where(th, td) { padding-block: 13px; }
-.lspd-table :where(tbody tr) { transition: background-color 140ms ease-out; }
-.lspd-table :where(tbody tr:hover) { background-color: #15345480; }
+/* LSPD · "The Precinct Pro App" — Design-Schicht. Normative Regeln: DESIGN.md.
+   Alles liegt in @layer components, damit Tailwind-Utilities an der Aufrufstelle gewinnen. */
 
-.lspd-login { min-height: 100svh; background: radial-gradient(ellipse at 50% 20%, #173a60 0%, #0a203b 32%, #040f20 78%); padding: 48px 20px; display: grid; place-items: center; position: relative; isolation: isolate; overflow: hidden; }
-.lspd-login::before { content: ''; position: absolute; width: min(86vw, 820px); aspect-ratio: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px solid #d4af3712; border-radius: 50%; box-shadow: 0 0 0 85px #6f9ccb05, 0 0 0 170px #6f9ccb03; z-index: -1; pointer-events: none; }
-.lspd-login-content { width: 100%; max-width: 420px; }
-.lspd-login-emblem { width: 104px; height: 104px; display: grid; place-items: center; margin: 0 auto 22px; border: 1px solid #e1bd6555; border-radius: 30px; background: linear-gradient(145deg, #193a5e, #07182f); box-shadow: 0 12px 48px #00000050, inset 0 1px 0 #f7dd9c33, 0 0 48px #d4af3710; }
-.lspd-login-heading { text-align: center; margin-bottom: 30px; }
-.lspd-login-heading h1 { font-size: 30px; line-height: 1.2; letter-spacing: -.035em; font-weight: 650; color: #f4f7fc; }
-.lspd-login-heading p { font-size: 13px; color: #b5c5da; margin-top: 9px; }
-.lspd-login-card { position: relative; border-radius: 22px; padding: 28px; }
-.lspd-login-card::before { content: ''; position: absolute; top: -1px; left: 28px; right: 28px; height: 1px; background: linear-gradient(90deg, transparent, #f4d68eaa, transparent); }
-.lspd-login-card h2 { font-size: 16px; font-weight: 600; }
-.lspd-login-card .lspd-login-description { font-size: 13px; line-height: 1.7; color: #a2b6cf; }
-.lspd-login-remember { display: flex; align-items: center; gap: 10px; margin: 24px 0; color: #bccce0; font-size: 13px; cursor: pointer; }
-.lspd-login-remember input { width: 16px; height: 16px; accent-color: #dfbd69; }
-.lspd-login-footer { margin-top: 26px; text-align: center; font-size: 11px; color: #8098b4; }
-.lspd-portal-hero { position: relative; background: radial-gradient(ellipse at right top, #23496c66, transparent 65%), var(--lspd-surface); border-color: #d4af3733; }
-.lspd-portal-hero h1 { font-size: clamp(28px, 3.5vw, 42px); letter-spacing: -.035em; line-height: 1.15; }
-:where(a, button, input, select, textarea):focus-visible { outline: 2px solid #dfbd69; outline-offset: 3px; }
+@layer base {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid rgb(212 175 55 / 0.8);
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3 { text-wrap: balance; }
+}
+
+@layer components {
+  /* ─── Arbeitsfläche ─── */
+  .lspd-workspace { background: var(--color-canvas); }
+  .lspd-content { width: 100%; max-width: 1440px; margin-inline: auto; }
+
+  /* ─── Inhaltsflächen: flach und tonal. Kein Glas auf Inhalt (Vibrancy only floats). ─── */
+  .lspd-card,
+  .glass-panel,
+  .glass-panel-elevated {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  /* ─── Schwebende Ebenen ─── */
+  .lspd-popover {
+    background: rgb(28 32 41 / 0.86);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
+    backdrop-filter: blur(28px) saturate(1.8);
+    border: 0.5px solid rgb(255 255 255 / 0.12);
+    border-radius: 10px;
+    box-shadow: var(--shadow-popover);
+  }
+
+  .lspd-sheet {
+    background: rgb(19 22 29 / 0.94);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    backdrop-filter: blur(40px) saturate(1.8);
+    border: 0.5px solid rgb(255 255 255 / 0.1);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sheet);
+  }
+
+  .lspd-toolbar {
+    background: rgb(7 9 13 / 0.72);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    backdrop-filter: blur(24px) saturate(1.8);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* ─── Seitenkopf: Large Title ─── */
+  .lspd-page-header { margin-bottom: 28px; }
+  .lspd-page-header h1 {
+    font-size: clamp(26px, 2.4vw, 30px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    color: var(--color-label);
+  }
+  .lspd-page-header p { max-width: 68ch; }
+
+  /* ─── Seitenleiste (Source List) ─── */
+  .lspd-sidebar {
+    background: rgb(11 13 18 / 0.9);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    backdrop-filter: blur(30px) saturate(1.6);
+  }
+  .lspd-sidebar nav { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.12) transparent; }
+
+  /* ─── Buttons & Felder ─── */
+  .lspd-field:disabled { opacity: 0.5; cursor: not-allowed; }
+  .lspd-modal-title { padding-right: 40px; }
+
+  /* ─── Tabellen ─── */
+  .lspd-table :where(th) {
+    color: var(--color-label-3);
+    background-color: var(--color-surface-2);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lspd-table :where(th, td) { padding-block: 11px; }
+  .lspd-table :where(tbody tr) { transition: background-color 120ms ease-out; }
+  .lspd-table :where(tbody tr:hover) { background-color: rgb(255 255 255 / 0.025); }
+
+  /* ─── Kennzahlen-Leiste ─── */
+  .lspd-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .lspd-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px;
+    border-right: 1px solid var(--color-line);
+    transition: background-color 150ms ease-out;
+  }
+  .lspd-metric:last-child { border-right: 0; }
+  .lspd-metric:hover { background: rgb(255 255 255 / 0.025); }
+  .lspd-metric:focus-visible { outline-offset: -3px; }
+
+  /* ─── Segmented Control ─── */
+  .lspd-view-tabs {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: rgb(255 255 255 / 0.06);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .lspd-view-tabs button {
+    flex-shrink: 0;
+    padding: 5px 14px;
+    border-radius: 7px;
+    color: var(--color-label-2);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 200ms var(--ease-apple), color 150ms ease-out, box-shadow 200ms var(--ease-apple);
+  }
+  .lspd-view-tabs button:hover { color: var(--color-label); }
+  .lspd-view-tabs button[data-state=active] {
+    background: var(--color-surface-4);
+    color: var(--color-label);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.35), inset 0 0.5px 0 rgb(255 255 255 / 0.08);
+  }
+  .lspd-view-tabs button:focus-visible { outline-offset: -2px; }
+
+  /* ─── Anmeldung ─── */
+  .lspd-login {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+    padding: 48px 20px;
+    background:
+      radial-gradient(ellipse 80% 55% at 50% -12%, rgb(27 63 110 / 0.42), transparent 62%),
+      var(--color-canvas);
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .lspd-login-content { width: 100%; max-width: 400px; }
+  .lspd-login-emblem {
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 22px;
+    filter: drop-shadow(0 12px 32px rgb(0 0 0 / 0.55));
+  }
+  .lspd-login-heading { text-align: center; margin-bottom: 28px; }
+  .lspd-login-heading h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.03em; font-weight: 700; color: var(--color-label); }
+  .lspd-login-heading p { font-size: 14px; color: var(--color-label-2); margin-top: 8px; }
+  .lspd-login-card {
+    position: relative;
+    padding: 28px;
+    border-radius: 20px;
+    background: rgb(19 22 29 / 0.9);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    backdrop-filter: blur(40px) saturate(1.8);
+    border: 0.5px solid rgb(255 255 255 / 0.1);
+    box-shadow: var(--shadow-sheet);
+  }
+  .lspd-login-card h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-label); }
+  .lspd-login-card .lspd-login-description { font-size: 13.5px; line-height: 1.6; color: var(--color-label-2); }
+  .lspd-login-remember { display: flex; align-items: center; gap: 10px; margin: 22px 0; color: var(--color-label-2); font-size: 13.5px; cursor: pointer; }
+  .lspd-login-remember input { width: 16px; height: 16px; accent-color: var(--color-gold); }
+  .lspd-login-footer { margin-top: 24px; text-align: center; font-size: 12px; color: var(--color-label-4); }
+
+  /* ─── Öffentliche Seiten & Portal ─── */
+  .lspd-public { background: var(--color-canvas); }
+  .lspd-public .lspd-portal-intro h1 { max-width: 14ch; font-size: clamp(36px, 4.5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; font-weight: 700; }
+  .lspd-public .lspd-portal-intro > p:last-of-type { max-width: 50ch; font-size: 16px; line-height: 1.65; color: var(--color-label-2); }
+  .lspd-portal-hero {
+    position: relative;
+    background: radial-gradient(ellipse at right top, rgb(27 63 110 / 0.35), transparent 65%), var(--color-surface);
+    border: 1px solid var(--color-line);
+  }
+  .lspd-portal-hero h1 { font-size: clamp(28px, 3.5vw, 42px); letter-spacing: -0.035em; line-height: 1.12; }
+
+  /* ─── Horizontal scrollbare Tabellen (ScrollShelf) ─── */
+  .shelf-control { transition: background-color 150ms ease-out, color 150ms ease-out, opacity 150ms ease-out, scale 120ms ease-out; }
+  .shelf-control:active { scale: 0.9; }
+  .shelf-fade { position: absolute; top: 0; bottom: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 220ms ease-out; }
+  .shelf-fade.left { width: 56px; }
+  .shelf-fade.right { right: 0; width: 112px; }
+  .shelf-fade.is-visible { opacity: 1; }
+  .shelf-float {
+    position: absolute; z-index: 4; top: min(50%, 7.5rem); translate: 0 -50%;
+    display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center;
+    border-radius: 999px; border: 0.5px solid rgb(255 255 255 / 0.16); color: var(--color-label);
+    background: rgb(40 46 58 / 0.82); box-shadow: var(--shadow-popover);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6);
+    opacity: 0; scale: 0.7; pointer-events: none;
+    transition: opacity 200ms var(--ease-apple), scale 320ms var(--ease-apple), background-color 150ms ease-out;
+  }
+  .shelf-float.is-visible { opacity: 1; scale: 1; pointer-events: auto; }
+  .shelf-float.is-visible:active { scale: 0.92; }
+}
+
+/* Inhaltswechsel (Tabs, Ansichten): kurz und ruhig einblenden. */
+@keyframes lspd-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.lspd-view-enter { animation: lspd-fade-up 320ms var(--ease-apple) both; }
+
 @media (hover: hover) and (pointer: fine) {
-  .lspd-kpi:hover { box-shadow: 0 8px 28px #00000030, inset 0 1px 0 #ffffff0f; }
+  .shelf-float.is-visible:hover { background: rgb(52 59 73 / 0.92); scale: 1.06; }
 }
+
+@media (max-width: 1200px) {
+  .lspd-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lspd-metric:nth-child(-n+3) { border-bottom: 1px solid var(--color-line); }
+  .lspd-metric:nth-child(3n) { border-right: 0; }
+}
+
 @media (max-width: 640px) {
-  .lspd-login { padding: 30px 18px; }
-  .lspd-login-card { padding: 24px; border-radius: 18px; }
-  .lspd-login-emblem { width: 88px; height: 88px; border-radius: 25px; }
-  .lspd-login-heading h1 { font-size: 27px; }
-  .lspd-kpi { min-height: 150px; }
+  .lspd-login { padding: 32px 16px; }
+  .lspd-login-card { padding: 22px; border-radius: 18px; }
+  .lspd-login-emblem { width: 84px; height: 84px; }
+  .lspd-login-heading h1 { font-size: 26px; }
+  .lspd-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lspd-metric { padding: 14px 16px; }
+  .lspd-metric:nth-child(3n) { border-right: 1px solid var(--color-line); }
+  .lspd-metric:nth-child(2n) { border-right: 0; }
+  .lspd-metric:nth-child(-n+4) { border-bottom: 1px solid var(--color-line); }
 }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  /* Ladeanzeigen bleiben sichtbar in Bewegung, nur langsamer. */
+  .apple-spinner, .loading-spinner { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
 }
-
-/* Quiet workspace: one accent for actions, flat surfaces for information. */
-.lspd-workspace { background: #0b1421; --lspd-surface: #131f2f; --lspd-border: #ffffff12; }
-.lspd-workspace .lspd-content { max-width: 1440px; }
-.lspd-workspace .lspd-card, .lspd-workspace .glass-panel { box-shadow: none; border-radius: 12px; }
-.lspd-workspace .lspd-page-header { padding-bottom: 20px; margin-bottom: 24px; }
-.lspd-workspace .lspd-page-header::after { display: none; }
-.lspd-workspace .lspd-page-header h1 { font-size: clamp(24px, 2.3vw, 30px); }
-.lspd-sidebar { background: #0e1928; box-shadow: none; }
-.lspd-nav-link[aria-current=page] { background: #dfbd6914; border-color: #dfbd6920; box-shadow: none; color: #e5c681; }
-.lspd-nav-group { border-top: 1px solid #ffffff09; }
-.lspd-workspace .lspd-button { box-shadow: none; }
-.lspd-workspace .lspd-table th { background: #172434; color: #a8b8cb; font-size: 11px; }
-.lspd-workspace .lspd-table tbody tr:hover { background: #ffffff03; }
-.lspd-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: #131f2f; border: 1px solid #ffffff12; border-radius: 12px; overflow: hidden; }
-.lspd-metric { display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-right: 1px solid #ffffff10; transition: background-color 150ms; }
-.lspd-metric:last-child { border-right: 0; }
-.lspd-metric:hover { background: #ffffff04; }
-.lspd-metric:focus-visible { outline-offset: -3px; }
-.lspd-view-tabs { display: flex; gap: 24px; border-bottom: 1px solid #ffffff12; overflow-x: auto; }
-.lspd-view-tabs button { flex-shrink: 0; padding: 4px 0 15px; border-bottom: 2px solid transparent; color: #91a4bc; font-size: 13px; font-weight: 500; transition: color 150ms; }
-.lspd-view-tabs button:hover { color: #e3ebf5; }
-.lspd-view-tabs button[data-state=active] { color: #e5c681; border-bottom-color: #e5c681; }
-.lspd-view-tabs button:focus-visible { outline-offset: -2px; }
-@media (max-width: 1200px) {
-  .lspd-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lspd-metric:nth-child(-n+3) { border-bottom: 1px solid #ffffff10; }
-  .lspd-metric:nth-child(3n) { border-right: 0; }
-}
-@media (max-width: 640px) {
-  .lspd-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lspd-metric { padding: 14px 16px; }
-  .lspd-metric:nth-child(3n) { border-right: 1px solid #ffffff10; }
-  .lspd-metric:nth-child(2n) { border-right: 0; }
-  .lspd-metric:nth-child(-n+4) { border-bottom: 1px solid #ffffff10; }
-  .lspd-view-tabs { gap: 20px; }
-}
-
-.lspd-public { background: #0b1421; --lspd-surface: #131f2f; --lspd-border: #ffffff12; }
-.lspd-public .lspd-card { box-shadow: none; border-radius: 12px; }
-.lspd-public .lspd-portal-intro h1 { max-width: 12ch; font-size: clamp(36px, 4.5vw, 58px); line-height: 1.08; letter-spacing: -.045em; }
-.lspd-public .lspd-portal-intro > p:last-of-type { max-width: 48ch; font-size: 15px; line-height: 1.8; }
-.lspd-public .portal-nav-link { background: transparent; border-color: transparent; box-shadow: none; color: #a7b7cb; }
-.lspd-public .portal-nav-link:hover { background: #ffffff06; color: #e5c681; }

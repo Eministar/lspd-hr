@@ -164,8 +164,8 @@ function AccessBadge({ access }: { access: UnitModuleAccess }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em]',
-        manage ? 'bg-[#d4af37]/10 text-[#e2c45d]' : 'bg-[#38bdf8]/10 text-[#7dd3fc]',
+        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
+        manage ? 'bg-gold/10 text-gold' : 'bg-cyan/10 text-cyan',
       )}
     >
       {manage ? <Settings2 size={9} /> : <Eye size={9} />}
@@ -194,22 +194,22 @@ function ToggleSetting({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center gap-4 rounded-[13px] border border-[#18385f]/70 bg-[#081a31]/55 p-4 text-left transition-colors hover:border-[#285078] disabled:pointer-events-none disabled:opacity-45"
+      className="flex w-full items-center gap-4 rounded-[12px] border border-line bg-surface p-4 text-left transition-colors hover:border-line-strong disabled:pointer-events-none disabled:opacity-45"
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-[12px] font-semibold text-[#edf4fb]">{title}</span>
-        <span className="mt-1 block text-[10px] leading-4 text-[#607994]">{description}</span>
+        <span className="block text-[12px] font-semibold text-label">{title}</span>
+        <span className="mt-1 block text-[11px] leading-4 text-label-3">{description}</span>
       </span>
       <span
         className={cn(
           'relative h-6 w-11 shrink-0 rounded-full border transition-colors',
-          checked ? 'border-[#d4af37]/70 bg-[#d4af37]/25' : 'border-[#284b70] bg-[#102744]',
+          checked ? 'border-gold/70 bg-gold/25' : 'border-line bg-surface-2',
         )}
       >
         <span
           className={cn(
             'absolute top-0.5 h-[18px] w-[18px] rounded-full transition-transform',
-            checked ? 'translate-x-[20px] bg-[#d4af37]' : 'translate-x-0.5 bg-[#6b8299]',
+            checked ? 'translate-x-[20px] bg-gold' : 'translate-x-0.5 bg-surface-4',
           )}
         />
       </span>
@@ -224,27 +224,27 @@ function UnitFlowExplanation() {
     { icon: Users, title: 'Leitung markieren', text: 'Rolle wird automatisch synchronisiert' },
   ]
   return (
-    <section className="mb-6 overflow-hidden rounded-[17px] border border-[#1c4169]/75 bg-[linear-gradient(120deg,rgba(10,31,57,0.96),rgba(7,24,46,0.8))]">
-      <div className="border-b border-[#18385f]/60 px-5 py-4 sm:px-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7dd3fc]/80">Das neue Modell</p>
-        <h2 className="mt-1 text-[14px] font-semibold text-white">Eine Gruppe bündelt Navigation, Module und Ränge</h2>
+    <section className="mb-6 overflow-hidden rounded-[16px] border border-line bg-[linear-gradient(120deg,rgba(10,31,57,0.96),rgba(7,24,46,0.8))]">
+      <div className="border-b border-line px-5 py-4 sm:px-6">
+        <p className="text-[11px] font-bold text-cyan/80">Das neue Modell</p>
+        <h2 className="mt-1 text-[14px] font-semibold text-label">Eine Gruppe bündelt Navigation, Module und Ränge</h2>
       </div>
       <div className="grid gap-2 p-4 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center sm:p-5">
         {steps.map((step, index) => {
           const Icon = step.icon
           return (
             <div key={step.title} className="contents">
-              <div className="flex items-center gap-3 rounded-[13px] border border-[#18385f]/55 bg-[#07182e]/55 p-3.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#d4af37]/10 text-[#d4af37]">
+              <div className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-3.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gold/10 text-gold">
                   <Icon size={16} strokeWidth={1.9} />
                 </span>
                 <span>
-                  <span className="block text-[11px] font-semibold text-[#edf4fb]">{step.title}</span>
-                  <span className="mt-0.5 block text-[9.5px] leading-4 text-[#607994]">{step.text}</span>
+                  <span className="block text-[11px] font-semibold text-label">{step.title}</span>
+                  <span className="mt-0.5 block text-[11px] leading-4 text-label-3">{step.text}</span>
                 </span>
               </div>
               {index < steps.length - 1 && (
-                <ArrowRight className="mx-auto rotate-90 text-[#3a5b7d] sm:rotate-0" size={15} />
+                <ArrowRight className="mx-auto rotate-90 text-label-4 sm:rotate-0" size={15} />
               )}
             </div>
           )
@@ -256,13 +256,13 @@ function UnitFlowExplanation() {
 
 function ModuleChips({ modules, color }: { modules: UnitModuleSelection; color: string }) {
   const entries = selectedModuleEntries(modules)
-  if (entries.length === 0) return <span className="text-[10px] text-[#607994]">Keine Arbeitsbereiche</span>
+  if (entries.length === 0) return <span className="text-[11px] text-label-3">Keine Arbeitsbereiche</span>
   return (
     <div className="flex flex-wrap gap-1.5">
       {entries.map((module) => (
         <span
           key={module.key}
-          className="inline-flex items-center gap-1.5 rounded-[8px] border border-[#1c3b5f]/75 bg-[#081a31]/75 px-2 py-1.5 text-[10px] text-[#a9bacb]"
+          className="inline-flex items-center gap-1.5 rounded-[8px] border border-line bg-surface px-2 py-1.5 text-[11px] text-label-2"
         >
           <UnitIcon icon={module.icon} size={11} style={{ color }} />
           {module.shortLabel}
@@ -288,48 +288,48 @@ function SubRankReorderItem({
       value={unit}
       dragListener={false}
       dragControls={controls}
-      className="flex flex-col gap-3 rounded-[12px] border border-[#18385f]/60 bg-[#0a1d37]/65 p-3 select-none transition-shadow sm:flex-row sm:items-center"
+      className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-3 select-none transition-shadow sm:flex-row sm:items-center"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
           onPointerDown={(e) => controls.start(e)}
-          className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-[8px] border border-[#18385f]/50 bg-[#07182e]/60 text-[#4f6c89] transition-colors hover:border-[#2a5584] hover:text-[#9db0c4] active:cursor-grabbing"
+          className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-[8px] border border-line bg-surface text-label-4 transition-colors hover:border-line-strong hover:text-label-2 active:cursor-grabbing"
           title="Reihenfolge verschieben"
           aria-label="Reihenfolge verschieben"
         >
           <GripVertical size={15} />
         </button>
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-[#102744]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-surface-2"
           style={{ color: unit.color, borderColor: `${unit.color}40` }}
         >
           <UnitIcon icon={unit.icon} size={15} />
         </span>
         <span className="min-w-0">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-[11.5px] font-semibold text-[#d9e4ef]">{unit.name}</span>
+            <span className="truncate text-[11.5px] font-semibold text-label">{unit.name}</span>
             {unit.isLeadership && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-[#d4af37]/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[#e2c45d]">
+              <span className="inline-flex items-center gap-1 rounded-md bg-gold/10 px-1.5 py-0.5 text-[11px] font-semibold text-gold">
                 <ShieldCheck size={9} /> Leitung
               </span>
             )}
             <span
               className={cn(
-                'rounded-md px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider',
-                unit.active ? 'bg-[#34d399]/[0.08] text-[#6ee7b7]' : 'bg-[#64748b]/10 text-[#8291a5]',
+                'rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
+                unit.active ? 'bg-green/[0.08] text-green' : 'bg-white/[0.03] text-label-3',
               )}
             >
               {unit.active ? 'aktiv' : 'inaktiv'}
             </span>
           </span>
-          <span className="mt-1 block font-mono text-[9px] text-[#526d89]">
+          <span className="mt-1 block font-mono text-[11px] text-label-4">
             {unit.key}
             {unit.discordRoleId ? ` · Discord ${unit.discordRoleId}` : ''}
           </span>
         </span>
       </div>
-      <div className="flex items-center gap-3 text-[9.5px] text-[#607994]">
+      <div className="flex items-center gap-3 text-[11px] text-label-3">
         <span className="inline-flex items-center gap-1">
           <Users size={11} /> {unitCounts.officers}
         </span>
@@ -340,7 +340,7 @@ function SubRankReorderItem({
       <button
         type="button"
         onClick={onEdit}
-        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[#234568] px-2.5 text-[10px] font-semibold text-[#aebed0] transition-colors hover:border-[#d4af37]/35 hover:text-[#d4af37]"
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line px-2.5 text-[11px] font-semibold text-label-2 transition-colors hover:border-gold/35 hover:text-gold-bright"
       >
         <Edit3 size={12} /> Rang bearbeiten
       </button>
@@ -480,28 +480,28 @@ export default function UnitsPage() {
         }
       />
       <details className="lspd-card mb-5 px-5 py-4">
-        <summary className="cursor-pointer text-[13px] font-medium text-[#b6cae2]">Wie funktionieren Gruppen, Units und Leitung?</summary>
+        <summary className="cursor-pointer text-[13px] font-medium text-label-2">Wie funktionieren Gruppen, Units und Leitung?</summary>
         <div className="mt-4"><UnitFlowExplanation /></div>
       </details>
-      {orphanedUnits.length > 0 && <div role="status" className="mb-5 rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-[#e8cd8e]">
+      {orphanedUnits.length > 0 && <div role="status" className="mb-5 rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-gold-bright">
         <strong>{orphanedUnits.length} Units ohne gültige Gruppe gefunden.</strong> Die frühere Gruppe existiert nicht mehr. Diese Units bleiben unter <a href="#einzelne-units" className="underline underline-offset-4">Einzelne Units</a> sichtbar. Über „Bearbeiten“ kannst du sie einer vorhandenen Gruppe zuordnen. Officer- und Benutzerzuweisungen bleiben erhalten.
       </div>}
 
       <div className="lspd-card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
         <label className="relative block max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#58718c]" size={14} />
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-4" size={14} />
           <span className="sr-only">Units und Gruppen durchsuchen</span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Unit, Gruppe oder Schlüssel suchen"
-            className="h-11 w-full rounded-xl border border-[#355576]/70 bg-[#07182e]/70 pl-9 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#8298b3] focus:border-[#d4af37]"
+            className="h-11 w-full rounded-xl border border-line-strong bg-surface pl-9 pr-3 text-[13px] text-label outline-none transition-colors placeholder:text-label-2 focus:border-gold"
           />
         </label>
-        <p className="text-[12px] text-[#a3b8d0]">{units?.length ?? 0} Units in {localGroups.length} Gruppen</p>
+        <p className="text-[12px] text-label-2">{units?.length ?? 0} Units in {localGroups.length} Gruppen</p>
       </div>
       {loadError && (
-        <div className="mb-4 rounded-[13px] border border-[#fb7185]/25 bg-[#fb7185]/[0.06] px-4 py-3 text-[11.5px] text-[#fda4af]">
+        <div className="mb-4 rounded-[12px] border border-red/15 bg-red/[0.06] px-4 py-3 text-[11.5px] text-red">
           Unitgruppen konnten nicht geladen werden: {loadError}
           <button type="button" onClick={() => void refreshAll()} className="ml-3 underline underline-offset-4">Erneut laden</button>
         </div>
@@ -518,7 +518,7 @@ export default function UnitsPage() {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, delay: Math.min(index * 0.03, 0.18) }}
-              className="relative overflow-hidden rounded-[16px] border border-[#18385f]/70 bg-[#0a1d37]/68"
+              className="relative overflow-hidden rounded-[16px] border border-line bg-surface"
             >
               <div className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: group.color }} />
               <div className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(230px,0.9fr)_minmax(290px,1.4fr)_minmax(260px,0.9fr)] lg:items-center lg:px-6">
@@ -527,79 +527,79 @@ export default function UnitsPage() {
                     type="button"
                     onClick={() => setExpandedGroup(expanded ? null : group.id)}
                     aria-expanded={expanded}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border bg-[#102744] transition-colors hover:bg-[#17375f]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border bg-surface-2 transition-colors hover:bg-surface-3"
                     style={{ color: group.color, borderColor: `${group.color}45` }}
                   >
                     <ChevronRight size={19} className={cn('transition-transform', expanded && 'rotate-90')} />
                   </button>
                   <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border bg-[#102744]"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border bg-surface-2"
                     style={{ color: group.color, borderColor: `${group.color}40` }}
                   >
                     <UnitIcon icon={group.icon} size={20} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="truncate text-[14px] font-semibold text-[#edf4fb]">{group.name}</h2>
+                      <h2 className="truncate text-[14px] font-semibold text-label">{group.name}</h2>
                       <span
                         className={cn(
-                          'rounded-md px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider',
-                          group.active ? 'bg-[#34d399]/[0.08] text-[#6ee7b7]' : 'bg-[#64748b]/10 text-[#8291a5]',
+                          'rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
+                          group.active ? 'bg-green/[0.08] text-green' : 'bg-white/[0.03] text-label-3',
                         )}
                       >
                         {group.active ? 'Aktiv' : 'Inaktiv'}
                       </span>
                     </div>
-                    <p className="mt-1 font-mono text-[9.5px] text-[#526d89]">{group.key}</p>
-                    <p className="mt-1.5 line-clamp-2 text-[10.5px] leading-4 text-[#67809a]">
+                    <p className="mt-1 font-mono text-[11px] text-label-4">{group.key}</p>
+                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-label-3">
                       {group.description || 'Keine Beschreibung hinterlegt'}
                     </p>
                   </div>
                 </div>
-                <div className="min-w-0 lg:border-l lg:border-[#18385f]/55 lg:pl-5">
+                <div className="min-w-0 lg:border-l lg:border-line lg:pl-5">
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#607994]">Gemeinsame Arbeitsbereiche</p>
+                    <p className="text-[11px] font-bold text-label-3">Gemeinsame Arbeitsbereiche</p>
                     {group.showInNavigation && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#6ee7b7]">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green">
                         <Navigation size={10} /> Sidebar
                       </span>
                     )}
                   </div>
                   <ModuleChips modules={sanitizeUnitModules(group.modules)} color={group.color} />
                 </div>
-                <div className="flex flex-col gap-3 lg:border-l lg:border-[#18385f]/55 lg:pl-5">
+                <div className="flex flex-col gap-3 lg:border-l lg:border-line lg:pl-5">
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-[10px] bg-[#07182e]/55 px-2.5 py-2.5">
-                      <span className="flex items-center gap-1 text-[8.5px] font-semibold uppercase tracking-[0.08em] text-[#607994]">
+                    <div className="rounded-[10px] bg-surface px-2.5 py-2.5">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold font-semibold text-label-3">
                         <Layers3 size={10} /> Ränge
                       </span>
-                      <span className="mt-1 block text-[14px] font-semibold text-[#d9e4ef]">{group.units.length}</span>
+                      <span className="mt-1 block text-[14px] font-semibold text-label">{group.units.length}</span>
                     </div>
-                    <div className="rounded-[10px] bg-[#07182e]/55 px-2.5 py-2.5">
-                      <span className="flex items-center gap-1 text-[8.5px] font-semibold uppercase tracking-[0.08em] text-[#607994]">
+                    <div className="rounded-[10px] bg-surface px-2.5 py-2.5">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold font-semibold text-label-3">
                         <ShieldCheck size={10} /> Leitung
                       </span>
-                      <span className="mt-1 block text-[14px] font-semibold text-[#d9e4ef]">{leadershipCount}</span>
+                      <span className="mt-1 block text-[14px] font-semibold text-label">{leadershipCount}</span>
                     </div>
-                    <div className="rounded-[10px] bg-[#07182e]/55 px-2.5 py-2.5">
-                      <span className="flex items-center gap-1 text-[8.5px] font-semibold uppercase tracking-[0.08em] text-[#607994]">
+                    <div className="rounded-[10px] bg-surface px-2.5 py-2.5">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold font-semibold text-label-3">
                         <Users size={10} /> Officers
                       </span>
-                      <span className="mt-1 block text-[14px] font-semibold text-[#d9e4ef]">{counts.officers}</span>
+                      <span className="mt-1 block text-[14px] font-semibold text-label">{counts.officers}</span>
                     </div>
                   </div>
                   <div className="flex gap-1.5">
                     <button
                       type="button"
                       onClick={() => openCreateUnit(group.id)}
-                      className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-[#d4af37]/10 px-2.5 text-[10px] font-semibold text-[#e2c45d] transition-colors hover:bg-[#d4af37]/16"
+                      className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-gold/10 px-2.5 text-[11px] font-semibold text-gold transition-colors hover:bg-gold/16"
                     >
                       <Plus size={12} /> Rang hinzufügen
                     </button>
                     <button
                       type="button"
                       onClick={() => openEditGroup(group)}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[#234568] px-2.5 text-[10px] font-semibold text-[#aebed0] transition-colors hover:border-[#d4af37]/35 hover:text-[#d4af37]"
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line px-2.5 text-[11px] font-semibold text-label-2 transition-colors hover:border-gold/35 hover:text-gold-bright"
                     >
                       <Edit3 size={12} /> Bearbeiten
                     </button>
@@ -607,11 +607,11 @@ export default function UnitsPage() {
                 </div>
               </div>
               {expanded && (
-                <div className="border-t border-[#18385f]/70 bg-[#07182e]/35 px-5 py-4 lg:px-6">
+                <div className="border-t border-line bg-white/[0.03] px-5 py-4 lg:px-6">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#607994]">Unterränge dieser Gruppe</p>
-                      <p className="mt-1 text-[10.5px] text-[#58718c]">
+                      <p className="text-[11px] font-bold text-label-3">Unterränge dieser Gruppe</p>
+                      <p className="mt-1 text-[11px] text-label-4">
                         Verschiebe Ränge am Griff, um die Reihenfolge direkt festzulegen. Markiere Leitungsränge für automatische Rollen.
                       </p>
                     </div>
@@ -635,7 +635,7 @@ export default function UnitsPage() {
                       ))}
                     </Reorder.Group>
                   ) : (
-                    <div className="rounded-[11px] border border-dashed border-[#284568] px-4 py-8 text-center text-[10.5px] text-[#607994]">
+                    <div className="rounded-[11px] border border-dashed border-line px-4 py-8 text-center text-[11px] text-label-3">
                       Noch keine Unterränge. Füge den ersten Rang hinzu.
                     </div>
                   )}
@@ -645,11 +645,11 @@ export default function UnitsPage() {
           )
         })}
 
-        <section id="einzelne-units" className="scroll-mt-20 overflow-hidden rounded-[16px] border border-[#285078] bg-[#081a31]/45">
-          <div className="flex flex-col gap-3 border-b border-[#18385f]/55 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <section id="einzelne-units" className="scroll-mt-20 overflow-hidden rounded-[16px] border border-line-strong bg-white/[0.03]">
+          <div className="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#607994]">Einzelne Units</p>
-              <p className="mt-1 text-[10.5px] text-[#58718c]">
+              <p className="text-[11px] font-bold text-label-3">Einzelne Units</p>
+              <p className="mt-1 text-[11px] text-label-4">
                 Diese Units sind noch keiner Gruppe zugeordnet. Bearbeite sie, verschiebe sie in eine bestehende Gruppe oder übernimm sie direkt als neue Gruppe.
               </p>
             </div>
@@ -657,25 +657,25 @@ export default function UnitsPage() {
               <Plus size={12} /> Einzelne Unit
             </Button>
           </div>
-          <div className="divide-y divide-[#18385f]/50">
+          <div className="divide-y divide-line">
             {visibleUngroupedUnits.map((unit) => {
                 const counts = unit.assignmentCounts ?? { officers: 0, directUsers: 0 }
                 return (
                   <div key={unit.id} className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center">
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-[#102744]"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-surface-2"
                       style={{ color: unit.color, borderColor: `${unit.color}40` }}
                     >
                       <UnitIcon icon={unit.icon} size={15} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-[11.5px] font-semibold text-[#d9e4ef]">{unit.name}</span>
-                        {groups && hasMissingUnitGroup(unit, groups) && <span className="rounded-md bg-amber-300/10 px-2 py-0.5 text-[11px] text-[#e8cd8e]">Gruppe fehlt</span>}
-                        {!unit.active && <span className="text-[11px] text-[#91a7c2]">Inaktiv</span>}
-                        <span className="font-mono text-[9px] text-[#526d89]">{unit.key}</span>
+                        <span className="truncate text-[11.5px] font-semibold text-label">{unit.name}</span>
+                        {groups && hasMissingUnitGroup(unit, groups) && <span className="rounded-md bg-amber-300/10 px-2 py-0.5 text-[11px] text-gold-bright">Gruppe fehlt</span>}
+                        {!unit.active && <span className="text-[11px] text-label-2">Inaktiv</span>}
+                        <span className="font-mono text-[11px] text-label-4">{unit.key}</span>
                       </div>
-                      <span className="mt-1 block text-[10px] text-[#607994]">
+                      <span className="mt-1 block text-[11px] text-label-3">
                         {counts.officers} Officers · {counts.directUsers} direkte Benutzer
                       </span>
                     </div>
@@ -685,14 +685,14 @@ export default function UnitsPage() {
                         onClick={() => void promoteUnitToGroup(unit)}
                         disabled={saving || Boolean(unit.groupId)}
                         title={unit.groupId ? 'Zuerst über Bearbeiten die fehlende Gruppenzuordnung auflösen.' : undefined}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[#d4af37]/30 bg-[#d4af37]/[0.06] px-2.5 text-[10px] font-semibold text-[#e2c45d] transition-colors hover:border-[#d4af37]/60 hover:bg-[#d4af37]/[0.12] disabled:pointer-events-none disabled:opacity-50"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-gold/30 bg-gold/[0.06] px-2.5 text-[11px] font-semibold text-gold transition-colors hover:border-gold/60 hover:bg-gold/[0.12] disabled:pointer-events-none disabled:opacity-50"
                       >
                         <Layers3 size={12} /> Als Gruppe nutzen
                       </button>
                       <button
                         type="button"
                         onClick={() => openEditUnit(unit)}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[#234568] px-2.5 text-[10px] font-semibold text-[#aebed0] hover:border-[#d4af37]/35 hover:text-[#d4af37]"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line px-2.5 text-[11px] font-semibold text-label-2 hover:border-gold/35 hover:text-gold-bright"
                       >
                         <Edit3 size={12} /> Bearbeiten
                       </button>
@@ -701,7 +701,7 @@ export default function UnitsPage() {
                 )
               })}
             {visibleUngroupedUnits.length === 0 && (
-              <div className="px-5 py-8 text-center text-[10.5px] text-[#607994]">
+              <div className="px-5 py-8 text-center text-[11px] text-label-3">
                 {query ? 'Keine einzelnen Units für diese Suche gefunden.' : 'Alle Units sind bereits in einer Gruppe organisiert.'}
               </div>
             )}
@@ -709,9 +709,9 @@ export default function UnitsPage() {
         </section>
 
         {!loadError && visibleGroups.length === 0 && visibleUngroupedUnits.length === 0 && (
-          <div className="rounded-[16px] border border-dashed border-[#234568] py-16 text-center">
-            <Layers3 size={28} className="mx-auto mb-3 text-[#4f6c89]" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium text-[#9eb1c6]">{query ? 'Keine passenden Units oder Gruppen gefunden.' : 'Noch keine Unitgruppen vorhanden'}</p>
+          <div className="rounded-[16px] border border-dashed border-line py-16 text-center">
+            <Layers3 size={28} className="mx-auto mb-3 text-label-4" strokeWidth={1.5} />
+            <p className="text-[13px] font-medium text-label-2">{query ? 'Keine passenden Units oder Gruppen gefunden.' : 'Noch keine Unitgruppen vorhanden'}</p>
             {query ? <Button className="mt-4" size="sm" variant="secondary" onClick={() => setQuery('')}>Suche zurücksetzen</Button> : <Button className="mt-4" size="sm" onClick={openCreateGroup}><Plus size={13} /> Erste Unitgruppe erstellen</Button>}
           </div>
         )}
@@ -724,7 +724,7 @@ export default function UnitsPage() {
         description={`${groupStep + 1} von ${GROUP_STEPS.length} · ${GROUP_STEPS[groupStep].description}`}
         size="xl"
       >
-        <nav className="mb-6 grid grid-cols-3 gap-1.5 rounded-[13px] border border-[#18385f]/65 bg-[#07182e]/55 p-1.5" aria-label="Unitgruppen-Einrichtung">
+        <nav className="mb-6 grid grid-cols-3 gap-1.5 rounded-[12px] border border-line bg-surface p-1.5" aria-label="Unitgruppen-Einrichtung">
           {GROUP_STEPS.map((step, index) => {
             const active = groupStep === index
             const complete = groupStep > index
@@ -735,22 +735,22 @@ export default function UnitsPage() {
                 onClick={() => goToGroupStep(index)}
                 className={cn(
                   'flex min-w-0 items-center gap-2 rounded-[9px] px-2.5 py-2 text-left transition-colors sm:px-3',
-                  active ? 'bg-[#102744] text-white' : 'text-[#607994] hover:bg-[#0b203b] hover:text-[#9eb1c6]',
+                  active ? 'bg-surface-2 text-label' : 'text-label-3 hover:bg-surface hover:text-label-2',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[9.5px] font-bold',
-                    active && 'border-[#d4af37]/60 bg-[#d4af37]/12 text-[#d4af37]',
-                    complete && 'border-[#34d399]/45 bg-[#34d399]/10 text-[#6ee7b7]',
-                    !active && !complete && 'border-[#284b70] text-[#607994]',
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold',
+                    active && 'border-gold/60 bg-gold/12 text-gold',
+                    complete && 'border-green/27 bg-green/10 text-green',
+                    !active && !complete && 'border-line text-label-3',
                   )}
                 >
                   {complete ? <Check size={11} strokeWidth={2.7} /> : index + 1}
                 </span>
                 <span className="hidden min-w-0 sm:block">
-                  <span className="block truncate text-[10.5px] font-semibold">{step.label}</span>
-                  <span className="mt-0.5 block truncate text-[8.5px] opacity-60">{step.description}</span>
+                  <span className="block truncate text-[11px] font-semibold">{step.label}</span>
+                  <span className="mt-0.5 block truncate text-[11px] font-semibold opacity-60">{step.description}</span>
                 </span>
               </button>
             )
@@ -759,9 +759,9 @@ export default function UnitsPage() {
         <div className="min-h-[420px]">
           {groupStep === 0 && (
             <section>
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#d4af37]/75">Schritt 1 · Identität</p>
-              <h3 className="mt-1.5 text-[16px] font-semibold text-white">Wie heißt diese Unitgruppe?</h3>
-              <p className="mt-1 text-[11px] leading-5 text-[#607994]">
+              <p className="text-[11px] font-bold text-gold/75">Schritt 1 · Identität</p>
+              <h3 className="mt-1.5 text-[16px] font-semibold text-label">Wie heißt diese Unitgruppe?</h3>
+              <p className="mt-1 text-[11px] leading-5 text-label-3">
                 Die Gruppe ist die sichtbare Klammer. Darunter legst du später Ränge wie Leitung, Senior oder Officer an.
               </p>
               <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_220px]">
@@ -775,7 +775,7 @@ export default function UnitsPage() {
                     autoFocus
                   />
                   <div>
-                    <label htmlFor="group-description" className="mb-1.5 block text-[12.5px] font-medium text-[#9fb0c4]">
+                    <label htmlFor="group-description" className="mb-1.5 block text-[12.5px] font-medium text-label-2">
                       Aufgabe der Gruppe
                     </label>
                     <textarea
@@ -784,31 +784,31 @@ export default function UnitsPage() {
                       onChange={(event) => setGroupForm({ ...groupForm, description: event.target.value })}
                       rows={4}
                       placeholder="Wofür ist diese Unit zuständig?"
-                      className="w-full resize-none rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5 text-[13px] leading-5 text-[#edf4fb] outline-none transition-all placeholder:text-[#4a6585] focus:border-[#d4af37]"
+                      className="w-full resize-none rounded-[9px] border border-line bg-surface px-3 py-2.5 text-[13px] leading-5 text-label outline-none transition-all placeholder:text-label-4 focus:border-gold"
                     />
                   </div>
                 </div>
-                <div className="overflow-hidden rounded-[15px] border border-[#18385f]/70 bg-[#07182e]/55">
+                <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                   <div className="h-1.5" style={{ backgroundColor: groupForm.color }} />
                   <div className="flex min-h-[154px] flex-col items-center justify-center p-5 text-center">
                     <span
-                      className="flex h-14 w-14 items-center justify-center rounded-[16px] border bg-[#102744]"
+                      className="flex h-14 w-14 items-center justify-center rounded-[16px] border bg-surface-2"
                       style={{ color: groupForm.color, borderColor: `${groupForm.color}45` }}
                     >
                       <UnitIcon icon={groupForm.icon} size={24} />
                     </span>
-                    <p className="mt-3 max-w-full truncate text-[13px] font-semibold text-white">
+                    <p className="mt-3 max-w-full truncate text-[13px] font-semibold text-label">
                       {groupForm.name.trim() || 'Name der Unitgruppe'}
                     </p>
-                    <p className="mt-1 text-[9.5px] uppercase tracking-[0.12em] text-[#607994]">Vorschau</p>
+                    <p className="mt-1 text-[11px] text-label-3">Vorschau</p>
                   </div>
                 </div>
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-[180px_1fr]">
                 <ColorField value={groupForm.color} onChange={(color) => setGroupForm({ ...groupForm, color })} />
                 <div>
-                  <p className="mb-2 block text-[12.5px] font-medium text-[#9fb0c4]">Icon</p>
-                  <div className="grid grid-cols-10 gap-1.5 rounded-xl border border-[#18385f]/60 bg-[#07182e]/55 p-2 max-sm:grid-cols-5">
+                  <p className="mb-2 block text-[12.5px] font-medium text-label-2">Icon</p>
+                  <div className="grid grid-cols-10 gap-1.5 rounded-xl border border-line bg-surface p-2 max-sm:grid-cols-5">
                     {UNIT_ICON_OPTIONS.map((option) => (
                       <button
                         type="button"
@@ -820,8 +820,8 @@ export default function UnitsPage() {
                         className={cn(
                           'flex aspect-square items-center justify-center rounded-lg border transition-all',
                           groupForm.icon === option.key
-                            ? 'border-[#d4af37]/55 bg-[#d4af37]/12 text-[#d4af37]'
-                            : 'border-transparent text-[#607b96] hover:border-[#284b70] hover:bg-[#102744]',
+                            ? 'border-gold/55 bg-gold/12 text-gold'
+                            : 'border-transparent text-label-3 hover:border-line hover:bg-surface-2',
                         )}
                       >
                         <UnitIcon icon={option.key} size={15} />
@@ -834,24 +834,24 @@ export default function UnitsPage() {
           )}
           {groupStep === 1 && (
             <section>
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#7dd3fc]/80">Schritt 2 · Arbeitsbereiche</p>
-              <h3 className="mt-1.5 text-[16px] font-semibold text-white">Was darf die ganze Gruppe?</h3>
-              <p className="mt-1 text-[11px] leading-5 text-[#607994]">
+              <p className="text-[11px] font-bold text-cyan/80">Schritt 2 · Arbeitsbereiche</p>
+              <h3 className="mt-1.5 text-[16px] font-semibold text-label">Was darf die ganze Gruppe?</h3>
+              <p className="mt-1 text-[11px] leading-5 text-label-3">
                 Diese Auswahl gilt automatisch für jeden Unterrang der Gruppe. Einzelne Ränge müssen nicht mehr separat konfiguriert werden.
               </p>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                <div className="flex items-center gap-3 rounded-[11px] border border-[#38bdf8]/15 bg-[#38bdf8]/[0.045] px-3 py-2.5">
-                  <Eye size={14} className="text-[#7dd3fc]" />
+                <div className="flex items-center gap-3 rounded-[11px] border border-cyan/9 bg-cyan/[0.045] px-3 py-2.5">
+                  <Eye size={14} className="text-cyan" />
                   <span>
-                    <span className="block text-[10.5px] font-semibold text-[#a8ddf6]">Nur ansehen</span>
-                    <span className="text-[9.5px] text-[#607994]">Öffnen, aber nicht verändern</span>
+                    <span className="block text-[11px] font-semibold text-cyan">Nur ansehen</span>
+                    <span className="text-[11px] text-label-3">Öffnen, aber nicht verändern</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-3 rounded-[11px] border border-[#d4af37]/15 bg-[#d4af37]/[0.045] px-3 py-2.5">
-                  <Settings2 size={14} className="text-[#d4af37]" />
+                <div className="flex items-center gap-3 rounded-[11px] border border-gold/15 bg-gold/[0.045] px-3 py-2.5">
+                  <Settings2 size={14} className="text-gold" />
                   <span>
-                    <span className="block text-[10.5px] font-semibold text-[#e2c45d]">Bearbeiten</span>
-                    <span className="text-[9.5px] text-[#607994]">Erstellen und verwalten</span>
+                    <span className="block text-[11px] font-semibold text-gold">Bearbeiten</span>
+                    <span className="text-[11px] text-label-3">Erstellen und verwalten</span>
                   </span>
                 </div>
               </div>
@@ -863,10 +863,10 @@ export default function UnitsPage() {
                     <div
                       key={module.key}
                       className={cn(
-                        'rounded-[13px] border p-3.5',
+                        'rounded-[12px] border p-3.5',
                         selected
-                          ? 'border-[#d4af37]/28 bg-[#d4af37]/[0.045]'
-                          : 'border-[#18385f]/65 bg-[#081a31]/48 hover:border-[#285078]',
+                          ? 'border-gold/28 bg-gold/[0.045]'
+                          : 'border-line bg-white/[0.03] hover:border-line-strong',
                       )}
                     >
                       <button
@@ -878,35 +878,35 @@ export default function UnitsPage() {
                           className={cn(
                             'flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border',
                             selected
-                              ? 'border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]'
-                              : 'border-[#1f4165] bg-[#102744] text-[#69839e]',
+                              ? 'border-gold/30 bg-gold/10 text-gold'
+                              : 'border-line bg-surface-2 text-label-3',
                           )}
                         >
                           <UnitIcon icon={module.icon} size={16} />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className={cn('block text-[12px] font-semibold', selected ? 'text-white' : 'text-[#9db0c4]')}>
+                          <span className={cn('block text-[12px] font-semibold', selected ? 'text-label' : 'text-label-2')}>
                             {module.label}
                           </span>
-                          <span className="mt-1 block text-[10px] leading-4 text-[#5d7690]">{module.description}</span>
+                          <span className="mt-1 block text-[11px] leading-4 text-label-3">{module.description}</span>
                         </span>
                         <span
                           className={cn(
                             'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border',
-                            selected ? 'border-[#d4af37] bg-[#d4af37] text-[#071b33]' : 'border-[#2a4a6e]',
+                            selected ? 'border-gold bg-gold text-ink' : 'border-line',
                           )}
                         >
                           {selected && <Check size={11} strokeWidth={3} />}
                         </span>
                       </button>
                       {selected && (
-                        <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-[#d4af37]/10 pt-2.5">
+                        <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-gold/10 pt-2.5">
                           <button
                             type="button"
                             onClick={() => setGroupModuleAccess(module.key, 'view')}
                             className={cn(
-                              'inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] text-[9.5px] font-semibold',
-                              access === 'view' ? 'bg-[#38bdf8]/12 text-[#7dd3fc]' : 'text-[#607994] hover:bg-[#102744]',
+                              'inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] text-[11px] font-semibold',
+                              access === 'view' ? 'bg-cyan/12 text-cyan' : 'text-label-3 hover:bg-surface-2',
                             )}
                           >
                             <Eye size={11} /> Ansehen
@@ -915,8 +915,8 @@ export default function UnitsPage() {
                             type="button"
                             onClick={() => setGroupModuleAccess(module.key, 'manage')}
                             className={cn(
-                              'inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] text-[9.5px] font-semibold',
-                              access === 'manage' ? 'bg-[#d4af37]/14 text-[#d4af37]' : 'text-[#607994] hover:bg-[#102744]',
+                              'inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] text-[11px] font-semibold',
+                              access === 'manage' ? 'bg-gold/14 text-gold' : 'text-label-3 hover:bg-surface-2',
                             )}
                           >
                             <Settings2 size={11} /> Bearbeiten
@@ -931,9 +931,9 @@ export default function UnitsPage() {
           )}
           {groupStep === 2 && (
             <section>
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#6ee7b7]/80">Schritt 3 · Rollen & Start</p>
-              <h3 className="mt-1.5 text-[16px] font-semibold text-white">Wann und wie wird die Gruppe sichtbar?</h3>
-              <p className="mt-1 text-[11px] leading-5 text-[#607994]">
+              <p className="text-[11px] font-bold text-green/80">Schritt 3 · Rollen & Start</p>
+              <h3 className="mt-1.5 text-[16px] font-semibold text-label">Wann und wie wird die Gruppe sichtbar?</h3>
+              <p className="mt-1 text-[11px] leading-5 text-label-3">
                 Die beiden Discord-Rollen werden für alle Unterränge beziehungsweise nur für markierte Leitungsränge synchronisiert.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -973,21 +973,21 @@ export default function UnitsPage() {
                   size="sm"
                 />
               </div>
-              <details className="group mt-4 rounded-[13px] border border-[#18385f]/70 bg-[#081a31]/40 p-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[11.5px] font-semibold text-[#9eb1c6]">
+              <details className="group mt-4 rounded-[12px] border border-line bg-white/[0.03] p-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-[11.5px] font-semibold text-label-2">
                   <span className="flex items-center gap-2">
-                    <SlidersHorizontal size={14} className="text-[#6d87a1]" /> Erweiterte Einzelrechte
+                    <SlidersHorizontal size={14} className="text-label-3" /> Erweiterte Einzelrechte
                   </span>
-                  <span className="flex items-center gap-2 text-[9.5px] font-normal text-[#58718c]">
+                  <span className="flex items-center gap-2 text-[11px] font-normal text-label-4">
                     {groupForm.permissions.length} ausgewählt <ChevronRight size={13} className="transition-transform group-open:rotate-90" />
                   </span>
                 </summary>
-                <p className="mb-3 mt-3 text-[10.5px] leading-5 text-[#58718c]">
+                <p className="mb-3 mt-3 text-[11px] leading-5 text-label-4">
                   Nur für Sonderfälle. Rechte der Arbeitsbereiche werden automatisch vergeben.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="mb-2 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#607994]">Ansehen</p>
+                    <p className="mb-2 text-[11px] font-bold text-label-3">Ansehen</p>
                     <div className="max-h-48 space-y-1.5 overflow-auto pr-1">
                       {EXTRA_READ_PERMISSIONS.map((permission) => (
                         <Checkbox
@@ -995,13 +995,13 @@ export default function UnitsPage() {
                           checked={groupForm.permissions.includes(permission)}
                           onCheckedChange={(checked) => togglePermission(permission, checked)}
                           label={PERMISSION_LABELS[permission]}
-                          className="rounded-lg border border-[#18385f]/50 bg-[#07182e]/45 px-3 py-2"
+                          className="rounded-lg border border-line bg-white/[0.03] px-3 py-2"
                         />
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="mb-2 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#607994]">Bearbeiten</p>
+                    <p className="mb-2 text-[11px] font-bold text-label-3">Bearbeiten</p>
                     <div className="max-h-48 space-y-1.5 overflow-auto pr-1">
                       {EXTRA_MANAGE_PERMISSIONS.map((permission) => (
                         <Checkbox
@@ -1009,7 +1009,7 @@ export default function UnitsPage() {
                           checked={groupForm.permissions.includes(permission)}
                           onCheckedChange={(checked) => togglePermission(permission, checked)}
                           label={PERMISSION_LABELS[permission]}
-                          className="rounded-lg border border-[#18385f]/50 bg-[#07182e]/45 px-3 py-2"
+                          className="rounded-lg border border-line bg-white/[0.03] px-3 py-2"
                         />
                       ))}
                     </div>
@@ -1017,11 +1017,11 @@ export default function UnitsPage() {
                 </div>
               </details>
               {editingGroup && (
-                <div className="mt-4 rounded-[13px] border border-[#fb7185]/20 bg-[#fb7185]/[0.04] p-4">
+                <div className="mt-4 rounded-[12px] border border-red/12 bg-red/[0.04] p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[11.5px] font-semibold text-[#fda4af]">Gefahrenbereich</p>
-                      <p className="mt-1 text-[10px] leading-4 text-[#8f6b7a]">
+                      <p className="text-[11.5px] font-semibold text-red">Gefahrenbereich</p>
+                      <p className="mt-1 text-[11px] leading-4 text-label-3">
                         Gruppe kann nur gelöscht werden, wenn keine Unterränge mehr zugeordnet sind.
                       </p>
                     </div>
@@ -1034,7 +1034,7 @@ export default function UnitsPage() {
             </section>
           )}
         </div>
-        <div className="sticky -bottom-6 -mx-6 mt-6 flex items-center justify-between gap-3 border-t border-[#18385f] bg-[#091b33]/95 px-6 py-4 backdrop-blur-xl">
+        <div className="sticky -bottom-6 -mx-6 mt-6 flex items-center justify-between gap-3 border-t border-line bg-surface px-6 py-4 backdrop-blur-xl">
           <Button
             variant="ghost"
             size="sm"
@@ -1042,7 +1042,7 @@ export default function UnitsPage() {
           >
             <ArrowLeft size={13} /> {groupStep === 0 ? 'Abbrechen' : 'Zurück'}
           </Button>
-          <div className="hidden min-w-0 items-center gap-2 text-[10px] text-[#5f7893] sm:flex">
+          <div className="hidden min-w-0 items-center gap-2 text-[11px] text-label-3 sm:flex">
             <UnitIcon icon={groupForm.icon} size={13} style={{ color: groupForm.color }} />
             <span className="truncate">
               {groupForm.name.trim() || 'Neue Unitgruppe'} · {selectedModuleEntries(groupForm.modules).length} Bereiche
@@ -1068,11 +1068,11 @@ export default function UnitsPage() {
         size="lg"
       >
         <div className="space-y-5">
-          {editingUnit && groups && hasMissingUnitGroup(editingUnit, groups) && <div className="rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-[#e8cd8e]">Die bisherige Gruppe existiert nicht mehr. Wähle eine neue Gruppe oder speichere diese Unit als eigenständige Unit. Ihre bestehenden Zuweisungen bleiben erhalten.</div>}
+          {editingUnit && groups && hasMissingUnitGroup(editingUnit, groups) && <div className="rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-gold-bright">Die bisherige Gruppe existiert nicht mehr. Wähle eine neue Gruppe oder speichere diese Unit als eigenständige Unit. Ihre bestehenden Zuweisungen bleiben erhalten.</div>}
           <div>
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#d4af37]/75">Unitrang</p>
-            <h3 className="mt-1.5 text-[16px] font-semibold text-white">Welche Rolle hat dieser Unterrang?</h3>
-            <p className="mt-1 text-[11px] leading-5 text-[#607994]">
+            <p className="text-[11px] font-bold text-gold/75">Unitrang</p>
+            <h3 className="mt-1.5 text-[16px] font-semibold text-label">Welche Rolle hat dieser Unterrang?</h3>
+            <p className="mt-1 text-[11px] leading-5 text-label-3">
               Ein Unterrang ist die konkrete Zuordnung eines Officers innerhalb einer Unitgruppe. Markiere alle Ränge, die zur Leitung gehören.
             </p>
           </div>
@@ -1087,7 +1087,7 @@ export default function UnitsPage() {
             />
           </div>
           <div>
-            <label htmlFor="unit-description" className="mb-1.5 block text-[12.5px] font-medium text-[#9fb0c4]">
+            <label htmlFor="unit-description" className="mb-1.5 block text-[12.5px] font-medium text-label-2">
               Beschreibung
             </label>
             <textarea
@@ -1096,7 +1096,7 @@ export default function UnitsPage() {
               onChange={(event) => setUnitForm({ ...unitForm, description: event.target.value })}
               rows={3}
               placeholder="Wofür steht dieser Rang?"
-              className="w-full resize-none rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5 text-[13px] leading-5 text-[#edf4fb] outline-none transition-all placeholder:text-[#4a6585] focus:border-[#d4af37]"
+              className="w-full resize-none rounded-[9px] border border-line bg-surface px-3 py-2.5 text-[13px] leading-5 text-label outline-none transition-all placeholder:text-label-4 focus:border-gold"
             />
           </div>
           <Select
@@ -1128,8 +1128,8 @@ export default function UnitsPage() {
           <div className="grid gap-4 sm:grid-cols-[150px_1fr]">
             <ColorField label="Rangfarbe" value={unitForm.color} onChange={(color) => setUnitForm({ ...unitForm, color })} />
             <div>
-              <p className="mb-2 block text-[12.5px] font-medium text-[#9fb0c4]">Icon</p>
-              <div className="grid grid-cols-10 gap-1.5 rounded-xl border border-[#18385f]/60 bg-[#07182e]/55 p-2 max-sm:grid-cols-5">
+              <p className="mb-2 block text-[12.5px] font-medium text-label-2">Icon</p>
+              <div className="grid grid-cols-10 gap-1.5 rounded-xl border border-line bg-surface p-2 max-sm:grid-cols-5">
                 {UNIT_ICON_OPTIONS.slice(0, 15).map((option) => (
                   <button
                     type="button"
@@ -1139,8 +1139,8 @@ export default function UnitsPage() {
                     className={cn(
                       'flex aspect-square items-center justify-center rounded-lg border transition-all',
                       unitForm.icon === option.key
-                        ? 'border-[#d4af37]/55 bg-[#d4af37]/12 text-[#d4af37]'
-                        : 'border-transparent text-[#607b96] hover:border-[#284b70] hover:bg-[#102744]',
+                        ? 'border-gold/55 bg-gold/12 text-gold'
+                        : 'border-transparent text-label-3 hover:border-line hover:bg-surface-2',
                     )}
                   >
                     <UnitIcon icon={option.key} size={15} />
@@ -1156,11 +1156,11 @@ export default function UnitsPage() {
             onChange={(active) => setUnitForm({ ...unitForm, active })}
           />
           {editingUnit && (
-            <div className="rounded-[13px] border border-[#fb7185]/20 bg-[#fb7185]/[0.04] p-4">
+            <div className="rounded-[12px] border border-red/12 bg-red/[0.04] p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[11.5px] font-semibold text-[#fda4af]">Gefahrenbereich</p>
-                  <p className="mt-1 text-[10px] leading-4 text-[#8f6b7a]">Zuweisungen müssen vor dem Löschen entfernt werden.</p>
+                  <p className="text-[11.5px] font-semibold text-red">Gefahrenbereich</p>
+                  <p className="mt-1 text-[11px] leading-4 text-label-3">Zuweisungen müssen vor dem Löschen entfernt werden.</p>
                 </div>
                 <Button type="button" variant="danger" size="sm" onClick={() => void deleteUnit()} disabled={saving}>
                   <Trash2 size={12} /> Unterrang löschen
@@ -1168,7 +1168,7 @@ export default function UnitsPage() {
               </div>
             </div>
           )}
-          <div className="flex justify-end gap-2 border-t border-[#18385f] pt-4">
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
             <Button variant="secondary" size="sm" onClick={() => setUnitModalOpen(false)}>
               Abbrechen
             </Button>

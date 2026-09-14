@@ -226,13 +226,13 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
       />
 
       {creating && (
-        <section className="rounded-[14px] border border-[#234568]/75 bg-[#081a31] p-4 sm:p-5">
+        <section className="rounded-[12px] border border-line bg-surface p-4 sm:p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-[14px] font-semibold text-[#edf4fb]">
+              <h2 className="text-[14px] font-semibold text-label">
                 {mode === 'files' ? 'Neue Datei' : 'Neue Ausbildungsressource'}
               </h2>
-              <p className="mt-1 text-[12px] text-[#6b8299]">
+              <p className="mt-1 text-[12px] text-label-3">
                 {mode === 'files'
                   ? 'Die Datei wird in der allgemeinen Recruitment-&-Training-Ablage gespeichert.'
                   : 'Ordne die Ressource einer Ausbildung oder einer eigenen Kategorie zu.'}
@@ -241,7 +241,7 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
             <button
               type="button"
               onClick={resetForm}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#6b8299] hover:bg-[#102542] hover:text-[#edf4fb]"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-label-3 hover:bg-surface-2 hover:text-label"
               aria-label="Formular schließen"
             >
               <X size={15} />
@@ -297,18 +297,18 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
 
             {(mode === 'files' || form.type === 'FILE') ? (
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-[#9fb0c4]">Datei</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-label-2">Datei</label>
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   className={cn(
                     'flex h-[42px] w-full items-center gap-2 rounded-[8px] border px-3 text-left text-[12.5px] transition-colors',
                     file
-                      ? 'border-[#d4af37]/45 bg-[#d4af37]/8 text-[#edf4fb]'
-                      : 'border-[#18385f] bg-[#061426] text-[#6b8299] hover:border-[#234568]',
+                      ? 'border-gold/45 bg-gold/8 text-label'
+                      : 'border-line bg-canvas text-label-3 hover:border-line',
                   )}
                 >
-                  <Upload size={14} className={file ? 'text-[#d4af37]' : ''} />
+                  <Upload size={14} className={file ? 'text-gold' : ''} />
                   <span className="truncate">{file?.name ?? 'Datei auswählen'}</span>
                 </button>
                 <input
@@ -371,14 +371,14 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
       ) : (
         <div className="space-y-4">
           {groupedResources.map((group) => (
-            <section key={group.label} className="overflow-hidden rounded-[14px] border border-[#18385f]/70 bg-[#07182d]">
-              <div className="flex items-center gap-3 border-b border-[#18385f]/60 px-4 py-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#d4af37]/12 text-[#d4af37]">
+            <section key={group.label} className="overflow-hidden rounded-[12px] border border-line bg-surface">
+              <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-gold/12 text-gold">
                   <FolderOpen size={15} />
                 </span>
                 <div>
-                  <h2 className="text-[13.5px] font-semibold text-[#edf4fb]">{group.label}</h2>
-                  <p className="text-[11px] text-[#6b8299]">{group.resources.length} Ressource(n)</p>
+                  <h2 className="text-[13.5px] font-semibold text-label">{group.label}</h2>
+                  <p className="text-[11px] text-label-3">{group.resources.length} Ressource(n)</p>
                 </div>
               </div>
               <ResourceList resources={group.resources} canManage={canManage} onDelete={deleteResource} nested />
@@ -388,18 +388,18 @@ export function AcademyResources({ mode, canManage }: AcademyResourcesProps) {
       )}
 
       {resources.length === 0 && !creating && (
-        <div className="rounded-[14px] border border-dashed border-[#234568]/70 px-5 py-16 text-center">
+        <div className="rounded-[12px] border border-dashed border-line px-5 py-16 text-center">
           {mode === 'files'
-            ? <Upload size={27} className="mx-auto mb-3 text-[#4a6585]" />
-            : <FolderOpen size={27} className="mx-auto mb-3 text-[#4a6585]" />}
-          <p className="text-[13px] font-medium text-[#9fb0c4]">
+            ? <Upload size={27} className="mx-auto mb-3 text-label-4" />
+            : <FolderOpen size={27} className="mx-auto mb-3 text-label-4" />}
+          <p className="text-[13px] font-medium text-label-2">
             {mode === 'files' ? 'Noch keine Recruitment-&-Training-Dateien' : 'Noch keine Ausbildungsressourcen'}
           </p>
           {canManage && (
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="mt-2 text-[12px] font-medium text-[#d4af37] hover:text-[#e8c979]"
+              className="mt-2 text-[12px] font-medium text-gold hover:text-gold-bright"
             >
               Jetzt {mode === 'files' ? 'eine Datei hochladen' : 'eine Ressource erstellen'}
             </button>
@@ -424,25 +424,25 @@ function ResourceList({
   if (resources.length === 0) return null
 
   return (
-    <div className={cn('divide-y divide-[#18385f]/60', !nested && 'overflow-hidden rounded-[14px] border border-[#18385f]/70 bg-[#07182d]')}>
+    <div className={cn('divide-y divide-line', !nested && 'overflow-hidden rounded-[12px] border border-line bg-surface')}>
       {resources.map((resource) => {
         const Icon = resourceIcon(resource)
         return (
-          <div key={resource.id} className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[#0c203b]">
-            <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] border border-[#234568]/60 bg-[#061426] text-[#d4af37]">
+          <div key={resource.id} className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface">
+            <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] border border-line bg-canvas text-gold">
               <Icon size={16} strokeWidth={1.8} />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate text-[13.5px] font-semibold text-[#edf4fb]">{resource.title}</p>
-                <span className="rounded-full border border-[#234568]/60 px-2 py-0.5 text-[10px] font-medium text-[#8ea4bd]">
+                <p className="truncate text-[13.5px] font-semibold text-label">{resource.title}</p>
+                <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-label-2">
                   {resource.type === 'LINK' ? 'Link' : 'Datei'}
                 </span>
               </div>
               {resource.description && (
-                <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-[#8ea4bd]">{resource.description}</p>
+                <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-label-2">{resource.description}</p>
               )}
-              <p className="mt-1.5 text-[10.5px] text-[#536b86]">
+              <p className="mt-1.5 text-[11px] text-label-4">
                 {resource.originalFilename && `${resource.originalFilename} · `}
                 {resource.size !== null && `${formatBytes(resource.size)} · `}
                 {formatDateTime(resource.createdAt)}
@@ -455,7 +455,7 @@ function ResourceList({
                   href={resource.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[11.5px] font-medium text-[#9fb0c4] hover:bg-[#102542] hover:text-[#d4af37]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[11.5px] font-medium text-label-2 hover:bg-surface-2 hover:text-gold-bright"
                 >
                   <ExternalLink size={13} />
                   Öffnen
@@ -465,7 +465,7 @@ function ResourceList({
                 <button
                   type="button"
                   onClick={() => onDelete(resource)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#6b8299] hover:bg-[#2a1212] hover:text-[#fca5a5]"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-label-3 hover:bg-red/14 hover:text-red"
                   aria-label={`${resource.title} löschen`}
                 >
                   <Trash2 size={13} />

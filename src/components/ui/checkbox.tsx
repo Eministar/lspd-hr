@@ -14,24 +14,24 @@ interface CheckboxProps {
 
 export function Checkbox({ checked, onCheckedChange, label, disabled, className }: CheckboxProps) {
   return (
-    <label className={cn('flex items-center gap-2.5 cursor-pointer', disabled && 'opacity-50 cursor-not-allowed', className)}>
+    <label className={cn('flex cursor-pointer items-center gap-2.5', disabled && 'cursor-not-allowed opacity-50', className)}>
       <CheckboxPrimitive.Root
         checked={checked}
         onCheckedChange={(v) => onCheckedChange(v === true)}
         disabled={disabled}
         className={cn(
-          'h-[18px] w-[18px] rounded-[5px] border transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40',
+          'flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-[background-color,border-color,scale] duration-150 ease-out active:scale-90',
+          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-gold/45',
           checked
-            ? 'bg-gradient-to-b from-[#d4af37] to-[#c29d32] border-[#c29d32] text-[#071b33] shadow-[0_1px_2px_rgba(212,175,55,0.2)]'
-            : 'border-[#2a4a6e] bg-[#0a1a33]/60'
+            ? 'border-gold bg-gold text-ink shadow-[inset_0_0.5px_0_rgb(255_255_255/0.35)]'
+            : 'border-line-strong bg-surface-3'
         )}
       >
         <CheckboxPrimitive.Indicator className="flex items-center justify-center">
-          <Check size={12} strokeWidth={3} />
+          <Check size={11} strokeWidth={3.25} />
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
-      {label && <span className="text-[13px] text-[#b7c5d8]">{label}</span>}
+      {label && <span className="text-[13.5px] text-label">{label}</span>}
     </label>
   )
 }

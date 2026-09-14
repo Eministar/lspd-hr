@@ -231,10 +231,10 @@ function DiscordMemberStatus({ officer }: { officer: Pick<OfficerDetail, 'discor
       ? inGuild ? 'Auf Discord-Server' : 'Nicht auf Discord-Server'
       : 'Discord-Server ungeprüft'
   const className = !hasDiscordId || !checked
-    ? 'border-[#234568]/50 bg-[#0b1f3a]/70 text-[#6b8299]'
+    ? 'border-line bg-surface text-label-3'
     : inGuild
-      ? 'border-[#166534]/50 bg-[#052e1a]/70 text-[#86efac]'
-      : 'border-[#7f1d1d]/55 bg-[#2a1212]/70 text-[#fca5a5]'
+      ? 'border-green/15 bg-green/10 text-green'
+      : 'border-red/17 bg-red/10 text-red'
   const Icon = hasDiscordId && checked && inGuild ? MessageCircle : CircleSlash
 
   return (
@@ -722,7 +722,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   if (!canViewOfficer) return <UnauthorizedContent />
   if (loading) return <PageLoader />
-  if (!officer) return <div className="text-center py-16 text-[#999]">Officer nicht gefunden</div>
+  if (!officer) return <div className="text-center py-16 text-label-3">Officer nicht gefunden</div>
 
   const higherRanks = ranks?.filter(r => r.sortOrder < officer.rank?.sortOrder) || []
   const lowerRanks = ranks?.filter(r => r.sortOrder > officer.rank?.sortOrder) || []
@@ -775,8 +775,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-2 space-y-4">
           {/* Personal data */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Persönliche Daten</h3>
+            className="glass-panel-elevated rounded-[12px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-label mb-4">Persönliche Daten</h3>
             {editing ? (
               <div className="space-y-4">
                 {unitOnlyEditing ? (
@@ -816,16 +816,16 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                         <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => setForm({ ...form, units: value })} />
                       ) : (
                         <div>
-                          <p className="mb-2 block text-[12.5px] font-medium text-[#9fb0c4]">Units</p>
-                          <div className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/30 px-3 py-2.5">
+                          <p className="mb-2 block text-[12.5px] font-medium text-label-2">Units</p>
+                          <div className="rounded-[10px] border border-line bg-white/[0.03] px-3 py-2.5">
                             <UnitBadges officer={officer} units={units ?? undefined} emptyClassName="text-[12px]" />
-                            <p className="mt-1.5 text-[10px] text-[#58718c]">Nur markierte Unit-Leitungen oder Administratoren dürfen Units ändern.</p>
+                            <p className="mt-1.5 text-[11px] text-label-4">Nur markierte Unit-Leitungen oder Administratoren dürfen Units ändern.</p>
                           </div>
                         </div>
                       )}
                     </div>
                     <div>
-                      <label className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Markierung</label>
+                      <label className="block text-[12.5px] font-medium text-label-2 mb-1.5">Markierung</label>
                       <FlagPicker value={form.flag ?? null} onChange={(v) => setForm({ ...form, flag: v ?? '' })} />
                     </div>
                     <Textarea label="Notizen" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
@@ -842,14 +842,14 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 <InfoRow label="Rang">
                   <span className="inline-flex items-center gap-2">
                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: officer.rank?.color }} />
-                     <span className="text-[13.5px] text-[#eee]">{officer.rank?.name}</span>
+                     <span className="text-[13.5px] text-label">{officer.rank?.name}</span>
                      <RankNumberBadge number={officer.rank?.internalNumber} />
                    </span>
                 </InfoRow>
                 <InfoRow label="Status">
                   <span className="inline-flex items-center gap-1.5">
                     <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
-                    <span className="text-[13.5px] text-[#eee]">{getStatusLabel(officer.status)}</span>
+                    <span className="text-[13.5px] text-label">{getStatusLabel(officer.status)}</span>
                   </span>
                 </InfoRow>
                 <InfoRow label="Einstellungsdatum" value={formatDate(officer.hireDate)} />
@@ -864,19 +864,19 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                         className="h-[10px] w-[10px] rounded-full"
                         style={{ backgroundColor: getFlagColor(officer.flag) }}
                       />
-                      <span className="text-[13.5px] text-[#eee]">{getFlagLabel(officer.flag)}</span>
+                      <span className="text-[13.5px] text-label">{getFlagLabel(officer.flag)}</span>
                     </span>
                   ) : (
-                    <span className="text-[13.5px] text-[#4a6585]">—</span>
+                    <span className="text-[13.5px] text-label-4">—</span>
                   )}
                 </InfoRow>
                 <InfoRow label="Uprank-Sperre">
                   {officer.promotionBlocked ? (
-                    <span className="inline-flex items-center gap-1.5 text-[13.5px] text-[#f59e0b]">
+                    <span className="inline-flex items-center gap-1.5 text-[13.5px] text-yellow">
                       <CircleSlash size={14} strokeWidth={2} /> Aktiv – Beförderungen blockiert
                     </span>
                   ) : (
-                    <span className="text-[13.5px] text-[#4a6585]">—</span>
+                    <span className="text-[13.5px] text-label-4">—</span>
                   )}
                 </InfoRow>
                 <InfoRow label="Zuletzt Online" value={formatDateTime(officer.lastOnline)} />
@@ -890,10 +890,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.03 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
+            className="glass-panel-elevated rounded-[12px] p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Dienstzeiten</h3>
-              <Link href="/duty-times" className="text-[12px] text-[#d4af37] hover:text-white transition-colors">Übersicht</Link>
+              <h3 className="text-[13.5px] font-semibold text-label">Dienstzeiten</h3>
+              <Link href="/duty-times" className="text-[12px] text-gold hover:text-label transition-colors">Übersicht</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <DutyMetric
@@ -935,12 +935,12 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             {officer.dutyTime?.activeSession && (
-              <p className="mt-3 text-[11.5px] text-[#7089a5]">
+              <p className="mt-3 text-[11.5px] text-label-3">
                 Im Dienst seit {formatDateTime(officer.dutyTime.activeSession.clockInAt)}
               </p>
             )}
             {officer.dutyTime?.activePlaySession && (
-              <p className="mt-1 text-[11.5px] text-[#7089a5]">
+              <p className="mt-1 text-[11.5px] text-label-3">
                 Spieler {officer.dutyTime.activePlaySession.playerName}
                 {officer.dutyTime.activePlaySession.license ? ` · ${officer.dutyTime.activePlaySession.license}` : ''}
               </p>
@@ -948,17 +948,17 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.04 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Spielzeit</h3>
+            className="glass-panel-elevated rounded-[12px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-label mb-4">Spielzeit</h3>
             <PlaytimeChart daily={officer.playtime?.daily ?? []} />
             <div className="gold-line my-4" />
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h4 className="text-[12.5px] font-semibold text-[#c7d4e4]">Verlauf</h4>
+              <h4 className="text-[12.5px] font-semibold text-label-2">Verlauf</h4>
               {canTogglePlaytimeHistory && (
                 <button
                   type="button"
                   onClick={() => setPlaytimeHistoryExpanded((expanded) => !expanded)}
-                  className="inline-flex h-[30px] items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] font-medium text-[#d4af37] transition-colors hover:bg-[#0f2340] hover:text-white"
+                  className="inline-flex h-[30px] items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] font-medium text-gold transition-colors hover:bg-surface-2 hover:text-label"
                 >
                   {playtimeHistoryExpanded ? (
                     <>
@@ -977,29 +977,29 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <div className="space-y-2">
               {playtimeSessions.length > 0 ? (
                 visiblePlaytimeSessions.map((session) => (
-                  <div key={session.id} className="flex flex-col gap-1 rounded-[8px] bg-[#0f2340]/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={session.id} className="flex flex-col gap-1 rounded-[8px] bg-surface-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="text-[12.5px] font-medium text-[#edf4fb] truncate">{session.playerName}</p>
-                      <p className="text-[11px] text-[#7089a5] truncate">{formatDateTime(session.startedAt)} → {session.endedAt ? formatDateTime(session.endedAt) : 'online'}</p>
+                      <p className="text-[12.5px] font-medium text-label truncate">{session.playerName}</p>
+                      <p className="text-[11px] text-label-3 truncate">{formatDateTime(session.startedAt)} → {session.endedAt ? formatDateTime(session.endedAt) : 'online'}</p>
                     </div>
-                    <span className="text-[12.5px] font-semibold tabular-nums text-[#d4af37]">{formatDuration(session.durationMs)}</span>
+                    <span className="text-[12.5px] font-semibold tabular-nums text-gold">{formatDuration(session.durationMs)}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-[12.5px] text-[#4a6585]">Noch keine Spielzeit empfangen</p>
+                <p className="text-[12.5px] text-label-4">Noch keine Spielzeit empfangen</p>
               )}
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
+            className="glass-panel-elevated rounded-[12px] p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Abmeldungen</h3>
+              <h3 className="text-[13.5px] font-semibold text-label">Abmeldungen</h3>
               {canEditOfficer && officer.status !== 'TERMINATED' && (
                 <button
                   type="button"
                   onClick={openAbsenceModal}
-                  className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[11.5px] text-[#d4af37] transition-colors hover:bg-[#0f2340]"
+                  className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[11.5px] text-gold transition-colors hover:bg-surface-2"
                 >
                   <CalendarPlus size={12} strokeWidth={1.85} />
                   Eintragen
@@ -1007,39 +1007,39 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             {officer.absences?.active && (
-              <div className="mb-3 rounded-[10px] border border-[#38bdf8]/25 bg-[#06233a]/70 px-3.5 py-3">
+              <div className="mb-3 rounded-[10px] border border-cyan/15 bg-surface px-3.5 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-[#93c5fd]">Aktiv abgemeldet</p>
-                  <span className="text-[11.5px] tabular-nums text-[#d4af37]">
+                  <p className="text-[13px] font-semibold text-blue">Aktiv abgemeldet</p>
+                  <span className="text-[11.5px] tabular-nums text-gold">
                     bis {formatDateTime(officer.absences.active.endsAt)}
                   </span>
                 </div>
-                <p className="mt-1.5 text-[12.5px] text-[#c7d4e4]">{officer.absences.active.reason}</p>
+                <p className="mt-1.5 text-[12.5px] text-label-2">{officer.absences.active.reason}</p>
               </div>
             )}
             {(officer.absences?.recent ?? []).length > 0 ? (
               <div className="space-y-2">
                 {officer.absences!.recent.map((notice) => (
-                  <div key={notice.id} className="rounded-[8px] bg-[#0f2340]/70 px-3 py-2.5">
+                  <div key={notice.id} className="rounded-[8px] bg-surface-2 px-3 py-2.5">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-[12.5px] font-medium text-[#edf4fb]">
+                      <p className="text-[12.5px] font-medium text-label">
                         {formatDateTime(notice.startsAt)} → {formatDateTime(notice.endsAt)}
                       </p>
-                      <span className="text-[11px] text-[#38bdf8]">{notice.source}</span>
+                      <span className="text-[11px] text-cyan">{notice.source}</span>
                     </div>
-                    <p className="mt-1 text-[12px] text-[#8ea4bd]">{notice.reason}</p>
+                    <p className="mt-1 text-[12px] text-label-2">{notice.reason}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[12.5px] text-[#4a6585]">Keine Abmeldungen vorhanden</p>
+              <p className="text-[12.5px] text-label-4">Keine Abmeldungen vorhanden</p>
             )}
           </motion.div>
 
           {/* Trainings -- toggleable directly */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ausbildungen</h3>
+            className="glass-panel-elevated rounded-[12px] p-5">
+            <h3 className="text-[13.5px] font-semibold text-label mb-4">Ausbildungen</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {officer.trainings?.map((t) => (
                 <button
@@ -1050,22 +1050,22 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] transition-all duration-150 text-left',
                     t.completed
-                      ? 'bg-[#0f2340] hover:bg-[#142d52]'
+                      ? 'bg-surface-2 hover:bg-surface-3'
                       : trainingAvailableForOfficer(t.training, officer)
-                        ? 'hover:bg-[#0f2340]'
-                        : 'border border-dashed border-[#4a6585]/45 bg-[#061426]/70 hover:bg-[#0f2340]',
+                        ? 'hover:bg-surface-2'
+                        : 'border border-dashed border-line bg-canvas hover:bg-surface-2',
                     !canEditTrainings && 'cursor-not-allowed opacity-75'
                   )}
                 >
                   <div className={cn(
                     'h-[18px] w-[18px] rounded-[4px] flex items-center justify-center shrink-0 transition-colors',
-                    t.completed ? 'bg-[#d4af37]' : 'bg-[#18385f]'
+                    t.completed ? 'bg-gold' : 'bg-surface-3'
                   )}>
-                    {t.completed && <Check size={11} className="text-[#0b1f3a]" strokeWidth={3} />}
+                    {t.completed && <Check size={11} className="text-ink" strokeWidth={3} />}
                   </div>
                   <span className={cn(
                     'text-[13px]',
-                    t.completed ? 'text-[#eee]' : trainingAvailableForOfficer(t.training, officer) ? 'text-[#4a6585]' : 'text-[#3f5874]'
+                    t.completed ? 'text-label' : trainingAvailableForOfficer(t.training, officer) ? 'text-label-4' : 'text-label-4'
                   )}>{t.training.label}</span>
                 </button>
               ))}
@@ -1075,28 +1075,28 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           {/* Promotion history */}
           {officer.promotionLogs?.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Ranghistorie</h3>
+              className="glass-panel-elevated rounded-[12px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-label mb-4">Ranghistorie</h3>
               <div className="space-y-3">
                 {officer.promotionLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-3">
                     <div className={cn(
                       'h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 mt-0.5',
                       log.oldRank.sortOrder > log.newRank.sortOrder
-                        ? 'bg-[#0f2340]'
-                        : 'bg-[#0f2340]'
+                        ? 'bg-surface-2'
+                        : 'bg-surface-2'
                     )}>
                       {log.oldRank.sortOrder > log.newRank.sortOrder
-                        ? <TrendingUp size={13} className="text-[#999]" strokeWidth={1.75} />
-                        : <TrendingDown size={13} className="text-[#999]" strokeWidth={1.75} />
+                        ? <TrendingUp size={13} className="text-label-3" strokeWidth={1.75} />
+                        : <TrendingDown size={13} className="text-label-3" strokeWidth={1.75} />
                       }
                     </div>
                     <div className="flex-1">
-                      <p className="text-[13px] font-medium text-[#eee]">
+                      <p className="text-[13px] font-medium text-label">
                         {log.oldRank.name} → {log.newRank.name}
                       </p>
-                      <p className="text-[11.5px] text-[#999] mt-0.5">{formatDate(log.createdAt)} · {log.performedBy?.displayName ?? 'Gelöscht'}</p>
-                      {log.note && <p className="text-[11.5px] text-[#666] mt-0.5">{log.note}</p>}
+                      <p className="text-[11.5px] text-label-3 mt-0.5">{formatDate(log.createdAt)} · {log.performedBy?.displayName ?? 'Gelöscht'}</p>
+                      {log.note && <p className="text-[11.5px] text-label-2 mt-0.5">{log.note}</p>}
                     </div>
                   </div>
                 ))}
@@ -1106,7 +1106,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {canViewContracts && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.105 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
+              className="glass-panel-elevated rounded-[12px] p-5">
               <ContractSection
                 contracts={officer.contracts ?? []}
                 application={officer.jobApplication ?? null}
@@ -1122,10 +1122,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {openSanctions.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.11 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
+              className="glass-panel-elevated rounded-[12px] p-5">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <h3 className="text-[13.5px] font-semibold text-[#eee]">Offene Sanktionen</h3>
-                <span className="rounded-full border border-[#b45309]/40 bg-[#1d1608]/70 px-2.5 py-1 text-[11px] font-medium text-[#fbbf24]">
+                <h3 className="text-[13.5px] font-semibold text-label">Offene Sanktionen</h3>
+                <span className="rounded-full border border-orange/24 bg-gold/8 px-2.5 py-1 text-[11px] font-medium text-yellow">
                   {openSanctions.length} offen
                 </span>
               </div>
@@ -1145,8 +1145,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {officer.sanctions?.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Sanktionshistorie</h3>
+              className="glass-panel-elevated rounded-[12px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-label mb-4">Sanktionshistorie</h3>
               <div className="space-y-2.5">
                 {officer.sanctions.map((sanction) => (
                   <SanctionCard key={sanction.id} sanction={sanction} canSanction={canSanction}
@@ -1165,51 +1165,51 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           {/* Quick actions */}
           {!editing && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Markierung</h3>
+              className="glass-panel-elevated rounded-[12px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-label mb-3">Markierung</h3>
               <div className="mb-4">
                 {canEditOfficer ? (
                   <FlagPicker value={officer.flag ?? null} onChange={handleFlagChange} />
                 ) : (
-                  <p className="text-[12.5px] text-[#4a6585]">Keine Bearbeitungsrechte</p>
+                  <p className="text-[12.5px] text-label-4">Keine Bearbeitungsrechte</p>
                 )}
               </div>
               <div className="gold-line my-3" />
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-3">Aktionen</h3>
+              <h3 className="text-[13.5px] font-semibold text-label mb-3">Aktionen</h3>
               <div className="space-y-1.5">
                 {canRankChange && officer.status !== 'TERMINATED' && higherRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setPromoteModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-label-3 hover:bg-surface-2 transition-colors text-left">
                     <TrendingUp size={15} strokeWidth={1.75} /> Befördern
                   </button>
                 )}
                 {canRankChange && officer.status !== 'TERMINATED' && openRankChangeLists.length > 0 && (
                   <button onClick={() => openAddToListModal('PROMOTION')}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-label-3 hover:bg-surface-2 transition-colors text-left">
                     <ListPlus size={15} strokeWidth={1.75} /> Zur Up-Rank-Liste
                   </button>
                 )}
                 {canRankChange && officer.status !== 'TERMINATED' && lowerRanks.length > 0 && (
                   <button onClick={() => { setNewRankId(''); setNewBadgeNumber(''); setRankChangeNote(''); setDemoteModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-label-3 hover:bg-surface-2 transition-colors text-left">
                     <TrendingDown size={15} strokeWidth={1.75} /> Degradieren
                   </button>
                 )}
                 {canRankChange && officer.status !== 'TERMINATED' && openRankChangeLists.length > 0 && (
                   <button onClick={() => openAddToListModal('DEMOTION')}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-label-3 hover:bg-surface-2 transition-colors text-left">
                     <ListPlus size={15} strokeWidth={1.75} /> Zur D-Rank-Liste
                   </button>
                 )}
                 {canManageNotes && (
                   <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#999] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-label-3 hover:bg-surface-2 transition-colors text-left">
                     <StickyNote size={15} strokeWidth={1.75} /> Notiz hinzufügen
                   </button>
                 )}
                 {canSanction && officer.status !== 'TERMINATED' && (
                   <button onClick={openSanctionModal}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f59e0b] hover:bg-[#1d1608] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-yellow hover:bg-gold/12 transition-colors text-left">
                     <Gavel size={15} strokeWidth={1.75} /> Sanktion
                   </button>
                 )}
@@ -1218,8 +1218,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     className={cn(
                       'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] transition-colors text-left',
                       officer.promotionBlocked
-                        ? 'text-[#34d399] hover:bg-[#0f2340]'
-                        : 'text-[#f59e0b] hover:bg-[#1d1608]',
+                        ? 'text-green hover:bg-surface-2'
+                        : 'text-yellow hover:bg-gold/12',
                     )}>
                     <CircleSlash size={15} strokeWidth={1.75} />
                     {officer.promotionBlocked ? 'Uprank-Sperre aufheben' : 'Uprank-Sperre setzen'}
@@ -1227,18 +1227,18 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                 )}
                 {canEditOfficer && officer.status === 'TERMINATED' ? (
                   <button onClick={handleReactivate}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#34d399] hover:bg-[#0f2340] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-green hover:bg-surface-2 transition-colors text-left">
                     <UserCheck size={15} strokeWidth={1.75} /> Reaktivieren
                   </button>
                 ) : canTerminate ? (
                   <button onClick={() => { setTerminateReason(''); setTerminateModal(true) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-red hover:bg-red/14 transition-colors text-left">
                     <UserX size={15} strokeWidth={1.75} /> Kündigen
                   </button>
                 ) : null}
                 {canDeleteOfficer && (
                   <button onClick={() => setDeleteModal(true)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-[#f87171] hover:bg-[#1c1111] transition-colors text-left">
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-red hover:bg-red/14 transition-colors text-left">
                     <Trash2 size={15} strokeWidth={1.75} /> Löschen
                   </button>
                 )}
@@ -1248,30 +1248,30 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Notes */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-            className="glass-panel-elevated rounded-[14px] p-5">
+            className="glass-panel-elevated rounded-[12px] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Notizen</h3>
+              <h3 className="text-[13.5px] font-semibold text-label">Notizen</h3>
               {canManageNotes && (
                 <button onClick={() => { setNoteForm({ title: '', content: '' }); setNoteModal(true) }}
-                  className="p-1 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                  <Plus size={14} className="text-[#4a6585]" />
+                  className="p-1 rounded-[6px] hover:bg-surface-2 transition-colors">
+                  <Plus size={14} className="text-label-4" />
                 </button>
               )}
             </div>
             {officer.officerNotes?.length > 0 ? (
               <div className="space-y-2.5">
                 {officer.officerNotes.map((note) => (
-                  <div key={note.id} className="bg-[#0f2340] rounded-[8px] p-3">
+                  <div key={note.id} className="bg-surface-2 rounded-[8px] p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        {note.title && <p className="text-[13px] font-medium text-[#eee] mb-1">{note.title}</p>}
-                        <p className="text-[13px] text-[#999] leading-relaxed">{note.content}</p>
+                        {note.title && <p className="text-[13px] font-medium text-label mb-1">{note.title}</p>}
+                        <p className="text-[13px] text-label-3 leading-relaxed">{note.content}</p>
                       </div>
                       {canManageNotes && (
                         <button
                           type="button"
                           onClick={() => handleDeleteNote(note.id)}
-                          className="shrink-0 rounded-[6px] p-1 text-[#4a6585] transition-colors hover:bg-[#1c1111] hover:text-[#f87171]"
+                          className="shrink-0 rounded-[6px] p-1 text-label-4 transition-colors hover:bg-red/14 hover:text-red"
                           aria-label="Notiz löschen"
                           title="Notiz löschen"
                         >
@@ -1279,35 +1279,35 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                         </button>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#4a6585] mt-2">{formatDate(note.createdAt)} · {note.author?.displayName ?? 'Gelöscht'}</p>
+                    <p className="text-[11px] text-label-4 mt-2">{formatDate(note.createdAt)} · {note.author?.displayName ?? 'Gelöscht'}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[12.5px] text-[#4a6585]">Keine Notizen vorhanden</p>
+              <p className="text-[12.5px] text-label-4">Keine Notizen vorhanden</p>
             )}
           </motion.div>
 
           {patrolTime && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }}
-              className="glass-panel-elevated rounded-[14px] p-5">
-              <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4">Streifenzeit</h3>
+              className="glass-panel-elevated rounded-[12px] p-5">
+              <h3 className="text-[13.5px] font-semibold text-label mb-4">Streifenzeit</h3>
               <dl className="grid grid-cols-2 gap-3">
                 <div>
-                  <dt className="text-[11.5px] text-[#999] mb-1">Gesamt</dt>
-                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{fmt(patrolTime.totalSeconds)}</dd>
+                  <dt className="text-[11.5px] text-label-3 mb-1">Gesamt</dt>
+                  <dd className="text-[13.5px] font-semibold text-label tabular-nums">{fmt(patrolTime.totalSeconds)}</dd>
                 </div>
                 <div>
-                  <dt className="text-[11.5px] text-[#999] mb-1">Letzte 7 Tage</dt>
-                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{fmt(patrolTime.last7DaysSeconds)}</dd>
+                  <dt className="text-[11.5px] text-label-3 mb-1">Letzte 7 Tage</dt>
+                  <dd className="text-[13.5px] font-semibold text-label tabular-nums">{fmt(patrolTime.last7DaysSeconds)}</dd>
                 </div>
                 <div>
-                  <dt className="text-[11.5px] text-[#999] mb-1">Streifen</dt>
-                  <dd className="text-[13.5px] font-semibold text-[#edf4fb] tabular-nums">{patrolTime.sessionCount}</dd>
+                  <dt className="text-[11.5px] text-label-3 mb-1">Streifen</dt>
+                  <dd className="text-[13.5px] font-semibold text-label tabular-nums">{patrolTime.sessionCount}</dd>
                 </div>
                 <div>
-                  <dt className="text-[11.5px] text-[#999] mb-1">Letzte Streife</dt>
-                  <dd className="text-[13.5px] font-semibold text-[#edf4fb]">
+                  <dt className="text-[11.5px] text-label-3 mb-1">Letzte Streife</dt>
+                  <dd className="text-[13.5px] font-semibold text-label">
                     {patrolTime.lastSessionAt ? new Date(patrolTime.lastSessionAt).toLocaleDateString('de-DE') : '—'}
                   </dd>
                 </div>
@@ -1319,8 +1319,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Delete modal */}
       <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Officer löschen">
-        <p className="text-[13px] text-[#888] mb-5">
-          Soll <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
+        <p className="text-[13px] text-label-2 mb-5">
+          Soll <strong className="text-label">{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setDeleteModal(false)}>Abbrechen</Button>
@@ -1331,8 +1331,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Terminate modal */}
       <Modal open={terminateModal} onClose={() => setTerminateModal(false)} title="Officer kündigen">
         <div className="space-y-4">
-          <p className="text-[13px] text-[#888]">
-            <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong> wird gekündigt.
+          <p className="text-[13px] text-label-2">
+            <strong className="text-label">{officer.firstName} {officer.lastName}</strong> wird gekündigt.
           </p>
           <Textarea label="Kündigungsgrund" value={terminateReason} onChange={(e) => setTerminateReason(e.target.value)} rows={3} required placeholder="Grund..." />
           <div className="flex justify-end gap-2">
@@ -1344,11 +1344,11 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
       <Modal open={sanctionModal} onClose={closeSanctionModal} title={editingSanction ? 'Sanktion bearbeiten' : 'Sanktion ausstellen'}>
         <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-[10px] border border-[#18385f]/60 bg-[#0a1e38]/70 px-3.5 py-3">
-            <Gavel size={15} className="text-[#f59e0b] shrink-0" strokeWidth={1.75} />
-            <p className="text-[13px] text-[#9fb0c4]">
+          <div className="flex items-center gap-3 rounded-[10px] border border-line bg-surface px-3.5 py-3">
+            <Gavel size={15} className="text-yellow shrink-0" strokeWidth={1.75} />
+            <p className="text-[13px] text-label-2">
               {editingSanction ? 'Sanktion bearbeiten für' : 'Neue Sanktion für'}{' '}
-              <strong className="text-[#eee] font-semibold">{officer.firstName} {officer.lastName}</strong>
+              <strong className="text-label font-semibold">{officer.firstName} {officer.lastName}</strong>
             </p>
           </div>
 
@@ -1370,23 +1370,23 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
           />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Geldstrafe</p>
-              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'FINE' ? 'text-[#d4af37]' : 'text-[#4a6585]')}>
+            <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-label-2">Geldstrafe</p>
+              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'FINE' ? 'text-gold' : 'text-label-4')}>
                 {sanctionForm.measureType === 'FINE' ? formatFineAmount(selectedSanctionRule.fineAmount) : 'Nicht ausgewählt'}
               </p>
             </div>
-            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-              <p className="text-[12.5px] font-medium text-[#9fb0c4]">SG-Runden</p>
-              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'SG_ROUNDS' ? 'text-[#7dd3fc]' : 'text-[#4a6585]')}>
+            <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-label-2">SG-Runden</p>
+              <p className={cn('mt-1 text-[14px] font-semibold', sanctionForm.measureType === 'SG_ROUNDS' ? 'text-cyan' : 'text-label-4')}>
                 {sanctionForm.measureType === 'SG_ROUNDS' ? selectedSanctionRule.sgRounds : 'Nicht ausgewählt'}
               </p>
             </div>
           </div>
 
-          <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-            <p className="text-[12.5px] font-medium text-[#9fb0c4]">Zusätzliche Grade-Folge</p>
-            <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{selectedSanctionRule.penalty}</p>
+          <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+            <p className="text-[12.5px] font-medium text-label-2">Zusätzliche Grade-Folge</p>
+            <p className="mt-1 text-[13px] font-medium leading-snug text-label">{selectedSanctionRule.penalty}</p>
           </div>
 
           {editingSanction ? (
@@ -1427,8 +1427,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Promote modal */}
       <Modal open={promoteModal} onClose={() => setPromoteModal(false)} title="Beförderung">
         <div className="space-y-4">
-          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
-            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#eee]">{officer.rank?.name}</strong></p>
+          <div className="px-3 py-2.5 bg-surface-2 rounded-[8px]">
+            <p className="text-[13px] text-label-2">Aktuell: <strong className="text-label">{officer.rank?.name}</strong></p>
           </div>
           <Select label="Neuer Rang (höher)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={higherRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
@@ -1444,8 +1444,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Demote modal */}
       <Modal open={demoteModal} onClose={() => setDemoteModal(false)} title="Degradierung">
         <div className="space-y-4">
-          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
-            <p className="text-[13px] text-[#888]">Aktuell: <strong className="text-[#eee]">{officer.rank?.name}</strong></p>
+          <div className="px-3 py-2.5 bg-surface-2 rounded-[8px]">
+            <p className="text-[13px] text-label-2">Aktuell: <strong className="text-label">{officer.rank?.name}</strong></p>
           </div>
           <Select label="Neuer Rang (niedriger)" value={newRankId} onChange={(e) => setNewRankId(e.target.value)}
             options={lowerRanks.map(r => ({ value: r.id, label: r.name }))} placeholder="Rang wählen..." />
@@ -1477,10 +1477,10 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         title={addToListModal === 'PROMOTION' ? 'Zur Up-Rank-Liste hinzufügen' : 'Zur D-Rank-Liste hinzufügen'}
       >
         <div className="space-y-4">
-          <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
-            <p className="text-[13px] text-[#888]">
-              Officer: <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>
-              <span className="ml-2 text-[#999]">· Aktuell: {officer.rank?.name}</span>
+          <div className="px-3 py-2.5 bg-surface-2 rounded-[8px]">
+            <p className="text-[13px] text-label-2">
+              Officer: <strong className="text-label">{officer.firstName} {officer.lastName}</strong>
+              <span className="ml-2 text-label-3">· Aktuell: {officer.rank?.name}</span>
             </p>
           </div>
           <Select
@@ -1523,8 +1523,8 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
       <Modal open={absenceModal} onClose={() => setAbsenceModal(false)} title="Abmeldung eintragen">
         <div className="space-y-4">
-          <p className="text-[13px] text-[#888]">
-            Abmeldung für <strong className="text-[#eee]">{officer.firstName} {officer.lastName}</strong>.
+          <p className="text-[13px] text-label-2">
+            Abmeldung für <strong className="text-label">{officer.firstName} {officer.lastName}</strong>.
           </p>
           <DateField
             label="Abgemeldet bis"
@@ -1557,24 +1557,24 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       >
         {pendingTrainingOverride && (
           <div className="space-y-4">
-            <div className="rounded-[10px] border border-[#d4af37]/25 bg-[#1d1608]/60 px-3.5 py-3">
-              <p className="text-[13px] font-medium text-[#edf4fb]">
+            <div className="rounded-[10px] border border-gold/25 bg-gold/7 px-3.5 py-3">
+              <p className="text-[13px] font-medium text-label">
                 {pendingTrainingOverride.training.label}
               </p>
-              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+              <p className="mt-1 text-[12.5px] text-label-2">
                 Vorgesehen ab: {pendingTrainingOverride.training.minRank?.name ?? 'Mindestrang'}
               </p>
             </div>
-            <div className="rounded-[10px] border border-[#18385f]/70 bg-[#0a1a33]/70 px-3.5 py-3">
-              <p className="text-[12px] text-[#8ea4bd]">Officer</p>
-              <p className="mt-1 text-[14px] font-semibold text-white">
+            <div className="rounded-[10px] border border-line bg-surface px-3.5 py-3">
+              <p className="text-[12px] text-label-2">Officer</p>
+              <p className="mt-1 text-[14px] font-semibold text-label">
                 {officer.firstName} {officer.lastName}
               </p>
-              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+              <p className="mt-1 text-[12.5px] text-label-2">
                 DN {displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}
               </p>
             </div>
-            <p className="text-[13px] leading-relaxed text-[#9fb0c4]">
+            <p className="text-[13px] leading-relaxed text-label-2">
               Möchtest du diese Ausbildung wirklich exakt diesem Officer geben?
             </p>
             <div className="flex justify-end gap-2 pt-1">
@@ -1599,15 +1599,15 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       <Modal open={!!sanctionToDelete} onClose={() => setSanctionToDelete(null)} title="Sanktion löschen">
         {sanctionToDelete && (
           <div className="space-y-4">
-            <div className="rounded-[10px] border border-[#7f1d1d]/50 bg-[#2a1212]/60 px-3.5 py-3">
-              <p className="text-[13px] font-semibold text-[#fca5a5]">
+            <div className="rounded-[10px] border border-red/15 bg-red/8 px-3.5 py-3">
+              <p className="text-[13px] font-semibold text-red">
                 {penalGradeLabel(sanctionToDelete.penalGrade)}
               </p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-[#c7d4e4]">
+              <p className="mt-1 text-[12.5px] leading-relaxed text-label-2">
                 {sanctionToDelete.reason}
               </p>
             </div>
-            <p className="text-[13px] text-[#9fb0c4]">
+            <p className="text-[13px] text-label-2">
               Diese Sanktion wird dauerhaft gelöscht.
             </p>
             <div className="flex justify-end gap-2 pt-1">
@@ -1657,7 +1657,7 @@ function ContractSection({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-[13.5px] font-semibold text-[#eee]">Arbeitsvertrag</h3>
+        <h3 className="text-[13.5px] font-semibold text-label">Arbeitsvertrag</h3>
         {canManage && !openContract && !signedContract && (
           <Button size="sm" onClick={onCreate} loading={busy}>
             <Send size={13} strokeWidth={1.75} />
@@ -1667,11 +1667,11 @@ function ContractSection({
       </div>
 
       {!signedContract && (
-        <div className="mb-3 rounded-[10px] border border-[#7f1d1d]/50 bg-[#2a1620]/50 px-3 py-2.5">
-          <p className="text-[12.5px] font-semibold text-[#fca5a5]">
+        <div className="mb-3 rounded-[10px] border border-red/15 bg-red/7 px-3 py-2.5">
+          <p className="text-[12.5px] font-semibold text-red">
             Einstellung noch nicht abgeschlossen
           </p>
-          <p className="mt-1 text-[11.5px] leading-5 text-[#f3b7b7]">
+          <p className="mt-1 text-[11.5px] leading-5 text-red">
             {contracts.length === 0
               ? 'Für diesen Mitarbeiter liegt kein Arbeitsvertrag vor. Beantrage die Unterschrift — der Officer bekommt seinen persönlichen Link per Discord-DM (oder im Vertrags-Channel).'
               : 'Der Arbeitsvertrag ist noch nicht unterschrieben. Erst mit Unterschrift gilt der Mitarbeiter als vollständig eingestellt.'}
@@ -1680,28 +1680,28 @@ function ContractSection({
       )}
 
       {application && (
-        <div className="mb-3 rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/45 px-3 py-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8ea4bd]">
+        <div className="mb-3 rounded-[10px] border border-line bg-white/[0.03] px-3 py-2.5">
+          <p className="text-[11px] font-semibold text-label-2">
             Zugehörige Bewerbung
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <Link
               href="/hr?tab=applications"
-              className="text-[13px] font-medium text-white hover:text-[#d4af37]"
+              className="text-[13px] font-medium text-label hover:text-gold-bright"
             >
               {application.applicantDisplayName}
             </Link>
-            <span className="text-[11.5px] text-[#6b8299]">
+            <span className="text-[11.5px] text-label-3">
               eingereicht {formatDate(application.submittedAt)}
             </span>
           </div>
-          <p className="mt-0.5 text-[11.5px] text-[#8ea4bd]">{application.statusText}</p>
+          <p className="mt-0.5 text-[11.5px] text-label-2">{application.statusText}</p>
         </div>
       )}
 
       {contracts.length === 0 ? (
         !officerHasDiscordId ? (
-          <p className="text-[12.5px] leading-5 text-[#8ea4bd]">
+          <p className="text-[12.5px] leading-5 text-label-2">
             Ohne hinterlegte Discord-ID kann keine DM zugestellt werden — die Aufforderung landet
             dann im Vertrags-Channel.
           </p>
@@ -1714,15 +1714,15 @@ function ContractSection({
             return (
               <div
                 key={contract.id}
-                className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/45 p-3"
+                className="rounded-[10px] border border-line bg-white/[0.03] p-3"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[13px] font-medium text-[#eee]">{contract.title}</p>
+                      <p className="text-[13px] font-medium text-label">{contract.title}</p>
                       <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
                     </div>
-                    <p className="mt-1 text-[11.5px] text-[#8ea4bd]">
+                    <p className="mt-1 text-[11.5px] text-label-2">
                       {contract.status === 'SIGNED'
                         ? `Unterschrieben am ${formatDateTime(contract.signedAt)} von ${contract.signedName ?? '—'}`
                         : contract.status === 'DECLINED'
@@ -1732,7 +1732,7 @@ function ContractSection({
                             : 'Noch nicht versendet'}
                     </p>
                     {contract.lastSendError && (
-                      <p className="mt-1 text-[11.5px] text-[#fca5a5]">{contract.lastSendError}</p>
+                      <p className="mt-1 text-[11.5px] text-red">{contract.lastSendError}</p>
                     )}
                   </div>
 
@@ -1763,7 +1763,7 @@ function ContractSection({
       )}
 
       {!signedContract && openContract && (
-        <p className="mt-3 rounded-[10px] border border-[#4a3a12]/50 bg-[#302712]/40 px-3 py-2 text-[11.5px] leading-5 text-[#d8c68c]">
+        <p className="mt-3 rounded-[10px] border border-gold/13 bg-gold/5 px-3 py-2 text-[11.5px] leading-5 text-gold-bright">
           Jeder Officer hat seinen eigenen Vertragslink — „Vertragsnachricht senden“ stellt ihn
           erneut per Discord-DM zu.
         </p>
@@ -1775,20 +1775,20 @@ function ContractSection({
 function InfoRow({ label, value, mono, children }: { label: string; value?: string; mono?: boolean; children?: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11.5px] text-[#999] mb-1">{label}</p>
-      {children || <p className={cn('text-[13.5px] text-[#eee]', mono && 'font-mono')}>{value || '—'}</p>}
+      <p className="text-[11.5px] text-label-3 mb-1">{label}</p>
+      {children || <p className={cn('text-[13.5px] text-label', mono && 'font-mono')}>{value || '—'}</p>}
     </div>
   )
 }
 
 function DutyMetric({ label, value, active }: { label: string; value: string; active?: boolean }) {
   return (
-    <div className="rounded-[9px] border border-[#1e3a5c]/50 bg-[#0a1e38]/65 px-3.5 py-3">
+    <div className="rounded-[9px] border border-line bg-surface px-3.5 py-3">
       <div className="flex items-center gap-2">
-        <Timer size={13} className={active ? 'text-[#22c55e]' : 'text-[#d4af37]'} strokeWidth={1.75} />
-        <p className="text-[11px] font-medium uppercase text-[#4a6585]">{label}</p>
+        <Timer size={13} className={active ? 'text-green' : 'text-gold'} strokeWidth={1.75} />
+        <p className="text-[11px] font-medium uppercase text-label-4">{label}</p>
       </div>
-      <p className={cn('mt-2 text-[13px] font-semibold tabular-nums', active ? 'text-[#86efac]' : 'text-[#edf4fb]')}>{value}</p>
+      <p className={cn('mt-2 text-[13px] font-semibold tabular-nums', active ? 'text-green' : 'text-label')}>{value}</p>
     </div>
   )
 }
@@ -1805,16 +1805,16 @@ function PlaytimeChart({
         const height = Math.max(8, Math.round((day.durationMs / max) * 118))
         return (
           <div key={day.label} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
-            <div className="flex h-[122px] w-full items-end justify-center rounded-[7px] bg-[#061426]/55 px-1">
+            <div className="flex h-[122px] w-full items-end justify-center rounded-[7px] bg-canvas px-1">
               <div
-                className="w-full max-w-[28px] rounded-t-[6px] bg-gradient-to-t from-[#1d4ed8] to-[#38bdf8] shadow-[0_0_12px_rgba(56,189,248,0.18)]"
+                className="w-full max-w-[28px] rounded-t-[6px] bg-gradient-to-t from-blue to-cyan shadow-[0_0_12px_rgba(100,210,255,0.18)]"
                 style={{ height }}
                 title={day.durationLabel}
               />
             </div>
             <div className="text-center">
-              <p className="text-[10.5px] font-medium text-[#8ea4bd]">{day.label}</p>
-              <p className="text-[10px] tabular-nums text-[#d4af37]">{day.durationLabel}</p>
+              <p className="text-[11px] font-medium text-label-2">{day.label}</p>
+              <p className="text-[11px] tabular-nums text-gold">{day.durationLabel}</p>
             </div>
           </div>
         )
@@ -1831,11 +1831,11 @@ function FlagPicker({
   onChange: (v: string | null) => void
 }) {
   const buttons: Array<{ id: string | null; label: string; ring: string; bg: string }> = [
-    { id: null, label: 'Keine', ring: 'ring-[#234568]', bg: 'bg-[#0a1a33]' },
-    { id: 'RED', label: 'Rot', ring: 'ring-[#ef4444]/70', bg: 'bg-[#ef4444]' },
-    { id: 'ORANGE', label: 'Orange', ring: 'ring-[#f97316]/70', bg: 'bg-[#f97316]' },
-    { id: 'YELLOW', label: 'Gelb', ring: 'ring-[#facc15]/70', bg: 'bg-[#facc15]' },
-    { id: 'BLUE', label: 'Blau', ring: 'ring-[#38bdf8]/70', bg: 'bg-[#38bdf8]' },
+    { id: null, label: 'Keine', ring: 'ring-line', bg: 'bg-surface' },
+    { id: 'RED', label: 'Rot', ring: 'ring-red/42', bg: 'bg-red' },
+    { id: 'ORANGE', label: 'Orange', ring: 'ring-orange/42', bg: 'bg-orange' },
+    { id: 'YELLOW', label: 'Gelb', ring: 'ring-yellow/42', bg: 'bg-yellow' },
+    { id: 'BLUE', label: 'Blau', ring: 'ring-cyan/42', bg: 'bg-cyan' },
   ]
   return (
     <div className="flex gap-1.5 flex-wrap">
@@ -1848,13 +1848,13 @@ function FlagPicker({
             onClick={() => onChange(b.id)}
             className={cn(
               'inline-flex items-center gap-2 h-[34px] px-3 rounded-[8px] text-[12.5px] font-medium border transition-all',
-              active ? `${b.ring} ring-2 ring-inset border-transparent text-white` : 'border-[#18385f]/60 text-[#8ea4bd] hover:text-white hover:border-[#234568]'
+              active ? `${b.ring} ring-2 ring-inset border-transparent text-label` : 'border-line text-label-2 hover:text-label hover:border-line'
             )}
           >
             <span
               className={cn(
                 'h-[12px] w-[12px] rounded-full border',
-                b.id ? `${b.bg} border-transparent` : 'bg-transparent border-[#4a6585]'
+                b.id ? `${b.bg} border-transparent` : 'bg-transparent border-line-strong'
               )}
             />
             {b.label}

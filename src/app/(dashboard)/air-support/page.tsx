@@ -37,7 +37,7 @@ export default function AirSupportPage() {
         { value: 'OTHER', label: 'Sonstiges' },
       ]}
       defaultType="AIR_SUPPORT_TRAINING"
-      color="#38bdf8"
+      color="#64d2ff"
       viewPermission="air-support:view"
       managePermission="air-support:manage"
     />

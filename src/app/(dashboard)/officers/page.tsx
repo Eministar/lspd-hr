@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
 import { Select } from '@/components/ui/select'
+import { fieldClass } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { UnitBadges } from '@/components/officers/unit-badges'
 import { useToast } from '@/components/ui/toast'
@@ -47,6 +48,7 @@ import { notifyLiveUpdate } from '@/lib/live-updates'
 import { displayBadgeNumber, formatBadgeNumber } from '@/lib/badge-number'
 import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import { RankNumberBadge } from '@/components/ranks/rank-number-badge'
+import { ScrollShelf } from '@/components/ui/scroll-shelf'
 
 interface Training {
   id: string
@@ -121,7 +123,7 @@ function DropRankZone({ rankId, canHighlight, children }: { rankId: string; canH
       ref={setNodeRef}
       className={cn(
         'w-full min-w-0 rounded-[10px] transition-[box-shadow] duration-150',
-        canHighlight && isOver && 'ring-1 ring-[#d4af37]/50 ring-inset'
+        canHighlight && isOver && 'ring-1 ring-gold/50 ring-inset'
       )}
     >
       {children}
@@ -131,10 +133,10 @@ function DropRankZone({ rankId, canHighlight, children }: { rankId: string; canH
 
 const FLAG_OPTIONS: Array<{ id: string | null; label: string; color: string }> = [
   { id: null, label: 'Keine', color: 'transparent' },
-  { id: 'RED', label: 'Rot', color: '#ef4444' },
-  { id: 'ORANGE', label: 'Orange', color: '#f97316' },
-  { id: 'YELLOW', label: 'Gelb', color: '#facc15' },
-  { id: 'BLUE', label: 'Blau', color: '#38bdf8' },
+  { id: 'RED', label: 'Rot', color: '#ff453a' },
+  { id: 'ORANGE', label: 'Orange', color: '#ff9f0a' },
+  { id: 'YELLOW', label: 'Gelb', color: '#ffd60a' },
+  { id: 'BLUE', label: 'Blau', color: '#64d2ff' },
 ]
 
 function trainingAvailableForOfficer(training: Training, officer: Officer) {
@@ -151,17 +153,17 @@ function DiscordMemberBadge({ officer, compact = false }: { officer: Pick<Office
       ? inGuild ? 'Auf Discord' : 'Nicht auf Discord'
       : 'Discord ungeprüft'
   const className = !hasDiscordId || !checked
-    ? 'border-[#234568]/50 bg-[#0b1f3a]/70 text-[#6b8299]'
+    ? 'bg-white/[0.06] text-label-3'
     : inGuild
-      ? 'border-[#166534]/50 bg-[#052e1a]/70 text-[#86efac]'
-      : 'border-[#7f1d1d]/55 bg-[#2a1212]/70 text-[#fca5a5]'
+      ? 'bg-green/12 text-green'
+      : 'bg-red/12 text-red'
   const Icon = hasDiscordId && checked && inGuild ? MessageCircle : CircleSlash
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-[6px] border font-medium whitespace-nowrap',
-        compact ? 'px-1.5 py-[2px] text-[10.5px]' : 'px-2 py-[3px] text-[11.5px]',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full font-medium',
+        compact ? 'h-5 px-2 text-[11px]' : 'h-6 px-2.5 text-[12px]',
         className
       )}
       title={hasDiscordId ? `Discord-ID: ${officer.discordId}` : 'Keine Discord-ID am Officer hinterlegt'}
@@ -190,16 +192,16 @@ function FlagButton({
       disabled={disabled}
       aria-label={value ? `Markierung: ${getFlagLabel(value)}` : 'Markierung setzen'}
       className={cn(
-        'inline-flex items-center justify-center rounded-full border transition-all',
+        'inline-flex items-center justify-center rounded-full border transition-[scale,border-color] duration-150 ease-out',
         dim,
         disabled && 'opacity-50 cursor-not-allowed',
-        !disabled && 'hover:scale-110',
-        value ? 'border-transparent shadow-sm' : 'border-[#4a6585]/60 hover:border-[#d4af37]/60'
+        !disabled && 'hover:scale-110 active:scale-95',
+        value ? 'border-transparent' : 'border-line-strong hover:border-white/30'
       )}
       style={{ backgroundColor: value ? getFlagColor(value) : 'transparent' }}
       onClick={(e) => e.stopPropagation()}
     >
-      {!value && <Flag size={size === 'lg' ? 13 : 10} className="text-[#4a6585]" strokeWidth={1.75} />}
+      {!value && <Flag size={size === 'lg' ? 13 : 10} className="text-label-4" strokeWidth={1.75} />}
     </button>
   )
 
@@ -212,7 +214,7 @@ function FlagButton({
         <Popover.Content
           align="end"
           sideOffset={6}
-          className="z-[200] glass-panel-elevated rounded-[10px] p-1.5 border border-[#234568]/90 shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+          className="lspd-popover z-[200] rounded-full p-1.5 data-[state=open]:animate-[lspd-pop-in_160ms_var(--ease-apple)]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-1">
@@ -225,12 +227,12 @@ function FlagButton({
                     onClick={() => onChange(opt.id)}
                     title={opt.label}
                     className={cn(
-                      'h-[28px] w-[28px] rounded-full border flex items-center justify-center transition-all',
-                      active ? 'ring-2 ring-[#d4af37] ring-offset-1 ring-offset-[#0b1f3a] border-transparent' : 'border-[#234568]/70 hover:border-[#d4af37]/60'
+                      'flex h-7 w-7 items-center justify-center rounded-full border transition-[scale,box-shadow] duration-150 hover:scale-110 active:scale-95',
+                      active ? 'border-transparent ring-2 ring-label ring-offset-2 ring-offset-surface-3' : 'border-line-strong'
                     )}
                     style={{ backgroundColor: opt.id ? opt.color : 'transparent' }}
                   >
-                    {!opt.id && <Flag size={12} className="text-[#8ea4bd]" strokeWidth={1.75} />}
+                    {!opt.id && <Flag size={12} className="text-label-2" strokeWidth={1.75} />}
                   </button>
                 </Popover.Close>
               )
@@ -276,25 +278,18 @@ function DraggableOfficerRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'transition-colors duration-100',
-        officer.flag ? getFlagRowClass(officer.flag) : 'hover:bg-[#0f2340]',
+        'group transition-colors duration-100',
+        officer.flag ? getFlagRowClass(officer.flag) : 'hover:bg-surface-2',
         isDragging && 'opacity-40 z-10',
-        rowIndex > 0 && 'border-t border-[#18385f]'
+        rowIndex > 0 && 'border-t border-line'
       )}
     >
-      <td className="px-0 py-0 w-[3px]" aria-hidden>
-        {officer.flag && (
-          <span
-            className="block h-full w-[3px]"
-            style={{ backgroundColor: getFlagColor(officer.flag) }}
-          />
-        )}
-      </td>
+      <td className="w-[3px] p-0" aria-hidden />
       <td className="px-1 py-2 w-7 text-center">
         {canDrag ? (
           <button
             type="button"
-            className="inline-flex p-1 rounded-md text-[#4a6585] hover:text-[#d4af37] cursor-grab active:cursor-grabbing"
+            className="inline-flex cursor-grab rounded-[6px] p-1 text-label-4 transition-colors hover:bg-white/[0.06] hover:text-label-2 active:cursor-grabbing"
             aria-label="Zum Verschieben ziehen"
             {...attributes}
             {...listeners}
@@ -306,16 +301,29 @@ function DraggableOfficerRow({
           <span className="inline-block w-5" />
         )}
       </td>
-      <td className="px-2 py-2.5 font-mono text-[12px] text-[#b7c5d8] align-middle">
-        {displayBadgeNumber(officer.badgeNumber)}
+      <td className="px-2 py-2.5 align-middle font-mono text-[12.5px] tabular-nums text-label-2">
+        <span className="inline-flex items-center gap-1.5">
+          {officer.flag && (
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: getFlagColor(officer.flag) }}
+              aria-label={`Markierung: ${getFlagLabel(officer.flag)}`}
+            />
+          )}
+          {displayBadgeNumber(officer.badgeNumber)}
+        </span>
       </td>
-      <td className="sticky left-0 z-[1] bg-[#131f2f] px-3 py-2.5 align-middle min-w-0 overflow-hidden shadow-[1px_0_0_#ffffff12]">
+      <td
+        className="sticky left-0 z-[1] min-w-0 overflow-hidden bg-surface group-hover:bg-[color-mix(in_srgb,#fff_2.5%,var(--color-surface))] px-3 py-2.5 align-middle shadow-[1px_0_0_var(--color-line)]"
+        // Markierte Zeilen sind leicht eingefärbt; die deckende Sticky-Zelle übernimmt den Ton.
+        style={officer.flag ? { backgroundColor: `color-mix(in srgb, ${getFlagColor(officer.flag)} 7%, var(--color-surface))` } : undefined}
+      >
         <div className="flex min-w-0 items-center gap-2.5">
           <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank.color} />
           <Link
             href={`/officers/${officer.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="block truncate text-[13px] font-medium text-[#eee] transition-colors hover:text-[#d4af37]"
+            className="block truncate text-[13.5px] font-medium text-label transition-colors hover:text-gold-bright"
             title={`${officer.firstName} ${officer.lastName}`}
           >
             {officer.firstName} {officer.lastName}
@@ -334,13 +342,18 @@ function DraggableOfficerRow({
               disabled={!canEditTrainings}
               title={!available ? `${t.label} ist erst ab ${t.minRank?.name ?? 'Mindestrang'} vorgesehen` : t.label}
               className={cn(
-                'mx-auto h-[18px] w-[18px] rounded-[4px] flex items-center justify-center transition-all duration-150',
-                completed ? 'bg-[#d4af37]' : available ? 'bg-[#18385f]' : 'bg-[#0b1f3a] border border-dashed border-[#4a6585]/60',
-                !available && !completed && 'opacity-70',
-                canEditTrainings ? 'hover:bg-[#1e3a5f]' : 'cursor-not-allowed opacity-70'
+                'mx-auto flex h-[18px] w-[18px] items-center justify-center rounded-[5px] border transition-[background-color,border-color,scale] duration-150 ease-out',
+                completed
+                  ? 'border-gold bg-gold shadow-[inset_0_0.5px_0_rgb(255_255_255/0.35)]'
+                  : available
+                    ? 'border-line-strong bg-white/[0.04]'
+                    : 'border-dashed border-line-strong bg-transparent opacity-60',
+                canEditTrainings
+                  ? cn('active:scale-90', !completed && 'hover:border-white/30 hover:bg-white/[0.08]')
+                  : 'cursor-not-allowed opacity-60'
               )}
             >
-              {completed && <Check size={11} className="text-[#0b1f3a]" strokeWidth={3} />}
+              {completed && <Check size={12} className="text-ink" strokeWidth={3.25} />}
             </button>
           </td>
         )
@@ -351,16 +364,16 @@ function DraggableOfficerRow({
       <td className="px-2 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
           <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
-          <span className="text-[12px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
+          <span className="text-[12px] text-label-2">{getStatusLabel(officer.status)}</span>
         </span>
       </td>
       <td className="px-2 py-2.5 whitespace-nowrap">
         <DiscordMemberBadge officer={officer} compact />
       </td>
-      <td className="px-2 py-2.5 text-[12px] text-[#8ea4bd]" title={officer.lastOnline ? formatDateTime(officer.lastOnline) : 'Nie online gewesen'}>
+      <td className="px-2 py-2.5 text-[12px] text-label-2" title={officer.lastOnline ? formatDateTime(officer.lastOnline) : 'Nie online gewesen'}>
         {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
       </td>
-      <td className="px-2 py-2.5 text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</td>
+      <td className="px-2 py-2.5 text-[12px] text-label-2">{formatDate(officer.hireDate)}</td>
       <td className="px-1.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex items-center gap-1.5">
           <FlagButton
@@ -368,7 +381,7 @@ function DraggableOfficerRow({
             disabled={!canEdit}
             onChange={(v) => onFlagChange(officer.id, v)}
           />
-          {officer.notes && <StickyNote size={12} className="text-[#4a6585]" strokeWidth={1.75} />}
+          {officer.notes && <StickyNote size={12} className="text-label-4" strokeWidth={1.75} />}
         </div>
       </td>
     </tr>
@@ -395,27 +408,20 @@ function MobileOfficerCard({
   return (
     <div
       className={cn(
-        'relative w-full rounded-[10px] border border-[#18385f]/40 px-3.5 py-3 transition-colors',
-        officer.flag ? getFlagRowClass(officer.flag) : 'bg-[#0a1a33]/60 hover:bg-[#0f2340]'
+        'relative w-full rounded-[12px] border border-line px-4 py-3.5 transition-colors',
+        officer.flag ? getFlagRowClass(officer.flag) : 'bg-surface'
       )}
     >
-      {officer.flag && (
-        <span
-          aria-hidden
-          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-[10px]"
-          style={{ backgroundColor: getFlagColor(officer.flag) }}
-        />
-      )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <OfficerAvatar officer={officer} ringColor={officer.rank.color} />
           <div className="min-w-0">
-            <span className="mb-1 block font-mono text-[11px] text-[#b7c5d8]">
+            <span className="mb-1 block font-mono text-[11px] text-label-2">
               {displayBadgeNumber(officer.badgeNumber)}
             </span>
             <Link
               href={`/officers/${officer.id}`}
-              className="block truncate text-[14px] font-semibold text-[#eee] transition-colors hover:text-[#d4af37]"
+              className="block truncate text-[14px] font-semibold text-label transition-colors hover:text-gold-bright"
             >
               {officer.firstName} {officer.lastName}
             </Link>
@@ -436,20 +442,20 @@ function MobileOfficerCard({
           {officerUnitKeys(officer).length > 0 ? (
             <UnitBadges officer={officer} unitsByKey={unitsByKey} maxVisible={3} />
           ) : (
-            <span className="text-[11px] text-[#4a6585]">—</span>
+            <span className="text-[11px] text-label-4">—</span>
           )}
         </div>
         <span className="inline-flex items-center gap-1.5 justify-self-end whitespace-nowrap pt-[3px]">
           <span className={cn('h-[6px] w-[6px] rounded-full shrink-0', getStatusDot(officer.status))} />
-          <span className="text-[11.5px] text-[#8ea4bd]">{getStatusLabel(officer.status)}</span>
+          <span className="text-[11.5px] text-label-2">{getStatusLabel(officer.status)}</span>
         </span>
         <div className="col-span-2 flex items-center gap-2">
           <DiscordMemberBadge officer={officer} compact />
-          <span className="text-[11.5px] text-[#8ea4bd]">
+          <span className="text-[11.5px] text-label-2">
             Zuletzt online: {officer.lastOnline ? formatRelativeTime(officer.lastOnline) : 'Nie'}
           </span>
-          <span className="text-[11.5px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
-          {officer.notes && <StickyNote size={11} className="text-[#4a6585]" strokeWidth={1.75} />}
+          <span className="text-[11.5px] text-label-2">{formatDate(officer.hireDate)}</span>
+          {officer.notes && <StickyNote size={11} className="text-label-4" strokeWidth={1.75} />}
         </div>
       </div>
 
@@ -467,22 +473,22 @@ function MobileOfficerCard({
                 disabled={!canEditTrainings}
                 title={!available ? `${t.label} ist erst ab ${t.minRank?.name ?? 'Mindestrang'} vorgesehen` : t.label}
                 className={cn(
-                  'inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[10.5px] font-medium border transition-colors',
+                  'inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-medium transition-[background-color,border-color,scale] duration-150 active:scale-95',
                   completed
-                    ? 'bg-[#d4af37]/15 border-[#d4af37]/40 text-[#e6d27a]'
+                    ? 'border-transparent bg-gold/15 text-gold-bright'
                     : available
-                      ? 'bg-[#0b1f3a] border-[#18385f]/60 text-[#6b8299]'
-                      : 'bg-[#061426] border-dashed border-[#4a6585]/50 text-[#4a6585]',
-                  canEditTrainings ? 'hover:border-[#234568]' : 'cursor-not-allowed opacity-70'
+                      ? 'border-line bg-white/[0.04] text-label-2'
+                      : 'border-dashed border-line-strong bg-transparent text-label-4',
+                  canEditTrainings ? 'hover:bg-white/[0.08]' : 'cursor-not-allowed opacity-70'
                 )}
               >
                 <span
                   className={cn(
                     'h-[10px] w-[10px] rounded-[3px] flex items-center justify-center',
-                    completed ? 'bg-[#d4af37]' : 'bg-[#18385f]'
+                    completed ? 'bg-gold' : 'bg-surface-3'
                   )}
                 >
-                  {completed && <Check size={7} className="text-[#0b1f3a]" strokeWidth={3} />}
+                  {completed && <Check size={7} className="text-ink" strokeWidth={3} />}
                 </span>
                 {t.label}
               </button>
@@ -736,8 +742,6 @@ export default function OfficersPage() {
   if (!canView) return <UnauthorizedContent />
   if (loading) return <PageLoader />
 
-  const filterClass =
-    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
   const totalActive = officers?.filter((o) => o.status === 'ACTIVE').length || 0
   const totalAway = officers?.filter((o) => o.status === 'AWAY').length || 0
   const totalFlagged = officers?.filter((o) => o.flag).length || 0
@@ -753,30 +757,32 @@ export default function OfficersPage() {
         }
         action={canEdit ? (
           <Link href="/officers/new" className="block sm:inline-block">
-            <Button size="sm" disabled={movePending} className="w-full sm:w-auto">
-              <Plus size={14} strokeWidth={2} />
+            <Button disabled={movePending} className="w-full sm:w-auto">
+              <Plus size={15} strokeWidth={2} />
               Hinzufügen
             </Button>
           </Link>
         ) : undefined}
       />
 
-      <div className="flex flex-col gap-2 mb-5 sm:mb-6">
-        <div className="relative">
+      <div className="mb-6 flex flex-col gap-2 xl:flex-row xl:items-center">
+        <div className="relative xl:w-[340px] xl:shrink-0">
           <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
-            strokeWidth={1.75}
+            size={14}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-3"
+            strokeWidth={2}
           />
           <input
+            type="search"
+            aria-label="Officers durchsuchen"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Suche nach Name, Dienstnummer oder Discord-ID..."
-            className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
+            className={cn(fieldClass, 'h-[34px] pl-8 pr-3')}
           />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
           <Select
             size="sm"
             value={statusFilter}
@@ -831,32 +837,33 @@ export default function OfficersPage() {
         <div className="w-full min-w-0 rounded-[12px] overflow-hidden">
           {groupedByRank.length === 0 && (
             <div className="text-center py-24">
-              <Users size={28} className="mx-auto text-[#4a6585] mb-3" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#8ea4bd]">Keine Ränge gefunden</p>
+              <Users size={28} className="mx-auto text-label-4 mb-3" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-2">Keine Ränge gefunden</p>
             </div>
           )}
 
           {groupedByRank.map(({ rank, officers: groupOfficers }, groupIndex) => {
             const isCollapsed = collapsedRanks.has(rank.id)
             return (
-              <div key={rank.id} className={cn('w-full min-w-0', groupIndex > 0 && 'mt-1')}>
+              <div key={rank.id} className={cn('w-full min-w-0', groupIndex > 0 && 'mt-4')}>
                 <DropRankZone rankId={rank.id} canHighlight={canMove}>
                   <button
                     type="button"
                     onClick={() => toggleRankCollapse(rank.id)}
-                    className="w-full flex items-center gap-2.5 px-3 sm:px-4 py-2 rounded-[8px] hover:bg-[#0f2340] transition-colors group"
+                    aria-expanded={!isCollapsed}
+                    className="group flex h-10 w-full items-center gap-2.5 rounded-[8px] px-2 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-gold/45"
                   >
                     <ChevronDown
-                      size={14}
-                      strokeWidth={2}
-                      className={cn('text-[#4a6585] transition-transform duration-200 shrink-0', isCollapsed && '-rotate-90')}
+                      size={15}
+                      strokeWidth={2.25}
+                      className={cn('shrink-0 text-label-3 transition-[rotate,color] duration-300 ease-apple group-hover:text-label-2', isCollapsed && '-rotate-90')}
                     />
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: rank.color }} />
-                    <span className="truncate text-[13px] font-semibold text-[#eee]">{rank.name}</span>
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: rank.color }} />
+                    <span className="truncate text-[15px] font-semibold tracking-[-0.01em] text-label">{rank.name}</span>
                     <RankNumberBadge number={rank.internalNumber} />
-                    <span className="text-[12px] text-[#4a6585] font-normal shrink-0">{groupOfficers.length}</span>
+                    <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-white/[0.07] px-2 text-[12px] font-medium tabular-nums text-label-2">{groupOfficers.length}</span>
                     {rank.badgeMin != null && rank.badgeMax != null && (
-                      <span className="hidden sm:inline text-[10px] text-[#4a6585] ml-auto font-mono">
+                      <span className="ml-auto hidden font-mono text-[12px] tabular-nums text-label-4 sm:inline">
                         DN {formatBadgeNumber(rank.badgeMin, '')}–{formatBadgeNumber(rank.badgeMax, '')}
                       </span>
                     )}
@@ -868,29 +875,31 @@ export default function OfficersPage() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
                         className="overflow-hidden"
                       >
                         {/* Desktop / tablet: table view */}
-                        <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
-                          {allTrainings.length > 0 && (
-                            <p className="border-b border-white/5 px-4 py-2 text-[11px] text-[#91a4bc]">
-                              {allTrainings.length} Ausbildungen · Bei Bedarf seitlich scrollen. Der Name bleibt sichtbar.
-                            </p>
-                          )}
-                          <div className="overflow-x-auto" role="region" aria-label={`Officers ${rank.name} – Ausbildungstabelle`} tabIndex={0}>
+                        <div className="lspd-card mt-1.5 hidden overflow-hidden lg:block">
+                          <ScrollShelf
+                            label={`Officers ${rank.name} – Ausbildungstabelle`}
+                            itemCount={allTrainings.length}
+                            itemNoun="Ausbildungen"
+                            itemSelector="th[data-shelf-item]"
+                            stickySelector="th[data-shelf-sticky]"
+                          >
                           <table className="lspd-table w-full table-fixed" style={{ minWidth: 815 + allTrainings.length * 112 }}>
                             <thead>
                               <tr>
                                 <th className="w-[3px] p-0" />
                                 <th className="w-[28px] px-1 py-2.5" />
-                                <th className="w-[58px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">DN</th>
-                                <th scope="col" className="sticky left-0 z-[2] w-[170px] px-3 py-2.5 text-left text-[11px] font-medium text-[#6b8299] shadow-[1px_0_0_#ffffff12]">Name</th>
+                                <th className="w-[58px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">DN</th>
+                                <th scope="col" data-shelf-sticky className="sticky left-0 z-[2] w-[170px] px-3 py-2.5 text-left text-[12px] font-medium text-label-3 shadow-[1px_0_0_var(--color-line)]">Name</th>
                                 {allTrainings.map((t) => (
                                   <th
                                     key={t.id}
                                     scope="col"
-                                    className="w-[112px] px-2 py-2.5 text-center text-[11px] font-medium text-[#6b8299]"
+                                    data-shelf-item
+                                    className="w-[112px] px-2 py-2.5 text-center text-[12px] font-medium text-label-3"
                                     title={t.label}
                                   >
                                     <span lang="de" className="block mx-auto whitespace-normal break-words hyphens-auto leading-relaxed">
@@ -898,13 +907,13 @@ export default function OfficersPage() {
                                     </span>
                                   </th>
                                 ))}
-                                <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Unit</th>
-                                <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Status</th>
-                                <th className="w-[112px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Discord</th>
-                                <th className="w-[104px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Zuletzt Online</th>
-                                <th className="w-[96px] px-2 py-2.5 text-left text-[11px] font-medium text-[#6b8299]">Einstellung</th>
-                                <th className="w-[44px] px-1.5 py-2.5 text-center text-[11px] font-medium text-[#6b8299]">
-                                  <Flag size={11} className="inline" strokeWidth={1.75} />
+                                <th className="w-[96px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">Unit</th>
+                                <th className="w-[104px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">Status</th>
+                                <th className="w-[112px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">Discord</th>
+                                <th className="w-[104px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">Zuletzt Online</th>
+                                <th className="w-[96px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">Einstellung</th>
+                                <th className="w-[44px] px-1.5 py-2.5 text-center text-[12px] font-medium text-label-3">
+                                  <Flag size={12} className="inline" strokeWidth={1.75} aria-label="Markierung" />
                                 </th>
                               </tr>
                             </thead>
@@ -926,18 +935,18 @@ export default function OfficersPage() {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={10 + allTrainings.length} className="px-4 py-4 text-center text-[12.5px] text-[#6b8299]">
+                                  <td colSpan={10 + allTrainings.length} className="px-4 py-4 text-center text-[12.5px] text-label-3">
                                     — Kein Officer hat diesen Rang
                                   </td>
                                 </tr>
                               )}
                             </tbody>
                           </table>
-                          </div>
+                          </ScrollShelf>
                         </div>
 
                         {/* Mobile / tablet: card view */}
-                        <div className="lg:hidden w-full min-w-0 mt-1 mb-2 space-y-1.5">
+                        <div className="mt-1.5 w-full min-w-0 space-y-2 lg:hidden">
                           {groupOfficers.length > 0 ? (
                             groupOfficers.map((officer) => (
                               <MobileOfficerCard
@@ -952,7 +961,7 @@ export default function OfficersPage() {
                               />
                             ))
                           ) : (
-                            <div className="rounded-[10px] border border-dashed border-[#18385f]/70 bg-[#0a1a33]/40 px-3.5 py-3 text-center text-[12.5px] text-[#6b8299]">
+                            <div className="rounded-[12px] border border-dashed border-line-strong px-3.5 py-3 text-center text-[13px] text-label-3">
                               — Kein Officer hat diesen Rang
                             </div>
                           )}
@@ -974,32 +983,31 @@ export default function OfficersPage() {
       >
         {pendingTrainingOverride && (
           <div className="space-y-4">
-            <div className="rounded-[10px] border border-[#d4af37]/25 bg-[#1d1608]/60 px-3.5 py-3">
-              <p className="text-[13px] font-medium text-[#edf4fb]">
+            <div className="rounded-[12px] bg-gold/10 px-4 py-3">
+              <p className="text-[13.5px] font-semibold text-label">
                 {pendingTrainingOverride.training.label}
               </p>
-              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+              <p className="mt-1 text-[12.5px] text-gold-bright">
                 Vorgesehen ab: {pendingTrainingOverride.training.minRank?.name ?? 'Mindestrang'}
               </p>
             </div>
-            <div className="rounded-[10px] border border-[#18385f]/70 bg-[#0a1a33]/70 px-3.5 py-3">
-              <p className="text-[12px] text-[#8ea4bd]">Officer</p>
-              <p className="mt-1 text-[14px] font-semibold text-white">
+            <div className="rounded-[12px] bg-white/[0.04] px-4 py-3">
+              <p className="text-[12px] text-label-2">Officer</p>
+              <p className="mt-1 text-[14px] font-semibold text-label">
                 {pendingTrainingOverride.officer.firstName} {pendingTrainingOverride.officer.lastName}
               </p>
-              <p className="mt-1 text-[12.5px] text-[#9fb0c4]">
+              <p className="mt-1 text-[12.5px] text-label-2">
                 DN {displayBadgeNumber(pendingTrainingOverride.officer.badgeNumber)} · {pendingTrainingOverride.officer.rank.name}
               </p>
             </div>
-            <p className="text-[13px] leading-relaxed text-[#9fb0c4]">
+            <p className="text-[13px] leading-relaxed text-label-2">
               Möchtest du diese Ausbildung wirklich exakt diesem Officer geben?
             </p>
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="secondary" size="sm" onClick={() => setPendingTrainingOverride(null)}>
+              <Button variant="secondary" onClick={() => setPendingTrainingOverride(null)}>
                 Abbrechen
               </Button>
               <Button
-                size="sm"
                 onClick={() => {
                   const pending = pendingTrainingOverride
                   setPendingTrainingOverride(null)

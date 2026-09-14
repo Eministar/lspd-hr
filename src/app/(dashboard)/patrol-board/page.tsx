@@ -172,9 +172,9 @@ export default function PatrolBoardPage() {
     return (
       <div className="max-w-6xl mx-auto">
         <PageHeader title="Streifenboard" description="Live-Ansicht · read-only" />
-        <div className="glass-panel-elevated rounded-[14px] p-8 text-center">
-          <AlertTriangle size={26} className="mx-auto text-[#f87171] mb-3" />
-          <p className="text-[13px] text-[#9fb0c4] mb-4">{error}</p>
+        <div className="glass-panel-elevated rounded-[12px] p-8 text-center">
+          <AlertTriangle size={26} className="mx-auto text-red mb-3" />
+          <p className="text-[13px] text-label-2 mb-4">{error}</p>
           <Button size="sm" onClick={() => setLastRefresh(Date.now())}>
             <RefreshCw size={13} /> Erneut laden
           </Button>
@@ -198,11 +198,11 @@ export default function PatrolBoardPage() {
         action={
           <div className="flex items-center gap-2">
             {syncedAt && (
-              <span className="text-[11.5px] text-[#7089a5]">
+              <span className="text-[11.5px] text-label-3">
                 Sync {formatDateTime(syncedAt)}
               </span>
             )}
-            <span className="rounded-full border border-[#3d2d12]/80 bg-[#1d1608]/70 px-3 py-1 text-[11.5px] font-medium text-[#e8c979]">
+            <span className="rounded-full border border-gold/20 bg-gold/8 px-3 py-1 text-[11.5px] font-medium text-gold-bright">
               Live von FiveM · read-only
             </span>
             <Button
@@ -233,9 +233,9 @@ export default function PatrolBoardPage() {
               <div
                 className="stat-icon"
                 style={{
-                  color: '#22c55e',
-                  borderColor: 'rgba(34,197,94,0.3)',
-                  background: 'linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.03))',
+                  color: '#32d74b',
+                  borderColor: 'rgba(50,215,75,0.3)',
+                  background: 'linear-gradient(135deg, rgba(50,215,75,0.16), rgba(50,215,75,0.03))',
                 }}
               >
                 <Users size={16} />
@@ -260,8 +260,8 @@ export default function PatrolBoardPage() {
 
       {/* Dispatch centers */}
       {dispatchCenters.length > 0 && (
-        <div className="glass-panel-elevated rounded-[14px] p-4 space-y-2">
-          <p className="text-[12.5px] font-medium text-[#9fb0c4] mb-3">Leitstellen</p>
+        <div className="glass-panel-elevated rounded-[12px] p-4 space-y-2">
+          <p className="text-[12.5px] font-medium text-label-2 mb-3">Leitstellen</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {dispatchCenters.map((dc) => (
               <div
@@ -269,24 +269,24 @@ export default function PatrolBoardPage() {
                 className={cn(
                   'rounded-[10px] border px-3 py-2.5 text-[13px]',
                   dc.officer
-                    ? 'border-[#234568]/60 bg-[#0a1a33]/60'
-                    : 'border-[#1e3a5c]/35 bg-[#061426]/40',
+                    ? 'border-line bg-surface'
+                    : 'border-line bg-white/[0.03]',
                 )}
               >
-                <p className="text-[11px] font-medium text-[#7089a5] mb-1">
+                <p className="text-[11px] font-medium text-label-3 mb-1">
                   Leitstelle {dc.scope.toUpperCase()}
                 </p>
                 {dc.officer ? (
-                  <p className="font-semibold text-[#edf4fb]">
+                  <p className="font-semibold text-label">
                     {officerName(dc.officer)}
                     {dc.officer.badgeNumber && (
-                      <span className="font-mono text-[#d4af37]">
+                      <span className="font-mono text-label-3">
                         {' '}#{displayBadgeNumber(dc.officer.badgeNumber)}
                       </span>
                     )}
                   </p>
                 ) : (
-                  <p className="text-[#5f7691]">Nicht besetzt</p>
+                  <p className="text-label-3">Nicht besetzt</p>
                 )}
               </div>
             ))}
@@ -296,32 +296,32 @@ export default function PatrolBoardPage() {
 
       {/* Patrol grid */}
       {!board || board.patrols.length === 0 ? (
-        <div className="glass-panel-elevated rounded-[14px] p-10 text-center">
-          <ShieldCheck size={28} className="mx-auto text-[#d4af37]/50 mb-3" />
-          <p className="text-[13px] text-[#8ea4bd]">Aktuell keine aktiven Streifen</p>
+        <div className="glass-panel-elevated rounded-[12px] p-10 text-center">
+          <ShieldCheck size={28} className="mx-auto text-gold/50 mb-3" />
+          <p className="text-[13px] text-label-2">Aktuell keine aktiven Streifen</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {board.patrols.map((patrol) => {
             const label = statusLabel(patrol.status)
             return (
-              <div key={patrol.id} className="glass-panel-elevated rounded-[14px] p-4">
+              <div key={patrol.id} className="glass-panel-elevated rounded-[12px] p-4">
                 {/* Card header */}
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="text-[14px] font-semibold text-[#f7fbff]">
+                    <h3 className="text-[14px] font-semibold text-blue">
                       {patrol.callSign
                         ? (
                           <>
-                            <span className="font-mono text-[#d4af37]">{patrol.callSign}</span>
+                            <span className="font-mono text-label-3">{patrol.callSign}</span>
                             {' '}
-                            <span className="text-[#9fb0c4] font-normal text-[12.5px]">{patrol.name}</span>
+                            <span className="text-label-2 font-normal text-[12.5px]">{patrol.name}</span>
                           </>
                         )
                         : patrol.name}
                     </h3>
                     {patrol.assignment && (
-                      <p className="mt-0.5 text-[11.5px] text-[#8ea4bd]">{patrol.assignment}</p>
+                      <p className="mt-0.5 text-[11.5px] text-label-2">{patrol.assignment}</p>
                     )}
                   </div>
                   {patrol.assignedDispatchId != null && (
@@ -331,15 +331,15 @@ export default function PatrolBoardPage() {
 
                 {/* Status */}
                 {label && (
-                  <div className="mb-3 rounded-[8px] border border-[#1e3a5c]/45 bg-[#061426]/55 px-3 py-1.5 text-[11.5px] text-[#9fb0c4]">
+                  <div className="mb-3 rounded-[8px] border border-line bg-canvas px-3 py-1.5 text-[11.5px] text-label-2">
                     {label}
                   </div>
                 )}
 
                 {/* Crew */}
-                <div className="rounded-[10px] border border-[#1e3a5c]/45 bg-[#061426]/55 p-3">
+                <div className="rounded-[10px] border border-line bg-canvas p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-medium text-[#9fb0c4]">Besatzung</p>
+                    <p className="text-[12px] font-medium text-label-2">Besatzung</p>
                     <div className="flex items-center gap-1">
                       {[0, 1, 2].map((i) => (
                         <span key={i} className={cn('cap-dot', i < patrol.members.length && 'is-on')} />
@@ -348,30 +348,30 @@ export default function PatrolBoardPage() {
                   </div>
 
                   {patrol.members.length === 0 ? (
-                    <p className="py-3 text-center text-[12px] text-[#5f7691]">Keine Besatzung</p>
+                    <p className="py-3 text-center text-[12px] text-label-3">Keine Besatzung</p>
                   ) : (
                     <div className="space-y-2">
                       {patrol.members.map((member) => (
                         <div
                           key={member.id}
-                          className="flex items-center gap-2.5 rounded-[8px] border border-[#18385f]/30 bg-[#0a1e38]/70 px-2.5 py-2"
+                          className="flex items-center gap-2.5 rounded-[8px] border border-line bg-surface px-2.5 py-2"
                         >
                           <OfficerAvatar officer={member.officer} size="xs" ringColor={member.officer.rank.color} />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[12.5px] font-medium text-white">
+                            <p className="truncate text-[12.5px] font-medium text-label">
                               {member.officer.badgeNumber && (
-                                <span className="font-mono text-[#d4af37]">
+                                <span className="font-mono text-label-3">
                                   #{displayBadgeNumber(member.officer.badgeNumber)}{' '}
                                 </span>
                               )}
                               {officerName(member.officer)}
                             </p>
-                            <p className="truncate text-[10.5px] text-[#7089a5]">
+                            <p className="truncate text-[11px] text-label-3">
                               {member.officer.rank.name}
                             </p>
                           </div>
                           {member.officer.isRookie && (
-                            <span className="shrink-0 rounded-full bg-[#2a2f3a] px-2 py-0.5 text-[10px] text-[#d7dde6]">
+                            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-label">
                               Rookie
                             </span>
                           )}
@@ -388,37 +388,37 @@ export default function PatrolBoardPage() {
 
       {/* Leaderboard */}
       {leaders.length > 0 && (
-        <div className="glass-panel-elevated rounded-[14px] p-4">
-          <h2 className="mb-3 text-[13.5px] font-semibold text-[#f7fbff]">
+        <div className="glass-panel-elevated rounded-[12px] p-4">
+          <h2 className="mb-3 text-[13.5px] font-semibold text-blue">
             Streifenzeit — Rangliste
           </h2>
           <ol className="space-y-2">
             {leaders.map((row, i) => (
               <li
                 key={row.officerId}
-                className="flex items-center justify-between gap-3 rounded-[9px] border border-[#1e3a5c]/40 bg-[#0a1e38]/50 px-3 py-2 text-[13px]"
+                className="flex items-center justify-between gap-3 rounded-[9px] border border-line bg-surface px-3 py-2 text-[13px]"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
                     className={cn(
                       'w-6 shrink-0 text-center text-[11.5px] font-semibold tabular-nums',
-                      i === 0 ? 'text-[#d4af37]' : i === 1 ? 'text-[#9fb0c4]' : i === 2 ? 'text-[#cd7f32]' : 'text-[#5f7691]',
+                      i === 0 ? 'text-gold' : i === 1 ? 'text-label-2' : i === 2 ? 'text-orange' : 'text-label-3',
                     )}
                   >
                     {i + 1}.
                   </span>
-                  <span className="truncate text-[#edf4fb]">
+                  <span className="truncate text-label">
                     {row.officer
                       ? officerName(row.officer)
                       : row.officerId}
                     {row.officer?.badgeNumber && (
-                      <span className="ml-1.5 font-mono text-[11.5px] text-[#d4af37]">
+                      <span className="ml-1.5 font-mono text-[11.5px] text-gold">
                         #{displayBadgeNumber(row.officer.badgeNumber)}
                       </span>
                     )}
                   </span>
                 </div>
-                <span className="shrink-0 text-[12px] text-[#7089a5]">
+                <span className="shrink-0 text-[12px] text-label-3">
                   {formatDuration(row.totalSeconds)} · {row.sessionCount} Streifen
                 </span>
               </li>

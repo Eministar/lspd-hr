@@ -61,7 +61,7 @@ export default function RanksPage() {
     name: '',
     sortOrder: 0,
     internalNumber: '' as string,
-    color: '#3B82F6',
+    color: '#4a90f0',
     badgeMin: '' as string,
     badgeMax: '' as string,
     discordRoleId: '',
@@ -73,7 +73,7 @@ export default function RanksPage() {
       name: '',
       sortOrder: (ranks?.length || 0) + 1,
       internalNumber: '',
-      color: '#3B82F6',
+      color: '#4a90f0',
       badgeMin: '',
       badgeMax: '',
       discordRoleId: '',
@@ -228,91 +228,91 @@ export default function RanksPage() {
         <button
           type="button"
           onClick={() => setActiveTab('ranks')}
-          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'ranks' ? 'bg-[#d4af37] text-[#071b33]' : 'bg-[#0f2340] text-[#8ea4bd] hover:text-[#eee]'}`}
+          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'ranks' ? 'bg-gold text-ink' : 'bg-surface-2 text-label-2 hover:text-label'}`}
         >
           Ränge
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('blacklist')}
-          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'blacklist' ? 'bg-[#d4af37] text-[#071b33]' : 'bg-[#0f2340] text-[#8ea4bd] hover:text-[#eee]'}`}
+          className={`px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-colors ${activeTab === 'blacklist' ? 'bg-gold text-ink' : 'bg-surface-2 text-label-2 hover:text-label'}`}
         >
           DN-Blacklist
         </button>
       </div>
 
       {activeTab === 'ranks' ? (
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-        <div className="divide-y divide-[#18385f]">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
+        <div className="divide-y divide-line">
           {ranks?.map((rank, i) => (
             <motion.div
               key={rank.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.02 }}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-2 transition-colors"
             >
-              <span className="w-10 shrink-0 text-right font-mono text-[9.5px] uppercase tracking-wider text-[#526b85]" title="Sortierungsposition">Pos {rank.sortOrder}</span>
+              <span className="w-10 shrink-0 text-right font-mono text-[11px] text-label-4" title="Sortierungsposition">Pos {rank.sortOrder}</span>
               <div className="h-3.5 w-3.5 rounded-full shrink-0" style={{ backgroundColor: rank.color }} />
               <div className="flex-1 min-w-0">
                 <span className="inline-flex flex-wrap items-center gap-2">
-                  <span className="text-[13.5px] font-medium text-[#eee]">{rank.name}</span>
+                  <span className="text-[13.5px] font-medium text-label">{rank.name}</span>
                   <RankNumberBadge number={rank.internalNumber} />
                 </span>
                 {rank.badgeMin != null && rank.badgeMax != null && (
-                  <span className="ml-2 text-[10px] text-[#4a6585] font-mono">
+                  <span className="ml-2 text-[11px] text-label-4 font-mono">
                     DN {formatBadgeNumber(rank.badgeMin, '')}–{formatBadgeNumber(rank.badgeMax, '')}
                   </span>
                 )}
                 {roleName(discordData?.config.rankRoleMap[rank.id]) && (
-                  <span className="ml-2 text-[11px] text-[#6b8299]">Discord: {roleName(discordData?.config.rankRoleMap[rank.id])}</span>
+                  <span className="ml-2 text-[11px] text-label-3">Discord: {roleName(discordData?.config.rankRoleMap[rank.id])}</span>
                 )}
               </div>
               <div className="flex gap-0.5">
-                <button onClick={() => openEdit(rank)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                  <Edit size={13} className="text-[#4a6585]" />
+                <button onClick={() => openEdit(rank)} className="p-1.5 rounded-[6px] hover:bg-surface-2 transition-colors">
+                  <Edit size={13} className="text-label-4" />
                 </button>
-                <button onClick={() => handleDelete(rank.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
-                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
+                <button onClick={() => handleDelete(rank.id)} className="p-1.5 rounded-[6px] hover:bg-red/14 transition-colors">
+                  <Trash2 size={13} className="text-label-4 hover:text-red" />
                 </button>
               </div>
             </motion.div>
           ))}
           {(!ranks || ranks.length === 0) && (
             <div className="text-center py-16">
-              <Shield size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Ränge vorhanden</p>
+              <Shield size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-3">Keine Ränge vorhanden</p>
             </div>
           )}
         </div>
       </div>
       ) : (
-        <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-          <div className="divide-y divide-[#18385f]">
+        <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
+          <div className="divide-y divide-line">
             {blacklistedBadges?.map((row, i) => (
               <motion.div
                 key={row.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.02 }}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-2 transition-colors"
               >
-                <div className="h-8 w-8 rounded-[8px] bg-[#1c1111] flex items-center justify-center text-[#f87171]">
+                <div className="h-8 w-8 rounded-[8px] bg-red/14 flex items-center justify-center text-red">
                   <Ban size={15} strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-mono font-medium text-[#eee]">{displayBadgeNumber(row.badgeNumber)}</p>
-                  <p className="text-[11.5px] text-[#4a6585] truncate">{row.reason || 'Keine Begründung'}</p>
+                  <p className="text-[13.5px] font-mono font-medium text-label">{displayBadgeNumber(row.badgeNumber)}</p>
+                  <p className="text-[11.5px] text-label-4 truncate">{row.reason || 'Keine Begründung'}</p>
                 </div>
-                <button onClick={() => handleBlacklistDelete(row.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
-                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
+                <button onClick={() => handleBlacklistDelete(row.id)} className="p-1.5 rounded-[6px] hover:bg-red/14 transition-colors">
+                  <Trash2 size={13} className="text-label-4 hover:text-red" />
                 </button>
               </motion.div>
             ))}
             {(!blacklistedBadges || blacklistedBadges.length === 0) && (
               <div className="text-center py-16">
-                <Ban size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-                <p className="text-[13px] text-[#999]">Keine Dienstnummern gesperrt</p>
+                <Ban size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+                <p className="text-[13px] text-label-3">Keine Dienstnummern gesperrt</p>
               </div>
             )}
           </div>
@@ -326,11 +326,11 @@ export default function RanksPage() {
             <Input label="Sortierungszahl" type="number" value={String(form.sortOrder)} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
             <Input label="Interne Rangnummer" numericOnly value={form.internalNumber} onChange={(e) => setForm({ ...form, internalNumber: e.target.value })} placeholder="z. B. 19" />
           </div>
-          <p className="text-[11.5px] leading-5 text-[#6b8299]">
+          <p className="text-[11.5px] leading-5 text-label-3">
             Die Sortierungszahl bestimmt nur die Position in Listen. Die interne Nummer wird sichtbar am Rang angezeigt, zum Beispiel „Rang 19“.
           </p>
           <ColorField value={form.color} onChange={(color) => setForm({ ...form, color })} />
-          <p className="text-[11.5px] text-[#6b8299]">
+          <p className="text-[11.5px] text-label-3">
             Dienstnummer-Bereich (nur Zahl, optional): Bei Rangwechsel wird automatisch die kleinste freie Nummer in diesem Bereich vergeben (Einstellungen: Präfix z. B. LSPD-).
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -378,7 +378,7 @@ export default function RanksPage() {
             onChange={(e) => setBlacklistForm({ ...blacklistForm, reason: e.target.value })}
             placeholder="Warum soll diese DN nicht vergeben werden?"
           />
-          <p className="text-[11.5px] text-[#6b8299]">
+          <p className="text-[11.5px] text-label-3">
             Gesperrte Dienstnummern werden bei automatischer Vergabe übersprungen und können nicht manuell eingetragen werden.
           </p>
           <div className="flex justify-end gap-2 pt-1">

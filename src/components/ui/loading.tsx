@@ -3,28 +3,43 @@
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
+const SPOKES = 8
+
+/** Apple-Aktivitätsanzeige: acht Speichen mit abnehmender Deckkraft, rotiert in Schritten. */
 export function Spinner({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = { sm: 'h-3.5 w-3.5', md: 'h-5 w-5', lg: 'h-7 w-7' }
   const px = { sm: 14, md: 20, lg: 28 }[size]
 
   return (
-      <span
-          className={cn('loading-spinner relative block shrink-0 rounded-full text-[#d4af37]', sizes[size], className)}
-          style={{ width: px, height: px }}
-          aria-hidden
-      />
+    <svg
+      className={cn('apple-spinner block shrink-0 text-label-2', className)}
+      width={px}
+      height={px}
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      {Array.from({ length: SPOKES }, (_, index) => (
+        <rect
+          key={index}
+          x="11"
+          y="2"
+          width="2"
+          height="6"
+          rx="1"
+          fill="currentColor"
+          opacity={0.15 + (0.85 * index) / (SPOKES - 1)}
+          transform={`rotate(${(360 / SPOKES) * index} 12 12)`}
+        />
+      ))}
+    </svg>
   )
 }
 
 export function PageLoader() {
   return (
-      <div className="flex min-h-[420px] flex-col items-center justify-center gap-5 text-[#6b8299]">
-        <PdCloudLoader />
-        <div className="flex flex-col items-center gap-1.5">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-[#8ea4bd] uppercase">Lädt</p>
-          <p className="text-[11px] text-[#4a6585]">Einen Moment bitte…</p>
-        </div>
-      </div>
+    <div className="flex min-h-[420px] flex-col items-center justify-center gap-3" role="status" aria-label="Inhalte werden geladen">
+      <Spinner size="lg" className="text-label-3" />
+      <p className="text-[13px] text-label-3">Lädt …</p>
+    </div>
   )
 }
 
@@ -84,14 +99,14 @@ export function PdCloudLoader({ className }: { className?: string }) {
 
 export function TableSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?: number }) {
   return (
-      <div className="space-y-2">
-        {Array.from({ length: rows }).map((_, i) => (
-            <div key={i} className="flex gap-3 animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
-              {Array.from({ length: cols }).map((_, j) => (
-                  <div key={j} className="h-9 bg-gradient-to-r from-[#0a2240]/60 to-[#102542]/40 rounded-[8px] flex-1" />
-              ))}
-            </div>
-        ))}
-      </div>
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex animate-pulse gap-3" style={{ animationDelay: `${i * 75}ms` }}>
+          {Array.from({ length: cols }).map((_, j) => (
+            <div key={j} className="h-9 flex-1 rounded-[8px] bg-white/[0.05]" />
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }

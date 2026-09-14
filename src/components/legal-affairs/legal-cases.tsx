@@ -135,8 +135,8 @@ export function LegalCases({ canManage }: { canManage: boolean }) {
               className={cn(
                 'inline-flex h-8 items-center rounded-[8px] border px-3 text-[12px] font-semibold transition-colors',
                 statusFilter === filter.value
-                  ? 'border-[#8b5cf6]/40 bg-[#8b5cf6]/12 text-[#c4b5fd]'
-                  : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                  ? 'border-purple/24 bg-purple/12 text-indigo'
+                  : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
               )}
             >
               {filter.label}
@@ -158,12 +158,12 @@ export function LegalCases({ canManage }: { canManage: boolean }) {
       </div>
 
       {batch && (
-        <div className="flex flex-col gap-2 rounded-[12px] border border-[#8b5cf6]/35 bg-[#8b5cf6]/8 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-[12px] border border-purple/21 bg-purple/8 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-white">
+            <p className="text-[13px] font-semibold text-label">
               Sammelklage erstellt — {batch.caseCount} Klage{batch.caseCount === 1 ? '' : 'n'}
             </p>
-            <p className="mt-0.5 break-all font-mono text-[11px] text-[#a78bfa]">{batchUrl}</p>
+            <p className="mt-0.5 break-all font-mono text-[11px] text-indigo">{batchUrl}</p>
           </div>
           <div className="flex shrink-0 gap-2">
             <Button variant="outline" size="sm" onClick={() => window.open(batchUrl, '_blank', 'noopener')}>
@@ -177,12 +177,12 @@ export function LegalCases({ canManage }: { canManage: boolean }) {
       )}
 
       {rows.length === 0 ? (
-        <div className="glass-panel-elevated flex flex-col items-center justify-center rounded-[14px] border border-[#1e3a5c]/45 px-6 py-16 text-center">
-          <div className="mb-3 rounded-full bg-[#8b5cf6]/10 p-4">
-            <Scale size={28} className="text-[#a78bfa]" />
+        <div className="glass-panel-elevated flex flex-col items-center justify-center rounded-[12px] border border-line px-6 py-16 text-center">
+          <div className="mb-3 rounded-full bg-purple/10 p-4">
+            <Scale size={28} className="text-indigo" />
           </div>
-          <p className="text-[14px] font-semibold text-[#dbe6f3]">Noch keine Klagen</p>
-          <p className="mt-1 max-w-sm text-[12.5px] text-[#8ea4bd]">
+          <p className="text-[14px] font-semibold text-label">Noch keine Klagen</p>
+          <p className="mt-1 max-w-sm text-[12.5px] text-label-2">
             Lege eine Sanktionsklage aus einer offenen Sanktion an oder verfasse eine individuelle Klageschrift.
           </p>
         </div>
@@ -225,33 +225,33 @@ function CaseCard({ row, onOpen }: { row: CaseRow; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="glass-panel-elevated group w-full rounded-[14px] border border-[#1e3a5c]/45 p-4 text-left transition-colors hover:border-[#8b5cf6]/40"
+      className="glass-panel-elevated group w-full rounded-[12px] border border-line p-4 text-left transition-colors hover:border-purple/24"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="rounded-[6px] bg-white/[0.04] px-2 py-0.5 font-mono text-[11px] font-semibold text-[#a78bfa]">
+            <span className="rounded-[6px] bg-white/[0.04] px-2 py-0.5 font-mono text-[11px] font-semibold text-indigo">
               {row.caseNumber}
             </span>
-            <span className="rounded-full border border-[#18385f]/60 bg-[#0a1a33]/60 px-2 py-[1px] text-[10.5px] font-semibold text-[#8ea4bd]">
+            <span className="rounded-full border border-line bg-surface px-2 py-[1px] text-[11px] font-semibold text-label-2">
               {kind.label}
             </span>
           </div>
-          <p className="mt-2 truncate text-[14px] font-semibold text-white">{row.title}</p>
-          <p className="mt-0.5 truncate text-[12px] text-[#8ea4bd]">
+          <p className="mt-2 truncate text-[14px] font-semibold text-label">{row.title}</p>
+          <p className="mt-0.5 truncate text-[12px] text-label-2">
             {row.accusedName ?? 'Ohne Beklagten'}
             {row.accusedBadge ? ` · ${displayBadgeNumber(row.accusedBadge)}` : ''}
           </p>
         </div>
-        <span className={cn('shrink-0 rounded-full border px-2.5 py-[2px] text-[10.5px] font-semibold', statusClass(row.status))}>
+        <span className={cn('shrink-0 rounded-full border px-2.5 py-[2px] text-[11px] font-semibold', statusClass(row.status))}>
           {status.label}
         </span>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[11px] text-[#536b86]">
+      <div className="mt-3 flex items-center gap-3 text-[11px] text-label-4">
         <span>{formatDateTime(row.createdAt)}</span>
         {sanctionCount > 0 && (
           <>
-            <span className="text-[#2a4a6a]">·</span>
+            <span className="text-label-4">·</span>
             <span>{sanctionCount} Sanktion{sanctionCount === 1 ? '' : 'en'}</span>
           </>
         )}
@@ -261,9 +261,9 @@ function CaseCard({ row, onOpen }: { row: CaseRow; onOpen: () => void }) {
 }
 
 function statusClass(status: LegalCaseStatusValue) {
-  if (status === 'FILED') return 'border-[#334e9c]/60 bg-[#0d1730]/60 text-[#93c5fd]'
-  if (status === 'CLOSED') return 'border-[#166534]/60 bg-[#052e1a]/60 text-[#86efac]'
-  return 'border-[#6b7280]/40 bg-[#111827]/50 text-[#9ca3af]'
+  if (status === 'FILED') return 'border-line-strong bg-surface text-blue'
+  if (status === 'CLOSED') return 'border-green/18 bg-green/8 text-green'
+  return 'border-label-4/40 bg-surface text-label-2'
 }
 
 function CreateCaseModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
@@ -286,22 +286,22 @@ function CreateCaseModal({ open, onClose, onCreated }: { open: boolean; onClose:
           <button
             type="button"
             onClick={() => setKind('SANCTION')}
-            className="rounded-[12px] border border-[#8b5cf6]/35 bg-[#8b5cf6]/8 p-4 text-left transition-colors hover:border-[#8b5cf6]/60 hover:bg-[#8b5cf6]/14"
+            className="rounded-[12px] border border-purple/21 bg-purple/8 p-4 text-left transition-colors hover:border-purple/36 hover:bg-purple/14"
           >
-            <Gavel size={20} className="text-[#a78bfa]" />
-            <p className="mt-2 text-[14px] font-semibold text-white">Sanktionsklage</p>
-            <p className="mt-1 text-[12px] leading-5 text-[#8ea4bd]">
+            <Gavel size={20} className="text-indigo" />
+            <p className="mt-2 text-[14px] font-semibold text-label">Sanktionsklage</p>
+            <p className="mt-1 text-[12px] leading-5 text-label-2">
               {LEGAL_CASE_KIND_META.SANCTION.description}
             </p>
           </button>
           <button
             type="button"
             onClick={() => setKind('CUSTOM')}
-            className="rounded-[12px] border border-[#18385f]/60 bg-[#0a1a33]/50 p-4 text-left transition-colors hover:border-[#234568] hover:bg-[#0c1f3a]"
+            className="rounded-[12px] border border-line bg-surface p-4 text-left transition-colors hover:border-line hover:bg-surface"
           >
-            <Scale size={20} className="text-[#8ea4bd]" />
-            <p className="mt-2 text-[14px] font-semibold text-white">Individuelle Klageschrift</p>
-            <p className="mt-1 text-[12px] leading-5 text-[#8ea4bd]">
+            <Scale size={20} className="text-label-2" />
+            <p className="mt-2 text-[14px] font-semibold text-label">Individuelle Klageschrift</p>
+            <p className="mt-1 text-[12px] leading-5 text-label-2">
               {LEGAL_CASE_KIND_META.CUSTOM.description}
             </p>
           </button>
@@ -384,13 +384,13 @@ function SanctionCaseForm({ submitting, onCreate, onBack }: { submitting: boolea
       />
 
       {officerId && (
-        <div className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/50 p-3">
+        <div className="rounded-[10px] border border-line bg-surface p-3">
           {loadingSanctions ? (
-            <div className="flex items-center gap-2 py-3 text-[12.5px] text-[#8ea4bd]">
+            <div className="flex items-center gap-2 py-3 text-[12.5px] text-label-2">
               <Loader2 size={13} className="animate-spin" /> Sanktionen werden geladen…
             </div>
           ) : sanctions.length === 0 ? (
-            <p className="py-3 text-[12.5px] text-[#8ea4bd]">
+            <p className="py-3 text-[12.5px] text-label-2">
               Dieser Officer hat keine offenen Sanktionen.
             </p>
           ) : (
@@ -398,30 +398,30 @@ function SanctionCaseForm({ submitting, onCreate, onBack }: { submitting: boolea
               {sanctions.map((sanction) => (
                 <label
                   key={sanction.id}
-                  className="flex cursor-pointer items-start gap-3 rounded-[9px] border border-[#18385f]/50 bg-[#04101f]/60 p-3 transition-colors hover:border-[#8b5cf6]/40"
+                  className="flex cursor-pointer items-start gap-3 rounded-[9px] border border-line bg-canvas p-3 transition-colors hover:border-purple/24"
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(sanction.id)}
                     onChange={() => toggle(sanction.id)}
-                    className="mt-0.5 h-4 w-4 accent-[#8b5cf6]"
+                    className="mt-0.5 h-4 w-4 accent-purple"
                   />
                   <span className="min-w-0">
-                    <span className="block text-[12.5px] font-semibold text-[#edf4fb]">
+                    <span className="block text-[12.5px] font-semibold text-label">
                       {penalGradeLabel(sanction.penalGrade)} · {sanctionMeasureLabel(sanction)}
                       {sanction.measureType !== 'SG_ROUNDS' && sanction.fineAmount !== null
                         ? ` · ${formatFineAmount(sanction.fineAmount)}`
                         : ''}
                     </span>
-                    <span className="mt-0.5 block text-[12px] leading-5 text-[#8ea4bd]">{sanction.reason}</span>
-                    <span className="mt-0.5 block text-[11px] text-[#4a6585]">
+                    <span className="mt-0.5 block text-[12px] leading-5 text-label-2">{sanction.reason}</span>
+                    <span className="mt-0.5 block text-[11px] text-label-4">
                       {sanction.dueAt ? `Frist bis ${formatDateTime(sanction.dueAt)}` : 'Ohne Frist'} · {formatDateTime(sanction.createdAt)}
                     </span>
                   </span>
                 </label>
               ))}
               {totalFine > 0 && (
-                <p className="pt-1 text-[12px] text-[#a78bfa]">
+                <p className="pt-1 text-[12px] text-indigo">
                   Offene Gesamtforderung der Auswahl: {formatFineAmount(totalFine)}
                 </p>
               )}
@@ -509,13 +509,13 @@ function CustomCaseForm({ submitting, onCreate, onBack }: { submitting: boolean;
       <Select label="Beklagter (optional)" value={officerId} onValueChange={setOfficerId} options={officerOptions} />
 
       {sanctions.length > 0 && (
-        <div className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/50 p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.14em] text-[#8ea4bd]">Offene Sanktionen als Beweis</p>
+        <div className="rounded-[10px] border border-line bg-surface p-3">
+          <p className="mb-2 text-[11px] text-label-2">Offene Sanktionen als Beweis</p>
           <div className="space-y-2">
             {sanctions.map((sanction) => (
-              <label key={sanction.id} className="flex cursor-pointer items-start gap-3 rounded-[9px] border border-[#18385f]/50 bg-[#04101f]/60 p-3">
-                <input type="checkbox" checked={selected.has(sanction.id)} onChange={() => toggle(sanction.id)} className="mt-0.5 h-4 w-4 accent-[#8b5cf6]" />
-                <span className="text-[12.5px] text-[#edf4fb]">
+              <label key={sanction.id} className="flex cursor-pointer items-start gap-3 rounded-[9px] border border-line bg-canvas p-3">
+                <input type="checkbox" checked={selected.has(sanction.id)} onChange={() => toggle(sanction.id)} className="mt-0.5 h-4 w-4 accent-purple" />
+                <span className="text-[12.5px] text-label">
                   {penalGradeLabel(sanction.penalGrade)} · {sanctionMeasureLabel(sanction)}
                 </span>
               </label>
@@ -627,11 +627,11 @@ function CaseDetailModal({ caseId, canManage, onClose, onChanged }: { caseId: st
   return (
     <Modal open onClose={onClose} title={doc ? doc.title : 'Klageschrift'} size="xl">
       {state === 'loading' && (
-        <div className="flex items-center gap-2 py-10 text-[13px] text-[#8ea4bd]">
+        <div className="flex items-center gap-2 py-10 text-[13px] text-label-2">
           <Loader2 size={14} className="animate-spin" /> Klageschrift wird geladen…
         </div>
       )}
-      {state === 'error' && <p className="py-10 text-[13px] text-[#fca5a5]">Klageschrift konnte nicht geladen werden.</p>}
+      {state === 'error' && <p className="py-10 text-[13px] text-red">Klageschrift konnte nicht geladen werden.</p>}
 
       {state === 'ready' && doc && (
         <div className="space-y-4">
@@ -691,7 +691,7 @@ function CaseDetailModal({ caseId, canManage, onClose, onChanged }: { caseId: st
           )}
 
           {!editing && (
-            <p className="break-all font-mono text-[10.5px] leading-4 text-[#536b86]">
+            <p className="break-all font-mono text-[11px] leading-4 text-label-4">
               {window.location.origin}/klage/{doc.token}
             </p>
           )}

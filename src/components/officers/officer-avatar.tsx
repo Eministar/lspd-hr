@@ -31,7 +31,7 @@ export function OfficerAvatar({ officer, size = 'md', className, ringColor }: Of
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full border bg-[#102542] bg-cover bg-center text-[#8ea4bd] shadow-[0_2px_8px_rgba(0,0,0,.18)]',
+        'inline-flex shrink-0 items-center justify-center rounded-full border bg-surface-2 bg-cover bg-center text-label-2 shadow-[0_2px_8px_rgba(0,0,0,.18)]',
         sizeClasses[size],
         className,
       )}

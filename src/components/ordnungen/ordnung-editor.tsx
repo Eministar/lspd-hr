@@ -52,8 +52,8 @@ function IconGrid({ value, onChange }: { value: string; onChange: (v: string) =>
             onClick={() => onChange(name)}
             className={`flex items-center justify-center h-9 rounded-[8px] border transition-colors ${
               active
-                ? 'border-[#4a8fd8] bg-[#4a8fd8]/15 text-[#7fb2e8]'
-                : 'border-[#1e3a5c]/50 text-[#8194a9] hover:border-[#2d5279] hover:text-[#c4d4e6]'
+                ? 'border-label-4 bg-white/[0.03] text-label-2'
+                : 'border-line text-label-3 hover:border-line-strong hover:text-label-2'
             }`}
             title={name}
           >
@@ -66,7 +66,7 @@ function IconGrid({ value, onChange }: { value: string; onChange: (v: string) =>
 }
 
 const EDITOR_TEXTAREA =
-  'flex-1 min-h-0 min-w-0 w-full rounded-[10px] bg-[#081729] border border-[#1e3a5c]/60 p-4 text-[13px] leading-relaxed font-mono text-[#e6eef8] resize-none focus:outline-none focus:border-[#2d5279] placeholder:text-[#41597a]'
+  'flex-1 min-h-0 min-w-0 w-full rounded-[10px] bg-surface border border-line p-4 text-[13px] leading-relaxed font-mono text-label resize-none focus:outline-none focus:border-line-strong placeholder:text-label-4'
 
 export function OrdnungEditor({
   open,
@@ -101,7 +101,7 @@ export function OrdnungEditor({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 bg-[#04101f]/70 backdrop-blur-[3px] z-50"
+                className="fixed inset-0 bg-canvas backdrop-blur-[3px] z-50"
               />
             </Dialog.Overlay>
             <Dialog.Content asChild onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -113,12 +113,12 @@ export function OrdnungEditor({
                 className="fixed inset-2 sm:inset-4 lg:inset-6 z-50 flex flex-col overflow-hidden glass-panel-elevated rounded-[16px]"
               >
                 {/* Kopfzeile */}
-                <header className="flex items-center gap-3 px-5 py-3.5 border-b border-[#1e3a5c]/45 shrink-0">
+                <header className="flex items-center gap-3 px-5 py-3.5 border-b border-line shrink-0">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#5f7fa3]">
+                    <p className="text-[11px] font-semibold text-label-3">
                       {isEditing ? 'Ordnung bearbeiten' : 'Neue Ordnung'}
                     </p>
-                    <Dialog.Title className="text-[15px] font-semibold text-[#f0f5fb] truncate">
+                    <Dialog.Title className="text-[15px] font-semibold text-label truncate">
                       {form.title.trim() || 'Ohne Titel'}
                     </Dialog.Title>
                     <Dialog.Description className="sr-only">
@@ -135,7 +135,7 @@ export function OrdnungEditor({
                     </Button>
                     <Dialog.Close asChild>
                       <button
-                        className="ml-1 p-1.5 rounded-[8px] text-[#6b8299] hover:text-[#d4af37] hover:bg-[#102542]/60 transition-colors"
+                        className="ml-1 p-1.5 rounded-[8px] text-label-3 hover:text-gold-bright hover:bg-surface-2 transition-colors"
                         aria-label="Schließen"
                       >
                         <X size={16} strokeWidth={2} />
@@ -147,7 +147,7 @@ export function OrdnungEditor({
                 {/* Körper: Metadaten-Spalte + Editor */}
                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
                   {/* Metadaten */}
-                  <aside className="lg:w-[340px] shrink-0 border-b lg:border-b-0 lg:border-r border-[#1e3a5c]/45 overflow-y-auto p-5 space-y-4">
+                  <aside className="lg:w-[340px] shrink-0 border-b lg:border-b-0 lg:border-r border-line overflow-y-auto p-5 space-y-4">
                     <Input
                       label="Titel"
                       value={form.title}
@@ -175,7 +175,7 @@ export function OrdnungEditor({
                       placeholder="Kategorie wählen"
                     />
                     <div>
-                      <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Icon</p>
+                      <p className="block text-[12.5px] font-medium text-label-2 mb-1.5">Icon</p>
                       <IconGrid value={form.icon} onChange={(v) => onChange({ icon: v })} />
                     </div>
                   </aside>
@@ -183,7 +183,7 @@ export function OrdnungEditor({
                   {/* Editor */}
                   <section className="flex-1 min-w-0 flex flex-col p-4 gap-3">
                     <div className="flex items-center justify-between gap-3 shrink-0">
-                      <div className="inline-flex rounded-[9px] bg-[#0b1c34] border border-[#1e3a5c]/60 p-0.5">
+                      <div className="inline-flex rounded-[9px] bg-surface border border-line p-0.5">
                         {VIEW_MODES.map((m) => {
                           const active = view === m.key
                           const Icon = m.icon
@@ -194,8 +194,8 @@ export function OrdnungEditor({
                               onClick={() => setView(m.key)}
                               className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[7px] text-[12px] font-medium transition-colors ${
                                 active
-                                  ? 'bg-[#17375f] text-[#edf4fb]'
-                                  : 'text-[#7e93ab] hover:text-[#c4d4e6]'
+                                  ? 'bg-surface-3 text-label'
+                                  : 'text-label-3 hover:text-label-2'
                               }`}
                             >
                               <Icon size={13} strokeWidth={2} />
@@ -204,7 +204,7 @@ export function OrdnungEditor({
                           )
                         })}
                       </div>
-                      <span className="text-[11.5px] text-[#5f7fa3] tabular-nums">
+                      <span className="text-[11.5px] text-label-3 tabular-nums">
                         {charCount.toLocaleString('de-DE')} Zeichen
                       </span>
                     </div>
@@ -225,7 +225,7 @@ export function OrdnungEditor({
                       )}
                       {view !== 'edit' && (
                         <div
-                          className="markdown-document flex-1 min-h-0 min-w-0 overflow-auto rounded-[10px] bg-[#0b1c34]/50 border border-[#1e3a5c]/40 p-4 text-[13px]"
+                          className="markdown-document flex-1 min-h-0 min-w-0 overflow-auto rounded-[10px] bg-surface border border-line p-4 text-[13px]"
                           dangerouslySetInnerHTML={{ __html: html }}
                         />
                       )}

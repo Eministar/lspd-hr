@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, ShieldAlert, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface SessionRecoveryScreenProps {
@@ -15,37 +15,33 @@ export function SessionRecoveryScreen({ message, onRetry, onClearCache }: Sessio
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#061426] px-4 bg-pattern">
-      <div className="w-full max-w-[420px] glass-panel-elevated rounded-[18px] p-6 text-center">
-        <div className="mx-auto mb-5 flex h-[88px] w-[88px] items-center justify-center rounded-[20px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 shadow-[0_4px_20px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(212,175,55,0.08)]">
-          <Image src="/shield.webp" alt="LSPD" width={72} height={72} className="rounded-full" priority />
+    <div className="lspd-login">
+      <div className="w-full max-w-[400px] text-center">
+        <div className="lspd-login-emblem !mb-6 !h-20 !w-20">
+          <Image src="/shield.webp" alt="LSPD" width={80} height={80} priority />
         </div>
 
-        <div className="mb-2 flex items-center justify-center gap-2 text-[#d4af37]">
-          <ShieldAlert size={17} strokeWidth={1.8} />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">Sitzung prüfen</span>
-        </div>
-
-        <h1 className="text-[20px] font-semibold text-white">Keine aktive Sitzung gefunden</h1>
-        <p className="mt-2 text-[13px] leading-relaxed text-[#9fb0c4]">
+        <p className="text-[13px] font-medium text-label-3">Sitzung prüfen</p>
+        <h1 className="mt-1 text-[24px] font-bold tracking-[-0.025em] text-label">Keine aktive Sitzung gefunden</h1>
+        <p className="mx-auto mt-2 max-w-[34ch] text-[14px] leading-relaxed text-label-2">
           {message || 'Deine Anmeldung ist abgelaufen oder der lokale Browser-Cache enthält alte Sitzungsdaten.'}
         </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-2.5">
-          <Button onClick={onRetry} className="h-[38px]">
-            <RefreshCw size={14} strokeWidth={2} />
+        <div className="mt-7 grid grid-cols-1 gap-2">
+          <Button onClick={onRetry} size="lg">
+            <RefreshCw size={15} strokeWidth={2} />
             Neu laden
           </Button>
-          <Button variant="secondary" onClick={onClearCache} className="h-[38px]">
-            <Trash2 size={14} strokeWidth={2} />
+          <Button variant="secondary" onClick={onClearCache} size="lg">
+            <Trash2 size={15} strokeWidth={2} />
             Cache löschen
           </Button>
-          <Button variant="ghost" onClick={() => router.push('/login')} className="h-[38px]">
+          <Button variant="ghost" onClick={() => router.push('/login')} size="lg">
             Zum Login
           </Button>
         </div>
 
-        <p className="mt-5 text-[11px] text-[#4a6585]">
+        <p className="mt-5 text-[12px] text-label-4">
           Cache löschen entfernt lokale Browserdaten dieser App und meldet dich ab.
         </p>
       </div>

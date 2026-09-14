@@ -98,9 +98,9 @@ export function FormTestResponseDetail({ testId, responseId }: { testId: string;
     return (
       <div className="mx-auto max-w-3xl">
         <PageHeader title="Abgabe" description="Die Abgabe konnte nicht geladen werden." eyebrow="Auswertung" />
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-14 text-center">
-          <Clipboard size={26} className="mx-auto mb-2 text-[#4a6585]" />
-          <p className="text-[13px] text-[#8ea4bd]">{loadError ?? 'Abgabe nicht verfügbar'}</p>
+        <div className="glass-panel-elevated rounded-[12px] border border-line py-14 text-center">
+          <Clipboard size={26} className="mx-auto mb-2 text-label-4" />
+          <p className="text-[13px] text-label-2">{loadError ?? 'Abgabe nicht verfügbar'}</p>
           <Link href={listHref} className="mt-4 inline-block">
             <Button variant="secondary" size="sm">
               <ArrowLeft size={13} />
@@ -134,10 +134,10 @@ export function FormTestResponseDetail({ testId, responseId }: { testId: string;
         <Badge variant={response.reviewedAt ? 'success' : 'warning'}>
           {response.reviewedAt ? `Bewertet von ${response.reviewedBy?.displayName ?? 'Unbekannt'}` : 'Offen'}
         </Badge>
-        <span className="text-[12px] text-[#8ea4bd]">Abgegeben {formatDateTime(response.submittedAt)}</span>
+        <span className="text-[12px] text-label-2">Abgegeben {formatDateTime(response.submittedAt)}</span>
       </div>
 
-      <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
+      <section className="glass-panel-elevated rounded-[12px] border border-line p-4">
         <div className="space-y-3">
           {response.answers.map((answer, index) => {
             const correct = correctValues(answer.question)
@@ -145,28 +145,28 @@ export function FormTestResponseDetail({ testId, responseId }: { testId: string;
             const showCorrect = test.kind === 'TEST' && correct.length > 0
             const isCorrect = showCorrect && correct.length === chosen.length && correct.every((value) => chosen.includes(value))
             return (
-              <div key={answer.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
+              <div key={answer.id} className="rounded-[12px] border border-line bg-white/[0.03] p-3">
                 <div className="mb-2 flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] bg-[#102542] text-[10px] font-semibold text-[#d4af37]">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] bg-surface-2 text-[11px] font-semibold text-gold">
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-white">{answer.question.title}</p>
-                    <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{answerText(answer)}</p>
+                    <p className="text-[13px] font-semibold text-label">{answer.question.title}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-5 text-label">{answerText(answer)}</p>
                   </div>
                   {showCorrect && (
                     <Badge variant={isCorrect ? 'success' : 'danger'}>{isCorrect ? 'Richtig' : 'Falsch'}</Badge>
                   )}
                 </div>
                 {showCorrect && (
-                  <p className="pl-7 text-[11.5px] text-[#8ea4bd]">Richtig: {correct.join(', ')}</p>
+                  <p className="pl-7 text-[11.5px] text-label-2">Richtig: {correct.join(', ')}</p>
                 )}
               </div>
             )
           })}
         </div>
 
-        <div className="mt-5 rounded-[12px] border border-[#18385f]/45 bg-[#04101f]/50 p-4">
+        <div className="mt-5 rounded-[12px] border border-line bg-canvas p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
             <Input
               label={`Punkte${response.maxScore > 0 ? ` von ${response.maxScore}` : ''}`}
@@ -192,12 +192,12 @@ export function FormTestResponseDetail({ testId, responseId }: { testId: string;
 
       <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Abgabe löschen" size="sm">
         <div className="space-y-4">
-          <div className="flex gap-3 rounded-[12px] border border-[#7f1d1d]/45 bg-[#2a1016]/55 p-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[#f87171]/14 text-[#fca5a5]">
+          <div className="flex gap-3 rounded-[12px] border border-red/14 bg-red/8 p-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-red/14 text-red">
               <AlertTriangle size={17} strokeWidth={2} />
             </div>
-            <p className="text-[13px] leading-6 text-[#dbe6f3]">
-              Abgabe von <span className="font-semibold text-white">{response.respondent?.displayName ?? response.respondentName}</span> wirklich löschen?
+            <p className="text-[13px] leading-6 text-label">
+              Abgabe von <span className="font-semibold text-label">{response.respondent?.displayName ?? response.respondentName}</span> wirklich löschen?
               Die Person kann den {test.kind === 'SURVEY' ? 'Fragebogen' : 'Test'} danach erneut ausfüllen. Diese Aktion kann nicht rückgängig gemacht werden.
             </p>
           </div>

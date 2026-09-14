@@ -51,15 +51,15 @@ export default function UpdateAnnouncerPage() {
       <PageHeader title="Update senden" description="Eine verständliche Update-Mitteilung im Discord-Channel veröffentlichen" />
 
       <div className="max-w-4xl">
-        <div className="glass-panel-elevated rounded-[14px] p-5">
+        <div className="glass-panel-elevated rounded-[12px] p-5">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-[13.5px] font-semibold text-[#eee]">Update-Announcer</h3>
-              <p className="text-[11.5px] text-[#6b8299] mt-1">
+              <h3 className="text-[13.5px] font-semibold text-label">Update-Announcer</h3>
+              <p className="text-[11.5px] text-label-3 mt-1">
                 Die Einträge werden als Discord-diff-Blöcke für Neu, Geändert und Entfernt gesendet.
               </p>
             </div>
-            <Megaphone size={18} className="text-[#d4af37] shrink-0" />
+            <Megaphone size={18} className="text-gold shrink-0" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3">

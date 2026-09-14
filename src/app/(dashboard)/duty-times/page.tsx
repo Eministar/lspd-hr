@@ -129,9 +129,9 @@ export default function DutyTimesPage() {
     return (
         <div className="max-w-6xl mx-auto">
           <PageHeader title="Dienstzeiten" description="Live-Übersicht der aktiven Police-Spielzeit" />
-          <div className="glass-panel-elevated rounded-[14px] p-8 text-center">
-            <AlertTriangle size={26} className="mx-auto text-[#f87171] mb-3" />
-            <p className="text-[13px] text-[#9fb0c4] mb-4">{error || 'Dienstzeiten konnten nicht geladen werden'}</p>
+          <div className="glass-panel-elevated rounded-[12px] p-8 text-center">
+            <AlertTriangle size={26} className="mx-auto text-red mb-3" />
+            <p className="text-[13px] text-label-2 mb-4">{error || 'Dienstzeiten konnten nicht geladen werden'}</p>
             <Button size="sm" onClick={refetch}><RefreshCw size={13} /> Erneut laden</Button>
           </div>
         </div>
@@ -157,16 +157,16 @@ export default function DutyTimesPage() {
         />
 
         {/* Live status bar */}
-        <div className="glass-panel-elevated rounded-[14px] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="glass-panel-elevated rounded-[12px] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="icon-tile h-11 w-11 rounded-[12px] flex items-center justify-center">
               <Wifi size={20} strokeWidth={1.8} />
             </div>
             <div className="min-w-0">
-              <p className="text-[13.5px] font-semibold text-white truncate">
+              <p className="text-[13.5px] font-semibold text-label truncate">
                 {data.activeCount > 0 ? `${data.activeCount} ${data.activeCount === 1 ? 'Officer' : 'Officers'} aktuell im Dienst` : 'Aktuell niemand im Dienst'}
               </p>
-              <p className="text-[11.5px] text-[#7089a5] mt-0.5">
+              <p className="text-[11.5px] text-label-3 mt-0.5">
                 Sync {formatRelativeTime(data.sync.checkedAt)} · Woche seit {formatDateTime(data.weekStart)}
               </p>
             </div>
@@ -180,16 +180,16 @@ export default function DutyTimesPage() {
         </div>
 
         {!data.sync.configured && (
-            <div className="rounded-[12px] border border-[#3d2d12] bg-[#1d1608]/80 px-4 py-3 text-[12.5px] text-[#e8c979]">
+            <div className="rounded-[12px] border border-gold/25 bg-gold/10 px-4 py-3 text-[12.5px] text-gold-bright">
               Player-Online API ist nicht konfiguriert. Historische Spielzeit bleibt sichtbar, Live-Status wird erst mit Server-Env <code>PLAYER_ONLINE_API_SECRET</code> synchronisiert.
             </div>
         )}
 
         {data.sync.errorCount > 0 && (
-            <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111]/80 px-4 py-3 text-[12.5px] text-[#fca5a5]">
+            <div className="rounded-[12px] border border-red/30 bg-red/11 px-4 py-3 text-[12.5px] text-red">
               <p>{data.sync.errorCount} Player-Online-Abfragen sind fehlgeschlagen.</p>
               {data.sync.errorSummary.length > 0 && (
-                  <ul className="mt-2 space-y-1 font-mono text-[11px] text-[#fecaca]">
+                  <ul className="mt-2 space-y-1 font-mono text-[11px] text-red">
                     {data.sync.errorSummary.map((entry) => (
                         <li key={entry.message}>{entry.count}× {entry.message}</li>
                     ))}
@@ -199,17 +199,17 @@ export default function DutyTimesPage() {
         )}
 
         {data.sync.configured && data.sync.onlineCount === 0 && data.sync.errorCount === 0 && (
-            <div className="rounded-[12px] border border-[#29496c] bg-[#0a1e38]/70 px-4 py-3 text-[12px] text-[#9fb0c4]">
+            <div className="rounded-[12px] border border-line bg-surface px-4 py-3 text-[12px] text-label-2">
               Die API antwortet, meldet aber keinen aktiven Police-Spieler: {data.sync.statusCounts.offline} offline, {data.sync.statusCounts['ignored-job']} mit anderem Job und {data.sync.statusCounts['not-linked']} ohne Discord-Verknüpfung.
             </div>
         )}
 
         {/* KPI grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-3.5">
-          <KpiCard icon={Users} label="Im Dienst" value={String(data.activeCount)} accent="#22c55e" />
+          <KpiCard icon={Users} label="Im Dienst" value={String(data.activeCount)} accent="#32d74b" />
           <KpiCard icon={Timer} label="Aktiv jetzt" value={formatDuration(data.totalActiveDurationMs)} />
           <KpiCard icon={Clock3} label="Spielzeit Woche" value={formatDuration(data.totalWeekDurationMs)} accent="#d4af37" />
-          <KpiCard icon={Trophy} label="Gesamt-Dienstzeit" value={formatDuration(data.totalAllTimeDurationMs)} accent="#38bdf8" />
+          <KpiCard icon={Trophy} label="Gesamt-Dienstzeit" value={formatDuration(data.totalAllTimeDurationMs)} accent="#64d2ff" />
           <KpiCard icon={Activity} label="Sessions" value={String(data.totalSessionCount)} />
           <KpiCard icon={BarChart3} label="Ø Session" value={formatDuration(data.averageSessionMs)} />
           <KpiCard icon={Database} label="Längste Session" value={formatDuration(data.longestSessionMs)} />
@@ -217,13 +217,13 @@ export default function DutyTimesPage() {
 
         {/* Podium */}
         {podium.length > 0 && (
-            <section className="glass-panel-elevated rounded-[14px] p-5">
+            <section className="glass-panel-elevated rounded-[12px] p-5">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <Trophy size={16} className="text-[#d4af37]" />
-                  <h3 className="text-[13.5px] font-semibold text-[#f7fbff]">Top-Spielzeit diese Woche</h3>
+                  <Trophy size={16} className="text-gold" />
+                  <h3 className="text-[13.5px] font-semibold text-blue">Top-Spielzeit diese Woche</h3>
                 </div>
-                <span className="text-[11.5px] text-[#7089a5]">Sync {formatRelativeTime(data.sync.checkedAt)}</span>
+                <span className="text-[11.5px] text-label-3">Sync {formatRelativeTime(data.sync.checkedAt)}</span>
               </div>
 
               {podium.length >= 1 && (
@@ -232,16 +232,16 @@ export default function DutyTimesPage() {
                       // visual order: 2nd, 1st, 3rd
                       const rank = officer === podium[0] ? 1 : officer === podium[1] ? 2 : 3
                       const colors = rank === 1
-                          ? { ring: 'ring-[#d4af37]/40', text: 'text-[#d4af37]', label: 'bg-[#d4af37] text-[#071b33]', icon: <Crown size={14} /> }
+                          ? { ring: 'ring-gold/40', text: 'text-gold', label: 'bg-gold text-ink', icon: <Crown size={14} /> }
                           : rank === 2
-                              ? { ring: 'ring-[#c0c8d4]/30', text: 'text-[#c0c8d4]', label: 'bg-[#c0c8d4] text-[#071b33]', icon: null }
-                              : { ring: 'ring-[#b08968]/30', text: 'text-[#b08968]', label: 'bg-[#b08968] text-[#071b33]', icon: null }
+                              ? { ring: 'ring-label-4/30', text: 'text-label-2', label: 'bg-surface-4 text-label', icon: null }
+                              : { ring: 'ring-orange/18', text: 'text-orange', label: 'bg-orange text-ink', icon: null }
                       return (
                           <Link
                               key={officer.id}
                               href={`/officers/${officer.id}`}
                               className={cn(
-                                  'rounded-[12px] border border-[#1e3a5c]/55 bg-[#0a1e38]/75 p-4 ring-1 transition-transform hover:-translate-y-0.5',
+                                  'rounded-[12px] border border-line bg-surface p-4 ring-1 transition-colors hover:bg-surface-2',
                                   colors.ring,
                                   rank === 1 && 'md:order-2 md:scale-[1.03]',
                                   rank === 2 && 'md:order-1',
@@ -252,16 +252,16 @@ export default function DutyTimesPage() {
                               <div className="flex items-center gap-3 min-w-0">
                                 <OfficerAvatar officer={officer} />
                                 <div className="min-w-0">
-                                  <p className="truncate text-[13px] font-semibold text-white">{officerName(officer)}</p>
-                                  <p className="text-[11px] text-[#7089a5] font-mono">#{displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}</p>
+                                  <p className="truncate text-[13px] font-semibold text-label">{officerName(officer)}</p>
+                                  <p className="text-[11px] text-label-3 font-mono">#{displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}</p>
                                 </div>
                               </div>
-                              <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold', colors.label)}>
+                              <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', colors.label)}>
                         {colors.icon} {rank}
                       </span>
                             </div>
                             <p className={cn('mt-3 text-[20px] font-semibold tabular-nums', colors.text)}>{formatDuration(officer.weekDurationMs)}</p>
-                            <p className="text-[11px] text-[#7089a5]">{officer.sessionCount} Sessions</p>
+                            <p className="text-[11px] text-label-3">{officer.sessionCount} Sessions</p>
                           </Link>
                       )
                     })}
@@ -271,17 +271,17 @@ export default function DutyTimesPage() {
               {data.topRows.length > 3 && (
                   <div className="space-y-2">
                     {data.topRows.slice(3).map((officer) => (
-                        <Link key={officer.id} href={`/officers/${officer.id}`} className="grid grid-cols-[minmax(0,1fr)_88px] items-center gap-3 rounded-[10px] border border-[#1e3a5c]/40 bg-[#0a1e38]/55 px-3 py-2.5 transition-colors hover:border-[#d4af37]/25">
+                        <Link key={officer.id} href={`/officers/${officer.id}`} className="grid grid-cols-[minmax(0,1fr)_88px] items-center gap-3 rounded-[10px] border border-line bg-surface px-3 py-2.5 transition-colors hover:border-gold/25">
                           <div className="min-w-0">
                             <div className="flex items-center justify-between gap-3">
-                              <p className="truncate text-[12.5px] font-medium text-white">
-                                {officerName(officer)} <span className="font-mono text-[#d4af37]">#{displayBadgeNumber(officer.badgeNumber)}</span>
+                              <p className="truncate text-[12.5px] font-medium text-label">
+                                {officerName(officer)} <span className="font-mono text-label-3">#{displayBadgeNumber(officer.badgeNumber)}</span>
                               </p>
-                              <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#d4af37]">{formatDuration(officer.weekDurationMs)}</span>
+                              <span className="shrink-0 text-[12px] font-semibold tabular-nums text-gold">{formatDuration(officer.weekDurationMs)}</span>
                             </div>
-                            <div className="mt-2 h-[6px] overflow-hidden rounded-full bg-[#061426]/80">
+                            <div className="mt-2 h-[6px] overflow-hidden rounded-full bg-canvas">
                               <div
-                                  className="h-full rounded-full bg-gradient-to-r from-[#d4af37] to-[#38bdf8]"
+                                  className="h-full rounded-full bg-gold"
                                   style={{ width: `${Math.max(4, (officer.weekDurationMs / topMax) * 100)}%` }}
                               />
                             </div>
@@ -294,13 +294,13 @@ export default function DutyTimesPage() {
             </section>
         )}
 
-        <section className="glass-panel-elevated rounded-[14px] p-5">
+        <section className="glass-panel-elevated rounded-[12px] p-5">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <span className="live-pulse" />
-              <h3 className="text-[13.5px] font-semibold text-[#f7fbff]">Aktuell im Dienst</h3>
+              <h3 className="text-[13.5px] font-semibold text-blue">Aktuell im Dienst</h3>
             </div>
-            <span className="text-[11.5px] text-[#7089a5]">Online · Script verbunden · Job police</span>
+            <span className="text-[11.5px] text-label-3">Online · Script verbunden · Job police</span>
           </div>
 
           {data.activeRows.length > 0 ? (
@@ -311,19 +311,19 @@ export default function DutyTimesPage() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.25, delay: index * 0.03 }}
-                        className="rounded-[12px] border border-[#22c55e]/15 bg-gradient-to-br from-[#0a1e38]/85 to-[#052e1b]/40 p-4 hover:border-[#22c55e]/30 transition-colors"
+                        className="rounded-[12px] border border-green/9 bg-gradient-to-br from-surface/85 to-green/6 p-4 hover:border-green/18 transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <OfficerAvatar officer={officer} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <Link href={`/officers/${officer.id}`} className="text-[14px] font-semibold text-white transition-colors hover:text-[#d4af37]">
+                            <Link href={`/officers/${officer.id}`} className="text-[14px] font-semibold text-label transition-colors hover:text-gold-bright">
                               {officerName(officer)}
-                              <span className="ml-1 font-mono text-[#d4af37]">#{displayBadgeNumber(officer.badgeNumber)}</span>
+                              <span className="ml-1 font-mono text-label-3">#{displayBadgeNumber(officer.badgeNumber)}</span>
                             </Link>
                             <StatusPill status={officer.apiStatus} />
                           </div>
-                          <p className="text-[11.5px] text-[#9fb0c4] mt-0.5">{officer.rank.name}</p>
+                          <p className="text-[11.5px] text-label-2 mt-0.5">{officer.rank.name}</p>
                         </div>
                       </div>
 
@@ -339,11 +339,11 @@ export default function DutyTimesPage() {
                         <IdentityMetric label="Steam-ID" value={officer.currentPlayer?.steamId} />
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-[#7089a5]">
-                        <span>Woche: <strong className="text-[#d4af37] tabular-nums">{formatDuration(officer.weekDurationMs)}</strong></span>
-                        <span>Gesamt: <strong className="text-[#38bdf8] tabular-nums">{formatDuration(officer.totalDurationMs)}</strong></span>
-                        <span>Sessions: <strong className="text-[#c7d4e4] tabular-nums">{officer.sessionCount}</strong></span>
-                        <span>Heartbeat: <strong className="text-[#c7d4e4]">{formatRelativeTime(officer.lastHeartbeat ?? '')}</strong></span>
+                      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-label-3">
+                        <span>Woche: <strong className="text-gold tabular-nums">{formatDuration(officer.weekDurationMs)}</strong></span>
+                        <span>Gesamt: <strong className="text-cyan tabular-nums">{formatDuration(officer.totalDurationMs)}</strong></span>
+                        <span>Sessions: <strong className="text-label-2 tabular-nums">{officer.sessionCount}</strong></span>
+                        <span>Heartbeat: <strong className="text-label-2">{formatRelativeTime(officer.lastHeartbeat ?? '')}</strong></span>
                       </div>
                     </motion.div>
                 ))}
@@ -353,39 +353,39 @@ export default function DutyTimesPage() {
           )}
         </section>
 
-        <section className="glass-panel-elevated rounded-[14px] p-5">
+        <section className="glass-panel-elevated rounded-[12px] p-5">
           <div className="flex items-center justify-between gap-3 mb-1">
-            <h3 className="text-[13.5px] font-semibold text-[#f7fbff]">Wochenübersicht pro Spieler</h3>
-            <span className="text-[11.5px] text-[#7089a5]">{data.rows.length} Officers</span>
+            <h3 className="text-[13.5px] font-semibold text-blue">Wochenübersicht pro Spieler</h3>
+            <span className="text-[11.5px] text-label-3">{data.rows.length} Officers</span>
           </div>
-          <p className="text-[12px] text-[#7089a5] mb-4">
+          <p className="text-[12px] text-label-3 mb-4">
             Alle nicht gekündigten Officers mit Live-Status, IDs und Spielzeitstatistik.
           </p>
-          <div className="divide-y divide-[#18385f]/40">
+          <div className="divide-y divide-line">
             {data.rows.map((officer) => (
                 <div key={officer.id} className="grid grid-cols-1 gap-3 py-3 first:pt-0 last:pb-0 xl:grid-cols-[minmax(0,1fr)_260px_420px] xl:items-center">
                   <div className="min-w-0 flex items-start gap-3">
                     <OfficerAvatar officer={officer} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={`/officers/${officer.id}`} className="text-[13px] font-medium text-white transition-colors hover:text-[#d4af37]">
-                          {officerName(officer)} <span className="font-mono text-[#d4af37]">#{displayBadgeNumber(officer.badgeNumber)}</span>
+                        <Link href={`/officers/${officer.id}`} className="text-[13px] font-medium text-label transition-colors hover:text-gold-bright">
+                          {officerName(officer)} <span className="font-mono text-label-3">#{displayBadgeNumber(officer.badgeNumber)}</span>
                         </Link>
                         <StatusPill status={officer.apiStatus} compact />
                       </div>
-                      <p className="mt-0.5 text-[11.5px] text-[#7089a5]">{officer.rank.name}</p>
+                      <p className="mt-0.5 text-[11.5px] text-label-3">{officer.rank.name}</p>
                       {officer.currentPlayer && (
-                          <p className="mt-1 truncate text-[11px] text-[#5c728a]">
+                          <p className="mt-1 truncate text-[11px] text-label-3">
                             {officer.currentPlayer.name}
                             {officer.currentPlayer.identifier ? ` · ${officer.currentPlayer.identifier}` : ''}
                           </p>
                       )}
                       {officer.apiStatus !== 'online' && officer.lastSeenAt && (
-                          <p className="mt-1 text-[11px] text-[#7089a5]">
-                            Zuletzt: <span className="text-[#c7d4e4]">{formatRelativeTime(officer.lastSeenAt)}</span>
+                          <p className="mt-1 text-[11px] text-label-3">
+                            Zuletzt: <span className="text-label-2">{formatRelativeTime(officer.lastSeenAt)}</span>
                           </p>
                       )}
-                      {officer.apiError && <p className="mt-1 truncate text-[11px] text-[#fca5a5]">{officer.apiError}</p>}
+                      {officer.apiError && <p className="mt-1 truncate text-[11px] text-red">{officer.apiError}</p>}
                     </div>
                   </div>
 
@@ -424,18 +424,18 @@ function KpiCard({ icon: Icon, label, value, accent }: { icon: LucideIcon; label
 
 function Metric({ label, value, strong }: { label: string; value?: string; strong?: boolean }) {
   return (
-      <div className="rounded-[8px] bg-[#061426]/60 border border-[#18385f]/30 px-3 py-2">
-        <p className="text-[10.5px] font-medium uppercase tracking-wider text-[#4a6585]">{label}</p>
-        <p className={cn('mt-1 truncate text-[12.5px] tabular-nums', strong ? 'font-semibold text-[#d4af37]' : 'text-[#c7d4e4]')}>{value || '—'}</p>
+      <div className="rounded-[8px] bg-canvas border border-line px-3 py-2">
+        <p className="text-[11px] font-medium text-label-4">{label}</p>
+        <p className={cn('mt-1 truncate text-[12.5px] tabular-nums', strong ? 'font-semibold text-gold' : 'text-label-2')}>{value || '—'}</p>
       </div>
   )
 }
 
 function IdentityMetric({ label, value }: { label: string; value?: string | null }) {
   return (
-      <div className="rounded-[8px] bg-[#061426]/60 border border-[#18385f]/30 px-3 py-2">
-        <p className="text-[10.5px] font-medium uppercase tracking-wider text-[#4a6585]">{label}</p>
-        <p className="mt-1 truncate font-mono text-[11.5px] text-[#c7d4e4]" title={value || undefined}>{value || '—'}</p>
+      <div className="rounded-[8px] bg-canvas border border-line px-3 py-2">
+        <p className="text-[11px] font-medium text-label-4">{label}</p>
+        <p className="mt-1 truncate font-mono text-[11.5px] text-label-2" title={value || undefined}>{value || '—'}</p>
       </div>
   )
 }
@@ -446,14 +446,14 @@ function StatusPill({ status, compact }: { status: ApiStatus; compact?: boolean 
   return (
       <span className={cn(
           'inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] whitespace-nowrap',
-          compact && 'px-2 py-0.5 text-[10.5px]',
+          compact && 'px-2 py-0.5 text-[11px]',
           online
-              ? 'border-[#22c55e]/30 bg-[#052e1b]/60 text-[#86efac]'
+              ? 'border-green/18 bg-green/8 text-green'
               : error
-                  ? 'border-[#ef4444]/25 bg-[#2a1111]/60 text-[#fca5a5]'
-                  : 'border-[#234568]/60 bg-[#0a1a33]/60 text-[#8ea4bd]',
+                  ? 'border-red/15 bg-red/8 text-red'
+                  : 'border-line bg-surface text-label-2',
       )}>
-      {online ? <span className="live-pulse" /> : <span className={cn('h-1.5 w-1.5 rounded-full', error ? 'bg-[#ef4444]' : 'bg-[#4a6585]')} />}
+      {online ? <span className="live-pulse" /> : <span className={cn('h-1.5 w-1.5 rounded-full', error ? 'bg-red' : 'bg-surface-4')} />}
         {statusLabel(status)}
     </span>
   )
@@ -467,19 +467,19 @@ function MiniBars({ daily }: { daily: DailyPoint[] }) {
           const isToday = new Date(day.date).toDateString() === new Date().toDateString()
           return (
               <div key={`${day.date}-${day.label}`} className="min-w-0 group">
-                <div className="flex h-[38px] items-end rounded-[6px] bg-[#061426]/60 border border-[#18385f]/30 px-1 transition-colors group-hover:border-[#d4af37]/30">
+                <div className="flex h-[38px] items-end rounded-[6px] bg-canvas border border-line px-1 transition-colors group-hover:border-gold/30">
                   <div
                       className={cn(
                           'w-full rounded-t-[4px] transition-all',
                           isToday
-                              ? 'bg-gradient-to-t from-[#d4af37] to-[#fde68a]'
-                              : 'bg-gradient-to-t from-[#1d4ed8] to-[#38bdf8]',
+                              ? 'bg-gold'
+                              : 'bg-gradient-to-t from-blue to-cyan',
                       )}
                       style={{ height: Math.max(4, Math.round((day.durationMs / max) * 32)) }}
                       title={`${day.label}: ${day.durationLabel}`}
                   />
                 </div>
-                <p className={cn('mt-1 truncate text-center text-[9.5px]', isToday ? 'text-[#d4af37] font-semibold' : 'text-[#7089a5]')}>{day.label}</p>
+                <p className={cn('mt-1 truncate text-center text-[11px]', isToday ? 'text-gold font-semibold' : 'text-label-3')}>{day.label}</p>
               </div>
           )
         })}
@@ -489,9 +489,9 @@ function MiniBars({ daily }: { daily: DailyPoint[] }) {
 
 function EmptyState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
-      <div className="rounded-[12px] border border-dashed border-[#1e3a5c]/55 bg-[#0a1e38]/35 px-4 py-12 text-center">
-        <Icon size={28} className="mx-auto text-[#d4af37]/40 mb-3" />
-        <p className="text-[13px] text-[#8ea4bd]">{text}</p>
+      <div className="rounded-[12px] border border-dashed border-line bg-white/[0.03] px-4 py-12 text-center">
+        <Icon size={28} className="mx-auto text-gold/40 mb-3" />
+        <p className="text-[13px] text-label-2">{text}</p>
       </div>
   )
 }

@@ -45,14 +45,14 @@ export default function ExportsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {exports.map((item) => (
-          <div key={item.href} className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
+          <div key={item.href} className="glass-panel-elevated rounded-[12px] border border-line p-4">
             <div className="flex items-start gap-3">
               <div className="icon-tile h-9 w-9 rounded-[9px] flex items-center justify-center">
                 <Download size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-[14px] font-semibold text-white">{item.title}</h3>
-                <p className="mt-1 text-[12.5px] text-[#8ea4bd]">{item.description}</p>
+                <h3 className="text-[14px] font-semibold text-label">{item.title}</h3>
+                <p className="mt-1 text-[12.5px] text-label-2">{item.description}</p>
                 <a href={item.href} className="mt-3 inline-flex">
                   <Button size="sm">CSV herunterladen</Button>
                 </a>
@@ -62,15 +62,15 @@ export default function ExportsPage() {
         ))}
       </div>
 
-      <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-5">
+      <section className="glass-panel-elevated rounded-[12px] border border-line p-5">
         <div className="flex items-start gap-3">
           <div className="icon-tile h-9 w-9 rounded-[9px] flex items-center justify-center">
             <FileText size={16} />
           </div>
           <div className="min-w-0 flex-1 space-y-4">
             <div>
-              <h3 className="text-[14px] font-semibold text-white">Officer-Akte</h3>
-              <p className="mt-1 text-[12.5px] text-[#8ea4bd]">CSV oder druckfertige HTML-Ansicht. Die HTML-Ansicht kann über den Browser als PDF gedruckt werden.</p>
+              <h3 className="text-[14px] font-semibold text-label">Officer-Akte</h3>
+              <p className="mt-1 text-[12.5px] text-label-2">CSV oder druckfertige HTML-Ansicht. Die HTML-Ansicht kann über den Browser als PDF gedruckt werden.</p>
             </div>
             <Select label="Officer" value={officerId} onValueChange={setOfficerId} options={officerOptions} placeholder="Officer wählen..." />
             <div className="flex flex-wrap gap-2">

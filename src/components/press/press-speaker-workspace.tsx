@@ -76,7 +76,7 @@ function formFromRelease(release: PressRelease): PressForm {
 function StatusPill({ status }: { status: PressReleaseStatusValue }) {
   const meta = PRESS_RELEASE_STATUS_META[status]
   return (
-    <span className={cn('inline-flex items-center rounded-[6px] border px-2 py-1 text-[10.5px] font-semibold uppercase tracking-[0.08em]', meta.tone)}>
+    <span className={cn('inline-flex items-center rounded-[6px] border px-2 py-1 text-[11px] font-semibold', meta.tone)}>
       {meta.label}
     </span>
   )
@@ -195,41 +195,41 @@ export function PressSpeakerWorkspace() {
       />
 
       <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <PressStat label="Veröffentlicht" value={publishedCount} tone="text-[#34d399]" />
-        <PressStat label="Entwürfe" value={draftCount} tone="text-[#fbbf24]" />
-        <PressStat label="Archiviert" value={archivedCount} tone="text-[#8ea4bd]" />
+        <PressStat label="Veröffentlicht" value={publishedCount} tone="text-green" />
+        <PressStat label="Entwürfe" value={draftCount} tone="text-yellow" />
+        <PressStat label="Archiviert" value={archivedCount} tone="text-label-2" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_1fr]">
-        <section className="glass-panel-elevated overflow-hidden rounded-[14px] border border-[#1e3a5c]/45">
-          <div className="flex items-center justify-between border-b border-[#18385f]/60 px-4 py-3">
+        <section className="glass-panel-elevated overflow-hidden rounded-[12px] border border-line">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
-              <Megaphone size={15} className="text-[#d4af37]" />
-              <h2 className="text-[13px] font-semibold text-white">Presse-Blöcke</h2>
+              <Megaphone size={15} className="text-gold" />
+              <h2 className="text-[13px] font-semibold text-label">Presse-Blöcke</h2>
             </div>
-            <span className="text-[11.5px] text-[#6b8299]">{rows.length} Einträge</span>
+            <span className="text-[11.5px] text-label-3">{rows.length} Einträge</span>
           </div>
 
           {rows.length > 0 ? (
-            <div className="max-h-[680px] divide-y divide-[#18385f]/60 overflow-y-auto">
+            <div className="max-h-[680px] divide-y divide-line overflow-y-auto">
               {rows.map((release) => (
                 <button
                   key={release.id}
                   type="button"
                   onClick={() => openRelease(release)}
                   className={cn(
-                    'block w-full px-4 py-3 text-left transition-colors hover:bg-[#102542]/55',
-                    selectedRelease?.id === release.id && 'bg-[#102542]/80',
+                    'block w-full px-4 py-3 text-left transition-colors hover:bg-surface-2',
+                    selectedRelease?.id === release.id && 'bg-surface-2',
                   )}
                 >
                   <div className="mb-2 flex items-start justify-between gap-3">
-                    <p className="line-clamp-2 text-[13px] font-semibold leading-5 text-white">{release.title}</p>
+                    <p className="line-clamp-2 text-[13px] font-semibold leading-5 text-label">{release.title}</p>
                     <StatusPill status={release.status} />
                   </div>
-                  <p className="line-clamp-2 text-[12px] leading-5 text-[#8ea4bd]">
+                  <p className="line-clamp-2 text-[12px] leading-5 text-label-2">
                     {release.summary || pressReleaseExcerpt(release.content)}
                   </p>
-                  <p className="mt-2 text-[10.5px] text-[#536b86]">
+                  <p className="mt-2 text-[11px] text-label-4">
                     {formatDateTime(release.publishedAt ?? release.updatedAt)} · {release.updatedBy?.displayName ?? release.createdBy?.displayName ?? 'System'}
                   </p>
                 </button>
@@ -237,20 +237,20 @@ export function PressSpeakerWorkspace() {
             </div>
           ) : (
             <div className="px-4 py-16 text-center">
-              <FileText size={28} className="mx-auto mb-3 text-[#4a6585]" strokeWidth={1.5} />
-              <p className="text-[13px] font-medium text-white">Keine Pressemitteilungen</p>
-              <p className="mt-1 text-[12px] text-[#6b8299]">Erstelle den ersten Entwurf.</p>
+              <FileText size={28} className="mx-auto mb-3 text-label-4" strokeWidth={1.5} />
+              <p className="text-[13px] font-medium text-label">Keine Pressemitteilungen</p>
+              <p className="mt-1 text-[12px] text-label-3">Erstelle den ersten Entwurf.</p>
             </div>
           )}
         </section>
 
-        <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4 sm:p-5">
-          <div className="mb-5 flex flex-col gap-3 border-b border-[#18385f]/55 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="glass-panel-elevated rounded-[12px] border border-line p-4 sm:p-5">
+          <div className="mb-5 flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-[15px] font-semibold text-white">
+              <h2 className="text-[15px] font-semibold text-label">
                 {selectedRelease ? 'Pressemitteilung bearbeiten' : 'Neuen Entwurf schreiben'}
               </h2>
-              <p className="mt-1 text-[12px] text-[#6b8299]">
+              <p className="mt-1 text-[12px] text-label-3">
                 {selectedRelease ? `Slug: /${selectedRelease.slug}` : 'Der Eintrag bleibt intern, bis er veröffentlicht wird.'}
               </p>
             </div>
@@ -291,9 +291,9 @@ export function PressSpeakerWorkspace() {
                   disabled={!canManage}
                 />
                 <div className="space-y-1.5">
-                  <span className="block text-[12.5px] font-medium text-[#9fb0c4]">Bild hochladen</span>
+                  <span className="block text-[12.5px] font-medium text-label-2">Bild hochladen</span>
                   <label className={cn(
-                    'flex h-[36px] cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#234568] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] transition-colors hover:bg-[#17375f]',
+                    'flex h-[36px] cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-line bg-surface-2 px-3 text-[12.5px] font-medium text-label transition-colors hover:bg-surface-3',
                     (!canManage || uploading) && 'pointer-events-none opacity-40',
                   )}>
                     <Upload size={14} />
@@ -328,13 +328,13 @@ export function PressSpeakerWorkspace() {
             </div>
 
             <aside className="space-y-3">
-              <div className="overflow-hidden rounded-[13px] border border-[#1e3a5c]/60 bg-[#071a30]/65">
+              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                 <div
-                  className="aspect-video bg-[#102542] bg-cover bg-center"
+                  className="aspect-video bg-surface-2 bg-cover bg-center"
                   style={form.imageUrl ? { backgroundImage: `url(${form.imageUrl})` } : undefined}
                 >
                   {!form.imageUrl && (
-                    <div className="flex h-full flex-col items-center justify-center gap-2 text-[#6b8299]">
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-label-3">
                       <ImageIcon size={28} strokeWidth={1.5} />
                       <span className="text-[12px]">Bildvorschau 16:9</span>
                     </div>
@@ -342,27 +342,27 @@ export function PressSpeakerWorkspace() {
                 </div>
                 <div className="p-3">
                   <StatusPill status={form.status} />
-                  <h3 className="mt-3 line-clamp-2 text-[15px] font-semibold leading-5 text-white">
+                  <h3 className="mt-3 line-clamp-2 text-[15px] font-semibold leading-5 text-label">
                     {form.title.trim() || 'Titel der Pressemitteilung'}
                   </h3>
-                  <p className="mt-2 line-clamp-4 text-[12.5px] leading-5 text-[#9fb0c4]">{previewText}</p>
+                  <p className="mt-2 line-clamp-4 text-[12.5px] leading-5 text-label-2">{previewText}</p>
                 </div>
               </div>
-              <div className="rounded-[12px] border border-[#18385f]/55 bg-[#071a30]/55 p-3">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6b8299]">Markdown-Vorschau</p>
+              <div className="rounded-[12px] border border-line bg-surface p-3">
+                <p className="mb-3 text-[11px] font-semibold text-label-3">Markdown-Vorschau</p>
                 <div
-                  className="markdown-document text-[13px] leading-6 text-[#dbe6f3]"
+                  className="markdown-document text-[13px] leading-6 text-label"
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
               </div>
-              <div className="rounded-[12px] border border-[#18385f]/55 bg-[#071a30]/55 p-3 text-[12px] leading-5 text-[#8ea4bd]">
+              <div className="rounded-[12px] border border-line bg-surface p-3 text-[12px] leading-5 text-label-2">
                 Sichtbar im Besucherportal ist nur der Status „Veröffentlicht“. Entwürfe und archivierte Meldungen bleiben intern.
               </div>
             </aside>
           </div>
 
           {canManage && (
-            <div className="mt-5 flex flex-col gap-2 border-t border-[#18385f]/55 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => void saveRelease()} loading={saving} disabled={!form.title.trim() || !form.content.trim()}>
                   <Save size={13} />
@@ -395,8 +395,8 @@ export function PressSpeakerWorkspace() {
 
 function PressStat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
-      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#8ea4bd]">{label}</p>
+    <div className="glass-panel-elevated rounded-[12px] border border-line p-3.5">
+      <p className="text-[11px] font-semibold text-label-2">{label}</p>
       <p className={cn('mt-1 text-[22px] font-bold tabular-nums', tone)}>{value}</p>
     </div>
   )

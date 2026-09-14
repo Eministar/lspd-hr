@@ -47,7 +47,7 @@ export function ImageField({ label, description, value, onChange, disabled, clas
 
   return (
     <div className={cn('space-y-1.5', className)}>
-      <p className="text-[12.5px] font-medium text-[#9fb0c4]">{label}</p>
+      <p className="text-[12.5px] font-medium text-label-2">{label}</p>
 
       <div className="flex items-start gap-3">
         <button
@@ -55,29 +55,29 @@ export function ImageField({ label, description, value, onChange, disabled, clas
           onClick={() => inputRef.current?.click()}
           disabled={disabled || uploading}
           className={cn(
-            'relative flex h-[86px] w-[126px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-dashed bg-[#0a1a33]/60 transition-colors',
-            value ? 'border-[#d4af37]/40' : 'border-[#234568]',
-            disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-[#d4af37]/60',
+            'relative flex h-[86px] w-[126px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-dashed bg-surface transition-colors',
+            value ? 'border-gold/40' : 'border-line',
+            disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-gold/60',
           )}
         >
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt={label} className="h-full w-full object-cover" />
           ) : uploading ? (
-            <Loader2 size={18} className="animate-spin text-[#d4af37]" />
+            <Loader2 size={18} className="animate-spin text-gold" />
           ) : (
-            <ImagePlus size={18} className="text-[#4a6585]" />
+            <ImagePlus size={18} className="text-label-4" />
           )}
         </button>
 
         <div className="min-w-0 flex-1 space-y-1.5">
-          {description && <p className="text-[11.5px] leading-4 text-[#6b8299]">{description}</p>}
+          {description && <p className="text-[11.5px] leading-4 text-label-3">{description}</p>}
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={disabled || uploading}
-              className="rounded-[7px] border border-[#234568] px-2 py-1 text-[11.5px] font-medium text-[#edf4fb] transition-colors hover:bg-[#102542]/60 disabled:opacity-40"
+              className="rounded-[7px] border border-line px-2 py-1 text-[11.5px] font-medium text-label transition-colors hover:bg-surface-2 disabled:opacity-40"
             >
               {uploading ? 'Lädt…' : value ? 'Ersetzen' : 'Bild hochladen'}
             </button>
@@ -85,7 +85,7 @@ export function ImageField({ label, description, value, onChange, disabled, clas
               <button
                 type="button"
                 onClick={() => onChange('')}
-                className="inline-flex items-center gap-1 rounded-[7px] border border-[#7f1d1d]/50 px-2 py-1 text-[11.5px] font-medium text-[#fca5a5] transition-colors hover:bg-[#2a1620]/60"
+                className="inline-flex items-center gap-1 rounded-[7px] border border-red/15 px-2 py-1 text-[11.5px] font-medium text-red transition-colors hover:bg-red/8"
               >
                 <Trash2 size={11} />
                 Entfernen

@@ -180,7 +180,7 @@ export default function NewOfficerPage() {
         }
       />
 
-      <div className="glass-panel-elevated mx-auto w-full max-w-6xl rounded-[14px] p-6">
+      <div className="glass-panel-elevated mx-auto w-full max-w-6xl rounded-[12px] p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Zwei Spalten: links die Stammdaten, rechts Bewerbung, Units und
               Vertrag. Einspaltig wurde das Formular unnötig schmal und lang. */}
@@ -252,13 +252,13 @@ export default function NewOfficerPage() {
 
             <div className="space-y-5">
               {(applications?.length ?? 0) > 0 && (
-                <div className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
+                <div className="rounded-[12px] border border-line bg-white/[0.03] p-3.5">
                   <ApplicationPicker
                     applications={applications ?? []}
                     value={form.applicationId}
                     onChange={selectApplication}
                   />
-                  <p className="mt-1.5 text-[11.5px] leading-4 text-[#8ea4bd]">
+                  <p className="mt-1.5 text-[11.5px] leading-4 text-label-2">
                     Nur angenommene Bewerbungen, die noch nicht eingestellt wurden. Name und
                     Discord-ID werden automatisch übernommen.
                   </p>
@@ -268,24 +268,24 @@ export default function NewOfficerPage() {
               {canAssignUnits ? (
                 <UnitMultiSelect value={form.units} units={units ?? undefined} onChange={(value) => update('units', value)} />
               ) : (
-                <div className="rounded-[10px] border border-[#18385f]/50 bg-[#0a1a33]/30 px-3 py-3 text-[11px] leading-5 text-[#7188a1]">
+                <div className="rounded-[10px] border border-line bg-white/[0.03] px-3 py-3 text-[11px] leading-5 text-label-3">
                   Unit-Zuweisungen können nur markierte Unit-Leitungen ihrer eigenen Gruppe oder globale Administratoren vornehmen.
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-[12px] border border-[#4a3a12]/45 bg-[#302712]/30 p-3.5">
+          <div className="rounded-[12px] border border-gold/11 bg-gold/4 p-3.5">
             <div className="flex items-start gap-2.5">
-              <FileSignature size={16} className="mt-0.5 shrink-0 text-[#d4af37]" />
+              <FileSignature size={16} className="mt-0.5 shrink-0 text-gold" />
               <div>
-                <p className="text-[13px] font-semibold text-white">
+                <p className="text-[13px] font-semibold text-label">
                   Arbeitsvertrag wird automatisch versendet
                 </p>
-                <p className="mt-1 text-[11.5px] leading-5 text-[#d8c68c]">
+                <p className="mt-1 text-[11.5px] leading-5 text-gold-bright">
                   Der Officer bekommt seinen persönlichen Vertragslink als Discord-DM; ist keine DM
                   möglich, wird die Aufforderung im Vertrags-Channel gepostet.{' '}
-                  <strong className="font-semibold text-[#f0dfa8]">
+                  <strong className="font-semibold text-gold-bright">
                     Die Einstellung gilt erst als abgeschlossen, wenn der Vertrag unterschrieben ist.
                   </strong>
                 </p>

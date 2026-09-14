@@ -31,31 +31,31 @@ function CommitRow({ entry, current }: { entry: CommitLegendEntry; current: bool
     <motion.article
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-[13px] border px-4 py-3.5 transition-colors ${
+      className={`relative rounded-[12px] border px-4 py-3.5 transition-colors ${
         current
-          ? 'border-[#d4af37]/35 bg-[#d4af37]/[0.07]'
-          : 'border-[#18385f]/65 bg-[#081a31]/75 hover:border-[#2a4e73]'
+          ? 'border-gold/35 bg-gold/[0.07]'
+          : 'border-line bg-surface hover:border-line-strong'
       }`}
     >
-      {current && <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-[#d4af37]" />}
+      {current && <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-gold" />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-[#2b4d70] bg-[#102744] px-2 py-1 font-mono text-[10px] font-semibold text-[#e3c967]">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-surface-2 px-2 py-1 font-mono text-[11px] font-semibold text-gold">
               <Tag size={11} />
               {entry.buildId}
             </span>
             {current && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-[#34d399]/[0.1] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#6ee7b7]">
+              <span className="inline-flex items-center gap-1 rounded-md bg-green/[0.1] px-2 py-1 text-[11px] font-bold text-green">
                 <CheckCircle2 size={11} /> Aktueller Build
               </span>
             )}
           </div>
-          <h2 className="mt-2 text-[13px] font-semibold leading-5 text-[#edf4fb]">{entry.subject}</h2>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-[#7188a1]">
+          <h2 className="mt-2 text-[13px] font-semibold leading-5 text-label">{entry.subject}</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-label-3">
             <span className="inline-flex items-center gap-1.5">
-              <GitCommit size={12} className="text-[#58799d]" />
-              <span className="font-mono text-[#9bb0c7]">{entry.shortCommit}</span>
+              <GitCommit size={12} className="text-label-3" />
+              <span className="font-mono text-label-2">{entry.shortCommit}</span>
             </span>
             <span>{entry.author}</span>
             <span className="inline-flex items-center gap-1.5">
@@ -67,7 +67,7 @@ function CommitRow({ entry, current }: { entry: CommitLegendEntry; current: bool
           href={entry.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-[8px] border border-[#234568] px-2.5 py-1.5 text-[10px] font-semibold text-[#91a8c0] transition-colors hover:border-[#d4af37]/40 hover:text-[#e2c45d]"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-[8px] border border-line px-2.5 py-1.5 text-[11px] font-semibold text-label-2 transition-colors hover:border-gold/40 hover:text-gold-bright"
         >
           <ExternalLink size={11} /> GitHub
         </a>
@@ -95,7 +95,7 @@ export default function ReleasesPage() {
           <button
             type="button"
             onClick={() => void refetch()}
-            className="inline-flex h-9 items-center gap-2 rounded-[9px] border border-[#234568] bg-[#0b213d] px-3 text-[11px] font-semibold text-[#aebed0] transition-colors hover:border-[#d4af37]/40 hover:text-[#e2c45d]"
+            className="inline-flex h-9 items-center gap-2 rounded-[9px] border border-line bg-surface-2 px-3 text-[11px] font-semibold text-label-2 transition-colors hover:border-gold/40 hover:text-gold-bright"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             Aktualisieren
@@ -104,73 +104,73 @@ export default function ReleasesPage() {
       />
 
       {error && (
-        <div className="mb-4 rounded-[11px] border border-[#f87171]/25 bg-[#f87171]/[0.06] px-4 py-3 text-[11px] text-[#fca5a5]">
+        <div className="mb-4 rounded-[11px] border border-red/15 bg-red/[0.06] px-4 py-3 text-[11px] text-red">
           Die Build-Historie konnte nicht geladen werden: {error}
         </div>
       )}
 
       <section className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
-        <div className="relative overflow-hidden rounded-[16px] border border-[#d4af37]/25 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.13),transparent_50%),#0a1d37] p-5 sm:p-6">
-          <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full border border-[#d4af37]/10" />
+        <div className="relative overflow-hidden rounded-[16px] border border-gold/25 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.13),transparent_50%),#0a1d37] p-5 sm:p-6">
+          <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full border border-gold/10" />
           <div className="relative">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#d4af37]/80">Aktuell ausgeliefert</p>
+            <p className="text-[11px] font-bold text-gold/80">Aktuell ausgeliefert</p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-[10px] border border-[#d4af37]/30 bg-[#d4af37]/[0.1] px-3 py-2 font-mono text-[14px] font-semibold text-[#f0d776]">
+              <span className="inline-flex items-center gap-2 rounded-[10px] border border-gold/30 bg-gold/[0.1] px-3 py-2 font-mono text-[14px] font-semibold text-gold-bright">
                 <GitCommit size={16} /> {data?.currentBuildShort ?? 'build-…'}
               </span>
-              <span className="text-[11px] text-[#89a0b8]">App-Version {data?.appVersion ?? '1.1.3'}</span>
+              <span className="text-[11px] text-label-2">App-Version {data?.appVersion ?? '1.1.3'}</span>
             </div>
-            <p className="mt-3 max-w-xl text-[11.5px] leading-5 text-[#91a8c0]">
+            <p className="mt-3 max-w-xl text-[11.5px] leading-5 text-label-2">
               {currentCommit?.subject ?? 'Die aktuelle Commit-Zuordnung wird gerade aus GitHub geladen.'}
             </p>
             {currentCommit && (
-              <p className="mt-2 text-[10px] text-[#627b97]">
-                Commit <span className="font-mono text-[#9bb0c7]">{currentCommit.commit}</span> · {currentCommit.author}
+              <p className="mt-2 text-[11px] text-label-3">
+                Commit <span className="font-mono text-label-2">{currentCommit.commit}</span> · {currentCommit.author}
               </p>
             )}
           </div>
         </div>
 
-        <div className="rounded-[16px] border border-[#18385f]/70 bg-[#0a1d37]/70 p-5">
-          <div className="flex items-center gap-2 text-[#d9e4ef]">
-            <History size={16} className="text-[#d4af37]" />
+        <div className="rounded-[16px] border border-line bg-surface p-5">
+          <div className="flex items-center gap-2 text-label">
+            <History size={16} className="text-gold" />
             <h2 className="text-[12px] font-semibold">Commit-Verzeichnis</h2>
           </div>
-          <dl className="mt-4 space-y-3 text-[10.5px]">
+          <dl className="mt-4 space-y-3 text-[11px]">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#68819c]">Repository</dt>
-              <dd className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[#aebed0]">
+              <dt className="text-label-3">Repository</dt>
+              <dd className="inline-flex min-w-0 items-center gap-1.5 font-mono text-label-2">
                 <GitBranch size={12} /> {data?.repository ?? 'Eministar/lspd-hr'}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#68819c]">Zuordnungen</dt>
-              <dd className="font-semibold tabular-nums text-[#d9e4ef]">{data?.entries.length ?? '—'}</dd>
+              <dt className="text-label-3">Zuordnungen</dt>
+              <dd className="font-semibold tabular-nums text-label">{data?.entries.length ?? '—'}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#68819c]">Quelle</dt>
-              <dd className="text-[#6ee7b7]">{data?.source === 'snapshot' ? 'Gespeicherter Snapshot' : 'GitHub live'}</dd>
+              <dt className="text-label-3">Quelle</dt>
+              <dd className="text-green">{data?.source === 'snapshot' ? 'Gespeicherter Snapshot' : 'GitHub live'}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#68819c]">Letzte Sync</dt>
-              <dd className="text-right text-[#aebed0]">{data ? formatDate(data.generatedAt) : '—'}</dd>
+              <dt className="text-label-3">Letzte Sync</dt>
+              <dd className="text-right text-label-2">{data ? formatDate(data.generatedAt) : '—'}</dd>
             </div>
           </dl>
         </div>
       </section>
 
-      <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4 sm:p-5">
+      <section className="glass-panel-elevated rounded-[12px] border border-line p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[13px] font-semibold text-[#edf4fb]">Alle Commits</h2>
-            <p className="mt-1 text-[10.5px] text-[#637c97]">Automatisch aus dem öffentlichen GitHub-Verlauf synchronisiert.</p>
+            <h2 className="text-[13px] font-semibold text-label">Alle Commits</h2>
+            <p className="mt-1 text-[11px] text-label-3">Automatisch aus dem öffentlichen GitHub-Verlauf synchronisiert.</p>
           </div>
-          <span className="rounded-md bg-[#102744] px-2 py-1 font-mono text-[9px] text-[#7590ad]">ID = build + SHA</span>
+          <span className="rounded-md bg-surface-2 px-2 py-1 font-mono text-[11px] text-label-3">ID = build + SHA</span>
         </div>
 
         {loading && !data ? (
           <div className="space-y-2">
-            {[0, 1, 2].map((item) => <div key={item} className="h-[92px] animate-pulse rounded-[13px] border border-[#18385f]/50 bg-[#0a1d37]/55" />)}
+            {[0, 1, 2].map((item) => <div key={item} className="h-[92px] animate-pulse rounded-[12px] border border-line bg-surface" />)}
           </div>
         ) : data?.entries.length ? (
           <div className="space-y-2.5">
@@ -183,7 +183,7 @@ export default function ReleasesPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[12px] border border-dashed border-[#284568] px-4 py-10 text-center text-[11px] text-[#7188a1]">
+          <div className="rounded-[12px] border border-dashed border-line px-4 py-10 text-center text-[11px] text-label-3">
             Noch keine Commit-Daten vorhanden.
           </div>
         )}

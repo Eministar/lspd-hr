@@ -3,9 +3,9 @@ export const PRESS_RELEASE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as cons
 export type PressReleaseStatusValue = (typeof PRESS_RELEASE_STATUSES)[number]
 
 export const PRESS_RELEASE_STATUS_META: Record<PressReleaseStatusValue, { label: string; tone: string }> = {
-  DRAFT: { label: 'Entwurf', tone: 'text-[#fbbf24] bg-[#fbbf24]/12 border-[#fbbf24]/25' },
-  PUBLISHED: { label: 'Veröffentlicht', tone: 'text-[#34d399] bg-[#34d399]/12 border-[#34d399]/25' },
-  ARCHIVED: { label: 'Archiviert', tone: 'text-[#8ea4bd] bg-[#102542] border-[#234568]' },
+  DRAFT: { label: 'Entwurf', tone: 'text-yellow bg-yellow/12 border-yellow/15' },
+  PUBLISHED: { label: 'Veröffentlicht', tone: 'text-green bg-green/12 border-green/15' },
+  ARCHIVED: { label: 'Archiviert', tone: 'text-label-2 bg-surface-2 border-line' },
 }
 
 export interface PressReleaseInput {

@@ -91,9 +91,9 @@ function DateBadge({ iso, color }: { iso: string; color: string }) {
           className="flex h-[58px] w-[58px] flex-col items-center justify-center rounded-[10px] border shrink-0"
           style={{ borderColor: `${color}55`, backgroundColor: `${color}10` }}
       >
-        <span className="text-[9px] uppercase font-bold tracking-wider" style={{ color }}>{MONTHS_DE[d.getMonth()]}</span>
-        <span className="text-[20px] font-bold leading-none text-white">{d.getDate()}</span>
-        <span className="text-[9px] text-[#8ea4bd] mt-0.5">{DAYS_DE[d.getDay()]}</span>
+        <span className="text-[11px] font-bold" style={{ color }}>{MONTHS_DE[d.getMonth()]}</span>
+        <span className="text-[20px] font-bold leading-none text-label">{d.getDate()}</span>
+        <span className="text-[11px] text-label-2 mt-0.5">{DAYS_DE[d.getDay()]}</span>
       </div>
   )
 }
@@ -189,17 +189,17 @@ export function ModuleCalendar({
 
         {/* KPI Strip */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
-            <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Kommend</p>
-            <p className="mt-1 text-[22px] font-bold text-white">{upcoming.length}</p>
+          <div className="glass-panel-elevated rounded-[12px] border border-line p-3.5">
+            <p className="text-[11px] text-label-2 font-semibold">Kommend</p>
+            <p className="mt-1 text-[22px] font-bold text-label">{upcoming.length}</p>
           </div>
-          <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
-            <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Vergangen</p>
-            <p className="mt-1 text-[22px] font-bold text-white">{past.length}</p>
+          <div className="glass-panel-elevated rounded-[12px] border border-line p-3.5">
+            <p className="text-[11px] text-label-2 font-semibold">Vergangen</p>
+            <p className="mt-1 text-[22px] font-bold text-label">{past.length}</p>
           </div>
-          <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
-            <p className="text-[10.5px] uppercase tracking-wider text-[#8ea4bd] font-semibold">Nächster</p>
-            <p className="mt-1 text-[13.5px] font-semibold text-white truncate">{upcoming[0] ? (relativeDay(upcoming[0].startsAt) ?? new Date(upcoming[0].startsAt).toLocaleDateString('de-DE')) : '—'}</p>
+          <div className="glass-panel-elevated rounded-[12px] border border-line p-3.5">
+            <p className="text-[11px] text-label-2 font-semibold">Nächster</p>
+            <p className="mt-1 text-[13.5px] font-semibold text-label truncate">{upcoming[0] ? (relativeDay(upcoming[0].startsAt) ?? new Date(upcoming[0].startsAt).toLocaleDateString('de-DE')) : '—'}</p>
           </div>
         </div>
 
@@ -217,8 +217,8 @@ export function ModuleCalendar({
                   className={cn(
                       'inline-flex h-8 items-center rounded-[8px] border px-3 text-[12px] font-medium transition-colors',
                       filter === f.id
-                          ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
-                          : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                          ? 'border-gold/45 bg-gold/14 text-gold'
+                          : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
                   )}
               >
                 {f.label}
@@ -234,8 +234,8 @@ export function ModuleCalendar({
                 <div
                     key={event.id}
                     className={cn(
-                        'glass-panel-elevated rounded-[14px] border p-4 transition-all hover:translate-y-[-1px] group',
-                        isPast ? 'border-[#1e3a5c]/30 opacity-70' : 'border-[#1e3a5c]/45 hover:border-[#d4af37]/30',
+                        'glass-panel-elevated rounded-[12px] border p-4 transition-all hover:translate-y-[-1px] group',
+                        isPast ? 'border-line opacity-70' : 'border-line hover:border-gold/30',
                     )}
                 >
                   <div className="flex items-start gap-3.5">
@@ -245,22 +245,22 @@ export function ModuleCalendar({
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5 mb-1">
                         <span
-                            className="rounded-[5px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                            className="rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold"
                             style={{ borderColor: `${color}40`, backgroundColor: `${color}14`, color }}
                         >
                           {eventTypeLabel(event.type, eventTypes)}
                         </span>
                             {rel && (
-                                <span className="rounded-[5px] bg-[#0f2340] px-1.5 py-0.5 text-[10px] font-semibold text-[#8ea4bd]">
+                                <span className="rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-label-2">
                             {rel}
                           </span>
                             )}
                             {event.discordAnnouncement && (
-                                <Megaphone size={12} className="text-[#38bdf8]" />
+                                <Megaphone size={12} className="text-cyan" />
                             )}
                           </div>
-                          <h3 className="text-[14px] font-semibold text-white leading-snug">{event.title}</h3>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-[#8ea4bd]">
+                          <h3 className="text-[14px] font-semibold text-label leading-snug">{event.title}</h3>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-label-2">
                             <span className="inline-flex items-center gap-1"><Clock size={11} /> {timeRange(event.startsAt, event.endsAt)}</span>
                             {event.location && <span className="inline-flex items-center gap-1"><MapPin size={11} /> {event.location}</span>}
                           </div>
@@ -269,18 +269,18 @@ export function ModuleCalendar({
                             <button
                                 type="button"
                                 onClick={() => deleteEvent(event)}
-                                className="rounded-[6px] p-1.5 text-[#6b8299] opacity-0 group-hover:opacity-100 transition-all hover:bg-[#321218]/60 hover:text-[#fca5a5]"
+                                className="rounded-[6px] p-1.5 text-label-3 opacity-0 group-hover:opacity-100 transition-all hover:bg-red/8 hover:text-red"
                                 title="Löschen"
                             >
                               <Trash2 size={13} />
                             </button>
                         )}
                       </div>
-                      {event.description && <p className="mt-2.5 text-[12px] leading-relaxed text-[#b7c5d8] line-clamp-3">{event.description}</p>}
+                      {event.description && <p className="mt-2.5 text-[12px] leading-relaxed text-label-2 line-clamp-3">{event.description}</p>}
                       {event.officer && (
                           <Link
                               href={`/officers/${event.officer.id}`}
-                              className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] text-[#d4af37] hover:text-white transition-colors"
+                              className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] text-gold hover:text-label transition-colors"
                           >
                             <UserIcon size={11} /> {event.officer.firstName} {event.officer.lastName} #{displayBadgeNumber(event.officer.badgeNumber)}
                           </Link>
@@ -293,11 +293,11 @@ export function ModuleCalendar({
         </div>
 
         {displayed.length === 0 && (
-            <div className="glass-panel-elevated rounded-[14px] p-14 text-center">
+            <div className="glass-panel-elevated rounded-[12px] p-14 text-center">
               <div className="inline-flex rounded-full p-4 mb-3" style={{ backgroundColor: `${color}12` }}>
                 <CalendarDays size={26} style={{ color }} />
               </div>
-              <p className="text-[13px] text-[#8ea4bd]">
+              <p className="text-[13px] text-label-2">
                 {filter === 'upcoming' ? 'Keine kommenden Termine' : filter === 'past' ? 'Keine vergangenen Termine' : emptyLabel}
               </p>
               {canManage && filter === 'upcoming' && (
@@ -319,7 +319,7 @@ export function ModuleCalendar({
             <Input label="Ort optional" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
             <Select label="Officer-Bezug" value={form.officerId} onValueChange={(officerId) => setForm({ ...form, officerId })} options={officerOptions} />
             <Textarea label="Beschreibung" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
-            <label className="flex items-center gap-2 rounded-[9px] border border-[#18385f]/60 bg-[#0a1a33] px-3 py-2 text-[12.5px] text-[#b7c5d8]">
+            <label className="flex items-center gap-2 rounded-[9px] border border-line bg-surface px-3 py-2 text-[12.5px] text-label-2">
               <input type="checkbox" checked={form.discordAnnouncement} onChange={(e) => setForm({ ...form, discordAnnouncement: e.target.checked })} />
               Discord-Ankündigung senden
             </label>

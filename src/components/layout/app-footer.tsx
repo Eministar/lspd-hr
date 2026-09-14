@@ -15,37 +15,25 @@ function GitHubLogo({ className }: { className?: string }) {
   )
 }
 
+const linkClass = 'inline-flex items-center gap-1.5 transition-colors hover:text-label'
+
 export function AppFooter() {
   return (
-    <footer className="mt-auto px-3 pb-5 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-2 border-t border-[#18385f]/65 pt-4 text-[11px] text-[#5f7691] sm:flex-row sm:items-center sm:justify-between">
+    <footer className="mt-auto px-4 pb-6 sm:px-6 lg:px-10">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-2 border-t border-line pt-4 text-[12px] text-label-4 sm:flex-row sm:items-center sm:justify-between">
         <p>
           Entwickelt von{' '}
-          <a
-            href="https://eministar.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-[#bca24d] transition-colors hover:text-[#d4af37]"
-          >
+          <a href="https://eministar.dev" target="_blank" rel="noopener noreferrer" className="font-medium text-label-3 transition-colors hover:text-label">
             Eministar
           </a>
         </p>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <span>Version {APP_VERSION_LABEL}</span>
-          <Link
-            href="/releases"
-            className="inline-flex items-center gap-1 font-mono text-[#8ea4bd] transition-colors hover:text-[#e2c45d]"
-            title="Build-Historie öffnen"
-          >
-            <History size={11} /> {releaseBuildShort()}
+          <Link href="/releases" className={`${linkClass} font-mono`} title="Build-Historie öffnen">
+            <History size={12} strokeWidth={1.75} /> {releaseBuildShort()}
           </Link>
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 transition-colors hover:text-[#d4af37]"
-          >
+          <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>
             <GitHubLogo className="h-3 w-3" />
             GitHub
           </a>

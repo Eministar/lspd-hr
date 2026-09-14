@@ -195,7 +195,7 @@ export default function TransferRequestPage() {
   if (state.kind === 'loading') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-24 text-[#8ea4bd]">
+        <div className="flex flex-col items-center gap-3 py-24 text-label-2">
           <PdCloudLoader />
           <p className="text-[13px]">Antrag wird geladen…</p>
         </div>
@@ -230,11 +230,11 @@ export default function TransferRequestPage() {
     <Shell>
       <div className="contract-no-print mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]">
+          <p className="text-[11px] font-semibold text-gold">
             Los Santos Police Department
           </p>
-          <h1 className="mt-1 text-[20px] font-semibold text-white">{doc.title}</h1>
-          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">
+          <h1 className="mt-1 text-[20px] font-semibold text-label">{doc.title}</h1>
+          <p className="mt-1 text-[12.5px] text-label-2">
             Aktenzeichen {doc.requestNumber} · {doc.openRoles.length === 0
               ? 'Alle Unterschriften liegen vor'
               : `Offen: ${doc.openRoles.map((role) => SIGNATURE_ROLE_META[role].title).join(', ')}`}
@@ -247,12 +247,12 @@ export default function TransferRequestPage() {
       </div>
 
       {!closed && !finished && (
-        <div className="contract-no-print mb-5 rounded-[14px] border border-[#d4af37]/30 bg-[#302712]/45 p-4">
+        <div className="contract-no-print mb-5 rounded-[12px] border border-gold/30 bg-gold/5 p-4">
           <div className="flex items-start gap-3">
-            <FileSignature size={18} className="mt-0.5 shrink-0 text-[#d4af37]" />
+            <FileSignature size={18} className="mt-0.5 shrink-0 text-gold" />
             <div>
-              <p className="text-[13px] font-semibold text-white">So läuft der Antrag</p>
-              <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-[#d8c68c]">
+              <p className="text-[13px] font-semibold text-label">So läuft der Antrag</p>
+              <ul className="mt-1.5 space-y-1 text-[12.5px] leading-5 text-gold-bright">
                 <li>Der Beamte füllt die Angaben aus und unterschreibt zuerst.</li>
                 <li>Die Personalabteilung des LSPD zeichnet den Antrag ab.</li>
                 <li>Die entgegennehmende Behörde unterschreibt zuletzt — dafür ist kein Konto nötig.</li>
@@ -263,9 +263,9 @@ export default function TransferRequestPage() {
       )}
 
       {doc.status === 'DECLINED' && (
-        <div className="contract-no-print mb-5 rounded-[14px] border border-[#7f1d1d]/50 bg-[#2a1620]/60 p-4">
-          <p className="text-[13px] font-semibold text-white">Antrag zurückgezogen</p>
-          <p className="mt-1 text-[12.5px] leading-5 text-[#f3b7b7]">
+        <div className="contract-no-print mb-5 rounded-[12px] border border-red/15 bg-red/8 p-4">
+          <p className="text-[13px] font-semibold text-label">Antrag zurückgezogen</p>
+          <p className="mt-1 text-[12.5px] leading-5 text-red">
             Am {formatContractDate(doc.declinedAt)}
             {doc.declineReason ? ` · ${doc.declineReason}` : ''}
           </p>
@@ -306,9 +306,9 @@ export default function TransferRequestPage() {
       </TransferDocument>
 
       {editable && (
-        <div className="contract-no-print mt-5 rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/80 p-4">
+        <div className="contract-no-print mt-5 rounded-[12px] border border-line bg-surface p-4">
           {missingRequired.length > 0 && (
-            <p className="mb-3 text-[12.5px] text-[#f3b7b7]">
+            <p className="mb-3 text-[12.5px] text-red">
               Noch offen: {missingRequired.map((field) => field.label).join(', ')}
             </p>
           )}
@@ -325,8 +325,8 @@ export default function TransferRequestPage() {
           </div>
 
           {showDecline && (
-            <div className="mt-4 rounded-[12px] border border-[#3b1616] bg-[#1c1111]/70 p-3">
-              <p className="text-[12.5px] text-[#fca5a5]">
+            <div className="mt-4 rounded-[12px] border border-red/30 bg-red/10 p-3">
+              <p className="text-[12.5px] text-red">
                 Der Antrag wird damit beendet und kann nicht mehr unterschrieben werden.
               </p>
               <textarea
@@ -334,7 +334,7 @@ export default function TransferRequestPage() {
                 onChange={(event) => setDeclineReason(event.target.value)}
                 rows={3}
                 placeholder="Grund (optional)"
-                className="mt-2 w-full resize-none rounded-[9px] border border-[#4a2020]/70 bg-[#120b0b]/60 px-3 py-2 text-[13px] text-[#edf4fb] outline-none placeholder:text-[#7a5555] focus:border-[#b45252]"
+                className="mt-2 w-full resize-none rounded-[9px] border border-red/21 bg-red/8 px-3 py-2 text-[13px] text-label outline-none placeholder:text-label-4 focus:border-red/60"
               />
               <div className="mt-2 flex justify-end">
                 <Button variant="danger" size="sm" onClick={decline} loading={declining}>
@@ -347,11 +347,11 @@ export default function TransferRequestPage() {
       )}
 
       {finished && (
-        <div className="contract-no-print mt-5 flex items-start gap-3 rounded-[14px] border border-[#1d4230]/60 bg-[#0d2419]/70 p-4">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[#86efac]" />
+        <div className="contract-no-print mt-5 flex items-start gap-3 rounded-[12px] border border-green/18 bg-green/10 p-4">
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green" />
           <div>
-            <p className="text-[13px] font-semibold text-white">Antrag vollständig unterschrieben</p>
-            <p className="mt-1 text-[12.5px] leading-5 text-[#9fd9b6]">
+            <p className="text-[13px] font-semibold text-label">Antrag vollständig unterschrieben</p>
+            <p className="mt-1 text-[12.5px] leading-5 text-green">
               Alle drei Unterschriften liegen vor. Die Personalabteilung sieht den Antrag im Dashboard.
             </p>
           </div>
@@ -394,12 +394,12 @@ function SignatureSlot({
   if (!allowed) {
     const needsLogin = !loggedIn && role !== 'AUTHORITY'
     return (
-      <div className="contract-no-print mt-2 rounded-[9px] border border-[#18385f]/55 bg-[#0a1a33]/50 px-2.5 py-2">
-        <p className="text-[11px] leading-4 text-[#8ea4bd]">{meta.who}</p>
+      <div className="contract-no-print mt-2 rounded-[9px] border border-line bg-surface px-2.5 py-2">
+        <p className="text-[11px] leading-4 text-label-2">{meta.who}</p>
         {needsLogin && (
           <a
             href={`/api/auth/discord/login?mode=contract&redirect=${encodeURIComponent(`/versetzung/${token}`)}`}
-            className="mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#d4af37] hover:underline"
+            className="mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-semibold text-gold hover:underline"
           >
             <Lock size={11} />
             Mit Discord anmelden
@@ -435,7 +435,7 @@ function SignatureSlot({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#061426] px-3 py-8 sm:px-6 lg:py-12">
+    <main className="min-h-screen bg-canvas px-3 py-8 sm:px-6 lg:py-12">
       <div className="mx-auto w-full max-w-[900px]">{children}</div>
     </main>
   )
@@ -453,12 +453,12 @@ function Notice({
   children?: React.ReactNode
 }) {
   return (
-    <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-8 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#d4af37]/30 bg-[#d4af37]/12 text-[#d4af37]">
+    <section className="glass-panel-elevated rounded-[12px] border border-line p-8 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[12px] border border-gold/30 bg-gold/12 text-gold">
         <Icon size={26} />
       </div>
-      <h1 className="text-[19px] font-semibold text-white">{title}</h1>
-      <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-[#8ea4bd]">{description}</p>
+      <h1 className="text-[19px] font-semibold text-label">{title}</h1>
+      <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-label-2">{description}</p>
       {children && <div className="mt-5 flex justify-center">{children}</div>}
     </section>
   )

@@ -180,7 +180,7 @@ export function ChangeHistoryControls() {
   }, [apply])
 
   return (
-    <div className="fixed right-3 top-1.5 z-50 inline-grid grid-cols-2 items-center gap-1 rounded-[9px] border border-[#d4af37]/15 bg-[#081a30]/95 p-1 shadow-[0_6px_20px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:bottom-[58px] lg:left-[10px] lg:right-auto lg:top-auto lg:w-[224px]">
+    <div className="fixed right-2 top-[10px] z-50 inline-grid grid-cols-2 items-center gap-0.5 rounded-[9px] p-0.5 lg:bottom-[62px] lg:left-2.5 lg:right-auto lg:top-auto lg:w-[224px] lg:border lg:border-line lg:bg-white/[0.03]">
       <HistoryButton
         label="Rückgängig"
         shortcut="Strg/Cmd+Z"
@@ -233,8 +233,8 @@ function HistoryButton({
       aria-label={title}
       title={title}
       className={cn(
-        'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[6px] px-2 text-[12px] font-medium text-[#b7c5d8] transition-colors',
-        'hover:bg-[#17375f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40',
+        'inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[12.5px] font-medium text-label-2 transition-colors',
+        'hover:bg-white/[0.07] hover:text-label focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-gold/45',
         'disabled:cursor-not-allowed disabled:opacity-30',
         loading && 'animate-pulse',
       )}

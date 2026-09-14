@@ -2,8 +2,9 @@
 
 import * as React from 'react'
 import * as SelectPrimitive from '@radix-ui/react-select'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { fieldClass, fieldErrorClass, fieldLabelClass } from '@/components/ui/input'
 
 /** Radix reserviert kein leeres value — wir mappen leere Auswahl intern. */
 const EMPTY = '__lspd_select_empty__'
@@ -39,24 +40,12 @@ export interface SelectProps {
   required?: boolean
 }
 
-const triggerBase = cn(
-  'flex w-full min-w-0 items-center justify-between gap-2',
-  'bg-[#0a1a33] text-[#edf4fb] border border-[#355576]/70',
-  'focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
-  'data-[state=open]:border-[#d4af37]/60',
-  'disabled:cursor-not-allowed disabled:opacity-40',
-  'transition-[border-color,box-shadow,background-color] duration-150',
-  'px-3 text-left',
-  '[&_[data-placeholder]]:text-[#4a6585]',
-  'aria-invalid:border-red-900'
-)
-
+// macOS-Menü: Häkchen links, Hervorhebung in der Akzentfarbe.
 const itemBase = cn(
-  'relative flex cursor-pointer select-none items-center rounded-[7px] py-1.5 pl-2 pr-8',
-  'text-[13.5px] text-[#edf4fb] outline-none',
+  'relative flex cursor-default select-none items-center rounded-[6px] py-[5px] pl-7 pr-3',
+  'text-[13.5px] text-label outline-none',
   'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
-  'data-[highlighted]:bg-[#102542] data-[highlighted]:text-white',
-  'data-[state=checked]:text-[#d4af37]'
+  'data-[highlighted]:bg-gold data-[highlighted]:text-ink'
 )
 
 export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function Select(
@@ -101,7 +90,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
   return (
     <div className={cn('w-full space-y-1.5', className)}>
       {label && (
-        <label htmlFor={triggerId} className="block text-[12.5px] font-medium text-[#9fb0c4]">
+        <label htmlFor={triggerId} className={fieldLabelClass}>
           {label}
         </label>
       )}
@@ -116,42 +105,45 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
           ref={ref}
           id={triggerId}
           aria-required={required}
+          aria-invalid={error ? true : undefined}
           className={cn(
-            triggerBase,
-            'cursor-pointer',
-            size === 'default' && 'h-[36px] rounded-[9px] text-[13.5px]',
-            size === 'sm' && 'h-[34px] rounded-[8px] text-[13px]',
-            error && 'border-red-500/50'
+            fieldClass,
+            'flex min-w-0 cursor-default items-center justify-between gap-2 px-3 text-left',
+            'data-[state=open]:border-gold/80 data-[state=open]:ring-[3px] data-[state=open]:ring-gold/25',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            size === 'default' && 'h-[34px]',
+            size === 'sm' && 'h-7 rounded-[7px] text-[13px]',
+            error && fieldErrorClass
           )}
         >
           <SelectPrimitive.Value
             placeholder={placeholder}
-            className="flex-1 min-w-0 truncate text-left text-[#edf4fb] data-[placeholder]:text-[#4a6585]"
+            className="min-w-0 flex-1 truncate text-left text-label data-[placeholder]:text-label-4"
           />
           <SelectPrimitive.Icon>
-            <ChevronDown className="h-3.5 w-3.5 text-[#8ea4bd] shrink-0 opacity-80" />
+            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-label-3" strokeWidth={2} />
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content
             position="popper"
-            sideOffset={6}
+            sideOffset={5}
             className={cn(
-              'z-[200] max-h-72 overflow-hidden rounded-[10px] min-w-[var(--radix-select-trigger-width)]',
-              'glass-panel-elevated border border-[#234568]/90 shadow-[0_8px_32px_rgba(0,0,0,0.35)]',
+              'lspd-popover z-[200] max-h-72 min-w-[var(--radix-select-trigger-width)] overflow-hidden',
+              'origin-[var(--radix-select-content-transform-origin)] data-[state=open]:animate-[lspd-pop-in_160ms_var(--ease-apple)]'
             )}
           >
-            <SelectPrimitive.Viewport className="p-1.5 max-h-72 overflow-y-auto">
+            <SelectPrimitive.Viewport className="max-h-72 overflow-y-auto p-[5px]">
               {options.map((opt) => {
                 const internal = toInternal(opt.value)
                 return (
                   <SelectPrimitive.Item key={internal} value={internal} className={itemBase}>
-                    <span className="absolute right-1.5 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center text-[#d4af37]">
+                    <span className="absolute left-2 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center">
                       <SelectPrimitive.ItemIndicator>
                         <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </SelectPrimitive.ItemIndicator>
                     </span>
-                    <SelectPrimitive.ItemText className="block truncate pr-6 text-left">
+                    <SelectPrimitive.ItemText className="block truncate text-left">
                       {opt.label}
                     </SelectPrimitive.ItemText>
                   </SelectPrimitive.Item>
@@ -161,7 +153,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
           </SelectPrimitive.Content>
         </SelectPrimitive.Portal>
       </SelectPrimitive.Root>
-      {error && <p className="text-[11.5px] text-red-500">{error}</p>}
+      {error && <p className="text-[12px] text-red">{error}</p>}
     </div>
   )
 })

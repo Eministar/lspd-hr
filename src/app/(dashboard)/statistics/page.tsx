@@ -38,8 +38,8 @@ import type {
   StatisticsStaffRow,
 } from '@/lib/statistics'
 
-const panelClass = 'rounded-[16px] border border-[#1a3559]/55 bg-[#091e36]/72 shadow-[0_1px_2px_rgba(0,0,0,.14),0_14px_36px_rgba(0,0,0,.16),inset_0_1px_0_rgba(255,255,255,.025)]'
-const surfaceClass = 'rounded-[11px] border border-white/[0.055] bg-[#071a30]/55'
+const panelClass = 'rounded-[12px] border border-line bg-surface'
+const surfaceClass = 'rounded-[11px] border border-white/[0.055] bg-surface'
 
 const rangeOptions: Array<{ value: StatisticsRange; label: string; shortLabel: string }> = [
   { value: 'week', label: 'Diese Woche', shortLabel: 'Woche' },
@@ -51,12 +51,12 @@ const rangeOptions: Array<{ value: StatisticsRange; label: string; shortLabel: s
 type MetricTone = 'emerald' | 'sky' | 'gold' | 'rose' | 'amber' | 'violet'
 
 const tones: Record<MetricTone, { color: string; bg: string; border: string }> = {
-  emerald: { color: '#34d399', bg: 'rgba(52,211,153,.10)', border: 'rgba(52,211,153,.24)' },
-  sky: { color: '#38bdf8', bg: 'rgba(56,189,248,.10)', border: 'rgba(56,189,248,.24)' },
+  emerald: { color: '#32d74b', bg: 'rgba(50,215,75,.10)', border: 'rgba(50,215,75,.24)' },
+  sky: { color: '#64d2ff', bg: 'rgba(100,210,255,.10)', border: 'rgba(100,210,255,.24)' },
   gold: { color: '#d4af37', bg: 'rgba(212,175,55,.11)', border: 'rgba(212,175,55,.26)' },
-  rose: { color: '#f87171', bg: 'rgba(248,113,113,.10)', border: 'rgba(248,113,113,.24)' },
-  amber: { color: '#fbbf24', bg: 'rgba(251,191,36,.10)', border: 'rgba(251,191,36,.24)' },
-  violet: { color: '#a78bfa', bg: 'rgba(167,139,250,.10)', border: 'rgba(167,139,250,.24)' },
+  rose: { color: '#ff453a', bg: 'rgba(255,69,58,.10)', border: 'rgba(255,69,58,.24)' },
+  amber: { color: '#ffd60a', bg: 'rgba(255,214,10,.10)', border: 'rgba(255,214,10,.24)' },
+  violet: { color: '#bf5af2', bg: 'rgba(191,90,242,.10)', border: 'rgba(191,90,242,.24)' },
 }
 
 const seriesLegend: Array<{
@@ -64,26 +64,26 @@ const seriesLegend: Array<{
   label: string
   color: string
 }> = [
-  { field: 'hires', label: 'Einstellungen', color: '#38bdf8' },
+  { field: 'hires', label: 'Einstellungen', color: '#64d2ff' },
   { field: 'trainingCompletions', label: 'Ausbildungen', color: '#d4af37' },
-  { field: 'promotions', label: 'Up-Ranks', color: '#34d399' },
-  { field: 'demotions', label: 'D-Ranks', color: '#f97316' },
-  { field: 'terminations', label: 'Kündigungen', color: '#f87171' },
+  { field: 'promotions', label: 'Up-Ranks', color: '#32d74b' },
+  { field: 'demotions', label: 'D-Ranks', color: '#ff9f0a' },
+  { field: 'terminations', label: 'Kündigungen', color: '#ff453a' },
 ]
 
 const activityMeta: Record<StatisticsPayload['latestActivity'][number]['type'], { icon: LucideIcon; color: string; bg: string }> = {
-  HIRE: { icon: UserPlus, color: '#38bdf8', bg: 'rgba(56,189,248,.11)' },
+  HIRE: { icon: UserPlus, color: '#64d2ff', bg: 'rgba(100,210,255,.11)' },
   TRAINING: { icon: GraduationCap, color: '#d4af37', bg: 'rgba(212,175,55,.11)' },
-  PROMOTION: { icon: ArrowUpRight, color: '#34d399', bg: 'rgba(52,211,153,.11)' },
-  DEMOTION: { icon: ArrowDownRight, color: '#f97316', bg: 'rgba(249,115,22,.11)' },
-  TERMINATION: { icon: UserMinus, color: '#f87171', bg: 'rgba(248,113,113,.11)' },
+  PROMOTION: { icon: ArrowUpRight, color: '#32d74b', bg: 'rgba(50,215,75,.11)' },
+  DEMOTION: { icon: ArrowDownRight, color: '#ff9f0a', bg: 'rgba(255,159,10,.11)' },
+  TERMINATION: { icon: UserMinus, color: '#ff453a', bg: 'rgba(255,69,58,.11)' },
 }
 
 function DeltaLabel({ metric }: { metric: StatisticsMetric }) {
   const delta = metric.current - metric.previous
-  if (delta === 0) return <span className="text-[#647c96]">wie zuvor</span>
+  if (delta === 0) return <span className="text-label-3">wie zuvor</span>
   return (
-    <span className={delta > 0 ? 'text-[#6ee7b7]' : 'text-[#fca5a5]'}>
+    <span className={delta > 0 ? 'text-green' : 'text-red'}>
       {delta > 0 ? '+' : ''}{delta} zur Vorperiode
     </span>
   )
@@ -104,20 +104,20 @@ function MetricCard({
 }) {
   const color = tones[tone]
   return (
-    <article className={cn(panelClass, 'group relative overflow-hidden p-4 transition-colors hover:border-[#2b4c70]')}>
+    <article className={cn(panelClass, 'group relative overflow-hidden p-4 transition-colors hover:border-line-strong')}>
       <span className="absolute inset-x-0 top-0 h-px opacity-80" style={{ background: `linear-gradient(90deg, transparent, ${color.color}, transparent)` }} />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7089a5]">{label}</p>
-          <p className="mt-2 text-[27px] font-semibold leading-none tracking-[-0.035em] text-white tabular-nums">{metric.current}</p>
+          <p className="text-[11px] font-semibold text-label-3">{label}</p>
+          <p className="mt-2 text-[27px] font-semibold leading-none tracking-[-0.035em] text-label tabular-nums">{metric.current}</p>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border" style={{ color: color.color, backgroundColor: color.bg, borderColor: color.border }}>
           <Icon size={17} strokeWidth={1.9} />
         </span>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2 text-[10.5px]">
+      <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
         <DeltaLabel metric={metric} />
-        <span className="truncate text-[#4f6985]" title={hint}>{hint}</span>
+        <span className="truncate text-label-4" title={hint}>{hint}</span>
       </div>
     </article>
   )
@@ -127,12 +127,12 @@ function SectionHeading({ icon: Icon, title, description, aside }: { icon: Lucid
   return (
     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div className="flex items-start gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#d4af37]/18 bg-[#d4af37]/9 text-[#d4af37]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-gold/18 bg-gold/9 text-gold">
           <Icon size={15} strokeWidth={1.9} />
         </span>
         <div>
-          <h2 className="text-[13.5px] font-semibold text-white">{title}</h2>
-          <p className="mt-0.5 text-[11px] leading-4 text-[#6f86a0]">{description}</p>
+          <h2 className="text-[13.5px] font-semibold text-label">{title}</h2>
+          <p className="mt-0.5 text-[11px] leading-4 text-label-3">{description}</p>
         </div>
       </div>
       {aside}
@@ -149,7 +149,7 @@ function ActivityChart({ points }: { points: StatisticsSeriesPoint[] }) {
     <div>
       <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2">
         {seriesLegend.map((item) => (
-          <span key={item.field} className="inline-flex items-center gap-1.5 text-[10.5px] text-[#8ea4bd]">
+          <span key={item.field} className="inline-flex items-center gap-1.5 text-[11px] text-label-2">
             <span className="h-2 w-2 rounded-[2px]" style={{ backgroundColor: item.color }} />
             {item.label}
           </span>
@@ -167,7 +167,7 @@ function ActivityChart({ points }: { points: StatisticsSeriesPoint[] }) {
             const showLabel = points.length <= 14 || index % labelEvery === 0 || index === points.length - 1
             return (
               <div key={point.key} className="group flex h-full min-w-0 flex-col justify-end" title={title} aria-label={title}>
-                <div className="relative flex h-40 flex-col-reverse justify-start overflow-hidden rounded-t-[4px] bg-[#07182c]/65 ring-1 ring-inset ring-white/[0.035] transition-colors group-hover:bg-[#0b2543]">
+                <div className="relative flex h-40 flex-col-reverse justify-start overflow-hidden rounded-t-[4px] bg-surface ring-1 ring-inset ring-white/[0.035] transition-colors group-hover:bg-surface-2">
                   {seriesLegend.map((item) => {
                     const value = point[item.field]
                     return (
@@ -178,9 +178,9 @@ function ActivityChart({ points }: { points: StatisticsSeriesPoint[] }) {
                       />
                     )
                   })}
-                  {total > 0 && <span className="absolute inset-x-0 top-1 text-center text-[9px] font-semibold text-white/75 tabular-nums">{total}</span>}
+                  {total > 0 && <span className="absolute inset-x-0 top-1 text-center text-[11px] font-semibold text-white/75 tabular-nums">{total}</span>}
                 </div>
-                <span className={cn('mt-2 truncate text-center text-[9px] text-[#536b86]', !showLabel && 'invisible')}>{point.shortLabel}</span>
+                <span className={cn('mt-2 truncate text-center text-[11px] text-label-4', !showLabel && 'invisible')}>{point.shortLabel}</span>
               </div>
             )
           })}
@@ -192,10 +192,10 @@ function ActivityChart({ points }: { points: StatisticsSeriesPoint[] }) {
 
 function StaffAvatar({ row }: { row: StatisticsStaffRow }) {
   if (row.avatarUrl) {
-    return <span className="h-8 w-8 shrink-0 rounded-full bg-cover bg-center ring-1 ring-[#d4af37]/22" style={{ backgroundImage: `url(${row.avatarUrl})` }} aria-hidden />
+    return <span className="h-8 w-8 shrink-0 rounded-full bg-cover bg-center ring-1 ring-gold/22" style={{ backgroundImage: `url(${row.avatarUrl})` }} aria-hidden />
   }
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#17375f] text-[11px] font-semibold text-[#d4af37] ring-1 ring-[#274c72]">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-3 text-[11px] font-semibold text-gold ring-1 ring-line-strong">
       {row.displayName.charAt(0).toUpperCase()}
     </span>
   )
@@ -204,10 +204,10 @@ function StaffAvatar({ row }: { row: StatisticsStaffRow }) {
 function LeaderCard({ label, row, value, icon: Icon }: { label: string; row: StatisticsStaffRow | undefined; value: number; icon: LucideIcon }) {
   return (
     <div className={cn(surfaceClass, 'flex min-w-0 items-center gap-3 px-3 py-2.5')}>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#d4af37]/10 text-[#d4af37]"><Icon size={14} /></span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-gold/10 text-gold"><Icon size={14} /></span>
       <div className="min-w-0">
-        <p className="text-[9.5px] uppercase tracking-[0.12em] text-[#536b86]">{label}</p>
-        <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#dbe6f3]">{row ? `${row.displayName} · ${value}` : 'Noch keine Daten'}</p>
+        <p className="text-[11px] text-label-4">{label}</p>
+        <p className="mt-0.5 truncate text-[11.5px] font-medium text-label">{row ? `${row.displayName} · ${value}` : 'Noch keine Daten'}</p>
       </div>
     </div>
   )
@@ -231,9 +231,9 @@ export default function StatisticsPage() {
     return (
       <div className="mx-auto max-w-6xl">
         <div className={cn(panelClass, 'mt-6 px-6 py-16 text-center')}>
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#f87171]/25 bg-[#f87171]/10 text-[#f87171]"><AlertTriangle size={22} /></span>
-          <h1 className="mt-4 text-[16px] font-semibold text-white">Statistik nicht verfügbar</h1>
-          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] text-[#8ea4bd]">{error ?? 'Die Statistikdaten konnten nicht geladen werden.'}</p>
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-red/15 bg-red/10 text-red"><AlertTriangle size={22} /></span>
+          <h1 className="mt-4 text-[16px] font-semibold text-label">Statistik nicht verfügbar</h1>
+          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] text-label-2">{error ?? 'Die Statistikdaten konnten nicht geladen werden.'}</p>
           <Button size="sm" className="mt-5" onClick={refetch}><RefreshCw size={13} /> Erneut laden</Button>
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function StatisticsPage() {
         title="Statistik & Entwicklung"
         description="Personalbewegungen, Ausbildungsstand und Bearbeiterleistung transparent überblicken. Alle Vergleiche beziehen sich auf den gleich langen vorherigen Zeitraum."
         action={(
-          <div className="inline-flex rounded-[10px] border border-[#234568]/70 bg-[#07182c]/75 p-1" role="group" aria-label="Statistikzeitraum">
+          <div className="inline-flex rounded-[10px] border border-line bg-surface p-1" role="group" aria-label="Statistikzeitraum">
             {rangeOptions.map((option) => (
               <button
                 key={option.value}
@@ -263,9 +263,9 @@ export default function StatisticsPage() {
                 aria-pressed={range === option.value}
                 title={option.label}
                 className={cn(
-                  'h-8 rounded-[7px] px-2.5 text-[10.5px] font-semibold transition-colors sm:px-3',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40',
-                  range === option.value ? 'bg-[#d4af37] text-[#071b33] shadow-[0_2px_8px_rgba(212,175,55,.2)]' : 'text-[#7e93ab] hover:bg-[#102b4b] hover:text-white',
+                  'h-8 rounded-[7px] px-2.5 text-[11px] font-semibold transition-colors sm:px-3',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40',
+                  range === option.value ? 'bg-gold text-ink ' : 'text-label-3 hover:bg-surface-2 hover:text-label',
                 )}
               >
                 {option.shortLabel}
@@ -275,9 +275,9 @@ export default function StatisticsPage() {
         )}
       />
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#1c385a]/55 bg-[#081a2f]/65 px-3.5 py-2 text-[10.5px]">
-        <span className="inline-flex items-center gap-2 font-semibold uppercase tracking-[0.12em] text-[#d4af37]"><Activity size={12} /> {data.period.label}</span>
-        <span className="font-mono text-[#647c96]">{periodText}</span>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-line bg-surface px-3.5 py-2 text-[11px]">
+        <span className="inline-flex items-center gap-2 font-semibold text-gold"><Activity size={12} /> {data.period.label}</span>
+        <span className="font-mono text-label-3">{periodText}</span>
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6" aria-label="Kennzahlen">
@@ -290,7 +290,7 @@ export default function StatisticsPage() {
       </section>
 
       <section className={cn(panelClass, 'mt-3 p-4 sm:p-5')}>
-        <SectionHeading icon={BarChart3} title="Personalbewegung im Verlauf" description="Alle erfassten Personalereignisse nach Tag, Woche oder Monat gestapelt." aside={<span className="font-mono text-[10px] text-[#536b86]">GESAMT {data.series.reduce((sum, point) => sum + seriesLegend.reduce((value, item) => value + point[item.field], 0), 0)}</span>} />
+        <SectionHeading icon={BarChart3} title="Personalbewegung im Verlauf" description="Alle erfassten Personalereignisse nach Tag, Woche oder Monat gestapelt." aside={<span className="font-mono text-[11px] text-label-4">GESAMT {data.series.reduce((sum, point) => sum + seriesLegend.reduce((value, item) => value + point[item.field], 0), 0)}</span>} />
         <ActivityChart points={data.series} />
       </section>
 
@@ -301,31 +301,31 @@ export default function StatisticsPage() {
             {data.rankDistribution.map((rank) => (
               <div key={rank.id} className="grid grid-cols-[minmax(110px,170px)_minmax(0,1fr)_28px] items-center gap-3">
                 <span className="truncate text-[11px] font-medium" style={{ color: rank.color }}>{rank.label}</span>
-                <span className="h-2 overflow-hidden rounded-full bg-[#07182c] ring-1 ring-inset ring-white/[0.04]">
+                <span className="h-2 overflow-hidden rounded-full bg-surface ring-1 ring-inset ring-white/[0.04]">
                   <span className="block h-full rounded-full" style={{ width: `${(rank.count / rankMax) * 100}%`, backgroundColor: rank.color }} />
                 </span>
-                <span className="text-right text-[11px] font-semibold text-[#dbe6f3] tabular-nums">{rank.count}</span>
+                <span className="text-right text-[11px] font-semibold text-label tabular-nums">{rank.count}</span>
               </div>
             ))}
-            {data.rankDistribution.length === 0 && <p className="py-8 text-center text-[12px] italic text-[#536b86]">Keine aktiven Officers vorhanden.</p>}
+            {data.rankDistribution.length === 0 && <p className="py-8 text-center text-[12px] italic text-label-4">Keine aktiven Officers vorhanden.</p>}
           </div>
         </section>
 
         <section className={cn(panelClass, 'p-4 sm:p-5')}>
-          <SectionHeading icon={BookOpenCheck} title="Ausbildungslage" description={`${data.additional.completedTrainingAssignments} von ${data.additional.trainingAssignments} Zuweisungen abgeschlossen.`} aside={<span className="text-[18px] font-semibold text-[#d4af37] tabular-nums">{data.additional.trainingCompletionRate}%</span>} />
+          <SectionHeading icon={BookOpenCheck} title="Ausbildungslage" description={`${data.additional.completedTrainingAssignments} von ${data.additional.trainingAssignments} Zuweisungen abgeschlossen.`} aside={<span className="text-[18px] font-semibold text-gold tabular-nums">{data.additional.trainingCompletionRate}%</span>} />
           <div className="space-y-3">
             {data.trainingDistribution.slice(0, 8).map((training) => (
               <div key={training.id}>
-                <div className="mb-1 flex items-center justify-between gap-3 text-[10.5px]">
-                  <span className="truncate text-[#aebed0]">{training.label}</span>
-                  <span className="shrink-0 text-[#647c96] tabular-nums">{training.completed}/{training.total} · {training.percentage}%</span>
+                <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
+                  <span className="truncate text-label-2">{training.label}</span>
+                  <span className="shrink-0 text-label-3 tabular-nums">{training.completed}/{training.total} · {training.percentage}%</span>
                 </div>
-                <span className="block h-1.5 overflow-hidden rounded-full bg-[#07182c]">
-                  <span className="block h-full rounded-full bg-[linear-gradient(90deg,#a98622,#e5c85c)]" style={{ width: `${training.percentage}%` }} />
+                <span className="block h-1.5 overflow-hidden rounded-full bg-surface">
+                  <span className="block h-full rounded-full bg-gold" style={{ width: `${training.percentage}%` }} />
                 </span>
               </div>
             ))}
-            {data.trainingDistribution.length === 0 && <p className="py-8 text-center text-[12px] italic text-[#536b86]">Keine Ausbildungszuweisungen vorhanden.</p>}
+            {data.trainingDistribution.length === 0 && <p className="py-8 text-center text-[12px] italic text-label-4">Keine Ausbildungszuweisungen vorhanden.</p>}
           </div>
         </section>
       </div>
@@ -335,13 +335,13 @@ export default function StatisticsPage() {
           <SectionHeading icon={BriefcaseBusiness} title="Bewerbungslage" description={`${applicationTotal} Bewerbungen wurden im gewählten Zeitraum eingereicht.`} />
           <div className="grid gap-2 sm:grid-cols-5">
             {data.applicationFunnel.map((item, index) => {
-              const colors = ['#38bdf8', '#60a5fa', '#a78bfa', '#34d399', '#f87171']
+              const colors = ['#64d2ff', '#4a90f0', '#bf5af2', '#32d74b', '#ff453a']
               return (
                 <div key={item.status} className={cn(surfaceClass, 'relative overflow-hidden p-3')}>
                   <span className="absolute inset-x-0 top-0 h-px" style={{ backgroundColor: colors[index] }} />
-                  <p className="text-[9.5px] uppercase tracking-[0.1em] text-[#536b86]">{item.label}</p>
-                  <p className="mt-2 text-[20px] font-semibold text-white tabular-nums">{item.count}</p>
-                  <div className="mt-2 h-1 rounded-full bg-[#07182c]">
+                  <p className="text-[11px] text-label-4">{item.label}</p>
+                  <p className="mt-2 text-[20px] font-semibold text-label tabular-nums">{item.count}</p>
+                  <div className="mt-2 h-1 rounded-full bg-surface">
                     <span className="block h-full rounded-full" style={{ width: `${applicationTotal > 0 ? (item.count / applicationTotal) * 100 : 0}%`, backgroundColor: colors[index] }} />
                   </div>
                 </div>
@@ -360,8 +360,8 @@ export default function StatisticsPage() {
               ['Neue Ausbildungsarten', data.additional.newTrainingTypes.current],
             ].map(([label, value]) => (
               <div key={String(label)} className={cn(surfaceClass, 'p-3')}>
-                <dt className="text-[9.5px] leading-4 text-[#647c96]">{label}</dt>
-                <dd className="mt-1 text-[18px] font-semibold text-[#dbe6f3] tabular-nums">{value}</dd>
+                <dt className="text-[11px] leading-4 text-label-3">{label}</dt>
+                <dd className="mt-1 text-[18px] font-semibold text-label tabular-nums">{value}</dd>
               </div>
             ))}
           </dl>
@@ -375,8 +375,8 @@ export default function StatisticsPage() {
           description="Wer hat Einstellungen, Ausbildungen und Personalmaßnahmen im gewählten Zeitraum bearbeitet?"
           aside={(
             <label className="relative block w-full sm:w-[230px]">
-              <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#536b86]" />
-              <input value={staffSearch} onChange={(event) => setStaffSearch(event.target.value)} placeholder="PDler suchen…" className="h-8 w-full rounded-[8px] border border-[#234568]/65 bg-[#07182c]/75 pl-8 pr-3 text-[11px] text-white outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]/55 focus:ring-2 focus:ring-[#d4af37]/12" />
+              <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-label-4" />
+              <input value={staffSearch} onChange={(event) => setStaffSearch(event.target.value)} placeholder="PDler suchen…" className="h-8 w-full rounded-[8px] border border-line bg-surface pl-8 pr-3 text-[11px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold/55 focus:ring-2 focus:ring-gold/12" />
             </label>
           )}
         />
@@ -389,8 +389,8 @@ export default function StatisticsPage() {
 
         <div className="overflow-x-auto rounded-[11px] border border-white/[0.055]">
           <table className="lspd-table w-full min-w-[920px] border-collapse text-left">
-            <thead className="bg-[#07182c]/90">
-              <tr className="text-[9.5px] uppercase tracking-[0.1em] text-[#647c96]">
+            <thead className="bg-surface">
+              <tr className="text-[11px] text-label-3">
                 <th className="px-3 py-2.5 font-semibold">PDler / Bearbeiter</th>
                 <th className="px-3 py-2.5 text-center font-semibold">Einstellungen</th>
                 <th className="px-3 py-2.5 text-center font-semibold">Ausbildungen</th>
@@ -398,33 +398,33 @@ export default function StatisticsPage() {
                 <th className="px-3 py-2.5 text-center font-semibold">D-Ranks</th>
                 <th className="px-3 py-2.5 text-center font-semibold">Kündigungen</th>
                 <th className="px-3 py-2.5 text-center font-semibold">Sanktionen</th>
-                <th className="px-3 py-2.5 text-center font-semibold text-[#d4af37]">Gesamt</th>
+                <th className="px-3 py-2.5 text-center font-semibold text-gold">Gesamt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.045] bg-[#091d35]/45">
+            <tbody className="divide-y divide-white/[0.045] bg-white/[0.03]">
               {filteredStaff.map((row, index) => (
-                <tr key={row.id} className="transition-colors hover:bg-[#102b4b]/55">
+                <tr key={row.id} className="transition-colors hover:bg-surface-2">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-5 text-center font-mono text-[9.5px] text-[#4f6985]">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="w-5 text-center font-mono text-[11px] text-label-4">{String(index + 1).padStart(2, '0')}</span>
                       <StaffAvatar row={row} />
-                      <span className="max-w-[240px] truncate text-[11.5px] font-medium text-[#dbe6f3]">{row.displayName}</span>
+                      <span className="max-w-[240px] truncate text-[11.5px] font-medium text-label">{row.displayName}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#7dd3fc] tabular-nums">{row.hires}</td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#f3d77a] tabular-nums">{row.trainingCompletions}</td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#6ee7b7] tabular-nums">{row.promotions}</td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#fdba74] tabular-nums">{row.demotions}</td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#fca5a5] tabular-nums">{row.terminations}</td>
-                  <td className="px-3 py-2.5 text-center text-[11.5px] text-[#c4b5fd] tabular-nums">{row.sanctions}</td>
-                  <td className="px-3 py-2.5 text-center text-[12px] font-semibold text-white tabular-nums">{row.total}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-cyan tabular-nums">{row.hires}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-gold-bright tabular-nums">{row.trainingCompletions}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-green tabular-nums">{row.promotions}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-orange tabular-nums">{row.demotions}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-red tabular-nums">{row.terminations}</td>
+                  <td className="px-3 py-2.5 text-center text-[11.5px] text-indigo tabular-nums">{row.sanctions}</td>
+                  <td className="px-3 py-2.5 text-center text-[12px] font-semibold text-label tabular-nums">{row.total}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filteredStaff.length === 0 && <p className="bg-[#091d35]/45 px-4 py-10 text-center text-[12px] italic text-[#536b86]">{staffSearch ? 'Kein Bearbeiter passt zur Suche.' : 'In diesem Zeitraum wurden noch keine Maßnahmen erfasst.'}</p>}
+          {filteredStaff.length === 0 && <p className="bg-white/[0.03] px-4 py-10 text-center text-[12px] italic text-label-4">{staffSearch ? 'Kein Bearbeiter passt zur Suche.' : 'In diesem Zeitraum wurden noch keine Maßnahmen erfasst.'}</p>}
         </div>
-        <p className="mt-2.5 text-[10px] leading-4 text-[#4f6985]">Ausbildungen zählen neu als abgeschlossen markierte Ausbildungszuweisungen. Änderungen ohne neuen Abschluss werden nicht als Leistung gezählt.</p>
+        <p className="mt-2.5 text-[11px] leading-4 text-label-4">Ausbildungen zählen neu als abgeschlossen markierte Ausbildungszuweisungen. Änderungen ohne neuen Abschluss werden nicht als Leistung gezählt.</p>
       </section>
 
       <section className={cn(panelClass, 'mt-3 p-4 sm:p-5')}>
@@ -437,20 +437,20 @@ export default function StatisticsPage() {
               <article key={item.id} className={cn(surfaceClass, 'flex items-center gap-3 p-3')}>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]" style={{ color: meta.color, backgroundColor: meta.bg }}><Icon size={15} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11.5px] font-medium text-[#dbe6f3]">{item.subject}</p>
-                  <p className="mt-0.5 truncate text-[10.5px] text-[#7089a5]">{item.title} · von {item.actor}</p>
+                  <p className="truncate text-[11.5px] font-medium text-label">{item.subject}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-label-3">{item.title} · von {item.actor}</p>
                 </div>
-                <time className="shrink-0 text-[9.5px] text-[#4f6985]">{formatDateTime(item.createdAt)}</time>
+                <time className="shrink-0 text-[11px] text-label-4">{formatDateTime(item.createdAt)}</time>
               </article>
             )
           })}
-          {data.latestActivity.length === 0 && <p className="py-8 text-center text-[12px] italic text-[#536b86] lg:col-span-2">Keine Personalbewegungen im gewählten Zeitraum.</p>}
+          {data.latestActivity.length === 0 && <p className="py-8 text-center text-[12px] italic text-label-4 lg:col-span-2">Keine Personalbewegungen im gewählten Zeitraum.</p>}
         </div>
       </section>
 
-      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-[9.5px] text-[#425b75]">
+      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-[11px] text-label-4">
         <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={11} /> Datenstand {formatDateTime(data.period.end)}</span>
-        <span className="font-mono uppercase tracking-[0.1em]">LSPD · Personalstatistik</span>
+        <span className="font-mono">LSPD · Personalstatistik</span>
       </div>
     </div>
   )

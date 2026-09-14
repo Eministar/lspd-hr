@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Search, Shield } from 'lucide-react'
 import { PageLoader } from '@/components/ui/loading'
+import { fieldClass } from '@/components/ui/input'
 import { useFetch } from '@/hooks/use-fetch'
-import { formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 
 interface Officer {
@@ -18,6 +19,8 @@ interface Officer {
   unitInfo: { key: string; name: string; color: string }[]
   rank: { name: string; color: string; sortOrder: number }
 }
+
+const GRID = 'lg:grid-cols-[88px_minmax(0,1.2fr)_minmax(150px,0.9fr)_minmax(160px,1fr)_120px]'
 
 export default function PublicOfficersPage() {
   const { data: officers, loading } = useFetch<Officer[]>('/api/public/officers')
@@ -39,33 +42,33 @@ export default function PublicOfficersPage() {
   if (loading) return <PageLoader />
 
   return (
-    <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-canvas px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
       <div className="mx-auto max-w-5xl">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="h-[46px] w-[46px] rounded-[12px] bg-[#0a2040] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden">
-              <Image src="/shield.webp" alt="LSPD" width={40} height={40} className="rounded-full" priority />
-            </div>
+        <header className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Image src="/shield.webp" alt="LSPD" width={48} height={48} priority />
             <div>
-              <h1 className="text-[19px] font-semibold text-white tracking-[-0.01em]">Mitarbeiterliste</h1>
-              <p className="text-[12px] text-[#8ea4bd]">{filtered.length} Mitarbeiter</p>
+              <h1 className="text-[30px] font-bold leading-[1.15] tracking-[-0.03em] text-label">Mitarbeiterliste</h1>
+              <p className="mt-0.5 text-[14px] tabular-nums text-label-3">{filtered.length} Mitarbeiter</p>
             </div>
           </div>
           <div className="relative w-full sm:w-[300px]">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-3" strokeWidth={2} />
             <input
+              type="search"
+              aria-label="Mitarbeiter durchsuchen"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Suchen..."
-              className="h-[36px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0b1f3a] pl-9 pr-3 text-[13px] text-[#edf4fb] placeholder:text-[#4a6585] focus:outline-none focus:border-[#d4af37]"
+              className={cn(fieldClass, 'h-[34px] pl-8 pr-3')}
             />
           </div>
         </header>
 
-        <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
+        <div className="lspd-card overflow-hidden">
           {filtered.length > 0 ? (
             <div>
-              <div className="hidden grid-cols-[92px_minmax(0,1.2fr)_minmax(140px,0.8fr)_minmax(150px,1fr)_130px] gap-4 border-b border-[#18385f] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#6b8299] lg:grid">
+              <div className={cn('hidden gap-4 border-b border-line bg-surface-2 px-5 py-2.5 text-[12px] font-medium text-label-3 lg:grid', GRID)}>
                 <span>DN</span>
                 <span>Name</span>
                 <span>Rang</span>
@@ -75,33 +78,34 @@ export default function PublicOfficersPage() {
               {filtered.map((officer) => (
                 <div
                   key={`${officer.badgeNumber}-${officer.firstName}-${officer.lastName}`}
-                  className="grid grid-cols-1 gap-2 border-b border-[#18385f] px-4 py-3.5 last:border-b-0 lg:grid-cols-[92px_minmax(0,1.2fr)_minmax(140px,0.8fr)_minmax(150px,1fr)_130px] lg:items-center lg:gap-4"
+                  className={cn('grid grid-cols-1 gap-1.5 border-b border-line px-5 py-3 transition-colors last:border-b-0 hover:bg-white/[0.025] lg:items-center lg:gap-4', GRID)}
                 >
-                  <span className="font-mono text-[12px] text-[#b7c5d8]">{displayBadgeNumber(officer.badgeNumber)}</span>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13.5px] font-medium text-[#eee]">{officer.firstName} {officer.lastName}</p>
-                  </div>
-                  <p className="truncate text-[12.5px] text-[#c8d5e5]">{officer.rank.name}</p>
+                  <span className="font-mono text-[12.5px] tabular-nums text-label-3">{displayBadgeNumber(officer.badgeNumber)}</span>
+                  <p className="min-w-0 truncate text-[14px] font-medium text-label">{officer.firstName} {officer.lastName}</p>
+                  <p className="flex min-w-0 items-center gap-2 text-[13px] text-label-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: officer.rank.color }} aria-hidden />
+                    <span className="truncate">{officer.rank.name}</span>
+                  </p>
                   <span className="flex min-w-0 flex-wrap gap-1">
                     {officer.unitInfo.map((unit) => (
                       <span
                         key={unit.key}
-                        className="inline-flex items-center rounded-full border bg-[#0f2340]/70 px-2 py-[3px] text-[10.5px] font-medium"
-                        style={{ color: unit.color, borderColor: `${unit.color}66` }}
+                        className="inline-flex h-5 items-center rounded-full px-2 text-[11.5px] font-medium"
+                        style={{ color: unit.color, backgroundColor: `color-mix(in srgb, ${unit.color} 16%, transparent)` }}
                       >
                         {unit.name}
                       </span>
                     ))}
-                    {officer.unitInfo.length === 0 && <span className="text-[12px] text-[#536b86]">Keine Unit</span>}
+                    {officer.unitInfo.length === 0 && <span className="text-[12.5px] text-label-4">Keine Unit</span>}
                   </span>
-                  <span className="text-[12px] text-[#8ea4bd]">{formatDate(officer.hireDate)}</span>
+                  <span className="text-[12.5px] tabular-nums text-label-2">{formatDate(officer.hireDate)}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-20">
-              <Shield size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Officers gefunden</p>
+            <div className="py-20 text-center">
+              <Shield size={26} className="mx-auto mb-3 text-label-4" strokeWidth={1.5} />
+              <p className="text-[13.5px] text-label-3">Keine Officers gefunden</p>
             </div>
           )}
         </div>

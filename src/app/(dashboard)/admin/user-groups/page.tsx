@@ -102,39 +102,39 @@ export default function UserGroupsPage() {
         action={<Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neue Gruppe</Button>}
       />
 
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-        <div className="divide-y divide-[#18385f]">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
+        <div className="divide-y divide-line">
           {groups?.map((group, i) => (
             <motion.div
               key={group.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.02 }}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-2 transition-colors"
             >
-              <div className="h-8 w-8 rounded-full bg-[#102542] flex items-center justify-center text-[12px] font-semibold text-[#d4af37]">
+              <div className="h-8 w-8 rounded-full bg-surface-2 flex items-center justify-center text-[12px] font-semibold text-gold">
                 {group.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13.5px] font-medium text-[#eee]">{group.name}</p>
-                <p className="text-[11.5px] text-[#4a6585] truncate">
+                <p className="text-[13.5px] font-medium text-label">{group.name}</p>
+                <p className="text-[11.5px] text-label-4 truncate">
                   {group.description || 'Keine Beschreibung'} · {group.permissions.length} Rechte · {group._count.users} Benutzer
                 </p>
               </div>
               <div className="flex gap-0.5">
-                <button onClick={() => openEdit(group)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                  <Edit size={13} className="text-[#4a6585]" />
+                <button onClick={() => openEdit(group)} className="p-1.5 rounded-[6px] hover:bg-surface-2 transition-colors">
+                  <Edit size={13} className="text-label-4" />
                 </button>
-                <button onClick={() => deleteGroup(group)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
-                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
+                <button onClick={() => deleteGroup(group)} className="p-1.5 rounded-[6px] hover:bg-red/14 transition-colors">
+                  <Trash2 size={13} className="text-label-4 hover:text-red" />
                 </button>
               </div>
             </motion.div>
           ))}
           {(!groups || groups.length === 0) && (
             <div className="text-center py-16">
-              <Users size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Benutzergruppen vorhanden</p>
+              <Users size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-3">Keine Benutzergruppen vorhanden</p>
             </div>
           )}
         </div>
@@ -145,7 +145,7 @@ export default function UserGroupsPage() {
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Textarea label="Beschreibung" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Optional" />
           <div>
-            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Leserechte</p>
+            <p className="block text-[12.5px] font-medium text-label-2 mb-2">Leserechte</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {READ_PERMISSIONS.map((permission) => (
                 <Checkbox
@@ -153,13 +153,13 @@ export default function UserGroupsPage() {
                   checked={form.permissions.includes(permission)}
                   onCheckedChange={(checked) => togglePermission(permission, checked)}
                   label={PERMISSION_LABELS[permission]}
-                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                  className="rounded-[8px] bg-white/[0.03] border border-line px-3 py-2"
                 />
               ))}
             </div>
           </div>
           <div>
-            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Verwaltungsrechte</p>
+            <p className="block text-[12.5px] font-medium text-label-2 mb-2">Verwaltungsrechte</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {MANAGE_PERMISSIONS.map((permission) => (
                 <Checkbox
@@ -167,7 +167,7 @@ export default function UserGroupsPage() {
                   checked={form.permissions.includes(permission)}
                   onCheckedChange={(checked) => togglePermission(permission, checked)}
                   label={PERMISSION_LABELS[permission]}
-                  className="rounded-[8px] bg-[#0a1a33]/40 border border-[#18385f]/50 px-3 py-2"
+                  className="rounded-[8px] bg-white/[0.03] border border-line px-3 py-2"
                 />
               ))}
             </div>

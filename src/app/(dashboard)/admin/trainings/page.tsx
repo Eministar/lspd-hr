@@ -137,39 +137,39 @@ export default function TrainingsPage() {
         action={<Button size="sm" onClick={openCreate}><Plus size={14} strokeWidth={2} /> Neue Ausbildung</Button>}
       />
 
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
-        <div className="divide-y divide-[#18385f]">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
+        <div className="divide-y divide-line">
           {trainings?.map((t, i) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.02 }}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-2 transition-colors"
             >
-              <span className="text-[12px] text-[#bbb] font-mono w-6 text-right">{t.sortOrder}</span>
+              <span className="text-[12px] text-label-3 font-mono w-6 text-right">{t.sortOrder}</span>
               <div className="flex-1">
-                <span className="text-[13.5px] font-medium text-[#eee]">{t.label}</span>
-                <span className="text-[11px] text-[#4a6585] ml-2 font-mono">({t.key})</span>
-                <span className="text-[11px] text-[#6b8299] ml-2">ab {t.minRank?.name ?? 'allen Rängen'}</span>
+                <span className="text-[13.5px] font-medium text-label">{t.label}</span>
+                <span className="text-[11px] text-label-4 ml-2 font-mono">({t.key})</span>
+                <span className="text-[11px] text-label-3 ml-2">ab {t.minRank?.name ?? 'allen Rängen'}</span>
                 {roleName(discordData?.config.trainingRoleMap[t.id]) && (
-                  <span className="text-[11px] text-[#6b8299] ml-2">Discord: {roleName(discordData?.config.trainingRoleMap[t.id])}</span>
+                  <span className="text-[11px] text-label-3 ml-2">Discord: {roleName(discordData?.config.trainingRoleMap[t.id])}</span>
                 )}
               </div>
               <div className="flex gap-0.5">
-                <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                  <Edit size={13} className="text-[#4a6585]" />
+                <button onClick={() => openEdit(t)} className="p-1.5 rounded-[6px] hover:bg-surface-2 transition-colors">
+                  <Edit size={13} className="text-label-4" />
                 </button>
-                <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-[6px] hover:bg-[#1c1111] transition-colors">
-                  <Trash2 size={13} className="text-[#4a6585] hover:text-[#f87171]" />
+                <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-[6px] hover:bg-red/14 transition-colors">
+                  <Trash2 size={13} className="text-label-4 hover:text-red" />
                 </button>
               </div>
             </motion.div>
           ))}
           {(!trainings || trainings.length === 0) && (
             <div className="text-center py-16">
-              <GraduationCap size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Ausbildungsarten vorhanden</p>
+              <GraduationCap size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-3">Keine Ausbildungsarten vorhanden</p>
             </div>
           )}
         </div>

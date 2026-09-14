@@ -336,23 +336,23 @@ export default function RankChangeListsPage() {
 
       {rows.length > 0 && (
         <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <RankChangeStat label="Up-Ranks" value={promotionEntries} tone="text-[#34d399]" />
-          <RankChangeStat label="D-Ranks" value={demotionEntries} tone="text-[#f87171]" />
-          <RankChangeStat label="Durchgeführt" value={executedEntries} tone="text-[#dbe6f3]" />
-          <RankChangeStat label="Offen" value={pendingEntries} tone="text-[#fbbf24]" />
+          <RankChangeStat label="Up-Ranks" value={promotionEntries} tone="text-green" />
+          <RankChangeStat label="D-Ranks" value={demotionEntries} tone="text-red" />
+          <RankChangeStat label="Durchgeführt" value={executedEntries} tone="text-label" />
+          <RankChangeStat label="Offen" value={pendingEntries} tone="text-yellow" />
         </div>
       )}
 
       {rows.length > 0 && (
-        <div className="glass-panel-elevated mb-4 rounded-[14px] border border-[#1e3a5c]/45 p-3.5">
+        <div className="glass-panel-elevated mb-4 rounded-[12px] border border-line p-3.5">
           <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-5">
             <div className="relative">
-              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-4" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Name, DN, Rang, Notiz..."
-                className="h-[38px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-9 pr-3 text-[13.5px] text-[#edf4fb] placeholder:text-[#4a6585] transition-all duration-150 focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)] focus:outline-none"
+                className="h-[38px] w-full rounded-[8px] border border-line bg-surface pl-9 pr-3 text-[13.5px] text-label placeholder:text-label-4 transition-all duration-150 focus:border-gold focus:outline-none"
               />
             </div>
             <Select
@@ -390,12 +390,12 @@ export default function RankChangeListsPage() {
           </div>
           {filterActive && (
             <div className="mt-2.5 flex items-center justify-between gap-3">
-              <p className="text-[11.5px] text-[#8ea4bd]">
+              <p className="text-[11.5px] text-label-2">
                 {visibleEntryCount} von {allEntries.length} Einträgen · {visibleLists.length} Liste{visibleLists.length === 1 ? '' : 'n'}
               </p>
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11.5px] font-semibold text-[#8ea4bd] transition-colors hover:bg-[#0f2340] hover:text-white"
+                className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11.5px] font-semibold text-label-2 transition-colors hover:bg-surface-2 hover:text-label"
               >
                 <X size={12} /> Filter zurücksetzen
               </button>
@@ -405,12 +405,12 @@ export default function RankChangeListsPage() {
       )}
 
       {rows.length === 0 && (
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-16 text-center">
-          <div className="mb-3 inline-flex rounded-full bg-[#d4af37]/10 p-4">
-            <ArrowUpDown size={26} className="text-[#d4af37]" />
+        <div className="glass-panel-elevated rounded-[12px] border border-line py-16 text-center">
+          <div className="mb-3 inline-flex rounded-full bg-gold/10 p-4">
+            <ArrowUpDown size={26} className="text-gold" />
           </div>
-          <p className="mb-1 text-[14px] font-semibold text-white">Noch keine Rangänderungslisten</p>
-          <p className="mb-4 text-[12.5px] text-[#8ea4bd]">Erstelle eine Liste für Up- und D-Ranks.</p>
+          <p className="mb-1 text-[14px] font-semibold text-label">Noch keine Rangänderungslisten</p>
+          <p className="mb-4 text-[12.5px] text-label-2">Erstelle eine Liste für Up- und D-Ranks.</p>
           {canManage && (
             <Button size="sm" onClick={openCreateModal}>
               <Plus size={13} />
@@ -421,9 +421,9 @@ export default function RankChangeListsPage() {
       )}
 
       {rows.length > 0 && visibleLists.length === 0 && (
-        <div className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 py-12 text-center">
-          <p className="mb-1 text-[13.5px] font-semibold text-white">Keine Treffer</p>
-          <p className="mb-4 text-[12.5px] text-[#8ea4bd]">Keine Einträge passen zu Suche und Filter.</p>
+        <div className="glass-panel-elevated rounded-[12px] border border-line py-12 text-center">
+          <p className="mb-1 text-[13.5px] font-semibold text-label">Keine Treffer</p>
+          <p className="mb-4 text-[12.5px] text-label-2">Keine Einträge passen zu Suche und Filter.</p>
           <Button size="sm" variant="secondary" onClick={resetFilters}>Filter zurücksetzen</Button>
         </div>
       )}
@@ -477,7 +477,7 @@ export default function RankChangeListsPage() {
             required
             placeholder="z.B. Rangänderungen Juli 2026"
           />
-          <p className="text-[12px] text-[#8ea4bd]">
+          <p className="text-[12px] text-label-2">
             Up-Ranks und D-Ranks kommen in dieselbe Liste — die Richtung ergibt sich automatisch aus dem gewählten Zielrang.
           </p>
           <Textarea
@@ -515,9 +515,9 @@ export default function RankChangeListsPage() {
           />
           {selectedOfficer && (
             <>
-              <div className="rounded-[8px] bg-[#0f2340] px-3 py-2.5">
-                <p className="text-[13px] text-[#888]">
-                  Aktueller Rang: <strong className="text-[#eee]">{selectedOfficer.rank.name}</strong>
+              <div className="rounded-[8px] bg-surface-2 px-3 py-2.5">
+                <p className="text-[13px] text-label-2">
+                  Aktueller Rang: <strong className="text-label">{selectedOfficer.rank.name}</strong>
                 </p>
               </div>
               <Select
@@ -531,7 +531,7 @@ export default function RankChangeListsPage() {
                 placeholder="Rang wählen..."
               />
               {entryDirectionPreview && (
-                <p className={`text-[12px] ${entryDirectionPreview === 'DEMOTION' ? 'text-[#f87171]' : 'text-[#34d399]'}`}>
+                <p className={`text-[12px] ${entryDirectionPreview === 'DEMOTION' ? 'text-red' : 'text-green'}`}>
                   Wird als {entryDirectionPreview === 'DEMOTION' ? 'Degradierung (D-Rank)' : 'Beförderung (Up-Rank)'} eingetragen.
                 </p>
               )}
@@ -558,7 +558,7 @@ export default function RankChangeListsPage() {
       </Modal>
 
       <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title={`${executeEntry ? actionLabel(executeEntry.direction) : 'Rangänderung'} ausführen`}>
-        <p className="mb-5 text-[13px] text-[#888]">
+        <p className="mb-5 text-[13px] text-label-2">
           Die Rangänderung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
         </p>
         <div className="flex justify-end gap-2">
@@ -568,7 +568,7 @@ export default function RankChangeListsPage() {
       </Modal>
 
       <Modal open={!!undoEntry} onClose={() => setUndoEntry(null)} title="Beförderung rückgängig machen">
-        <p className="mb-5 text-[13px] text-[#888]">
+        <p className="mb-5 text-[13px] text-label-2">
           Die Beförderung für {undoEntry?.name} wird zurückgesetzt. Rang und Dienstnummer werden auf den Stand vor der Durchführung gesetzt. Fortfahren?
         </p>
         <div className="flex justify-end gap-2">
@@ -582,8 +582,8 @@ export default function RankChangeListsPage() {
 
 function RankChangeStat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="glass-panel-elevated rounded-[12px] border border-[#1e3a5c]/45 p-3.5">
-      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#8ea4bd]">{label}</p>
+    <div className="glass-panel-elevated rounded-[12px] border border-line p-3.5">
+      <p className="text-[11px] font-semibold text-label-2">{label}</p>
       <p className={`mt-1 text-[22px] font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   )

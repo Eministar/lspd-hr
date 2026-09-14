@@ -38,7 +38,7 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
             key={name}
             type="button"
             onClick={() => onChange(name)}
-            className={`flex items-center justify-center h-9 rounded-[8px] border transition-colors ${active ? 'border-[#4a8fd8] bg-[#4a8fd8]/15 text-[#7fb2e8]' : 'border-[#1e3a5c]/50 text-[#8194a9] hover:border-[#2d5279]'}`}
+            className={`flex items-center justify-center h-9 rounded-[8px] border transition-colors ${active ? 'border-label-4 bg-white/[0.03] text-label-2' : 'border-line text-label-3 hover:border-line-strong'}`}
             title={name}
           >
             <Icon size={16} strokeWidth={1.75} />
@@ -171,13 +171,13 @@ export const OrdnungenManager = forwardRef<OrdnungenManagerHandle, Props>(functi
     <div className="mb-6 flex flex-wrap gap-2">
       <button
         onClick={openNewOrdnung}
-        className="inline-flex h-[34px] items-center gap-1.5 rounded-[8px] bg-[#17375f] px-3 text-[12.5px] font-medium text-[#edf4fb] hover:bg-[#1e4675] transition-colors"
+        className="inline-flex h-[34px] items-center gap-1.5 rounded-[8px] bg-surface-3 px-3 text-[12.5px] font-medium text-label hover:bg-surface-4 transition-colors"
       >
         <Plus size={15} strokeWidth={2} /> Neue Ordnung
       </button>
       <button
         onClick={openNewCategory}
-        className="inline-flex h-[34px] items-center gap-1.5 rounded-[8px] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] hover:bg-[#17375f] transition-colors"
+        className="inline-flex h-[34px] items-center gap-1.5 rounded-[8px] bg-surface-2 px-3 text-[12.5px] font-medium text-label hover:bg-surface-3 transition-colors"
       >
         <FolderPlus size={15} strokeWidth={2} /> Neue Kategorie
       </button>
@@ -215,16 +215,16 @@ export const OrdnungenManager = forwardRef<OrdnungenManagerHandle, Props>(functi
             placeholder="Optional"
           />
           <div>
-            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Icon</p>
+            <p className="block text-[12.5px] font-medium text-label-2 mb-1.5">Icon</p>
             <IconPicker value={categoryForm.icon} onChange={(v) => setCategoryForm((f) => ({ ...f, icon: v }))} />
           </div>
           <div>
-            <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-1.5">Farbe</p>
+            <p className="block text-[12.5px] font-medium text-label-2 mb-1.5">Farbe</p>
             <ColorField value={categoryForm.color} onChange={(v) => setCategoryForm((f) => ({ ...f, color: v }))} />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={() => setCategoryModalOpen(false)} className="h-9 px-3 rounded-[8px] bg-[#102542] text-[12.5px] text-[#cdd8e6]">Abbrechen</button>
-            <button disabled={saving} onClick={saveCategory} className="h-9 px-4 rounded-[8px] bg-[#17375f] text-[12.5px] text-[#edf4fb] disabled:opacity-50">Speichern</button>
+            <button onClick={() => setCategoryModalOpen(false)} className="h-9 px-3 rounded-[8px] bg-surface-2 text-[12.5px] text-label">Abbrechen</button>
+            <button disabled={saving} onClick={saveCategory} className="h-9 px-4 rounded-[8px] bg-surface-3 text-[12.5px] text-label disabled:opacity-50">Speichern</button>
           </div>
         </div>
       </Modal>

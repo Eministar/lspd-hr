@@ -103,10 +103,10 @@ export function correctValues(question: FormQuestion) {
 export function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
     <div className="glass-panel-elevated flex items-center gap-3 rounded-[12px] border border-white/[0.04] px-4 py-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#d4af37]/15 text-[#d4af37]">{icon}</div>
+      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-gold/15 text-gold">{icon}</div>
       <div>
-        <p className="text-[20px] font-semibold leading-tight text-white tabular-nums">{value}</p>
-        <p className="mt-0.5 text-[11px] text-[#8ea4bd]">{label}</p>
+        <p className="text-[20px] font-semibold leading-tight text-label tabular-nums">{value}</p>
+        <p className="mt-0.5 text-[11px] text-label-2">{label}</p>
       </div>
     </div>
   )
@@ -116,10 +116,10 @@ export function QuestionAnalytics({ questions, responses }: { questions: FormQue
   if (questions.length === 0) return null
 
   return (
-    <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
+    <section className="glass-panel-elevated rounded-[12px] border border-line p-4">
       <div className="mb-3 flex items-center gap-2">
-        <BarChart3 size={15} className="text-[#d4af37]" />
-        <h3 className="text-[14px] font-semibold text-white">Auswertung</h3>
+        <BarChart3 size={15} className="text-gold" />
+        <h3 className="text-[14px] font-semibold text-label">Auswertung</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {questions.map((question) => {
@@ -135,19 +135,19 @@ export function QuestionAnalytics({ questions, responses }: { questions: FormQue
             }
             const max = Math.max(1, ...Array.from(counts.values()))
             return (
-              <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-                <p className="mb-2 text-[12.5px] font-semibold text-white">{question.title}</p>
+              <div key={question.id} className="rounded-[12px] border border-line bg-white/[0.03] p-3">
+                <p className="mb-2 text-[12.5px] font-semibold text-label">{question.title}</p>
                 <div className="space-y-2">
                   {choices.map((choice) => {
                     const count = counts.get(choice) ?? 0
                     return (
                       <div key={choice}>
                         <div className="mb-1 flex justify-between gap-2 text-[11.5px]">
-                          <span className="truncate text-[#b7c5d8]">{choice}</span>
-                          <span className="text-[#6b8299]">{count}</span>
+                          <span className="truncate text-label-2">{choice}</span>
+                          <span className="text-label-3">{count}</span>
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-[#102542]">
-                          <div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${Math.round((count / max) * 100)}%` }} />
+                        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                          <div className="h-full rounded-full bg-gold" style={{ width: `${Math.round((count / max) * 100)}%` }} />
                         </div>
                       </div>
                     )
@@ -161,19 +161,19 @@ export function QuestionAnalytics({ questions, responses }: { questions: FormQue
             const values = answers.map((answer) => Number(answer.value.value)).filter(Number.isFinite)
             const average = values.length > 0 ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1) : '-'
             return (
-              <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-                <p className="text-[12.5px] font-semibold text-white">{question.title}</p>
-                <p className="mt-2 text-[22px] font-semibold text-[#d4af37] tabular-nums">{average}</p>
-                <p className="text-[11.5px] text-[#6b8299]">{values.length} Antwort(en)</p>
+              <div key={question.id} className="rounded-[12px] border border-line bg-white/[0.03] p-3">
+                <p className="text-[12.5px] font-semibold text-label">{question.title}</p>
+                <p className="mt-2 text-[22px] font-semibold text-gold tabular-nums">{average}</p>
+                <p className="text-[11.5px] text-label-3">{values.length} Antwort(en)</p>
               </div>
             )
           }
 
           return (
-            <div key={question.id} className="rounded-[12px] border border-[#18385f]/45 bg-[#071a30]/45 p-3">
-              <p className="text-[12.5px] font-semibold text-white">{question.title}</p>
-              <p className="mt-2 text-[22px] font-semibold text-[#d4af37] tabular-nums">{answers.length}</p>
-              <p className="text-[11.5px] text-[#6b8299]">Textantwort(en)</p>
+            <div key={question.id} className="rounded-[12px] border border-line bg-white/[0.03] p-3">
+              <p className="text-[12.5px] font-semibold text-label">{question.title}</p>
+              <p className="mt-2 text-[22px] font-semibold text-gold tabular-nums">{answers.length}</p>
+              <p className="text-[11.5px] text-label-3">Textantwort(en)</p>
             </div>
           )
         })}

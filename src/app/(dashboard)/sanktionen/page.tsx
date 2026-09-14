@@ -265,7 +265,7 @@ export default function SanktionenPage() {
   if (loading) return <PageLoader />
 
   const filterClass =
-    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
+    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-surface text-label-2 border border-line focus:outline-none focus:border-gold transition-all'
 
   return (
     <div>
@@ -276,9 +276,9 @@ export default function SanktionenPage() {
       />
 
       {loadError ? (
-        <div className="glass-panel-elevated rounded-[14px] px-5 py-12 text-center">
-          <AlertTriangle size={26} className="mx-auto mb-3 text-[#f87171]" strokeWidth={1.5} />
-          <p className="text-[13px] text-[#fca5a5]">{loadError}</p>
+        <div className="glass-panel-elevated rounded-[12px] px-5 py-12 text-center">
+          <AlertTriangle size={26} className="mx-auto mb-3 text-red" strokeWidth={1.5} />
+          <p className="text-[13px] text-red">{loadError}</p>
           <Button variant="secondary" size="sm" className="mt-4" onClick={() => void refetch()}>
             Erneut laden
           </Button>
@@ -293,12 +293,12 @@ export default function SanktionenPage() {
 
           <div className="mb-5 flex flex-col gap-2 lg:flex-row">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-label-4" strokeWidth={1.75} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Suche nach Name, Dienstnummer, Rang oder Grund..."
-                className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
+                className={cn(filterClass, 'w-full pl-9 placeholder:text-label-4')}
               />
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex">
@@ -310,11 +310,11 @@ export default function SanktionenPage() {
           </div>
 
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-[12px] text-[#4a6585]">
+            <p className="text-[12px] text-label-4">
               {filtered.length} von {sanctions?.length ?? 0} Sanktionen
             </p>
             {(sanctions?.length ?? 0) >= 1000 && (
-              <p className="text-[11.5px] text-[#b45309]">Nur die 1000 neuesten Sanktionen werden geladen.</p>
+              <p className="text-[11.5px] text-orange">Nur die 1000 neuesten Sanktionen werden geladen.</p>
             )}
           </div>
 
@@ -341,9 +341,9 @@ export default function SanktionenPage() {
               ))}
             </div>
           ) : (
-            <div className="glass-panel-elevated rounded-[14px] py-20 text-center">
-              <Gavel size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">
+            <div className="glass-panel-elevated rounded-[12px] py-20 text-center">
+              <Gavel size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+              <p className="text-[13px] text-label-3">
                 {sanctions && sanctions.length > 0 ? 'Keine Treffer für die aktuellen Filter' : 'Keine Sanktionen vorhanden'}
               </p>
             </div>
@@ -354,11 +354,11 @@ export default function SanktionenPage() {
       <Modal open={!!editing} onClose={() => setEditing(null)} title="Sanktion bearbeiten">
         {editing && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-[10px] border border-[#18385f]/60 bg-[#0a1e38]/70 px-3.5 py-3">
-              <Gavel size={15} className="text-[#f59e0b] shrink-0" strokeWidth={1.75} />
-              <p className="text-[13px] text-[#9fb0c4]">
+            <div className="flex items-center gap-3 rounded-[10px] border border-line bg-surface px-3.5 py-3">
+              <Gavel size={15} className="text-yellow shrink-0" strokeWidth={1.75} />
+              <p className="text-[13px] text-label-2">
                 Sanktion bearbeiten für{' '}
-                <strong className="font-semibold text-[#eee]">
+                <strong className="font-semibold text-label">
                   {cardOfficer(editing).firstName} {cardOfficer(editing).lastName}
                 </strong>
               </p>
@@ -382,23 +382,23 @@ export default function SanktionenPage() {
             />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-                <p className="text-[12.5px] font-medium text-[#9fb0c4]">Geldstrafe</p>
-                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'FINE' ? 'text-[#d4af37]' : 'text-[#4a6585]')}>
+              <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+                <p className="text-[12.5px] font-medium text-label-2">Geldstrafe</p>
+                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'FINE' ? 'text-gold' : 'text-label-4')}>
                   {editForm.measureType === 'FINE' ? formatFineAmount(editRule.fineAmount) : 'Nicht ausgewählt'}
                 </p>
               </div>
-              <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-                <p className="text-[12.5px] font-medium text-[#9fb0c4]">SG-Runden</p>
-                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'SG_ROUNDS' ? 'text-[#7dd3fc]' : 'text-[#4a6585]')}>
+              <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+                <p className="text-[12.5px] font-medium text-label-2">SG-Runden</p>
+                <p className={cn('mt-1 text-[14px] font-semibold', editForm.measureType === 'SG_ROUNDS' ? 'text-cyan' : 'text-label-4')}>
                   {editForm.measureType === 'SG_ROUNDS' ? editRule.sgRounds : 'Nicht ausgewählt'}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5">
-              <p className="text-[12.5px] font-medium text-[#9fb0c4]">Zusätzliche Grade-Folge</p>
-              <p className="mt-1 text-[13px] font-medium leading-snug text-[#edf4fb]">{editRule.penalty}</p>
+            <div className="rounded-[9px] border border-line bg-surface px-3 py-2.5">
+              <p className="text-[12.5px] font-medium text-label-2">Zusätzliche Grade-Folge</p>
+              <p className="mt-1 text-[13px] font-medium leading-snug text-label">{editRule.penalty}</p>
             </div>
 
             <DateField label="Frist" value={editForm.dueAt} onChange={(dueAt) => setEditForm({ ...editForm, dueAt })} />
@@ -425,13 +425,13 @@ export default function SanktionenPage() {
       <Modal open={!!toDelete} onClose={() => setToDelete(null)} title="Sanktion löschen">
         {toDelete && (
           <div className="space-y-4">
-            <div className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1e38]/70 px-3.5 py-3">
-              <p className="text-[13px] font-semibold text-[#eee]">
+            <div className="rounded-[10px] border border-line bg-surface px-3.5 py-3">
+              <p className="text-[13px] font-semibold text-label">
                 {cardOfficer(toDelete).firstName} {cardOfficer(toDelete).lastName} · {penalGradeLabel(toDelete.penalGrade)}
               </p>
-              <p className="mt-1 text-[12.5px] text-[#8ea4bd]">{toDelete.reason}</p>
+              <p className="mt-1 text-[12.5px] text-label-2">{toDelete.reason}</p>
             </div>
-            <p className="text-[12.5px] text-[#9fb0c4]">Diese Sanktion wird dauerhaft gelöscht.</p>
+            <p className="text-[12.5px] text-label-2">Diese Sanktion wird dauerhaft gelöscht.</p>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="secondary" size="sm" onClick={() => setToDelete(null)}>Abbrechen</Button>
               <Button variant="danger" size="sm" onClick={handleDelete} disabled={busy}>Löschen</Button>
@@ -445,15 +445,15 @@ export default function SanktionenPage() {
 
 function StatTile({ label, value, tone }: { label: string; value: string; tone: 'open' | 'alert' | 'gold' | 'neutral' }) {
   const toneClass = {
-    open: 'text-[#fbbf24]',
-    alert: 'text-[#fca5a5]',
-    gold: 'text-[#d4af37]',
-    neutral: 'text-[#edf4fb]',
+    open: 'text-yellow',
+    alert: 'text-red',
+    gold: 'text-gold',
+    neutral: 'text-label',
   }[tone]
 
   return (
     <div className="glass-panel-elevated rounded-[12px] px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#4a6585]">{label}</p>
+      <p className="text-[11px] font-medium text-label-4">{label}</p>
       <p className={cn('mt-1 text-[19px] font-semibold tabular-nums', toneClass)}>{value}</p>
     </div>
   )

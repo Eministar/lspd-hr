@@ -133,7 +133,7 @@ export default function TerminationsPage() {
   if (loading) return <PageLoader />
 
   const filterClass =
-    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-[#0b1f3a] text-[#b7c5d8] border border-[#18385f]/50 focus:outline-none focus:border-[#d4af37] transition-all'
+    'h-[36px] sm:h-[34px] px-3 rounded-[8px] text-[13px] bg-surface text-label-2 border border-line focus:outline-none focus:border-gold transition-all'
 
   return (
     <div>
@@ -152,14 +152,14 @@ export default function TerminationsPage() {
         <div className="relative flex-1">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-label-4"
             strokeWidth={1.75}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Suche nach Name, Dienstnummer, Rang oder Grund..."
-            className={cn(filterClass, 'w-full pl-9 placeholder:text-[#4a6585]')}
+            className={cn(filterClass, 'w-full pl-9 placeholder:text-label-4')}
           />
         </div>
         <Select
@@ -176,9 +176,9 @@ export default function TerminationsPage() {
         />
       </div>
 
-      <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
+      <div className="glass-panel-elevated rounded-[12px] overflow-hidden">
         {filteredTerminations.length > 0 ? (
-          <div className="divide-y divide-[#18385f]">
+          <div className="divide-y divide-line">
             {filteredTerminations.map((t, i) => {
               const { first: fn, last: ln } = terminationOfficerNames(t)
               const displayName = [fn, ln].filter(Boolean).join(' ') || '—'
@@ -191,26 +191,26 @@ export default function TerminationsPage() {
                 transition={{ delay: i * 0.03 }}
                 className="flex items-start gap-4 px-5 py-4"
               >
-                <div className="h-9 w-9 rounded-[9px] bg-[#0f2340] flex items-center justify-center shrink-0 mt-0.5">
-                  <UserX size={16} className="text-[#999]" strokeWidth={1.75} />
+                <div className="h-9 w-9 rounded-[9px] bg-surface-2 flex items-center justify-center shrink-0 mt-0.5">
+                  <UserX size={16} className="text-label-3" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <p className="text-[13px] font-medium text-[#eee]">
+                    <p className="text-[13px] font-medium text-label">
                       {displayName}
                     </p>
-                    <span className="text-[11px] text-[#4a6585] font-mono">DN: {badgeDn}</span>
+                    <span className="text-[11px] text-label-4 font-mono">DN: {badgeDn}</span>
                     {!t.officer && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1a3050] text-[#8ea4bd] border border-[#234568]">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-surface-3 text-label-2 border border-line">
                         Profil gelöscht
                       </span>
                     )}
                   </div>
-                  <p className="text-[12px] text-[#999] mb-1">
-                    Ehem. Rang: <span className="text-[#aaa] font-medium">{t.previousRank || t.officer?.rank?.name || '—'}</span>
+                  <p className="text-[12px] text-label-3 mb-1">
+                    Ehem. Rang: <span className="text-label-3 font-medium">{t.previousRank || t.officer?.rank?.name || '—'}</span>
                   </p>
-                  <p className="text-[13px] text-[#999]">{t.reason}</p>
-                  <p className="text-[11px] text-[#4a6585] mt-1.5">
+                  <p className="text-[13px] text-label-3">{t.reason}</p>
+                  <p className="text-[11px] text-label-4 mt-1.5">
                     {formatDate(t.terminatedAt)} · von {t.terminatedBy?.displayName ?? 'Gelöscht'}
                   </p>
                 </div>
@@ -222,9 +222,9 @@ export default function TerminationsPage() {
                       Wiedereinstellen
                     </Button>
                   ) : t.officer ? (
-                    <span className="text-[11.5px] text-[#34d399] font-medium">Wiedereingestellt</span>
+                    <span className="text-[11.5px] text-green font-medium">Wiedereingestellt</span>
                   ) : (
-                    <span className="text-[11px] text-[#4a6585]" title="Datensatz ohne Officer-Profil">—</span>
+                    <span className="text-[11px] text-label-4" title="Datensatz ohne Officer-Profil">—</span>
                   )}
                 </div>
                 )}
@@ -233,8 +233,8 @@ export default function TerminationsPage() {
           </div>
         ) : (
           <div className="text-center py-20">
-            <UserX size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-            <p className="text-[13px] text-[#999]">
+            <UserX size={28} className="mx-auto mb-3 text-label" strokeWidth={1.5} />
+            <p className="text-[13px] text-label-3">
               {terminations && terminations.length > 0 ? 'Keine Treffer für die aktuelle Suche' : 'Keine Kündigungen'}
             </p>
           </div>
@@ -251,9 +251,9 @@ export default function TerminationsPage() {
             placeholder="Officer wählen..."
           />
           {selectedOfficer && (
-            <div className="px-3 py-2.5 bg-[#0f2340] rounded-[8px]">
-              <p className="text-[13px] text-[#888]">
-                <span className="font-medium text-[#eee]">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {displayBadgeNumber(selectedOfficer.badgeNumber)}
+            <div className="px-3 py-2.5 bg-surface-2 rounded-[8px]">
+              <p className="text-[13px] text-label-2">
+                <span className="font-medium text-label">{selectedOfficer.firstName} {selectedOfficer.lastName}</span> · {selectedOfficer.rank.name} · DN {displayBadgeNumber(selectedOfficer.badgeNumber)}
               </p>
             </div>
           )}
@@ -273,7 +273,7 @@ export default function TerminationsPage() {
       </Modal>
 
       <Modal open={!!rehireId} onClose={() => setRehireId(null)} title="Officer wiedereinstellen">
-        <p className="text-[13px] text-[#888] mb-5">
+        <p className="text-[13px] text-label-2 mb-5">
           Möchten Sie diesen Officer wirklich wiedereinstellen? Der Status wird auf &quot;Aktiv&quot; gesetzt.
           Ist die alte Dienstnummer inzwischen vergeben, wird automatisch die nächste freie Nummer zugewiesen.
         </p>

@@ -6,21 +6,23 @@ interface BadgeProps {
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info'
 }
 
-export function Badge({ children, className, variant = 'default' }: BadgeProps) {
-  const variants = {
-    default: 'bg-[#102542]/80 text-[#edf4fb] border-[#1d3a5e]/40',
-    success: 'bg-[#123026]/80 text-[#86efac] border-[#1a4d3a]/40',
-    warning: 'bg-[#302712]/80 text-[#d4af37] border-[#4a3a12]/40',
-    danger: 'bg-[#2a1620]/80 text-[#fca5a5] border-[#4a1a2a]/40',
-    info: 'bg-[#102542]/80 text-[#93c5fd] border-[#1d3a5e]/40',
-  }
+const variants = {
+  default: 'bg-white/[0.07] text-label-2',
+  success: 'bg-green/15 text-green',
+  warning: 'bg-yellow/12 text-yellow',
+  danger: 'bg-red/15 text-red',
+  info: 'bg-blue/15 text-blue',
+}
 
+export function Badge({ children, className, variant = 'default' }: BadgeProps) {
   return (
-    <span className={cn(
-      'inline-flex items-center px-2 py-[3px] rounded-[6px] text-[11.5px] font-medium border',
-      variants[variant],
-      className
-    )}>
+    <span
+      className={cn(
+        'inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-full px-2 text-[11.5px] font-medium',
+        variants[variant],
+        className
+      )}
+    >
       {children}
     </span>
   )

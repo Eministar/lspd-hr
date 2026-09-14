@@ -1,29 +1,25 @@
 import { ReactNode } from 'react'
 
 interface PageHeaderProps {
-    title: string
-    description?: string
-    eyebrow?: string
-    action?: ReactNode
+  title: string
+  description?: string
+  eyebrow?: string
+  action?: ReactNode
+  className?: string
 }
 
-export function PageHeader({ title, description, eyebrow, action }: PageHeaderProps) {
-    return (
-        <div className="lspd-page-header">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="min-w-0">
-                    {eyebrow && (
-                        <p className="text-[10.5px] font-semibold text-[#d4af37]/80 uppercase tracking-[0.16em] mb-2">
-                            {eyebrow}
-                        </p>
-                    )}
-                    <h1 className="text-[22px] sm:text-[24px] font-semibold text-white tracking-[-0.02em] leading-tight">{title}</h1>
-                    {description && (
-                        <p className="text-[13px] text-[#8ea4bd] mt-1.5 max-w-2xl leading-relaxed">{description}</p>
-                    )}
-                </div>
-                {action && <div className="shrink-0 flex flex-wrap gap-2">{action}</div>}
-            </div>
+/** Large Title nach Apple-Vorbild; Kontext (eyebrow) steht leise darüber, nicht in Versalien. */
+export function PageHeader({ title, description, eyebrow, action, className }: PageHeaderProps) {
+  return (
+    <header className={className ? `lspd-page-header ${className}` : 'lspd-page-header'}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          {eyebrow && <p className="mb-1 text-[13px] font-medium text-label-3">{eyebrow}</p>}
+          <h1>{title}</h1>
+          {description && <p className="mt-1.5 text-[14px] leading-relaxed text-label-2">{description}</p>}
         </div>
-    )
+        {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
+      </div>
+    </header>
+  )
 }

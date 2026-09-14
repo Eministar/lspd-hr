@@ -135,7 +135,7 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
       />
 
       {loadError && (
-        <div className="rounded-[12px] border border-[#3b1616] bg-[#1c1111] px-4 py-3 text-[12.5px] text-[#fca5a5]">
+        <div className="rounded-[12px] border border-red/30 bg-red/14 px-4 py-3 text-[12.5px] text-red">
           {loadError}
         </div>
       )}
@@ -152,20 +152,20 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
         />
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_1fr]">
-          <aside className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 lg:sticky lg:top-4">
-            <div className="flex items-center justify-between border-b border-[#18385f]/45 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ea4bd]">Akten</p>
-              <span className="text-[10.5px] text-[#536b86]">{filtered.length}</span>
+          <aside className="overflow-hidden rounded-[12px] border border-line bg-surface lg:sticky lg:top-4">
+            <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
+              <p className="text-[11px] font-semibold text-label-2">Akten</p>
+              <span className="text-[11px] text-label-4">{filtered.length}</span>
             </div>
 
-            <div className="space-y-2 border-b border-[#18385f]/45 px-2.5 py-2.5">
+            <div className="space-y-2 border-b border-line px-2.5 py-2.5">
               <div className="relative">
-                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-label-4" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Name, PA-Nummer oder Telefon"
-                  className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+                  className="h-[34px] w-full rounded-[8px] border border-line bg-surface pl-8 pr-3 text-[13px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
                 />
               </div>
               <div className="flex flex-wrap gap-1">
@@ -182,21 +182,21 @@ export function PersonFilesWorkspace({ canManage, canDelete, selectedId, onSelec
                   className={cn(
                     'flex w-full items-start gap-2.5 rounded-[9px] border px-3 py-2.5 text-left transition-colors',
                     activeId === person.id
-                      ? 'border-[#d4af37]/35 bg-[#d4af37]/12'
-                      : 'border-transparent hover:bg-[#102542]/60',
+                      ? 'border-gold/35 bg-gold/12'
+                      : 'border-transparent hover:bg-surface-2',
                   )}
                 >
                   <PersonAvatar person={person} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-mono text-[10.5px] font-semibold text-[#d4af37]">{person.fileNumber}</p>
-                    <p className="truncate text-[13px] font-semibold text-white">{personDisplayName(person) || '—'}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">{person.phone || 'Keine Telefonnummer'}</p>
+                    <p className="truncate font-mono text-[11px] font-semibold text-gold">{person.fileNumber}</p>
+                    <p className="truncate text-[13px] font-semibold text-label">{personDisplayName(person) || '—'}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-label-3">{person.phone || 'Keine Telefonnummer'}</p>
                   </div>
                   {person.wanted && <Badge variant="danger">Fahndung</Badge>}
                 </Link>
               ))}
               {filtered.length === 0 && (
-                <p className="px-3 py-8 text-center text-[12px] text-[#6b8299]">Keine Akte gefunden.</p>
+                <p className="px-3 py-8 text-center text-[12px] text-label-3">Keine Akte gefunden.</p>
               )}
             </div>
           </aside>
@@ -309,20 +309,20 @@ export function PersonFileDetailView({
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+      <div className="rounded-[12px] border border-line bg-surface p-4">
         <div className="flex flex-wrap items-start gap-4">
           <PersonAvatar person={person} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-[6px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-[#d4af37]">
+              <span className="rounded-[6px] border border-gold/30 bg-gold/10 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-gold">
                 {person.fileNumber}
               </span>
               {person.wanted && <Badge variant="danger">Zur Fahndung ausgeschrieben</Badge>}
             </div>
-            <h2 className="mt-2 text-[19px] font-semibold text-white">{personDisplayName(person) || '—'}</h2>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-[#8ea4bd]">
+            <h2 className="mt-2 text-[19px] font-semibold text-label">{personDisplayName(person) || '—'}</h2>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-label-2">
               <span className="inline-flex items-center gap-1.5">
-                <Phone size={12} className="text-[#d4af37]" />
+                <Phone size={12} className="text-gold" />
                 {person.phone || '—'}
               </span>
               <span>Geboren: {person.birthDate ? formatDate(person.birthDate) : '—'}</span>
@@ -340,7 +340,7 @@ export function PersonFileDetailView({
               <button
                 type="button"
                 onClick={remove}
-                className="inline-flex items-center justify-center gap-1 rounded-[7px] border border-[#7f1d1d]/50 px-2 py-1 text-[11.5px] font-medium text-[#fca5a5] transition-colors hover:bg-[#2a1620]/60"
+                className="inline-flex items-center justify-center gap-1 rounded-[7px] border border-red/15 px-2 py-1 text-[11.5px] font-medium text-red transition-colors hover:bg-red/8"
               >
                 <Trash2 size={11} />
                 Löschen
@@ -359,15 +359,15 @@ export function PersonFileDetailView({
         )}
 
         {person.notes && !editing && (
-          <div className="mt-4 rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3">
-            <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#4a6585]">Vermerke</p>
-            <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{person.notes}</p>
+          <div className="mt-4 rounded-[10px] border border-line bg-surface p-3">
+            <p className="mb-1 text-[11px] font-semibold text-label-4">Vermerke</p>
+            <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-label">{person.notes}</p>
           </div>
         )}
       </div>
 
       {editing && canManage && (
-        <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+        <div className="rounded-[12px] border border-line bg-surface p-4">
           <SectionTitle icon={IdCard} title="Stammdaten bearbeiten" />
           <PersonFormFields form={form} onChange={setForm} disabled={saving} />
           <div className="mt-4 flex justify-end">
@@ -403,10 +403,10 @@ function ReportTable({
   emptyHint: string
 }) {
   return (
-    <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4">
+    <div className="rounded-[12px] border border-line bg-surface p-4">
       <SectionTitle icon={ScrollText} title={`${title} (${reports.length})`} />
       {reports.length === 0 ? (
-        <p className="py-3 text-[12.5px] text-[#6b8299]">{emptyHint}</p>
+        <p className="py-3 text-[12.5px] text-label-3">{emptyHint}</p>
       ) : (
         <div className="space-y-2">
           {reports.map((report) => {
@@ -415,14 +415,14 @@ function ReportTable({
               <Link
                 key={report.id}
                 href={`/anzeigen/intern/${report.id}`}
-                className="block rounded-[10px] border border-[#18385f]/45 bg-[#071a30]/55 p-3 transition-colors hover:border-[#d4af37]/30 hover:bg-[#102542]/60"
+                className="block rounded-[10px] border border-line bg-surface p-3 transition-colors hover:border-gold/30 hover:bg-surface-2"
               >
                 <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[11px] font-semibold text-[#d4af37]">{report.caseNumber}</span>
+                  <span className="font-mono text-[11px] font-semibold text-gold">{report.caseNumber}</span>
                   <Badge variant={meta.variant}>{meta.shortLabel}</Badge>
-                  <span className="text-[11px] text-[#536b86]">{formatDateTime(report.createdAt)}</span>
+                  <span className="text-[11px] text-label-4">{formatDateTime(report.createdAt)}</span>
                 </div>
-                <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-[#dbe6f3]">{report.charge}</p>
+                <p className="whitespace-pre-wrap text-[12.5px] leading-5 text-label">{report.charge}</p>
               </Link>
             )
           })}
@@ -438,11 +438,11 @@ function ImagePreview({ label, url }: { label: string; url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="block overflow-hidden rounded-[10px] border border-[#18385f]/60 bg-[#071a30]/55"
+      className="block overflow-hidden rounded-[10px] border border-line bg-surface"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={label} className="h-36 w-full object-cover" />
-      <p className="px-2 py-1.5 text-[11.5px] text-[#8ea4bd]">{label}</p>
+      <p className="px-2 py-1.5 text-[11.5px] text-label-2">{label}</p>
     </a>
   )
 }
@@ -523,7 +523,7 @@ function PersonFormFields({
         checked={form.wanted}
         onCheckedChange={(checked) => update({ wanted: checked })}
         label="Zur Fahndung ausgeschrieben"
-        className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-3 py-2.5"
+        className="rounded-[10px] border border-line bg-white/[0.03] px-3 py-2.5"
       />
     </div>
   )

@@ -6,6 +6,7 @@ import { BadgeCheck, CheckCircle2, ClipboardList, LogOut, MessageCircle, Send, S
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { fieldClass } from '@/components/ui/input'
 import { PageLoader } from '@/components/ui/loading'
 import { useAuth } from '@/context/auth-context'
 import { useApi } from '@/hooks/use-api'
@@ -137,16 +138,14 @@ export default function ApplicationPortalPage() {
   if (authLoading) return <PageLoader />
 
   return (
-    <main className="min-h-screen bg-[#061426] bg-pattern text-[#edf4fb]">
+    <main className="min-h-screen bg-canvas text-label">
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between gap-4 border-b border-[#18385f]/55 pb-4">
+        <header className="flex items-center justify-between gap-4 border-b border-line pb-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-[#d4af37]/25 bg-[#0a2040]">
-              <Image src="/shield.webp" alt="LSPD" width={40} height={40} priority className="rounded-full" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold leading-tight text-white">LSPD Bewerberportal</p>
-              <p className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d4af37]/75">
+            <Image src="/shield.webp" alt="LSPD" width={36} height={36} priority />
+            <div className="min-w-0 leading-tight">
+              <p className="text-[15px] font-semibold tracking-[-0.01em] text-label">LSPD Bewerberportal</p>
+              <p className="mt-0.5 truncate text-[12.5px] text-label-3">
                 Discord Anmeldung
               </p>
             </div>
@@ -155,9 +154,9 @@ export default function ApplicationPortalPage() {
             <button
               type="button"
               onClick={logout}
-              className="inline-flex h-9 items-center gap-2 rounded-[9px] border border-[#234568] px-3 text-[12.5px] font-medium text-[#dbe6f3] transition-colors hover:bg-[#102542]/60"
+              className="inline-flex h-8 items-center gap-2 rounded-[8px] px-3 text-[13px] font-medium text-label-2 transition-colors hover:bg-white/[0.06] hover:text-label"
             >
-              <LogOut size={14} />
+              <LogOut size={14} strokeWidth={1.75} />
               Abmelden
             </button>
           )}
@@ -167,34 +166,34 @@ export default function ApplicationPortalPage() {
           {!user ? (
             <section className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-center">
               <div className="min-w-0">
-                <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]/80">Bewerbung</p>
-                <h1 className="max-w-2xl text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[34px]">
+                <p className="mb-3 text-[14px] font-medium text-gold-bright">Bewerbung</p>
+                <h1 className="max-w-2xl text-[30px] font-bold leading-[1.1] tracking-[-0.035em] text-label sm:text-[40px]">
                   Melde dich mit Discord an und reiche deine Bewerbung ein.
                 </h1>
-                <p className="mt-4 max-w-xl text-[13.5px] leading-6 text-[#9fb0c4]">
+                <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-label-2">
                   Dieses Portal zeigt nur deine eigene Bewerbung und den aktuellen Status. Interne HR-Inhalte bleiben außerhalb dieses Bereichs.
                 </p>
               </div>
 
-              <div className="rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/75 p-5 shadow-[0_8px_28px_rgba(0,0,0,0.22)]">
+              <div className="rounded-[16px] border border-line bg-surface p-5">
                 <div className="mb-5 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#5865f2]/15 text-[#9aa8ff]">
-                    <MessageCircle size={18} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo/20 text-indigo">
+                    <MessageCircle size={19} strokeWidth={1.9} />
                   </div>
                   <div>
-                    <h2 className="text-[14px] font-semibold text-white">Discord-Konto verbinden</h2>
-                    <p className="mt-1 text-[12.5px] leading-5 text-[#8ea4bd]">
+                    <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-label">Discord-Konto verbinden</h2>
+                    <p className="mt-1 text-[13px] leading-relaxed text-label-2">
                       Zugriff erhältst du mit der konfigurierten Bewerberrolle.
                     </p>
                   </div>
                 </div>
                 {loginError && (
-                  <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+                  <div role="alert" className="mb-4 rounded-[10px] bg-red/12 px-3.5 py-2.5 text-[13px] text-red">
                     {loginError}
                   </div>
                 )}
-                <Button type="button" className="h-[42px] w-full" onClick={startDiscordLogin}>
-                  <ShieldCheck size={15} />
+                <Button type="button" size="lg" className="h-11 w-full" onClick={startDiscordLogin}>
+                  <ShieldCheck size={16} strokeWidth={2} />
                   Mit Discord anmelden
                 </Button>
               </div>
@@ -202,10 +201,10 @@ export default function ApplicationPortalPage() {
           ) : loading ? (
             <PageLoader />
           ) : error || !data ? (
-            <section className="mx-auto w-full max-w-xl rounded-[16px] border border-[#3b1616]/70 bg-[#1c1111]/75 p-6 text-center">
-              <ClipboardList size={28} className="mx-auto mb-3 text-[#fca5a5]" />
-              <h1 className="text-[17px] font-semibold text-white">Bewerberportal nicht verfügbar</h1>
-              <p className="mt-2 text-[13px] leading-5 text-[#f3b7b7]">{error ?? 'Die Daten konnten nicht geladen werden.'}</p>
+            <section className="mx-auto w-full max-w-xl rounded-[16px] bg-red/10 p-6 text-center">
+              <ClipboardList size={28} className="mx-auto mb-3 text-red" />
+              <h1 className="text-[17px] font-semibold text-label">Bewerberportal nicht verfügbar</h1>
+              <p className="mt-2 text-[13px] leading-5 text-red">{error ?? 'Die Daten konnten nicht geladen werden.'}</p>
             </section>
           ) : application ? (
             <ApplicationStatusView application={application} user={data.user} />
@@ -241,11 +240,11 @@ function ApplicationOpenView({
   return (
     <section className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 lg:grid-cols-[1fr_340px] lg:items-center">
       <div>
-        <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]/80">{formTitle}</p>
-        <h1 className="max-w-2xl text-[27px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[32px]">
+        <p className="mb-3 text-[14px] font-medium text-gold-bright">{formTitle}</p>
+        <h1 className="max-w-2xl text-[30px] font-bold leading-[1.1] tracking-[-0.035em] text-label sm:text-[38px]">
           Bewerbung öffnen für {user.displayName}
         </h1>
-        <p className="mt-4 max-w-xl text-[13.5px] leading-6 text-[#9fb0c4]">
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-label-2">
           Du beantwortest die Fragen einmal. Danach siehst du hier live den Status deiner Bewerbung.
         </p>
         <Button type="button" size="lg" className="mt-6" onClick={onOpen}>
@@ -261,30 +260,30 @@ function ApplicationOpenView({
 
 function AccountPanel({ user }: { user: PortalPayload['user'] }) {
   return (
-    <aside className="rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/75 p-5 shadow-[0_8px_28px_rgba(0,0,0,0.22)]">
+    <aside className="rounded-[16px] border border-line bg-surface p-5">
       <div className="flex items-center gap-3">
         {user.avatarUrl ? (
           <span
-            className="h-12 w-12 shrink-0 rounded-full bg-cover bg-center ring-1 ring-[#d4af37]/25"
+            className="h-12 w-12 shrink-0 rounded-full bg-cover bg-center ring-1 ring-white/10"
             style={{ backgroundImage: `url(${user.avatarUrl})` }}
             aria-label={user.displayName}
           />
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#d4af37] text-[15px] font-bold text-[#071b33]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-4 text-[16px] font-semibold text-label">
             {user.displayName.charAt(0).toUpperCase()}
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-semibold text-white">{user.displayName}</p>
-          <p className="mt-0.5 truncate text-[11.5px] text-[#6b8299]">
+          <p className="truncate text-[14px] font-semibold text-label">{user.displayName}</p>
+          <p className="mt-0.5 truncate text-[11.5px] text-label-3">
             {user.discordId ? `Discord-ID ${user.discordId}` : user.username}
           </p>
         </div>
       </div>
-      <div className="mt-4 rounded-[12px] border border-[#18385f]/55 bg-[#071a30]/60 p-3">
-        <div className="flex items-start gap-2">
-          <UserRound size={15} className="mt-0.5 shrink-0 text-[#d4af37]" />
-          <p className="text-[12.5px] leading-5 text-[#9fb0c4]">
+      <div className="mt-4 rounded-[12px] bg-white/[0.04] p-3.5">
+        <div className="flex items-start gap-2.5">
+          <UserRound size={16} className="mt-0.5 shrink-0 text-label-3" strokeWidth={1.75} />
+          <p className="text-[12.5px] leading-5 text-label-2">
             Dein Discord-Account wird nur zur Zuordnung deiner Bewerbung genutzt.
           </p>
         </div>
@@ -299,54 +298,54 @@ function ApplicationStatusView({ application, user }: { application: PortalAppli
   return (
     <section className="mx-auto w-full max-w-4xl space-y-5">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/75 p-6 shadow-[0_8px_28px_rgba(0,0,0,0.22)]">
+        <div className="rounded-[16px] border border-line bg-surface p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Badge variant={meta.variant}>{meta.label}</Badge>
-            <span className="text-[12px] text-[#6b8299]">Aktualisiert {formatDateTime(application.updatedAt)}</span>
+            <span className="text-[12px] text-label-3">Aktualisiert {formatDateTime(application.updatedAt)}</span>
           </div>
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-[#123026] text-[#86efac]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-green/14 text-green">
               <CheckCircle2 size={25} />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[22px] font-semibold leading-tight text-white">Deine Bewerbung ist eingereicht</h1>
-              <p className="mt-2 text-[14px] leading-6 text-[#dbe6f3]">{application.statusText}</p>
+              <h1 className="text-[22px] font-semibold leading-tight text-label">Deine Bewerbung ist eingereicht</h1>
+              <p className="mt-2 text-[14px] leading-6 text-label">{application.statusText}</p>
               {application.caseNumber && (
-                <div className="mt-4 rounded-[12px] border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-3">
-                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#d4af37]/80">
+                <div className="mt-4 rounded-[12px] bg-gold/10 px-4 py-3">
+                  <p className="text-[13px] font-medium text-gold-bright">
                     Dein Aktenzeichen
                   </p>
-                  <p className="mt-1 font-mono text-[20px] font-semibold tracking-wide text-[#d4af37]">
+                  <p className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-label">
                     {application.caseNumber}
                   </p>
-                  <p className="mt-1.5 text-[12px] leading-5 text-[#d8c68c]">
+                  <p className="mt-1.5 text-[12px] leading-5 text-gold-bright">
                     Nenne dieses Aktenzeichen bei jeder Rückfrage. Dein Name wurde dafür auf
                     „{application.caseNumber} | Vorname Nachname“ umgestellt.
                   </p>
                 </div>
               )}
-              <p className="mt-3 text-[12.5px] text-[#8ea4bd]">Eingereicht {formatDateTime(application.submittedAt)}</p>
+              <p className="mt-3 text-[12.5px] text-label-2">Eingereicht {formatDateTime(application.submittedAt)}</p>
             </div>
           </div>
         </div>
         <AccountPanel user={user} />
       </div>
 
-      <section className="rounded-[16px] border border-[#1e3a5c]/55 bg-[#091e36]/75 p-5">
+      <section className="rounded-[16px] border border-line bg-surface p-5">
         <div className="mb-3 flex items-center gap-2">
-          <BadgeCheck size={16} className="text-[#d4af37]" />
-          <h2 className="text-[14px] font-semibold text-white">Deine Antworten</h2>
+          <BadgeCheck size={17} className="text-label-3" strokeWidth={1.75} />
+          <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-label">Deine Antworten</h2>
         </div>
         <div className="space-y-3">
           {application.answers.map((answer, index) => (
-            <div key={answer.id} className="rounded-[12px] border border-[#18385f]/50 bg-[#071a30]/55 p-3">
+            <div key={answer.id} className="rounded-[12px] border border-line bg-surface p-3">
               <div className="mb-1.5 flex items-start gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] bg-[#102542] text-[10px] font-semibold text-[#d4af37]">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/[0.07] text-[11px] font-semibold tabular-nums text-label-2">
                   {index + 1}
                 </span>
-                <p className="text-[12.5px] font-semibold text-white">{answer.questionTitle}</p>
+                <p className="text-[12.5px] font-semibold text-label">{answer.questionTitle}</p>
               </div>
-              <p className="whitespace-pre-wrap pl-7 text-[12.5px] leading-5 text-[#c8d5e5]">{applicationAnswerText(answer)}</p>
+              <p className="whitespace-pre-wrap pl-7 text-[12.5px] leading-5 text-label-2">{applicationAnswerText(answer)}</p>
             </div>
           ))}
         </div>
@@ -378,9 +377,9 @@ function ApplicationForm({
     <section className="mx-auto w-full max-w-3xl">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]/80">{formTitle}</p>
-          <h1 className="text-[22px] font-semibold text-white">Fragen beantworten</h1>
-          <p className="mt-1 text-[13px] leading-5 text-[#8ea4bd]">Fülle alle Pflichtfragen aus und sende deine Bewerbung ab.</p>
+          <p className="mb-2 text-[14px] font-medium text-gold-bright">{formTitle}</p>
+          <h1 className="text-[22px] font-semibold text-label">Fragen beantworten</h1>
+          <p className="mt-1 text-[13px] leading-5 text-label-2">Fülle alle Pflichtfragen aus und sende deine Bewerbung ab.</p>
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={onBack} disabled={submitting}>
           Zurück
@@ -392,7 +391,7 @@ function ApplicationForm({
           <Fragment key={question.id}>
             {question.section && question.section !== questions[index - 1]?.section && (
               <div className="pt-2">
-                <p className="border-b border-[#1e3a5c]/55 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d4af37]/85">
+                <p className="border-b border-line pb-2 text-[13px] font-semibold text-label-2">
                   {question.section}
                 </p>
               </div>
@@ -407,10 +406,10 @@ function ApplicationForm({
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-5 rounded-[14px] border border-[#1e3a5c]/55 bg-[#061426]/90 p-3 backdrop-blur-md">
+      <div className="lspd-popover sticky bottom-4 mt-5 rounded-[14px] p-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-[12.5px] text-[#8ea4bd]">
-            <ClipboardList size={15} className="text-[#d4af37]" />
+          <div className="flex items-center gap-2 pl-1 text-[13px] tabular-nums text-label-2">
+            <ClipboardList size={16} className="text-label-3" strokeWidth={1.75} />
             {questions.length} Frage(n)
           </div>
           <Button type="button" onClick={onSubmit} loading={submitting} disabled={!answeredRequired}>
@@ -435,17 +434,17 @@ function QuestionField({
   onChange: (value: unknown) => void
 }) {
   return (
-    <section className="rounded-[14px] border border-[#1e3a5c]/55 bg-[#091e36]/75 p-4">
+    <section className="rounded-[12px] border border-line bg-surface p-4">
       <div className="mb-3 flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#102542] text-[11.5px] font-semibold text-[#d4af37]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.07] text-[12px] font-semibold tabular-nums text-label-2">
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[14px] font-semibold text-white">{question.title}</h2>
+            <h2 className="text-[14px] font-semibold text-label">{question.title}</h2>
             {question.required && <Badge variant="warning">Pflicht</Badge>}
           </div>
-          {question.description && <p className="mt-1 text-[12.5px] leading-5 text-[#8ea4bd]">{question.description}</p>}
+          {question.description && <p className="mt-1 text-[12.5px] leading-5 text-label-2">{question.description}</p>}
         </div>
       </div>
       <QuestionInput question={question} value={value} onChange={onChange} />
@@ -462,10 +461,7 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(event.target.value)}
         disabled={readOnly}
-        className={cn(
-          'h-[38px] w-full rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 text-[13.5px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]',
-          readOnly && 'cursor-not-allowed border-[#18385f]/45 bg-[#071a30]/70 text-[#8ea4bd]',
-        )}
+        className={cn(fieldClass, 'h-[34px] px-3', readOnly && 'cursor-not-allowed text-label-3 hover:border-line-strong')}
         placeholder={readOnly ? 'Wird automatisch ermittelt' : 'Antwort eingeben'}
       />
     )
@@ -477,7 +473,7 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(event.target.value)}
         rows={5}
-        className="w-full resize-none rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33]/60 px-3 py-2.5 text-[13.5px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+        className={cn(fieldClass, 'resize-none px-3 py-2 leading-relaxed')}
         placeholder="Antwort eingeben"
       />
     )
@@ -495,11 +491,18 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
             className={cn(
               'flex w-full items-center gap-2 rounded-[10px] border px-3 py-2.5 text-left text-[13px] transition-colors',
               selected === choice
-                ? 'border-[#d4af37]/45 bg-[#d4af37]/12 text-white'
-                : 'border-[#18385f]/60 bg-[#0a1a33]/45 text-[#dbe6f3] hover:border-[#234568]',
+                ? 'border-gold/60 bg-gold/12 text-label'
+                : 'border-line bg-white/[0.03] text-label hover:bg-white/[0.06]',
             )}
           >
-            <span className={cn('h-3.5 w-3.5 rounded-full border', selected === choice ? 'border-[#d4af37] bg-[#d4af37]' : 'border-[#4a6585]')} />
+            <span
+              className={cn(
+                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                selected === choice ? 'border-gold bg-gold' : 'border-line-strong bg-white/[0.04]',
+              )}
+            >
+              {selected === choice && <span className="h-1.5 w-1.5 rounded-full bg-ink" />}
+            </span>
             {choice}
           </button>
         ))}
@@ -520,7 +523,7 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
             checked={selected.includes(choice)}
             onCheckedChange={() => toggle(choice)}
             label={choice}
-            className="rounded-[10px] border border-[#18385f]/60 bg-[#0a1a33]/45 px-3 py-2.5 hover:border-[#234568]"
+            className="rounded-[10px] border border-line bg-white/[0.03] px-3 py-2.5 transition-colors hover:bg-white/[0.06]"
           />
         ))}
       </div>
@@ -541,10 +544,10 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
             type="button"
             onClick={() => onChange(item)}
             className={cn(
-              'h-10 rounded-[9px] border text-[13px] font-semibold transition-colors',
+              'h-10 rounded-[9px] border text-[13.5px] font-semibold tabular-nums transition-[background-color,border-color,color,scale] duration-150 active:scale-95',
               selected === item
-                ? 'border-[#d4af37]/45 bg-[#d4af37]/16 text-[#d4af37]'
-                : 'border-[#18385f]/60 bg-[#0a1a33]/45 text-[#9fb0c4] hover:border-[#234568]',
+                ? 'border-gold bg-gold text-ink'
+                : 'border-line bg-white/[0.03] text-label-2 hover:bg-white/[0.06] hover:text-label',
             )}
           >
             {item}
@@ -552,7 +555,7 @@ function QuestionInput({ question, value, onChange }: { question: ApplicationQue
         ))}
       </div>
       {(question.options?.minLabel || question.options?.maxLabel) && (
-        <div className="mt-2 flex justify-between gap-4 text-[11.5px] text-[#6b8299]">
+        <div className="mt-2 flex justify-between gap-4 text-[11.5px] text-label-3">
           <span>{question.options?.minLabel}</span>
           <span>{question.options?.maxLabel}</span>
         </div>

@@ -70,24 +70,24 @@ export function PersonPicker({ title, description, people, value, onChange }: Pe
   const update = (patch: Partial<PersonDraft>) => onChange({ ...value, ...patch })
 
   return (
-    <section className="rounded-[12px] border border-[#18385f]/55 bg-[#0a1a33]/40 p-3.5">
-      <p className="text-[13px] font-semibold text-white">{title}</p>
-      <p className="mt-0.5 text-[11.5px] leading-4 text-[#6b8299]">{description}</p>
+    <section className="rounded-[12px] border border-line bg-white/[0.03] p-3.5">
+      <p className="text-[13px] font-semibold text-label">{title}</p>
+      <p className="mt-0.5 text-[11.5px] leading-4 text-label-3">{description}</p>
 
       {selected ? (
-        <div className="mt-3 flex items-start gap-3 rounded-[10px] border border-[#d4af37]/35 bg-[#d4af37]/10 p-3">
+        <div className="mt-3 flex items-start gap-3 rounded-[10px] border border-gold/35 bg-gold/10 p-3">
           <PersonAvatar person={selected} />
           <div className="min-w-0 flex-1">
-            <p className="font-mono text-[11px] font-semibold text-[#d4af37]">{selected.fileNumber}</p>
-            <p className="truncate text-[13.5px] font-semibold text-white">{personDisplayName(selected)}</p>
-            <p className="mt-0.5 truncate text-[11.5px] text-[#8ea4bd]">
+            <p className="font-mono text-[11px] font-semibold text-gold">{selected.fileNumber}</p>
+            <p className="truncate text-[13.5px] font-semibold text-label">{personDisplayName(selected)}</p>
+            <p className="mt-0.5 truncate text-[11.5px] text-label-2">
               {selected.phone || 'Keine Telefonnummer hinterlegt'}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { update({ personId: '' }); setQuery('') }}
-            className="rounded-[7px] border border-[#234568] p-1.5 text-[#8ea4bd] transition-colors hover:text-white"
+            className="rounded-[7px] border border-line p-1.5 text-label-2 transition-colors hover:text-label"
             aria-label="Auswahl aufheben"
           >
             <X size={13} />
@@ -96,27 +96,27 @@ export function PersonPicker({ title, description, people, value, onChange }: Pe
       ) : (
         <>
           <div className="relative mt-3">
-            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-label-4" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Bestehende Akte suchen (Name, PA-Nummer, Telefon)"
-              className="h-[34px] w-full rounded-[8px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+              className="h-[34px] w-full rounded-[8px] border border-line bg-surface pl-8 pr-3 text-[13px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
             />
           </div>
 
           {matches.length > 0 && (
-            <div className="mt-1.5 space-y-1 rounded-[8px] border border-[#18385f]/55 bg-[#071a30]/50 p-1.5">
+            <div className="mt-1.5 space-y-1 rounded-[8px] border border-line bg-surface p-1.5">
               {matches.map((person) => (
                 <button
                   key={person.id}
                   type="button"
                   onClick={() => { update({ personId: person.id }); setQuery('') }}
-                  className="flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-[#102542]/70"
+                  className="flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-surface-2"
                 >
-                  <span className="font-mono text-[10.5px] text-[#d4af37]">{person.fileNumber}</span>
-                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-white">{personDisplayName(person)}</span>
-                  {person.wanted && <span className="text-[10.5px] font-semibold text-[#fca5a5]">Fahndung</span>}
+                  <span className="font-mono text-[11px] text-gold">{person.fileNumber}</span>
+                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-label">{personDisplayName(person)}</span>
+                  {person.wanted && <span className="text-[11px] font-semibold text-red">Fahndung</span>}
                 </button>
               ))}
             </div>
@@ -150,7 +150,7 @@ export function PersonPicker({ title, description, people, value, onChange }: Pe
             />
           </div>
 
-          <p className="mt-2 text-[11px] leading-4 text-[#6b8299]">
+          <p className="mt-2 text-[11px] leading-4 text-label-3">
             Ohne Auswahl wird beim Speichern automatisch eine neue Personenakte angelegt.
           </p>
         </>
@@ -166,7 +166,7 @@ export function PersonAvatar({ person, size = 'sm' }: { person: PersonSummary | 
   if (person?.photoUrl) {
     return (
       <span
-        className={cn('shrink-0 rounded-[10px] bg-cover bg-center ring-1 ring-[#d4af37]/25', className)}
+        className={cn('shrink-0 rounded-[10px] bg-cover bg-center ring-1 ring-gold/25', className)}
         style={{ backgroundImage: `url(${person.photoUrl})` }}
         aria-label={name}
       />
@@ -174,7 +174,7 @@ export function PersonAvatar({ person, size = 'sm' }: { person: PersonSummary | 
   }
 
   return (
-    <div className={cn('flex shrink-0 items-center justify-center rounded-[10px] bg-[#102542] font-bold text-[#d4af37]', className)}>
+    <div className={cn('flex shrink-0 items-center justify-center rounded-[10px] bg-surface-2 font-bold text-gold', className)}>
       {name ? name.charAt(0).toUpperCase() : <UserRound size={16} />}
     </div>
   )

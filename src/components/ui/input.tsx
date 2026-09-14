@@ -10,6 +10,18 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   numericOnly?: boolean
 }
 
+/** Gemeinsame Optik aller Textfelder (Input, Textarea, Trigger von Select/DateField). */
+export const fieldClass = cn(
+  'w-full rounded-[8px] border border-line-strong bg-surface-2 text-[13.5px] text-label',
+  'placeholder:text-label-4 outline-none',
+  'transition-[border-color,box-shadow,background-color] duration-150 ease-out',
+  'hover:border-white/20 focus:border-gold/80 focus:ring-[3px] focus:ring-gold/25'
+)
+
+export const fieldErrorClass = 'border-red/70 hover:border-red/70 focus:border-red focus:ring-red/25'
+
+export const fieldLabelClass = 'block text-[12.5px] font-medium text-label-2'
+
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, id, numericOnly = false, onChange, value, defaultValue, inputMode, pattern, type, ...props }, ref) => {
     const generatedId = useId()
@@ -25,7 +37,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-[12.5px] font-medium text-[#b1c2d7]">
+          <label htmlFor={inputId} className={fieldLabelClass}>
             {label}
           </label>
         )}
@@ -40,19 +52,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           value={visibleValue}
           defaultValue={visibleDefaultValue}
           onChange={handleChange}
-          className={cn(
-            'lspd-field w-full h-[38px] px-3 rounded-[9px] text-[13.5px]',
-            'bg-[#0a1a33]/60 text-[#edf4fb]',
-            'placeholder:text-[#8298b3]',
-            'border border-[#355576]/70',
-            'focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
-            'transition-[border-color,box-shadow,background-color] duration-150',
-            error && 'border-red-900 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)]',
-            className
-          )}
+          className={cn('lspd-field h-[34px] px-3', fieldClass, error && fieldErrorClass, className)}
           {...props}
         />
-        {error && <p id={`${inputId}-error`} className="text-[12px] text-red-300">{error}</p>}
+        {error && <p id={`${inputId}-error`} className="text-[12px] text-red">{error}</p>}
       </div>
     )
   }

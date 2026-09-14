@@ -124,26 +124,26 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#9fb0c4]">
+        <p className="flex items-center gap-1.5 text-[12.5px] font-medium text-label-2">
           <Layers size={14} /> Ebenen
         </p>
         <Button size="sm" variant="secondary" onClick={addTier}>
           <Plus size={13} /> Ebene hinzufügen
         </Button>
       </div>
-      <p className="text-[12px] text-[#6b8299] mb-3">
+      <p className="text-[12px] text-label-3 mb-3">
         Eine Ebene vergibt eine Discord-Rolle automatisch an alle Officer mit einem der zugewiesenen Ränge.
         Jeder Rang gehört zu genau einer Ebene.
       </p>
 
       {loading && tiers.length === 0 ? (
-        <p className="text-[12px] text-[#6b8299]">Lade Ebenen…</p>
+        <p className="text-[12px] text-label-3">Lade Ebenen…</p>
       ) : tiers.length === 0 ? (
-        <p className="text-[12px] text-[#4a6585]">Noch keine Ebenen angelegt.</p>
+        <p className="text-[12px] text-label-4">Noch keine Ebenen angelegt.</p>
       ) : (
         <div className="space-y-3">
           {tiers.map((tier) => (
-            <div key={tier.id} className="rounded-lg border border-[#18385f]/50 bg-[#08192e]/60 p-3">
+            <div key={tier.id} className="rounded-lg border border-line bg-surface p-3">
               <div className="flex flex-col sm:flex-row gap-3 mb-3">
                 <div className="flex-1">
                   <Input
@@ -176,10 +176,10 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
                       className={cn(
                         'px-2 py-1 rounded text-[12px] border transition-colors',
                         selected
-                          ? 'border-[#3b82f6] bg-[#1d4ed8]/25 text-[#cfe0ff]'
+                          ? 'border-blue/60 bg-blue/25 text-blue'
                           : lockedByOther
-                            ? 'border-[#12283f] bg-transparent text-[#3d5876] cursor-not-allowed'
-                            : 'border-[#18385f]/60 bg-transparent text-[#9fb0c4] hover:border-[#2a5a8f]',
+                            ? 'border-line bg-transparent text-label-4 cursor-not-allowed'
+                            : 'border-line bg-transparent text-label-2 hover:border-line-strong',
                       )}
                     >
                       {rank.name}
@@ -191,7 +191,7 @@ export function TierManager({ roles, ranks }: TierManagerProps) {
                 <button
                   type="button"
                   onClick={() => deleteTier(tier)}
-                  className="flex items-center gap-1 text-[12px] text-[#d16a6a] hover:text-[#e88] transition-colors"
+                  className="flex items-center gap-1 text-[12px] text-red hover:text-red transition-colors"
                 >
                   <Trash2 size={13} /> Löschen
                 </button>

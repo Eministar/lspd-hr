@@ -318,8 +318,8 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
               className={cn(
                 'inline-flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[12.5px] font-semibold transition-colors',
                 active
-                  ? 'border-[#d4af37]/45 bg-[#d4af37]/14 text-[#d4af37]'
-                  : 'border-[#18385f]/60 bg-[#0a1a33]/55 text-[#8ea4bd] hover:border-[#234568] hover:text-white',
+                  ? 'border-gold/45 bg-gold/14 text-gold'
+                  : 'border-line bg-surface text-label-2 hover:border-line hover:text-label',
               )}
             >
               <Icon size={14} />
@@ -330,7 +330,7 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
       </div>
 
       {tab === 'contracts' ? (
-        <section className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70">
+        <section className="overflow-hidden rounded-[12px] border border-line bg-surface">
           {(contracts ?? []).length === 0 ? (
             <EmptyState
               icon={FileSignature}
@@ -338,7 +338,7 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
               description="Verträge entstehen automatisch beim Einstellen eines Officers oder manuell auf der Officer-Seite."
             />
           ) : (
-            <div className="divide-y divide-[#18385f]/35">
+            <div className="divide-y divide-line">
               {contracts?.map((contract) => (
                 <ContractListRow
                   key={contract.id}
@@ -353,7 +353,7 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
           )}
         </section>
       ) : tab === 'pending' ? (
-        <section className="overflow-hidden rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70">
+        <section className="overflow-hidden rounded-[12px] border border-line bg-surface">
           {(pendingOfficers ?? []).length === 0 ? (
             <EmptyState
               icon={FileSignature}
@@ -362,8 +362,8 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
             />
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#18385f]/45 px-4 py-3">
-                <p className="max-w-xl text-[12.5px] leading-5 text-[#8ea4bd]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+                <p className="max-w-xl text-[12.5px] leading-5 text-label-2">
                   Diese Mitarbeiter haben noch keinen unterschriebenen Arbeitsvertrag. Bei neuen
                   Officern gilt die Einstellung erst mit Unterschrift als abgeschlossen.
                 </p>
@@ -379,7 +379,7 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
                   </Button>
                 )}
               </div>
-              <div className="divide-y divide-[#18385f]/35">
+              <div className="divide-y divide-line">
                 {pendingOfficers?.map((row) => (
                   <PendingOfficerListRow
                     key={row.id}
@@ -405,12 +405,12 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
             templates?.map((template) => (
               <article
                 key={template.id}
-                className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 p-4"
+                className="rounded-[12px] border border-line bg-surface p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                      <h3 className="text-[14.5px] font-semibold text-white">{template.name}</h3>
+                      <h3 className="text-[14.5px] font-semibold text-label">{template.name}</h3>
                       {template.isDefault && (
                         <Badge variant="warning">
                           <Star size={11} className="mr-1" />
@@ -420,9 +420,9 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
                       {!template.active && <Badge>Deaktiviert</Badge>}
                     </div>
                     {template.description && (
-                      <p className="text-[12.5px] text-[#8ea4bd]">{template.description}</p>
+                      <p className="text-[12.5px] text-label-2">{template.description}</p>
                     )}
-                    <p className="mt-1.5 text-[11.5px] text-[#6b8299]">
+                    <p className="mt-1.5 text-[11.5px] text-label-3">
                       {readContractClauses(template.clauses).length} Regelungen ·{' '}
                       {readContractFields(template.fields).length} Felder ·{' '}
                       {template._count.contracts} Vertrag/Verträge · geändert{' '}
@@ -466,7 +466,7 @@ export function ContractsWorkspace({ canManage }: { canManage: boolean }) {
         onClose={() => setTemplateToDelete(null)}
         title="Vorlage entfernen"
       >
-        <p className="text-[13px] leading-5 text-[#b7c5d8]">
+        <p className="text-[13px] leading-5 text-label-2">
           {templateToDelete && templateToDelete._count.contracts > 0
             ? `„${templateToDelete.name}“ wird von ${templateToDelete._count.contracts} Vertrag/Verträgen genutzt und deshalb nur deaktiviert. Bestehende Verträge bleiben unverändert gültig.`
             : `„${templateToDelete?.name}“ wird dauerhaft gelöscht.`}
@@ -503,21 +503,21 @@ function ContractListRow({
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#102542] text-[#d4af37]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-gold">
           <UserRound size={16} />
         </span>
         <div className="min-w-0">
           <Link
             href={`/officers/${contract.officer.id}`}
-            className="truncate text-[13.5px] font-semibold text-white hover:text-[#d4af37]"
+            className="truncate text-[13.5px] font-semibold text-label hover:text-gold-bright"
           >
             {contract.officer.firstName} {contract.officer.lastName}
           </Link>
-          <p className="mt-0.5 truncate text-[11.5px] text-[#6b8299]">
+          <p className="mt-0.5 truncate text-[11.5px] text-label-3">
             {contract.title} · DN {contract.officer.badgeNumber}
             {contract.application ? ` · Bewerbung: ${contract.application.applicantDisplayName}` : ''}
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-[#4a6585]">
+          <p className="mt-0.5 truncate text-[11px] text-label-4">
             {contract.status === 'SIGNED'
               ? `Unterschrieben ${formatDateTime(contract.signedAt)} von ${contract.signedName ?? '—'}`
               : contract.sentAt
@@ -566,20 +566,20 @@ function PendingOfficerListRow({
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#102542] text-[#d4af37]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-gold">
           <UserRound size={16} />
         </span>
         <div className="min-w-0">
           <Link
             href={`/officers/${row.id}`}
-            className="truncate text-[13.5px] font-semibold text-white hover:text-[#d4af37]"
+            className="truncate text-[13.5px] font-semibold text-label hover:text-gold-bright"
           >
             {row.firstName} {row.lastName}
           </Link>
-          <p className="mt-0.5 truncate text-[11.5px] text-[#6b8299]">
+          <p className="mt-0.5 truncate text-[11.5px] text-label-3">
             DN {row.badgeNumber} · {row.rank?.name ?? '—'} · seit {formatDateTime(row.hireDate)}
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-[#4a6585]">
+          <p className="mt-0.5 truncate text-[11px] text-label-4">
             {hasOpenContract
               ? `Vertrag versendet · ${row.latestContract?.sendCount ?? 0}× angeschrieben`
               : row.latestContract
@@ -606,9 +606,9 @@ function PendingOfficerListRow({
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[12px] border border-white/[0.04] bg-[#091e36]/70 px-4 py-3">
-      <p className="text-[20px] font-semibold leading-tight text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[11px] text-[#8ea4bd]">{label}</p>
+    <div className="rounded-[12px] border border-white/[0.04] bg-surface px-4 py-3">
+      <p className="text-[20px] font-semibold leading-tight text-label tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[11px] text-label-2">{label}</p>
     </div>
   )
 }
@@ -623,10 +623,10 @@ function EmptyState({
   description: string
 }) {
   return (
-    <div className="rounded-[14px] border border-[#1e3a5c]/45 bg-[#091e36]/70 py-14 text-center">
-      <Icon size={28} className="mx-auto mb-3 text-[#4a6585]" />
-      <p className="text-[14px] font-semibold text-white">{title}</p>
-      <p className="mx-auto mt-1 max-w-md text-[12.5px] text-[#8ea4bd]">{description}</p>
+    <div className="rounded-[12px] border border-line bg-surface py-14 text-center">
+      <Icon size={28} className="mx-auto mb-3 text-label-4" />
+      <p className="text-[14px] font-semibold text-label">{title}</p>
+      <p className="mx-auto mt-1 max-w-md text-[12.5px] text-label-2">{description}</p>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { PageLoader } from '@/components/ui/loading'
 import { UnauthorizedContent } from '@/components/layout/unauthorized-content'
+import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { DateField } from '@/components/ui/date-field'
 import { Modal } from '@/components/ui/modal'
@@ -17,11 +18,11 @@ import { cn, formatDate, formatDateTime, formatRelativeTime, getStatusDot, getSt
 import {
   Activity,
   AlertTriangle,
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   CalendarPlus,
   CalendarX,
+  ChevronRight,
   ClipboardCheck,
   Clock,
   Clock3,
@@ -149,34 +150,30 @@ interface Stats {
 
 type StatKey = 'activeOfficers' | 'awayOfficers' | 'inactiveOfficers' | 'totalOfficers' | 'recentPromotions' | 'recentTerminations'
 
-type AccentKey = 'emerald' | 'sky' | 'amber' | 'gold' | 'mint' | 'rose'
+// Apple-Systemfarben (Dark Mode) für die Kennzahl-Punkte und die Aktivitäts-Chronik.
+const SYSTEM = {
+  green: '#32d74b',
+  cyan: '#64d2ff',
+  yellow: '#ffd60a',
+  gold: '#e8c766',
+  mint: '#66d4cf',
+  pink: '#ff375f',
+  orange: '#ff9f0a',
+  red: '#ff453a',
+} as const
 
-interface AccentTokens {
-  text: string
-  bg: string
-  ring: string
-  glow: string
-}
-
-const ACCENTS: Record<AccentKey, AccentTokens> = {
-  emerald: { text: '#34d399', bg: 'rgba(52,211,153,0.10)', ring: 'rgba(52,211,153,0.28)', glow: 'rgba(52,211,153,0.20)' },
-  sky: { text: '#7dd3fc', bg: 'rgba(56,189,248,0.10)', ring: 'rgba(56,189,248,0.28)', glow: 'rgba(56,189,248,0.18)' },
-  amber: { text: '#fbbf24', bg: 'rgba(251,191,36,0.10)', ring: 'rgba(251,191,36,0.28)', glow: 'rgba(251,191,36,0.18)' },
-  gold: { text: '#f0d060', bg: 'rgba(212,175,55,0.10)', ring: 'rgba(212,175,55,0.30)', glow: 'rgba(212,175,55,0.22)' },
-  mint: { text: '#5eead4', bg: 'rgba(94,234,212,0.10)', ring: 'rgba(94,234,212,0.28)', glow: 'rgba(94,234,212,0.20)' },
-  rose: { text: '#fda4af', bg: 'rgba(244,114,182,0.10)', ring: 'rgba(244,114,182,0.30)', glow: 'rgba(244,114,182,0.20)' },
-}
+type SystemColor = keyof typeof SYSTEM
 
 const panelClass = 'lspd-card'
-const surfaceClass = 'rounded-[12px] border border-white/[0.05] bg-[#0a2240]/55'
+const rowClass = 'rounded-[10px] border border-line bg-white/[0.02] transition-colors duration-150 hover:bg-white/[0.045]'
 
-const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string; permission: Permission; accent: AccentKey; hint: string }[] = [
-  { key: 'activeOfficers', label: 'Aktive Officers', icon: UserCheck, href: '/officers', permission: 'officers:view', accent: 'emerald', hint: 'Im aktiven Dienst' },
-  { key: 'awayOfficers', label: 'Abgemeldet', icon: Clock, href: '/officers', permission: 'officers:view', accent: 'sky', hint: 'Mit Abmeldung' },
-  { key: 'inactiveOfficers', label: 'Inaktiv', icon: AlertTriangle, href: '/officers', permission: 'officers:view', accent: 'amber', hint: 'Beobachtung empfohlen' },
-  { key: 'totalOfficers', label: 'Gesamtbestand', icon: Users, href: '/officers', permission: 'officers:view', accent: 'gold', hint: 'Alle Officers' },
-  { key: 'recentPromotions', label: 'Rangänderungen', icon: TrendingUp, href: '/promotions', permission: 'rank-changes:view', accent: 'mint', hint: 'Letzte Tage' },
-  { key: 'recentTerminations', label: 'Kündigungen', icon: UserMinus, href: '/terminations', permission: 'terminations:view', accent: 'rose', hint: 'Letzte Tage' },
+const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string; permission: Permission; color: SystemColor; hint: string }[] = [
+  { key: 'activeOfficers', label: 'Aktive Officers', icon: UserCheck, href: '/officers', permission: 'officers:view', color: 'green', hint: 'Im aktiven Dienst' },
+  { key: 'awayOfficers', label: 'Abgemeldet', icon: Clock, href: '/officers', permission: 'officers:view', color: 'cyan', hint: 'Mit Abmeldung' },
+  { key: 'inactiveOfficers', label: 'Inaktiv', icon: AlertTriangle, href: '/officers', permission: 'officers:view', color: 'yellow', hint: 'Beobachtung empfohlen' },
+  { key: 'totalOfficers', label: 'Gesamtbestand', icon: Users, href: '/officers', permission: 'officers:view', color: 'gold', hint: 'Alle Officers' },
+  { key: 'recentPromotions', label: 'Rangänderungen', icon: TrendingUp, href: '/promotions', permission: 'rank-changes:view', color: 'mint', hint: 'Letzte Tage' },
+  { key: 'recentTerminations', label: 'Kündigungen', icon: UserMinus, href: '/terminations', permission: 'terminations:view', color: 'pink', hint: 'Letzte Tage' },
 ]
 
 const quickActions: { label: string; description: string; href: string; icon: LucideIcon; permission: Permission }[] = [
@@ -197,84 +194,77 @@ const actionLabels: Record<string, string> = {
   INACTIVITY_NOTE_DISMISSED: 'Fehlzeit-Notiz gelöscht',
 }
 
-const activityAccent: Record<string, AccentKey> = {
+const activityColor: Record<string, SystemColor> = {
   OFFICER_CREATED: 'mint',
-  OFFICER_UPDATED: 'sky',
-  OFFICER_DELETED: 'rose',
-  OFFICER_PROMOTED: 'emerald',
-  OFFICER_PROMOTION_REVERTED: 'amber',
-  OFFICER_TERMINATED: 'rose',
+  OFFICER_UPDATED: 'cyan',
+  OFFICER_DELETED: 'pink',
+  OFFICER_PROMOTED: 'green',
+  OFFICER_PROMOTION_REVERTED: 'yellow',
+  OFFICER_TERMINATED: 'pink',
   TRAININGS_UPDATED: 'gold',
-  NOTE_ADDED: 'sky',
-  INACTIVITY_NOTE_DISMISSED: 'amber',
+  NOTE_ADDED: 'cyan',
+  INACTIVITY_NOTE_DISMISSED: 'yellow',
 }
 
 function SectionHeader({
-                         icon: Icon,
-                         title,
-                         description,
-                         action,
-                       }: {
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
   icon: LucideIcon
   title: string
   description?: string
   action?: React.ReactNode
 }) {
   return (
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#d4af37]/15 to-[#d4af37]/5 border border-[#d4af37]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <Icon size={14} className="text-[#d4af37]" strokeWidth={1.85} />
-          </span>
-            <h3 className="text-[14px] font-semibold text-white tracking-[-0.01em]">{title}</h3>
-          </div>
-          {description && <p className="text-[12px] text-[#7d94b0] mt-2 max-w-2xl leading-relaxed pl-[38px]">{description}</p>}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h3 className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-label">
+          <Icon size={16} className="shrink-0 text-label-3" strokeWidth={1.75} />
+          {title}
+        </h3>
+        {description && <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-label-3">{description}</p>}
       </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
   )
 }
 
 function ProgressRow({ label, value, detail, color = '#d4af37' }: { label: string; value: number; detail: string; color?: string }) {
   const width = Math.min(Math.max(value, 0), 100)
   return (
-      <div>
-        <div className="flex items-center justify-between gap-3 mb-1.5">
-          <span className="text-[12.5px] text-[#c2d2e3] truncate">{label}</span>
-          <span className="text-[11.5px] text-[#9fb0c4] tabular-nums font-medium shrink-0">{detail}</span>
-        </div>
-        <div className="h-[6px] bg-[#06182e]/90 rounded-full overflow-hidden ring-1 ring-inset ring-white/[0.03]">
-          <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${width}%` }}
-              transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="h-full rounded-full"
-              style={{
-                background: `linear-gradient(90deg, ${color}, ${color}cc)`,
-                boxShadow: `0 0 8px ${color}33`,
-              }}
-          />
-        </div>
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <span className="truncate text-[13px] text-label-2">{label}</span>
+        <span className="shrink-0 text-[12px] font-medium tabular-nums text-label-3">{detail}</span>
       </div>
+      <div className="h-1 overflow-hidden rounded-full bg-white/[0.07]">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${width}%` }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.32, 0.72, 0, 1] }}
+          className="h-full rounded-full"
+          style={{ backgroundColor: color }}
+        />
+      </div>
+    </div>
   )
 }
 
 function EmptyState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="h-11 w-11 rounded-full bg-[#d4af37]/5 border border-[#d4af37]/10 flex items-center justify-center mb-3">
-          <Icon size={18} className="text-[#d4af37]/40" strokeWidth={1.5} />
-        </div>
-        <p className="text-[12.5px] text-[#7d94b0]">{text}</p>
-      </div>
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <Icon size={24} className="mb-2.5 text-label-4" strokeWidth={1.5} />
+      <p className="text-[13px] text-label-3">{text}</p>
+    </div>
   )
 }
 
-function notificationClass(severity: 'info' | 'warning' | 'error') {
-  if (severity === 'error') return 'border-[#7f1d1d]/55 bg-[#2a1212]/55 text-[#fca5a5] hover:border-[#7f1d1d]/80'
-  if (severity === 'warning') return 'border-[#b45309]/50 bg-[#1d1608]/55 text-[#fbbf24] hover:border-[#b45309]/75'
-  return 'border-[#234568]/65 bg-[#0a1a33]/55 text-[#93c5fd] hover:border-[#234568]/90'
+function notificationDot(severity: 'info' | 'warning' | 'error') {
+  if (severity === 'error') return 'bg-red'
+  if (severity === 'warning') return 'bg-yellow'
+  return 'bg-blue'
 }
 
 function officerName(officer: { firstName: string; lastName: string }) {
@@ -307,33 +297,33 @@ function dateAfterDays(days: number) {
   return dateInputValue(date)
 }
 
-function RingProgress({ value, color = '#d4af37', size = 64, stroke = 5 }: { value: number; color?: string; size?: number; stroke?: number }) {
+function RingProgress({ value, color = '#d4af37', size = 56, stroke = 5 }: { value: number; color?: string; size?: number; stroke?: number }) {
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
   const clamped = Math.min(100, Math.max(0, value))
   const offset = circumference - (clamped / 100) * circumference
   return (
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} stroke="#0a2240" strokeWidth={stroke} fill="none" />
-          <motion.circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke={color}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-              fill="none"
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset: offset }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              style={{ strokeDasharray: circumference, filter: `drop-shadow(0 0 4px ${color}66)` }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[13px] font-semibold text-white tabular-nums">{clamped}%</span>
-        </div>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="rgb(255 255 255 / 0.08)" strokeWidth={stroke} fill="none" />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          fill="none"
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
+          style={{ strokeDasharray: circumference }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[12.5px] font-semibold tabular-nums text-label">{clamped}%</span>
       </div>
+    </div>
   )
 }
 
@@ -360,14 +350,14 @@ export default function DashboardPage() {
   }, [])
 
   const dateLine = useMemo(
-      () =>
-          new Intl.DateTimeFormat('de-DE', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          }).format(new Date()),
-      []
+    () =>
+      new Intl.DateTimeFormat('de-DE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date()),
+    []
   )
   const timeLine = useMemo(() => {
     if (!clock) return null
@@ -455,546 +445,502 @@ export default function DashboardPage() {
 
   if (error || !stats) {
     return (
-        <div className="max-w-6xl mx-auto">
-          <div className={cn(panelClass, 'text-center py-16 px-6 mt-6')}>
-            <div className="mx-auto h-12 w-12 rounded-full bg-[#f87171]/10 border border-[#f87171]/25 flex items-center justify-center mb-4">
-              <AlertTriangle size={22} className="text-[#f87171]" strokeWidth={1.75} />
-            </div>
-            <h2 className="text-[15px] font-semibold text-white mb-1">Dashboard nicht verfügbar</h2>
-            <p className="text-[12.5px] text-[#9fb0c4] mb-5 max-w-md mx-auto">{error || 'Die Dashboard-Daten konnten gerade nicht geladen werden.'}</p>
-            <Button size="sm" onClick={refetch}>
-              <RefreshCw size={13} strokeWidth={2} />
-              Erneut laden
-            </Button>
-          </div>
+      <div className="mx-auto max-w-6xl">
+        <div className={cn(panelClass, 'mt-6 px-6 py-16 text-center')}>
+          <AlertTriangle size={28} className="mx-auto mb-3 text-red" strokeWidth={1.75} />
+          <h2 className="mb-1 text-[17px] font-semibold text-label">Dashboard nicht verfügbar</h2>
+          <p className="mx-auto mb-5 max-w-md text-[13.5px] text-label-2">{error || 'Die Dashboard-Daten konnten gerade nicht geladen werden.'}</p>
+          <Button onClick={refetch}>
+            <RefreshCw size={14} strokeWidth={2} />
+            Erneut laden
+          </Button>
         </div>
+      </div>
     )
   }
 
   const visibleRankDistribution = stats.rankDistribution.filter((rank) => rank.count > 0)
   const topRankCount = Math.max(...visibleRankDistribution.map((rank) => rank.count), 1)
   const trainingSummary = stats.totalTrainingAssignments > 0
-      ? `${stats.completedTrainingAssignments} von ${stats.totalTrainingAssignments} erledigt`
-      : 'Keine Ausbildungen zugewiesen'
+    ? `${stats.completedTrainingAssignments} von ${stats.totalTrainingAssignments} erledigt`
+    : 'Keine Ausbildungen zugewiesen'
   const activeSummary = stats.currentOfficers > 0
-      ? `${stats.activeOfficers} von ${stats.currentOfficers} einsatzbereit`
-      : 'Keine laufenden Officers'
+    ? `${stats.activeOfficers} von ${stats.currentOfficers} einsatzbereit`
+    : 'Keine laufenden Officers'
 
   return (
-      <div className="max-w-7xl mx-auto space-y-6 pb-4">
-        <header className="flex flex-wrap items-end justify-between gap-5 py-2">
-          <div>
-            <p className="mb-2 text-xs text-[#91a4bc]">{dateLine}{timeLine ? ` · ${timeLine} Uhr` : ''}</p>
-            <h1 className="text-[28px] font-semibold tracking-tight text-white">{greeting}{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}.</h1>
-            <p className="mt-2 text-sm text-[#a7b7cb]">Dein Überblick für den heutigen Dienst.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-2 flex items-center gap-2 text-xs text-[#a7b7cb]"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />{stats.dutyTimes?.activeCount ?? 0} im Dienst</span>
-            <Button variant="ghost" size="sm" onClick={refetch}><RefreshCw size={14} />Aktualisieren</Button>
-            <Button size="sm" onClick={openAbsenceModal} disabled={!user?.discordId && !canManageAbsences} title={!user?.discordId && !canManageAbsences ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}><CalendarPlus size={14} />Abmelden</Button>
-          </div>
-        </header>
-        <div className="lspd-metrics">
-          {statCards.filter(card => hasPermission(user, card.permission)).map(card => (
-            <Link key={card.key} href={card.href} className="lspd-metric">
-              <span className="text-xs text-[#a7b7cb]">{card.label}</span>
-              <span className="flex items-center justify-between gap-2"><strong className="text-[30px] font-semibold tracking-tight text-white">{stats[card.key]}</strong><ArrowUpRight size={14} className="text-[#8297af]" /></span>
-              <span className="text-[11px] text-[#8297af]">{card.key === 'recentPromotions' || card.key === 'recentTerminations' ? `Letzte ${stats.recentWindowDays} Tage` : card.hint}</span>
-            </Link>
-          ))}
+    <div className="mx-auto max-w-7xl space-y-7 pb-4">
+      <PageHeader
+        className="!mb-0"
+        eyebrow={`${dateLine}${timeLine ? ` · ${timeLine} Uhr` : ''}`}
+        title={`${greeting}${user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}.`}
+        description="Dein Überblick für den heutigen Dienst."
+        action={
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 inline-flex h-7 items-center gap-2 rounded-full bg-green/12 px-3 text-[12.5px] font-medium text-green">
+            <span className="live-pulse !h-1.5 !w-1.5" />
+            {stats.dutyTimes?.activeCount ?? 0} im Dienst
+          </span>
+          <Button variant="ghost" onClick={refetch}><RefreshCw size={14} strokeWidth={2} />Aktualisieren</Button>
+          <Button
+            onClick={openAbsenceModal}
+            disabled={!user?.discordId && !canManageAbsences}
+            title={!user?.discordId && !canManageAbsences ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}
+          >
+            <CalendarPlus size={14} strokeWidth={2} />Abmelden
+          </Button>
         </div>
+        }
+      />
 
-        <Tabs.Root defaultValue="overview" className="space-y-6">
-          <Tabs.List aria-label="Dashboard-Bereiche" className="lspd-view-tabs">
-            <Tabs.Trigger value="overview">Heute im Blick</Tabs.Trigger>
-            <Tabs.Trigger value="personnel">Personal & Ausbildung</Tabs.Trigger>
-            <Tabs.Trigger value="activity">Aktivitäten & Notizen</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="overview" className="space-y-5">{/* ===== NOTIFICATIONS ===== */}
-        {stats.notifications.length > 0 && (
-            <motion.section
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className={cn(panelClass, 'p-5')}
-            >
+      <div className="lspd-metrics">
+        {statCards.filter(card => hasPermission(user, card.permission)).map(card => (
+          <Link key={card.key} href={card.href} className="lspd-metric group">
+            <span className="flex items-center gap-1.5 text-[12.5px] text-label-2">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: SYSTEM[card.color] }} aria-hidden />
+              {card.label}
+            </span>
+            <span className="flex items-center justify-between gap-2">
+              <strong className="text-[28px] font-semibold leading-tight tracking-[-0.03em] text-label tabular-nums">{stats[card.key]}</strong>
+              <ArrowUpRight size={15} className="text-label-4 opacity-0 transition-opacity group-hover:opacity-100" strokeWidth={2} />
+            </span>
+            <span className="text-[12px] text-label-3">{card.key === 'recentPromotions' || card.key === 'recentTerminations' ? `Letzte ${stats.recentWindowDays} Tage` : card.hint}</span>
+          </Link>
+        ))}
+      </div>
+
+      <Tabs.Root defaultValue="overview" className="space-y-5">
+        <Tabs.List aria-label="Dashboard-Bereiche" className="lspd-view-tabs">
+          <Tabs.Trigger value="overview">Heute im Blick</Tabs.Trigger>
+          <Tabs.Trigger value="personnel">Personal & Ausbildung</Tabs.Trigger>
+          <Tabs.Trigger value="activity">Aktivitäten & Notizen</Tabs.Trigger>
+        </Tabs.List>
+
+        <Tabs.Content value="overview" className="lspd-view-enter space-y-4">
+          {stats.notifications.length > 0 && (
+            <section className={cn(panelClass, 'p-5')}>
               <SectionHeader
-                  icon={AlertTriangle}
-                  title="Benachrichtigungen"
-                  description="Hinweise aus Fristen, Ausbildung, Probezeiten und Kalender"
+                icon={AlertTriangle}
+                title="Benachrichtigungen"
+                description="Hinweise aus Fristen, Ausbildung, Probezeiten und Kalender"
               />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {stats.notifications.map((item) => (
-                    <Link
-                        key={item.id}
-                        href={item.href}
-                        className={cn('group flex items-start gap-3 rounded-[11px] border px-4 py-3 transition-colors', notificationClass(item.severity))}
-                    >
-                      <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-current shrink-0 opacity-80 group-hover:opacity-100" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold leading-tight">{item.title}</p>
-                        <p className="mt-1 text-[12px] opacity-85 leading-relaxed">{item.description}</p>
-                      </div>
-                      <ArrowRight size={13} className="mt-0.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" strokeWidth={1.85} />
-                    </Link>
+                  <Link key={item.id} href={item.href} className={cn(rowClass, 'group flex items-start gap-3 px-4 py-3')}>
+                    <span className={cn('mt-[7px] h-2 w-2 shrink-0 rounded-full', notificationDot(item.severity))} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] font-semibold leading-tight text-label">{item.title}</p>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-label-2">{item.description}</p>
+                    </div>
+                    <ChevronRight size={16} className="mt-0.5 shrink-0 text-label-4 transition-[translate,color] group-hover:translate-x-0.5 group-hover:text-label-2" strokeWidth={2} />
+                  </Link>
                 ))}
               </div>
-            </motion.section>
-        )}
+            </section>
+          )}
 
-        {/* ===== ABSENCES ===== */}
-        <motion.section
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15 }}
-            className={cn(panelClass, 'p-5')}
-        >
-          <SectionHeader
+          <section className={cn(panelClass, 'p-5')}>
+            <SectionHeader
               icon={CalendarX}
               title="Aktuelle Abmeldungen"
               description="Entschuldigte Officers verschwinden automatisch aus Dashboard und Discord-Panel, sobald die Abmeldung endet."
-          />
-          {stats.activeAbsences.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+            />
+            {stats.activeAbsences.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {stats.activeAbsences.map((absence) => {
                   const canCancel = canManageAbsences || (!!user?.discordId && absence.officer.discordId === user.discordId)
                   return (
-                      <div key={absence.id} className={cn(surfaceClass, 'p-4 transition-colors hover:border-[#d4af37]/15')}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <Link href={`/officers/${absence.officer.id}`} className="text-[13px] font-semibold text-white hover:text-[#d4af37] transition-colors">
-                              {officerName(absence.officer)}
-                              <span className="ml-1.5 font-mono text-[#d4af37]">#{displayBadgeNumber(absence.officer.badgeNumber)}</span>
-                            </Link>
-                            <p className="text-[11.5px] text-[#8ea4bd] mt-0.5">{absence.officer.rank.name}</p>
-                          </div>
-                          <span className="shrink-0 rounded-full border border-[#38bdf8]/25 bg-[#06233a]/60 px-2.5 py-1 text-[11px] text-[#93c5fd] font-medium">
-                      bis {formatDate(absence.endsAt)}
-                    </span>
+                    <div key={absence.id} className={cn(rowClass, 'p-4')}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Link href={`/officers/${absence.officer.id}`} className="text-[13.5px] font-semibold text-label transition-colors hover:text-gold-bright">
+                            {officerName(absence.officer)}
+                            <span className="ml-1.5 font-mono text-[12px] font-normal text-label-3">#{displayBadgeNumber(absence.officer.badgeNumber)}</span>
+                          </Link>
+                          <p className="mt-0.5 text-[12px] text-label-3">{absence.officer.rank.name}</p>
                         </div>
-                        <p className="mt-2.5 text-[12.5px] leading-relaxed text-[#c7d4e4]">{absence.reason}</p>
-                        <div className="mt-3 flex items-center justify-between gap-2 pt-3 border-t border-white/[0.04]">
-                    <span className="text-[10.5px] text-[#6b8299] tabular-nums">
-                      {formatDateTime(absence.startsAt)} → {formatDateTime(absence.endsAt)}
-                    </span>
-                          {canCancel && (
-                              <button
-                                  type="button"
-                                  onClick={() => cancelAbsence(absence.id)}
-                                  className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[11.5px] text-[#fca5a5] transition-colors hover:bg-[#321218]/60"
-                              >
-                                <Trash2 size={12} strokeWidth={1.85} />
-                                Beenden
-                              </button>
-                          )}
-                        </div>
+                        <span className="shrink-0 rounded-full bg-cyan/12 px-2.5 py-1 text-[12px] font-medium text-cyan">
+                          bis {formatDate(absence.endsAt)}
+                        </span>
                       </div>
+                      <p className="mt-2.5 text-[13px] leading-relaxed text-label-2">{absence.reason}</p>
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
+                        <span className="text-[11.5px] tabular-nums text-label-3">
+                          {formatDateTime(absence.startsAt)} → {formatDateTime(absence.endsAt)}
+                        </span>
+                        {canCancel && (
+                          <button
+                            type="button"
+                            onClick={() => cancelAbsence(absence.id)}
+                            className="inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1 text-[12.5px] font-medium text-red transition-colors hover:bg-red/10"
+                          >
+                            <Trash2 size={13} strokeWidth={2} />
+                            Beenden
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
-          ) : (
+            ) : (
               <EmptyState icon={CalendarDays} text="Aktuell ist niemand abgemeldet" />
-          )}
-        </motion.section>
+            )}
+          </section>
 
-        {/* ===== OPERATIONAL + QUICK ===== */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <motion.section
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className={cn(panelClass, 'p-5 xl:col-span-2')}
-          >
-            <SectionHeader
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <section className={cn(panelClass, 'p-5 xl:col-span-2')}>
+              <SectionHeader
                 icon={Activity}
                 title="Operative Übersicht"
                 description={`Aktuelle Lage für ${stats.currentOfficers} aktive Officers`}
-            />
+              />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-              <div className={cn(surfaceClass, 'p-4 flex items-center gap-4')}>
-                <RingProgress value={stats.readinessRate} color="#34d399" />
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-medium text-[#9fb0c4] uppercase tracking-[0.08em]">Dienstbereit</p>
-                  <p className="text-[20px] font-semibold text-white tabular-nums leading-tight mt-0.5">{stats.activeOfficers}</p>
-                  <p className="text-[11px] text-[#7d94b0] mt-0.5">{activeSummary}</p>
+              <div className="mb-5 grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div className={cn(rowClass, 'flex items-center gap-4 p-4 hover:bg-white/[0.02]')}>
+                  <RingProgress value={stats.readinessRate} color={SYSTEM.green} />
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] text-label-2">Dienstbereit</p>
+                    <p className="mt-0.5 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-label tabular-nums">{stats.activeOfficers}</p>
+                    <p className="mt-0.5 text-[12px] text-label-3">{activeSummary}</p>
+                  </div>
                 </div>
+                <div className={cn(rowClass, 'flex items-center gap-4 p-4 hover:bg-white/[0.02]')}>
+                  <RingProgress value={stats.trainingCompletionRate} color="#d4af37" />
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] text-label-2">Ausbildung</p>
+                    <p className="mt-0.5 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-label tabular-nums">{stats.completedTrainingAssignments}</p>
+                    <p className="mt-0.5 text-[12px] text-label-3">{trainingSummary}</p>
+                  </div>
+                </div>
+                <Link href="/promotions" className={cn(rowClass, 'group flex items-center gap-4 p-4')}>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/[0.06]">
+                    <ListChecks size={22} className="text-label-2" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] text-label-2">Offene Listen</p>
+                    <p className="mt-0.5 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-label tabular-nums">{stats.draftRankChangeLists}</p>
+                    <p className="mt-0.5 text-[12px] text-label-3">Beförderungen & Degradierungen</p>
+                  </div>
+                  <ChevronRight size={16} className="text-label-4 transition-[translate,color] group-hover:translate-x-0.5 group-hover:text-label-2" strokeWidth={2} />
+                </Link>
               </div>
-              <div className={cn(surfaceClass, 'p-4 flex items-center gap-4')}>
-                <RingProgress value={stats.trainingCompletionRate} color="#d4af37" />
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-medium text-[#9fb0c4] uppercase tracking-[0.08em]">Ausbildung</p>
-                  <p className="text-[20px] font-semibold text-white tabular-nums leading-tight mt-0.5">{stats.completedTrainingAssignments}</p>
-                  <p className="text-[11px] text-[#7d94b0] mt-0.5">{trainingSummary}</p>
-                </div>
-              </div>
-              <Link href="/promotions" className={cn(surfaceClass, 'p-4 flex items-center gap-4 transition-colors hover:border-[#d4af37]/20 group')}>
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#d4af37]/20 bg-[#d4af37]/5">
-                  <ListChecks size={22} className="text-[#d4af37]" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11.5px] font-medium text-[#9fb0c4] uppercase tracking-[0.08em]">Offene Listen</p>
-                  <p className="text-[20px] font-semibold text-white tabular-nums leading-tight mt-0.5">{stats.draftRankChangeLists}</p>
-                  <p className="text-[11px] text-[#7d94b0] mt-0.5">Beförderungen & Degradierungen</p>
-                </div>
-                <ArrowRight size={14} className="text-[#4a6585] group-hover:text-[#d4af37] group-hover:translate-x-0.5 transition-all" strokeWidth={1.85} />
-              </Link>
-            </div>
 
-            {stats.dutyTimes && (
+              {stats.dutyTimes && (
                 <Link
-                    href="/duty-times"
-                    className={cn(surfaceClass, 'mb-5 flex flex-col gap-3 p-4 transition-all duration-200 hover:border-[#d4af37]/20 sm:flex-row sm:items-center sm:justify-between')}
+                  href="/duty-times"
+                  className={cn(rowClass, 'group mb-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between')}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c29d32] text-[#071b33] shadow-[0_1px_3px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]">
-                      <Clock3 size={17} strokeWidth={1.85} />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-gold/15 text-gold">
+                      <Clock3 size={17} strokeWidth={1.75} />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-white">Dienstzeiten</p>
-                      <p className="text-[11.5px] text-[#9fb0c4]">{stats.dutyTimes.activeCount} im Dienst · {formatDuration(stats.dutyTimes.totalWeekDurationMs)} diese Woche</p>
+                      <p className="text-[13.5px] font-semibold text-label">Dienstzeiten</p>
+                      <p className="text-[12px] text-label-3">{stats.dutyTimes.activeCount} im Dienst · {formatDuration(stats.dutyTimes.totalWeekDurationMs)} diese Woche</p>
                     </div>
                   </div>
-                  <span className="text-[12.5px] font-semibold tabular-nums text-[#d4af37]">
-                {formatDuration(stats.dutyTimes.totalActiveDurationMs)} aktiv
-              </span>
+                  <span className="flex items-center gap-1 text-[13px] font-semibold tabular-nums text-label">
+                    {formatDuration(stats.dutyTimes.totalActiveDurationMs)} aktiv
+                    <ChevronRight size={16} className="text-label-4 transition-[translate,color] group-hover:translate-x-0.5 group-hover:text-label-2" strokeWidth={2} />
+                  </span>
                 </Link>
-            )}
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-              {stats.statusDistribution.map((status) => {
-                const percentage = stats.totalOfficers > 0 ? Math.round((status.count / stats.totalOfficers) * 100) : 0
-                const color = status.status === 'ACTIVE' ? '#34d399' : status.status === 'AWAY' ? '#38bdf8' : status.status === 'INACTIVE' ? '#fbbf24' : '#f87171'
-                return (
-                    <ProgressRow
-                        key={status.status}
-                        label={status.label}
-                        value={percentage}
-                        detail={`${status.count} · ${percentage}%`}
-                        color={color}
-                    />
-                )
-              })}
-            </div>
-          </motion.section>
-
-          <motion.section
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className={cn(panelClass, 'p-5')}
-          >
-            <SectionHeader icon={ArrowUpRight} title="Schnellzugriffe" description="Direkt zu den häufigsten HR-Aufgaben" />
-            <div className="space-y-2">
-              {quickActions.filter((action) => hasPermission(user, action.permission)).map((action) => {
-                const Icon = action.icon
-                return (
-                    <Link
-                        key={action.href}
-                        href={action.href}
-                        className={cn('group flex items-center gap-3 px-3.5 py-3 transition-all duration-200 hover:border-[#d4af37]/20', surfaceClass)}
-                    >
-                      <div className="h-9 w-9 rounded-[9px] flex items-center justify-center bg-gradient-to-br from-[#d4af37]/15 to-[#d4af37]/5 border border-[#d4af37]/20 text-[#d4af37]">
-                        <Icon size={15} strokeWidth={1.85} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-white">{action.label}</p>
-                        <p className="text-[11.5px] text-[#8ea4bd] truncate">{action.description}</p>
-                      </div>
-                      <ArrowRight size={13} className="text-[#4a6585] group-hover:text-[#d4af37] group-hover:translate-x-0.5 transition-all" strokeWidth={1.85} />
-                    </Link>
-                )
-              })}
-            </div>
-          </motion.section>
-        </div>
-
-        </Tabs.Content>
-          <Tabs.Content value="personnel" className="space-y-5">{/* ===== TRAININGS + HR FOCUS ===== */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-          <motion.section
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className={cn(panelClass, 'p-5 xl:col-span-3')}
-          >
-            <SectionHeader icon={ClipboardCheck} title="Ausbildungsstand" description="Abdeckung pro Ausbildung über alle aktiven Officers" />
-            {stats.trainingBreakdown.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5">
-                  {stats.trainingBreakdown.map((training) => (
-                      <ProgressRow
-                          key={training.id}
-                          label={training.label}
-                          value={training.percentage}
-                          detail={`${training.completed}/${training.total} · ${training.percentage}%`}
-                      />
-                  ))}
-                </div>
-            ) : (
-                <EmptyState icon={GraduationCap} text="Keine Ausbildungen konfiguriert" />
-            )}
-          </motion.section>
-
-          <motion.section
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className={cn(panelClass, 'p-5 xl:col-span-2')}
-          >
-            <SectionHeader icon={AlertTriangle} title="HR-Fokus" description="Abgemeldete und inaktive Officers" />
-            {stats.attentionOfficers.length > 0 ? (
-                <div className="space-y-2">
-                  {stats.attentionOfficers.map((officer) => (
-                      <Link
-                          key={officer.id}
-                          href={`/officers/${officer.id}`}
-                          className={cn('flex items-center justify-between gap-3 px-3.5 py-3 transition-colors hover:border-[#d4af37]/15', surfaceClass)}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-white truncate">
-                            {officerName(officer)}
-                            <span className="text-[#d4af37] font-mono ml-1.5 font-medium">#{displayBadgeNumber(officer.badgeNumber)}</span>
-                          </p>
-                          <p className="text-[11.5px] text-[#8ea4bd] truncate mt-0.5">
-                            {officer.rank.name} · {officer.lastOnline ? `zuletzt online ${formatRelativeTime(officer.lastOnline)}` : `aktualisiert ${formatDate(officer.updatedAt)}`}
-                          </p>
-                        </div>
-                        {officer.status && (
-                            <span className="inline-flex items-center gap-1.5 shrink-0 text-[11.5px] text-[#b7c5d8]">
-                      <span className={cn('h-[6px] w-[6px] rounded-full', getStatusDot(officer.status))} />
-                              {getStatusLabel(officer.status)}
-                    </span>
-                        )}
-                      </Link>
-                  ))}
-                </div>
-            ) : (
-                <EmptyState icon={UserCheck} text="Keine abgemeldeten oder inaktiven Officers" />
-            )}
-          </motion.section>
-        </div>
-
-        {/* ===== RANK DISTRIBUTION ===== */}
-        {visibleRankDistribution.length > 0 && (
-            <motion.section
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className={cn(panelClass, 'p-5')}
-            >
-              <SectionHeader icon={Users} title="Rangverteilung" description="Aktive Officers nach Rang" />
-              <div className="space-y-2.5">
-                {visibleRankDistribution.map((rank) => {
-                  const percentage = (rank.count / topRankCount) * 100
+              <div className="grid grid-cols-1 gap-x-8 gap-y-3.5 md:grid-cols-2">
+                {stats.statusDistribution.map((status) => {
+                  const percentage = stats.totalOfficers > 0 ? Math.round((status.count / stats.totalOfficers) * 100) : 0
+                  const color = status.status === 'ACTIVE' ? SYSTEM.green : status.status === 'AWAY' ? SYSTEM.cyan : status.status === 'INACTIVE' ? SYSTEM.yellow : SYSTEM.red
                   return (
-                      <div key={rank.rank} className="flex items-center gap-3">
-                        <div className="w-36 sm:w-44 text-[12.5px] text-[#c2d2e3] truncate font-medium">{rank.rank}</div>
-                        <div className="flex-1 h-[24px] bg-[#06182e]/80 rounded-[7px] overflow-hidden ring-1 ring-inset ring-white/[0.03]">
-                          <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 0.2, delay: 0, ease: [0.16, 1, 0.3, 1] }}
-                              className="h-full rounded-[7px] flex items-center justify-end pr-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                              style={{ minWidth: rank.count > 0 ? '1.75rem' : 0, backgroundColor: rank.color }}
-                          >
-                            <span className="text-[10.5px] font-semibold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] tabular-nums">{rank.count}</span>
-                          </motion.div>
-                        </div>
-                      </div>
+                    <ProgressRow
+                      key={status.status}
+                      label={status.label}
+                      value={percentage}
+                      detail={`${status.count} · ${percentage}%`}
+                      color={color}
+                    />
                   )
                 })}
               </div>
-            </motion.section>
-        )}
+            </section>
 
+            <section className={cn(panelClass, 'p-5')}>
+              <SectionHeader icon={ArrowUpRight} title="Schnellzugriffe" description="Direkt zu den häufigsten HR-Aufgaben" />
+              <div className="-mx-2">
+                {quickActions.filter((action) => hasPermission(user, action.permission)).map((action) => {
+                  const Icon = action.icon
+                  return (
+                    <Link
+                      key={action.href}
+                      href={action.href}
+                      className="group flex items-center gap-3 rounded-[10px] px-2 py-2.5 transition-colors hover:bg-white/[0.045]"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-white/[0.06] text-label-2">
+                        <Icon size={16} strokeWidth={1.75} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13.5px] font-medium text-label">{action.label}</p>
+                        <p className="truncate text-[12px] text-label-3">{action.description}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-label-4 transition-[translate,color] group-hover:translate-x-0.5 group-hover:text-label-2" strokeWidth={2} />
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
         </Tabs.Content>
-          <Tabs.Content value="activity" className="space-y-5">{/* ===== ACTIVITY + NOTES + HIRES ===== */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-          <motion.section
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className={cn(panelClass, 'p-5 xl:col-span-3')}
-          >
-            <SectionHeader
+
+        <Tabs.Content value="personnel" className="lspd-view-enter space-y-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+            <section className={cn(panelClass, 'p-5 xl:col-span-3')}>
+              <SectionHeader icon={ClipboardCheck} title="Ausbildungsstand" description="Abdeckung pro Ausbildung über alle aktiven Officers" />
+              {stats.trainingBreakdown.length > 0 ? (
+                <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+                  {stats.trainingBreakdown.map((training) => (
+                    <ProgressRow
+                      key={training.id}
+                      label={training.label}
+                      value={training.percentage}
+                      detail={`${training.completed}/${training.total} · ${training.percentage}%`}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={GraduationCap} text="Keine Ausbildungen konfiguriert" />
+              )}
+            </section>
+
+            <section className={cn(panelClass, 'p-5 xl:col-span-2')}>
+              <SectionHeader icon={AlertTriangle} title="HR-Fokus" description="Abgemeldete und inaktive Officers" />
+              {stats.attentionOfficers.length > 0 ? (
+                <div className="-mx-2 divide-y divide-line">
+                  {stats.attentionOfficers.map((officer) => (
+                    <Link
+                      key={officer.id}
+                      href={`/officers/${officer.id}`}
+                      className="flex items-center justify-between gap-3 rounded-[8px] px-2 py-2.5 transition-colors hover:bg-white/[0.045]"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[13.5px] font-medium text-label">
+                          {officerName(officer)}
+                          <span className="ml-1.5 font-mono text-[12px] font-normal text-label-3">#{displayBadgeNumber(officer.badgeNumber)}</span>
+                        </p>
+                        <p className="mt-0.5 truncate text-[12px] text-label-3">
+                          {officer.rank.name} · {officer.lastOnline ? `zuletzt online ${formatRelativeTime(officer.lastOnline)}` : `aktualisiert ${formatDate(officer.updatedAt)}`}
+                        </p>
+                      </div>
+                      {officer.status && (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-label-2">
+                          <span className={cn('h-1.5 w-1.5 rounded-full', getStatusDot(officer.status))} />
+                          {getStatusLabel(officer.status)}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={UserCheck} text="Keine abgemeldeten oder inaktiven Officers" />
+              )}
+            </section>
+          </div>
+
+          {visibleRankDistribution.length > 0 && (
+            <section className={cn(panelClass, 'p-5')}>
+              <SectionHeader icon={Users} title="Rangverteilung" description="Aktive Officers nach Rang" />
+              <div className="space-y-2">
+                {visibleRankDistribution.map((rank) => {
+                  const percentage = (rank.count / topRankCount) * 100
+                  return (
+                    <div key={rank.rank} className="flex items-center gap-3">
+                      <div className="w-36 truncate text-[13px] text-label-2 sm:w-44">{rank.rank}</div>
+                      <div className="h-[22px] flex-1 overflow-hidden rounded-[6px] bg-white/[0.04]">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                          className="flex h-full items-center justify-end rounded-[6px] pr-2"
+                          style={{ minWidth: rank.count > 0 ? '1.75rem' : 0, backgroundColor: rank.color }}
+                        >
+                          <span className="text-[11px] font-semibold tabular-nums text-label drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]">{rank.count}</span>
+                        </motion.div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+        </Tabs.Content>
+
+        <Tabs.Content value="activity" className="lspd-view-enter space-y-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+            <section className={cn(panelClass, 'p-5 xl:col-span-3')}>
+              <SectionHeader
                 icon={ScrollText}
                 title="Aktuelle Aktivitäten"
                 description="Letzte Änderungen im Systemprotokoll"
                 action={
                   hasPermission(user, 'logs:view') ? (
-                      <Link href="/logs" className="inline-flex items-center gap-1 text-[11.5px] font-medium text-[#d4af37] hover:text-[#f0d060] transition-colors">
-                        Alle ansehen
-                        <ArrowRight size={11} strokeWidth={2} />
-                      </Link>
+                    <Link href="/logs" className="inline-flex items-center gap-0.5 text-[13px] font-medium text-gold-bright transition-colors hover:text-gold-bright">
+                      Alle ansehen
+                      <ChevronRight size={14} strokeWidth={2} />
+                    </Link>
                   ) : null
                 }
-            />
-            {stats.recentActivity.length > 0 ? (
+              />
+              {stats.recentActivity.length > 0 ? (
                 <div className="relative">
-                  {/* timeline rail */}
-                  <div className="absolute left-[18px] top-2 bottom-2 w-px bg-gradient-to-b from-[#d4af37]/25 via-[#d4af37]/8 to-transparent" aria-hidden />
-                  <div className="space-y-3.5">
+                  <div className="absolute bottom-3 left-[15px] top-3 w-px bg-line" aria-hidden />
+                  <div className="space-y-4">
                     {stats.recentActivity.map((entry) => {
                       const label = actionLabels[entry.action] || entry.action
-                      const accent = ACCENTS[activityAccent[entry.action] ?? 'gold']
+                      const color = SYSTEM[activityColor[entry.action] ?? 'gold']
                       return (
-                          <div key={entry.id} className="relative flex items-start gap-3.5 pl-0">
-                            <div
-                                className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-[#06152a]"
-                                style={{ borderColor: accent.ring, color: accent.text, boxShadow: `0 0 0 3px rgba(6,21,42,0.9)` }}
-                            >
-                              <Activity size={13} strokeWidth={1.85} />
-                            </div>
-                            <div className="min-w-0 flex-1 pt-0.5">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                <span className="text-[12.5px] font-semibold text-white">{label}</span>
-                                {entry.officer && (
-                                    <Link href={`/officers/${entry.officer.id}`} className="text-[12px] text-[#d4af37] hover:text-white transition-colors">
-                                      {officerName(entry.officer)} <span className="font-mono">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
-                                    </Link>
-                                )}
-                              </div>
-                              {entry.details && <p className="text-[12px] text-[#b7c5d8] mt-0.5">{entry.details}</p>}
-                              {entry.oldValue && entry.newValue && (
-                                  <p className="text-[11.5px] text-[#7089a5] mt-0.5">
-                                    <span className="line-through opacity-70">{entry.oldValue}</span>
-                                    <span className="mx-1.5 text-[#4a6585]">→</span>
-                                    <span className="text-[#c2d2e3]">{entry.newValue}</span>
-                                  </p>
-                              )}
-                              <p className="text-[10.5px] text-[#6b8299] mt-1 tabular-nums">
-                                {entry.user?.displayName ?? 'Gelöscht'} · {formatRelativeTime(entry.createdAt)}
-                              </p>
-                            </div>
+                        <div key={entry.id} className="relative flex items-start gap-3.5">
+                          <div
+                            className="relative z-10 flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full bg-surface-3 shadow-[0_0_0_4px_var(--color-surface)]"
+                            style={{ color }}
+                          >
+                            <Activity size={14} strokeWidth={2} />
                           </div>
+                          <div className="min-w-0 flex-1 pt-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <span className="text-[13.5px] font-semibold text-label">{label}</span>
+                              {entry.officer && (
+                                <Link href={`/officers/${entry.officer.id}`} className="text-[13px] text-label-2 transition-colors hover:text-gold-bright">
+                                  {officerName(entry.officer)} <span className="font-mono text-[12px] text-label-3">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
+                                </Link>
+                              )}
+                            </div>
+                            {entry.details && <p className="mt-0.5 text-[12.5px] text-label-2">{entry.details}</p>}
+                            {entry.oldValue && entry.newValue && (
+                              <p className="mt-0.5 text-[12px] text-label-3">
+                                <span className="line-through opacity-70">{entry.oldValue}</span>
+                                <span className="mx-1.5 text-label-4">→</span>
+                                <span className="text-label-2">{entry.newValue}</span>
+                              </p>
+                            )}
+                            <p className="mt-1 text-[11.5px] tabular-nums text-label-3">
+                              {entry.user?.displayName ?? 'Gelöscht'} · {formatRelativeTime(entry.createdAt)}
+                            </p>
+                          </div>
+                        </div>
                       )
                     })}
                   </div>
                 </div>
-            ) : (
+              ) : (
                 <EmptyState icon={ScrollText} text="Keine Aktivitäten vorhanden" />
-            )}
-          </motion.section>
+              )}
+            </section>
 
-          <div className="xl:col-span-2 space-y-4">
-            <motion.section
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className={cn(panelClass, 'p-5')}
-            >
-              <SectionHeader icon={Pin} title="Angepinnte Notizen" description="Wichtige Hinweise für HR & Führung" />
-              {stats.pinnedNotes.length > 0 ? (
+            <div className="space-y-4 xl:col-span-2">
+              <section className={cn(panelClass, 'p-5')}>
+                <SectionHeader icon={Pin} title="Angepinnte Notizen" description="Wichtige Hinweise für HR & Führung" />
+                {stats.pinnedNotes.length > 0 ? (
                   <div className="space-y-2">
                     {stats.pinnedNotes.map((note) => (
-                        <Link
-                            key={note.id}
-                            href={note.officer ? `/officers/${note.officer.id}` : '/notes'}
-                            className={cn('block px-3.5 py-3 transition-colors hover:border-[#d4af37]/15', surfaceClass)}
-                        >
-                          <p className="text-[13px] font-semibold text-white">{note.title || 'Notiz'}</p>
-                          <p className="text-[12px] text-[#b7c5d8] mt-1 leading-relaxed">{truncateText(note.content, 120)}</p>
-                          <p className="text-[10.5px] text-[#d4af37] mt-2 font-medium">
-                            {note.officer ? `${officerName(note.officer)} · ` : ''}{note.author?.displayName ?? 'Gelöscht'}
-                          </p>
-                        </Link>
+                      <Link
+                        key={note.id}
+                        href={note.officer ? `/officers/${note.officer.id}` : '/notes'}
+                        className={cn(rowClass, 'block px-3.5 py-3')}
+                      >
+                        <p className="text-[13.5px] font-semibold text-label">{note.title || 'Notiz'}</p>
+                        <p className="mt-1 text-[12.5px] leading-relaxed text-label-2">{truncateText(note.content, 120)}</p>
+                        <p className="mt-2 text-[11.5px] text-label-3">
+                          {note.officer ? `${officerName(note.officer)} · ` : ''}{note.author?.displayName ?? 'Gelöscht'}
+                        </p>
+                      </Link>
                     ))}
                   </div>
-              ) : (
+                ) : (
                   <EmptyState icon={FileText} text="Keine angepinnten Notizen" />
-              )}
-            </motion.section>
+                )}
+              </section>
 
-            <motion.section
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className={cn(panelClass, 'p-5')}
-            >
-              <SectionHeader icon={CalendarDays} title="Neue Officers" description="Zuletzt eingestellte Mitarbeiter" />
-              {stats.recentHires.length > 0 ? (
-                  <div className="space-y-2">
+              <section className={cn(panelClass, 'p-5')}>
+                <SectionHeader icon={CalendarDays} title="Neue Officers" description="Zuletzt eingestellte Mitarbeiter" />
+                {stats.recentHires.length > 0 ? (
+                  <div className="-mx-2 divide-y divide-line">
                     {stats.recentHires.map((officer) => (
-                        <Link
-                            key={officer.id}
-                            href={`/officers/${officer.id}`}
-                            className={cn('flex items-center justify-between gap-3 px-3.5 py-3 transition-colors hover:border-[#d4af37]/15', surfaceClass)}
-                        >
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-white truncate">
-                              {officerName(officer)}
-                            </p>
-                            <p className="text-[11.5px] text-[#8ea4bd] truncate mt-0.5">{officer.rank.name}</p>
-                          </div>
-                          <span className="text-[11px] text-[#d4af37] shrink-0 font-medium tabular-nums">{formatDate(officer.hireDate)}</span>
-                        </Link>
+                      <Link
+                        key={officer.id}
+                        href={`/officers/${officer.id}`}
+                        className="flex items-center justify-between gap-3 rounded-[8px] px-2 py-2.5 transition-colors hover:bg-white/[0.045]"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[13.5px] font-medium text-label">{officerName(officer)}</p>
+                          <p className="mt-0.5 truncate text-[12px] text-label-3">{officer.rank.name}</p>
+                        </div>
+                        <span className="shrink-0 text-[12px] tabular-nums text-label-2">{formatDate(officer.hireDate)}</span>
+                      </Link>
                     ))}
                   </div>
-              ) : (
+                ) : (
                   <EmptyState icon={Users} text="Keine Officers vorhanden" />
-              )}
-            </motion.section>
-          </div>
-        </div>
-
-        </Tabs.Content>
-        </Tabs.Root>
-        {/* ===== ABSENCE MODAL ===== */}
-        <Modal open={absenceModalOpen} onClose={() => setAbsenceModalOpen(false)} title="Abmeldung eintragen" description="Trage eine Abwesenheit ein – sie endet automatisch zum gewählten Datum.">
-          <div className="space-y-4">
-            {canManageAbsences && (
-                <Select
-                    label="Officer"
-                    value={absenceOfficerId}
-                    onValueChange={setAbsenceOfficerId}
-                    options={absenceOfficerOptions}
-                    placeholder={user?.discordId ? 'Eigene Abmeldung oder Officer wählen' : 'Officer wählen...'}
-                />
-            )}
-            <Select
-                label="Dauer"
-                value={absenceDuration}
-                onValueChange={updateAbsenceDuration}
-                options={[
-                  { value: '1', label: '1 Tag' },
-                  { value: '2', label: '2 Tage' },
-                  { value: '3', label: '3 Tage' },
-                  { value: '5', label: '5 Tage' },
-                  { value: '7', label: '1 Woche' },
-                  { value: '14', label: '2 Wochen' },
-                ]}
-            />
-            <DateField
-                label="Abgemeldet bis"
-                value={absenceEndsAt}
-                onChange={(value) => {
-                  setAbsenceDuration('')
-                  setAbsenceEndsAt(value)
-                }}
-                allowClear={false}
-            />
-            <Textarea
-                label="Grund"
-                value={absenceReason}
-                onChange={(event) => setAbsenceReason(event.target.value)}
-                rows={4}
-                placeholder="Grund der Abmeldung..."
-                required
-            />
-            {!user?.discordId && !canManageAbsences && (
-                <p className="rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3.5 py-2.5 text-[12px] text-[#e8c979] leading-relaxed">
-                  Dein Dashboard-User braucht eine Discord-ID, damit die Abmeldung deinem Officer zugeordnet werden kann.
-                </p>
-            )}
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="secondary" size="sm" onClick={() => setAbsenceModalOpen(false)}>Abbrechen</Button>
-              <Button size="sm" onClick={submitAbsence} loading={absenceSubmitting} disabled={!canSubmitAbsence}>
-                <Send size={13} strokeWidth={2} />
-                Eintragen
-              </Button>
+                )}
+              </section>
             </div>
           </div>
-        </Modal>
-      </div>
+        </Tabs.Content>
+      </Tabs.Root>
+
+      <Modal open={absenceModalOpen} onClose={() => setAbsenceModalOpen(false)} title="Abmeldung eintragen" description="Trage eine Abwesenheit ein – sie endet automatisch zum gewählten Datum.">
+        <div className="space-y-4">
+          {canManageAbsences && (
+            <Select
+              label="Officer"
+              value={absenceOfficerId}
+              onValueChange={setAbsenceOfficerId}
+              options={absenceOfficerOptions}
+              placeholder={user?.discordId ? 'Eigene Abmeldung oder Officer wählen' : 'Officer wählen...'}
+            />
+          )}
+          <Select
+            label="Dauer"
+            value={absenceDuration}
+            onValueChange={updateAbsenceDuration}
+            options={[
+              { value: '1', label: '1 Tag' },
+              { value: '2', label: '2 Tage' },
+              { value: '3', label: '3 Tage' },
+              { value: '5', label: '5 Tage' },
+              { value: '7', label: '1 Woche' },
+              { value: '14', label: '2 Wochen' },
+            ]}
+          />
+          <DateField
+            label="Abgemeldet bis"
+            value={absenceEndsAt}
+            onChange={(value) => {
+              setAbsenceDuration('')
+              setAbsenceEndsAt(value)
+            }}
+            allowClear={false}
+          />
+          <Textarea
+            label="Grund"
+            value={absenceReason}
+            onChange={(event) => setAbsenceReason(event.target.value)}
+            rows={4}
+            placeholder="Grund der Abmeldung..."
+            required
+          />
+          {!user?.discordId && !canManageAbsences && (
+            <p className="rounded-[10px] bg-yellow/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-yellow">
+              Dein Dashboard-User braucht eine Discord-ID, damit die Abmeldung deinem Officer zugeordnet werden kann.
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" onClick={() => setAbsenceModalOpen(false)}>Abbrechen</Button>
+            <Button onClick={submitAbsence} loading={absenceSubmitting} disabled={!canSubmitAbsence}>
+              <Send size={14} strokeWidth={2} />
+              Eintragen
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   )
 }

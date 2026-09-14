@@ -51,19 +51,19 @@ export function ApplicationPicker({ applications, value, onChange }: Application
 
   return (
     <div>
-      <p className="mb-1.5 text-[12.5px] font-medium text-[#9fb0c4]">Zugehörige Bewerbung</p>
+      <p className="mb-1.5 text-[12.5px] font-medium text-label-2">Zugehörige Bewerbung</p>
 
       <div className="relative">
-        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" />
+        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-4" />
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Aktenzeichen, Name oder Discord-ID suchen"
-          className="h-[36px] w-full rounded-[9px] border border-[#18385f]/70 bg-[#0a1a33] pl-8 pr-3 text-[13.5px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#4a6585] focus:border-[#d4af37]"
+          className="h-[36px] w-full rounded-[9px] border border-line bg-surface pl-8 pr-3 text-[13.5px] text-label outline-none transition-colors placeholder:text-label-4 focus:border-gold"
         />
       </div>
 
-      <div className="mt-2 max-h-[212px] space-y-1 overflow-y-auto rounded-[9px] border border-[#18385f]/55 bg-[#071a30]/45 p-1.5">
+      <div className="mt-2 max-h-[212px] space-y-1 overflow-y-auto rounded-[9px] border border-line bg-white/[0.03] p-1.5">
         <PickerRow
           label="Keine Bewerbung verknüpfen"
           selected={value === ''}
@@ -86,7 +86,7 @@ export function ApplicationPicker({ applications, value, onChange }: Application
         })}
 
         {filtered.length === 0 && (
-          <p className="px-2 py-3 text-center text-[12px] text-[#6b8299]">
+          <p className="px-2 py-3 text-center text-[12px] text-label-3">
             Keine passende Bewerbung gefunden.
           </p>
         )}
@@ -113,16 +113,16 @@ function PickerRow({
       className={cn(
         'flex w-full items-center gap-2 rounded-[8px] border px-2.5 py-2 text-left transition-colors',
         selected
-          ? 'border-[#d4af37]/40 bg-[#d4af37]/12'
-          : 'border-transparent hover:bg-[#102542]/60',
+          ? 'border-gold/40 bg-gold/12'
+          : 'border-transparent hover:bg-surface-2',
       )}
     >
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[#d4af37]">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-gold">
         {selected && <Check size={13} strokeWidth={2.5} />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-semibold text-white">{label}</span>
-        {meta && <span className="mt-0.5 block truncate text-[11px] text-[#6b8299]">{meta}</span>}
+        <span className="block truncate text-[13px] font-semibold text-label">{label}</span>
+        {meta && <span className="mt-0.5 block truncate text-[11px] text-label-3">{meta}</span>}
       </span>
     </button>
   )

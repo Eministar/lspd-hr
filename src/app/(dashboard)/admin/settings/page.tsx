@@ -388,15 +388,15 @@ export default function SettingsPage() {
                     key={roleId}
                     type="button"
                     onClick={() => removeRole(field, roleId)}
-                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-label hover:border-gold/50"
                     title="Rolle entfernen"
                 >
                   {roleName(roleId)}
-                  <span className="text-[#6b8299]">×</span>
+                  <span className="text-label-3">×</span>
                 </button>
             ))}
             {selected.length === 0 && (
-                <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+                <span className="text-[12px] text-label-4 py-1.5">Keine Rollen ausgewählt</span>
             )}
           </div>
         </div>
@@ -419,7 +419,7 @@ export default function SettingsPage() {
         <PageHeader title="Einstellungen" description="Systemweite Konfiguration für Organisation und Discord-Bot" />
 
         {/* Section nav */}
-        <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-5 backdrop-blur-md bg-[#061426]/85 border-b border-[#18385f]/40">
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-5 backdrop-blur-md bg-canvas border-b border-line">
           <div className="flex items-center gap-1.5 overflow-x-auto max-w-4xl">
             {[
               { id: 'general', label: 'Allgemein', icon: Building2 },
@@ -432,7 +432,7 @@ export default function SettingsPage() {
                 <a
                     key={item.id}
                     href={`#${item.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[12px] font-medium text-[#9fb0c4] hover:text-white hover:bg-[#102542] transition-colors whitespace-nowrap"
+                    className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[12px] font-medium text-label-2 hover:text-label hover:bg-surface-2 transition-colors whitespace-nowrap"
                 >
                   <item.icon size={13} /> {item.label}
                 </a>
@@ -443,10 +443,10 @@ export default function SettingsPage() {
         <div className="space-y-4 max-w-4xl">
           {/* Health card */}
           {discordData && (
-              <div className="glass-panel-elevated rounded-[14px] p-5">
+              <div className="glass-panel-elevated rounded-[12px] p-5">
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-[13.5px] font-semibold text-[#eee] flex items-center gap-2">
-                    <CheckCircle2 size={15} className="text-[#22c55e]" /> System-Status
+                  <h3 className="text-[13.5px] font-semibold text-label flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-green" /> System-Status
                   </h3>
                   <Button variant="secondary" size="sm" onClick={refetchDiscord}><RefreshCw size={13} /> Neu prüfen</Button>
                 </div>
@@ -458,17 +458,17 @@ export default function SettingsPage() {
                   ))}
                 </div>
                 {diag?.interactionEndpointUrl && (
-                    <div className="mt-3 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[11.5px] text-[#9fb0c4] flex items-center gap-2">
-                      <Link2 size={13} className="text-[#d4af37] shrink-0" />
-                      <span className="truncate">Interactions Endpoint: <code className="text-[#edf4fb]">{diag.interactionEndpointUrl}</code></span>
+                    <div className="mt-3 rounded-[10px] border border-line bg-surface px-3 py-2 text-[11.5px] text-label-2 flex items-center gap-2">
+                      <Link2 size={13} className="text-gold shrink-0" />
+                      <span className="truncate">Interactions Endpoint: <code className="text-label">{diag.interactionEndpointUrl}</code></span>
                     </div>
                 )}
               </div>
           )}
 
-          <div id="general" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4 flex items-center gap-2">
-              <Building2 size={15} className="text-[#d4af37]" /> Allgemein
+          <div id="general" className="glass-panel-elevated rounded-[12px] p-5 scroll-mt-section">
+            <h3 className="text-[13.5px] font-semibold text-label mb-4 flex items-center gap-2">
+              <Building2 size={15} className="text-gold" /> Allgemein
             </h3>
             <div className="space-y-3">
               <div className="flex items-end gap-2">
@@ -480,9 +480,9 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div id="badges" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
-            <h3 className="text-[13.5px] font-semibold text-[#eee] mb-4 flex items-center gap-2">
-              <Hash size={15} className="text-[#d4af37]" /> Dienstnummern
+          <div id="badges" className="glass-panel-elevated rounded-[12px] p-5 scroll-mt-section">
+            <h3 className="text-[13.5px] font-semibold text-label mb-4 flex items-center gap-2">
+              <Hash size={15} className="text-gold" /> Dienstnummern
             </h3>
             <div className="space-y-4">
               <div className="flex items-end gap-2">
@@ -491,13 +491,13 @@ export default function SettingsPage() {
                 </div>
                 <Button variant="secondary" size="sm" onClick={() => saveSetting('badgePrefix', badgePrefix)}><Save size={13} /></Button>
               </div>
-              <div className="rounded-[10px] border border-[#3d2d12] bg-[#1d1608]/70 p-3">
+              <div className="rounded-[10px] border border-gold/25 bg-gold/8 p-3">
                 <Checkbox
                   checked={allowDuplicateBadgeNumbers}
                   onCheckedChange={setAllowDuplicateBadgeNumbers}
                   label="Temporär doppelte Dienstnummern erlauben"
                 />
-                <p className="mt-2 text-[11.5px] leading-5 text-[#e8c979]">
+                <p className="mt-2 text-[11.5px] leading-5 text-gold-bright">
                   Nur als Übergang nutzen, um Officers sauber in Ränge zu sortieren. Gesperrte Dienstnummern bleiben weiterhin blockiert.
                 </p>
                 <Button
@@ -512,13 +512,13 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div id="discord-basics" className="glass-panel-elevated rounded-[14px] p-5 scroll-mt-section">
+          <div id="discord-basics" className="glass-panel-elevated rounded-[12px] p-5 scroll-mt-section">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-[13.5px] font-semibold text-[#eee] flex items-center gap-2">
-                  <MessagesSquare size={15} className="text-[#d4af37]" /> Discord Integration
+                <h3 className="text-[13.5px] font-semibold text-label flex items-center gap-2">
+                  <MessagesSquare size={15} className="text-gold" /> Discord Integration
                 </h3>
-                <p className="text-[11.5px] text-[#6b8299] mt-1">
+                <p className="text-[11.5px] text-label-3 mt-1">
                   Bot-Token wird über die Umgebung gesetzt. Rollen, Channel und Command-Rechte werden hier gepflegt.
                 </p>
               </div>
@@ -535,64 +535,64 @@ export default function SettingsPage() {
             </div>
 
             {(fullSyncProgress || fullSyncResult) && (
-              <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-3">
+              <div className="mb-4 rounded-[10px] border border-line bg-surface px-3 py-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-[12.5px] font-semibold text-[#edf4fb]">
+                    <p className="truncate text-[12.5px] font-semibold text-label">
                       {fullSyncProgress?.message ?? fullSyncResult?.message ?? 'Full-Sync'}
                     </p>
-                    <p className="mt-0.5 truncate text-[11px] text-[#6b8299]">
+                    <p className="mt-0.5 truncate text-[11px] text-label-3">
                       {fullSyncProgress?.current ? `Aktuell: ${fullSyncProgress.current}` : 'Kein Officer aktiv'}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2 text-[11px] text-[#9fb0c4]">
+                  <div className="flex shrink-0 flex-wrap gap-2 text-[11px] text-label-2">
                     <span>{fullSyncProgress?.processed ?? fullSyncResult?.total ?? 0}/{fullSyncProgress?.total ?? fullSyncResult?.total ?? 0}</span>
                     <span>{syncPercent}%</span>
                     <span>Rest: {formatSeconds(fullSyncProgress?.etaSeconds ?? null)}</span>
                   </div>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#102542]">
+                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full rounded-full bg-[#d4af37] transition-[width] duration-200"
+                    className="h-full rounded-full bg-gold transition-[width] duration-200"
                     style={{ width: `${fullSyncResult ? 100 : syncPercent}%` }}
                   />
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-[#9fb0c4] sm:grid-cols-4">
-                  <span>Synchronisiert: <b className="text-[#edf4fb]">{fullSyncProgress?.synced ?? fullSyncResult?.synced ?? 0}</b></span>
-                  <span>Übersprungen: <b className="text-[#edf4fb]">{fullSyncProgress?.skipped ?? fullSyncResult?.skipped ?? 0}</b></span>
-                  <span>Fehler: <b className={cn((fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0) > 0 ? 'text-[#fca5a5]' : 'text-[#edf4fb]')}>{fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0}</b></span>
-                  <span>Laufzeit: <b className="text-[#edf4fb]">{formatSeconds(fullSyncProgress?.elapsedSeconds ?? null)}</b></span>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-label-2 sm:grid-cols-4">
+                  <span>Synchronisiert: <b className="text-label">{fullSyncProgress?.synced ?? fullSyncResult?.synced ?? 0}</b></span>
+                  <span>Übersprungen: <b className="text-label">{fullSyncProgress?.skipped ?? fullSyncResult?.skipped ?? 0}</b></span>
+                  <span>Fehler: <b className={cn((fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0) > 0 ? 'text-red' : 'text-label')}>{fullSyncProgress?.failed ?? fullSyncResult?.failed ?? 0}</b></span>
+                  <span>Laufzeit: <b className="text-label">{formatSeconds(fullSyncProgress?.elapsedSeconds ?? null)}</b></span>
                 </div>
               </div>
             )}
 
             {!discordData?.botConfigured && (
-                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                <div className="mb-4 rounded-[10px] border border-gold/25 bg-gold/12 px-3 py-2 text-[12px] text-gold-bright">
                   DISCORD_BOT_TOKEN ist nicht gesetzt. Die Oberfläche kann gespeichert werden, Discord-Rollen und Channel werden aber erst mit Bot-Token geladen.
                 </div>
             )}
             {discordData && !discordData.diagnostics.guildConfigured && (
-                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                <div className="mb-4 rounded-[10px] border border-gold/25 bg-gold/12 px-3 py-2 text-[12px] text-gold-bright">
                   Guild-ID fehlt. Setze sie hier oder über DISCORD_GUILD_ID, sonst können Rollen und Commands nicht geladen werden.
                 </div>
             )}
             {discordData && !discordData.diagnostics.publicKeyConfigured && (
-                <div className="mb-4 rounded-[10px] border border-[#3d2d12] bg-[#1d1608] px-3 py-2 text-[12px] text-[#e8c979]">
+                <div className="mb-4 rounded-[10px] border border-gold/25 bg-gold/12 px-3 py-2 text-[12px] text-gold-bright">
                   DISCORD_PUBLIC_KEY fehlt. Discord-Buttons und Modals werden ohne diesen Public Key von der App abgelehnt.
                 </div>
             )}
             {discordData?.diagnostics.interactionEndpointUrl && (
-                <div className="mb-4 rounded-[10px] border border-[#173456] bg-[#07172b] px-3 py-2 text-[12px] text-[#9fb0c4]">
-                  Interactions Endpoint URL in Discord: <code className="text-[#edf4fb]">{discordData.diagnostics.interactionEndpointUrl}</code>
+                <div className="mb-4 rounded-[10px] border border-line bg-surface px-3 py-2 text-[12px] text-label-2">
+                  Interactions Endpoint URL in Discord: <code className="text-label">{discordData.diagnostics.interactionEndpointUrl}</code>
                 </div>
             )}
             {discordData?.diagnostics.rolesError && (
-                <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+                <div className="mb-4 rounded-[10px] border border-red/30 bg-red/14 px-3 py-2 text-[12px] text-red">
                   Rollen konnten nicht geladen werden: {discordData.diagnostics.rolesError}
                 </div>
             )}
             {discordData?.diagnostics.channelsError && (
-                <div className="mb-4 rounded-[10px] border border-[#3b1616] bg-[#1c1111] px-3 py-2 text-[12px] text-[#fca5a5]">
+                <div className="mb-4 rounded-[10px] border border-red/30 bg-red/14 px-3 py-2 text-[12px] text-red">
                   Channel konnten nicht geladen werden: {discordData.diagnostics.channelsError}
                 </div>
             )}
@@ -625,7 +625,7 @@ export default function SettingsPage() {
                     onValueChange={(updateChannelId) => setDiscordForm({ ...discordForm, updateChannelId })}
                     options={channelOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Channel für Update-Mitteilungen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
                 </p>
               </div>
@@ -636,7 +636,7 @@ export default function SettingsPage() {
                     onValueChange={(sanctionsChannelId) => setDiscordForm({ ...discordForm, sanctionsChannelId })}
                     options={channelOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Channel für neue Sanktionen. Leer lassen, um den Ankündigungs-Channel zu nutzen.
                 </p>
               </div>
@@ -647,7 +647,7 @@ export default function SettingsPage() {
                     onValueChange={(dutyStatusChannelId) => setDiscordForm({ ...discordForm, dutyStatusChannelId })}
                     options={channelOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Öffentliches Panel ohne Stempelbuttons; zeigt automatisch, wer als Police online ist.
                 </p>
               </div>
@@ -658,7 +658,7 @@ export default function SettingsPage() {
                     onValueChange={(dutyAdminLogChannelId) => setDiscordForm({ ...discordForm, dutyAdminLogChannelId })}
                     options={channelOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Optionaler Admin-Channel für Dienstzeit-Hinweise. Leer lassen, um den Ankündigungs-Channel zu nutzen.
                 </p>
               </div>
@@ -669,7 +669,7 @@ export default function SettingsPage() {
                     onValueChange={(absenceStatusChannelId) => setDiscordForm({ ...discordForm, absenceStatusChannelId })}
                     options={channelOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Öffentliches Panel mit allen aktuell abgemeldeten Officers. Leer lassen, um den Dienstzeiten- oder Ankündigungs-Channel zu nutzen.
                 </p>
               </div>
@@ -680,7 +680,7 @@ export default function SettingsPage() {
                     onValueChange={(humanResourcesRoleId) => setDiscordForm({ ...discordForm, humanResourcesRoleId })}
                     options={roleOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Diese Rolle wird in Mitteilungen zu Sanktionen als Human Resources erwähnt.
                 </p>
               </div>
@@ -691,7 +691,7 @@ export default function SettingsPage() {
                     onValueChange={(promotionBlockRoleId) => setDiscordForm({ ...discordForm, promotionBlockRoleId })}
                     options={roleOptions}
                 />
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Officer mit aktiver Uprank-Sperre erhalten diese Rolle automatisch (und verlieren sie beim Aufheben).
                 </p>
               </div>
@@ -699,40 +699,40 @@ export default function SettingsPage() {
 
             <div id="roles" className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5 scroll-mt-section">
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Dashboard Login-Rollen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Dashboard Login-Rollen</p>
                 {renderRolePicker('authLoginRoleIds')}
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Mitglieder mit mindestens einer dieser Rollen dürfen sich anmelden. Rollen, die bei Benutzergruppen hinterlegt sind, zählen ebenfalls als Login-Rollen.
                 </p>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Bewerberportal-Rollen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Bewerberportal-Rollen</p>
                 {renderRolePicker('applicantRoleIds')}
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Mitglieder mit mindestens einer dieser Rollen dürfen das Bewerberportal öffnen, erhalten dadurch aber keine Dashboard-Rechte.
                 </p>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Vertragseinsicht</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Vertragseinsicht</p>
                 {renderRolePicker('contractAuditorRoleIds')}
-                <p className="text-[11px] text-[#5c728a] mt-1.5">
+                <p className="text-[11px] text-label-3 mt-1.5">
                   Mitglieder mit mindestens einer dieser Rollen dürfen jeden Arbeitsvertrag über dessen Link einsehen (nur lesend, ohne Dashboard-Rechte). Unterschreiben kann weiterhin nur der Officer selbst.
                 </p>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Feste Mitarbeiterrollen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Feste Mitarbeiterrollen</p>
                 {renderRolePicker('employeeRoleIds')}
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rollen, die Discord-Commands ausführen dürfen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Rollen, die Discord-Commands ausführen dürfen</p>
                 {renderRolePicker('commandRoleIds')}
               </div>
             </div>
 
             <div id="mappings" className="mt-5 space-y-5 scroll-mt-section">
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Benutzergruppen zu Discord-Rollen</p>
-                <p className="text-[11px] text-[#5c728a] mb-3">
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Benutzergruppen zu Discord-Rollen</p>
+                <p className="text-[11px] text-label-3 mb-3">
                   Beim Login werden alle passenden Benutzergruppen gestapelt. Eine Benutzergruppe passt, sobald ein Mitglied mindestens eine der hinterlegten Rollen hat.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -760,15 +760,15 @@ export default function SettingsPage() {
                                     key={roleId}
                                     type="button"
                                     onClick={() => removeAuthGroupRole(group.id, roleId)}
-                                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#234568] bg-[#0a1a33]/70 px-2.5 py-1.5 text-[12px] text-[#edf4fb] hover:border-[#d4af37]/50"
+                                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-label hover:border-gold/50"
                                     title="Rolle entfernen"
                                 >
                                   {roleName(roleId)}
-                                  <span className="text-[#6b8299]">×</span>
+                                  <span className="text-label-3">×</span>
                                 </button>
                             ))}
                             {selectedRoleIds.length === 0 && (
-                                <span className="text-[12px] text-[#4a6585] py-1.5">Keine Rollen ausgewählt</span>
+                                <span className="text-[12px] text-label-4 py-1.5">Keine Rollen ausgewählt</span>
                             )}
                           </div>
                         </div>
@@ -777,7 +777,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Rangrollen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Rangrollen</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {discordData?.ranks.map((rank) => (
                       <Select
@@ -792,7 +792,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Ausbildungsrollen</p>
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Ausbildungsrollen</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {discordData?.trainings.map((training) => (
                       <Select
@@ -807,8 +807,8 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="block text-[12.5px] font-medium text-[#9fb0c4] mb-2">Individuelle Unit-Rollen</p>
-                <p className="mb-3 text-[11px] leading-5 text-[#58718c]">
+                <p className="block text-[12.5px] font-medium text-label-2 mb-2">Individuelle Unit-Rollen</p>
+                <p className="mb-3 text-[11px] leading-5 text-label-4">
                   Für gruppierte Units pflegst du die Rangrolle direkt unter „Units verwalten“. Diese Liste bleibt für eigenständige oder ältere Units verfügbar.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -824,7 +824,7 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
-              <div className="border-t border-[#18385f]/40 pt-5">
+              <div className="border-t border-line pt-5">
                 <TierManager roles={discordData?.roles ?? []} ranks={discordData?.ranks ?? []} />
               </div>
             </div>
@@ -833,9 +833,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Sticky save bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-md bg-[#061426]/85 border-t border-[#18385f]/50 px-4 sm:px-6 py-3">
+        <div className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-md bg-canvas border-t border-line px-4 sm:px-6 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-            <p className="text-[12px] text-[#7089a5] truncate">
+            <p className="text-[12px] text-label-3 truncate">
               Discord-Konfiguration · Änderungen werden erst nach Speichern aktiv
             </p>
             <Button size="sm" onClick={saveDiscordConfig}><Save size={13} /> Discord speichern</Button>

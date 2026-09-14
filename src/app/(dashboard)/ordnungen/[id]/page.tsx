@@ -37,18 +37,18 @@ export default async function OrdnungPage({ params }: { params: Promise<{ id: st
           action={
             <Link
               href="/ordnungen"
-              className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all duration-150 hover:bg-[#17375f] active:scale-[0.98]"
+              className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-surface-2 px-3 text-[12.5px] font-medium text-label shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all duration-150 hover:bg-surface-3 active:scale-[0.98]"
             >
               <ArrowLeft size={14} strokeWidth={2} />
               Zurück
             </Link>
           }
         />
-        <div className="flex items-start gap-3 p-4 rounded-[12px] bg-[#1a2a3a]/40 border border-[#ff6b6b]/30">
-          <AlertCircle size={18} className="text-[#ff6b6b] shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-[12px] bg-white/[0.03] border border-red/18">
+          <AlertCircle size={18} className="text-red shrink-0 mt-0.5" />
           <div>
-            <p className="text-[13px] font-medium text-[#ff6b6b]">Fehler beim Laden</p>
-            <p className="text-[12px] text-[#888] mt-1">{error}</p>
+            <p className="text-[13px] font-medium text-red">Fehler beim Laden</p>
+            <p className="text-[12px] text-label-2 mt-1">{error}</p>
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default async function OrdnungPage({ params }: { params: Promise<{ id: st
         action={
           <Link
             href="/ordnungen"
-            className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-[#102542] px-3 text-[12.5px] font-medium text-[#edf4fb] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all duration-150 hover:bg-[#17375f] active:scale-[0.98]"
+            className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[8px] bg-surface-2 px-3 text-[12.5px] font-medium text-label shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all duration-150 hover:bg-surface-3 active:scale-[0.98]"
           >
             <ArrowLeft size={14} strokeWidth={2} />
             Zurück
@@ -72,7 +72,7 @@ export default async function OrdnungPage({ params }: { params: Promise<{ id: st
       />
 
       <article
-        className="markdown-document glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/40 p-5 sm:p-7"
+        className="markdown-document glass-panel-elevated rounded-[12px] border border-line p-5 sm:p-7"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </div>

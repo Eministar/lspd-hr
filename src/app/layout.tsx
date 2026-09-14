@@ -1,7 +1,15 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import './lspd-polish.css'
 import Providers from './providers'
+
+// Auf Apple-Geräten gewinnt SF Pro im Font-Stack; Inter ist die Entsprechung für Windows.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -58,8 +66,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className="dark">
-      <body className="min-h-screen bg-[#061426] bg-pattern text-[#edf4fb] font-sans">
+    <html lang="de" className={`dark ${inter.variable}`}>
+      <body className="min-h-screen bg-canvas text-label font-sans">
         <Providers>
           {children}
         </Providers>

@@ -137,10 +137,10 @@ function personName(person: Person | null | undefined) {
 }
 
 function proposalTone(status: Proposal['status'], stale: boolean) {
-  if (status === 'ACCEPTED') return { label: 'Angenommen', className: 'bg-[#34d399]/12 text-[#6ee7b7]' }
-  if (status === 'REJECTED') return { label: 'Abgelehnt', className: 'bg-[#f87171]/12 text-[#fca5a5]' }
-  if (stale) return { label: 'Veraltet', className: 'bg-[#8ea4bd]/12 text-[#b7c5d8]' }
-  return { label: 'Offen', className: 'bg-[#fbbf24]/12 text-[#f3d77a]' }
+  if (status === 'ACCEPTED') return { label: 'Angenommen', className: 'bg-green/12 text-green' }
+  if (status === 'REJECTED') return { label: 'Abgelehnt', className: 'bg-red/12 text-red' }
+  if (stale) return { label: 'Veraltet', className: 'bg-white/[0.03] text-label-2' }
+  return { label: 'Offen', className: 'bg-yellow/12 text-gold-bright' }
 }
 
 function SnapshotComparison({ before, after }: { before: Snapshot; after: Snapshot }) {
@@ -160,15 +160,15 @@ function SnapshotComparison({ before, after }: { before: Snapshot; after: Snapsh
   ]
 
   return (
-    <div className="divide-y divide-[#18385f]/45 overflow-hidden rounded-[10px] border border-[#18385f]/55 bg-[#07182c]/50">
+    <div className="divide-y divide-line overflow-hidden rounded-[10px] border border-line bg-surface">
       {rows.map((row) => (
         <div key={row.label} className="grid gap-1.5 px-3 py-2.5 sm:grid-cols-[105px_1fr_18px_1fr] sm:items-center">
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#536b86]">{row.label}</span>
-          <span className={cn('break-words text-[12px]', row.changed ? 'text-[#8ea4bd] line-through decoration-[#f87171]/55' : 'text-[#8ea4bd]')}>
+          <span className="text-[11px] font-semibold text-label-4">{row.label}</span>
+          <span className={cn('break-words text-[12px]', row.changed ? 'text-label-2 line-through decoration-red/55' : 'text-label-2')}>
             {row.oldValue}
           </span>
-          <ArrowRight size={12} className="hidden text-[#4a6585] sm:block" />
-          <span className={cn('break-words text-[12px] font-medium', row.changed ? 'text-[#edf4fb]' : 'text-[#8ea4bd]')}>
+          <ArrowRight size={12} className="hidden text-label-4 sm:block" />
+          <span className={cn('break-words text-[12px] font-medium', row.changed ? 'text-label' : 'text-label-2')}>
             {row.newValue}
           </span>
         </div>
@@ -192,7 +192,7 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
 
   const entry = data?.entry
   const direction = entry && entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'DEMOTION' : 'PROMOTION'
-  const accent = direction === 'DEMOTION' ? '#f87171' : '#34d399'
+  const accent = direction === 'DEMOTION' ? '#ff453a' : '#32d74b'
   const DirectionIcon = direction === 'DEMOTION' ? ArrowDownRight : ArrowUpRight
   const openProposals = useMemo(() => entry?.proposals.filter((item) => item.status === 'PENDING').length ?? 0, [entry?.proposals])
 
@@ -202,10 +202,10 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
   if (!data || !entry) {
     return (
       <div className="mx-auto max-w-3xl py-12">
-        <div className="glass-panel-elevated rounded-[14px] p-8 text-center">
-          <p className="text-[15px] font-semibold text-white">Eintrag nicht verfügbar</p>
-          <p className="mt-1 text-[12.5px] text-[#8ea4bd]">{loadError ?? 'Die Rangänderung wurde nicht gefunden.'}</p>
-          <Link href="/promotions" className="mt-5 inline-flex text-[12.5px] font-medium text-[#d4af37] hover:text-[#f3d77a]">Zurück zur Übersicht</Link>
+        <div className="glass-panel-elevated rounded-[12px] p-8 text-center">
+          <p className="text-[15px] font-semibold text-label">Eintrag nicht verfügbar</p>
+          <p className="mt-1 text-[12.5px] text-label-2">{loadError ?? 'Die Rangänderung wurde nicht gefunden.'}</p>
+          <Link href="/promotions" className="mt-5 inline-flex text-[12.5px] font-medium text-gold hover:text-gold-bright">Zurück zur Übersicht</Link>
         </div>
       </div>
     )
@@ -304,46 +304,46 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
   return (
     <div className="mx-auto max-w-[1180px] pb-10">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <Link href="/promotions" className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#8ea4bd] transition-colors hover:text-white">
+        <Link href="/promotions" className="inline-flex items-center gap-1.5 text-[12px] font-medium text-label-2 transition-colors hover:text-label">
           <ArrowLeft size={14} /> Rangänderungen
         </Link>
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.13em] text-[#4a6585]">Akte · Rev. {entry.revision}</span>
+        <span className="font-mono text-[11px] text-label-4">Akte · Rev. {entry.revision}</span>
       </div>
 
-      <section className="relative overflow-hidden rounded-[16px] border border-[#234568]/65 bg-[linear-gradient(135deg,rgba(15,35,64,.96),rgba(6,20,38,.96))] p-5 shadow-[0_18px_48px_rgba(0,0,0,.2)] sm:p-6">
+      <section className="relative overflow-hidden rounded-[16px] border border-line bg-surface p-5 sm:p-6">
         <div className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: accent }} />
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <OfficerAvatar officer={entry.officer} size="lg" ringColor={entry.proposedRank.color} />
             <div className="min-w-0">
               <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.13em]" style={{ color: accent }}>
+                <span className="text-[11px] font-semibold" style={{ color: accent }}>
                   <span className="inline-flex items-center gap-1"><DirectionIcon size={12} /> {direction === 'DEMOTION' ? 'D-Rank' : 'Up-Rank'}</span>
                 </span>
-                <span className={cn('rounded-[5px] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', entry.executed ? 'bg-[#34d399]/12 text-[#6ee7b7]' : 'bg-[#fbbf24]/12 text-[#f3d77a]')}>
+                <span className={cn('rounded-[5px] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', entry.executed ? 'bg-green/12 text-green' : 'bg-yellow/12 text-gold-bright')}>
                   {entry.executed ? 'Durchgeführt' : 'Offen'}
                 </span>
               </div>
-              <h1 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-white sm:text-[25px]">
+              <h1 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-label sm:text-[25px]">
                 {entry.officer.firstName} {entry.officer.lastName}
               </h1>
-              <p className="mt-1 text-[12px] text-[#8ea4bd]">
+              <p className="mt-1 text-[12px] text-label-2">
                 Dienstnummer #{displayBadgeNumber(entry.officer.badgeNumber)} · Liste „{entry.list.name}“
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RankTag rank={entry.currentRank} />
-                <ArrowRight size={14} className="text-[#536b86]" />
+                <ArrowRight size={14} className="text-label-4" />
                 <RankTag rank={entry.proposedRank} />
-                {entry.newBadgeNumber && <span className="text-[11px] font-medium text-[#d4af37]">neue DN #{displayBadgeNumber(entry.newBadgeNumber)}</span>}
+                {entry.newBadgeNumber && <span className="text-[11px] font-medium text-gold">neue DN #{displayBadgeNumber(entry.newBadgeNumber)}</span>}
               </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <div className="inline-flex items-center gap-1 rounded-[9px] border border-[#234568]/65 bg-[#07182c]/55 p-1" role="group" aria-label="Abstimmung zur Rangänderung">
+            <div className="inline-flex items-center gap-1 rounded-[9px] border border-line bg-surface p-1" role="group" aria-label="Abstimmung zur Rangänderung">
               {([
-                ['HIGHER', entry.voteSummary.higherVotes, ArrowUp, 'Höher einstufen', 'bg-[#34d399]/16 text-[#6ee7b7]'],
-                ['CONFIRM', entry.voteSummary.confirmVotes, Check, 'Vorschlag bestätigen', 'bg-[#d4af37]/16 text-[#f3d77a]'],
-                ['LOWER', entry.voteSummary.lowerVotes, ArrowDown, 'Niedriger einstufen', 'bg-[#f87171]/16 text-[#fca5a5]'],
+                ['HIGHER', entry.voteSummary.higherVotes, ArrowUp, 'Höher einstufen', 'bg-green/16 text-green'],
+                ['CONFIRM', entry.voteSummary.confirmVotes, Check, 'Vorschlag bestätigen', 'bg-gold/16 text-gold-bright'],
+                ['LOWER', entry.voteSummary.lowerVotes, ArrowDown, 'Niedriger einstufen', 'bg-red/16 text-red'],
               ] as const).map(([value, count, Icon, label, activeClassName]) => (
                 <button
                   key={value}
@@ -355,10 +355,10 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
                   title={entry.voteSummary.currentUserVote === value ? `${label} – Stimme entfernen` : label}
                   className={cn(
                     'inline-flex h-8 min-w-11 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[11.5px] font-semibold tabular-nums transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 disabled:cursor-not-allowed disabled:opacity-40',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-40',
                     entry.voteSummary.currentUserVote === value
                       ? activeClassName
-                      : 'text-[#8ea4bd] hover:bg-[#17375f]/65 hover:text-white',
+                      : 'text-label-2 hover:bg-surface-3 hover:text-label',
                   )}
                 >
                   <Icon size={13} /> {count}
@@ -377,43 +377,43 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_330px]">
         <main className="space-y-4">
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-5">
+          <section className="glass-panel-elevated rounded-[12px] border border-line p-5">
             <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#d4af37]/10 text-[#d4af37]"><FilePenLine size={14} /></span>
-              <h2 className="text-[14px] font-semibold text-white">Begründung</h2>
+              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-gold/10 text-gold"><FilePenLine size={14} /></span>
+              <h2 className="text-[14px] font-semibold text-label">Begründung</h2>
             </div>
-            <p className={cn('whitespace-pre-wrap text-[13px] leading-6', entry.note ? 'text-[#c6d2df]' : 'italic text-[#536b86]')}>
+            <p className={cn('whitespace-pre-wrap text-[13px] leading-6', entry.note ? 'text-label-2' : 'italic text-label-4')}>
               {entry.note || 'Für diesen Eintrag wurde keine Begründung hinterlegt.'}
             </p>
           </section>
 
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-5">
+          <section className="glass-panel-elevated rounded-[12px] border border-line p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#fbbf24]/10 text-[#f3d77a]"><FilePenLine size={14} /></span>
-                <h2 className="text-[14px] font-semibold text-white">Änderungsvorschläge</h2>
+                <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-yellow/10 text-gold-bright"><FilePenLine size={14} /></span>
+                <h2 className="text-[14px] font-semibold text-label">Änderungsvorschläge</h2>
               </div>
-              <span className="text-[10.5px] font-medium text-[#8ea4bd]">{openProposals} offen · {entry.proposals.length} gesamt</span>
+              <span className="text-[11px] font-medium text-label-2">{openProposals} offen · {entry.proposals.length} gesamt</span>
             </div>
             {entry.proposals.length === 0 ? (
-              <p className="rounded-[10px] border border-dashed border-[#234568]/55 px-4 py-7 text-center text-[12px] text-[#536b86]">Noch keine Änderungsvorschläge.</p>
+              <p className="rounded-[10px] border border-dashed border-line px-4 py-7 text-center text-[12px] text-label-4">Noch keine Änderungsvorschläge.</p>
             ) : (
               <div className="space-y-3">
                 {entry.proposals.map((proposal) => {
                   const tone = proposalTone(proposal.status, proposal.isStale)
                   return (
-                    <article key={proposal.id} className="rounded-[12px] border border-[#1e3a5c]/55 bg-[#091b31]/55 p-4">
+                    <article key={proposal.id} className="rounded-[12px] border border-line bg-surface p-4">
                       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-[12.5px] font-semibold text-[#edf4fb]">{personName(proposal.author)}</p>
-                          <p className="mt-0.5 text-[10.5px] text-[#536b86]">{formatDateTime(proposal.createdAt)} · basiert auf Revision {proposal.baseRevision}</p>
+                          <p className="text-[12.5px] font-semibold text-label">{personName(proposal.author)}</p>
+                          <p className="mt-0.5 text-[11px] text-label-4">{formatDateTime(proposal.createdAt)} · basiert auf Revision {proposal.baseRevision}</p>
                         </div>
-                        <span className={cn('rounded-[5px] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide', tone.className)}>{tone.label}</span>
+                        <span className={cn('rounded-[5px] px-2 py-1 text-[11px] font-semibold uppercase tracking-wide', tone.className)}>{tone.label}</span>
                       </div>
-                      {proposal.reason && <p className="mb-3 whitespace-pre-wrap text-[12px] leading-5 text-[#b7c5d8]">{proposal.reason}</p>}
+                      {proposal.reason && <p className="mb-3 whitespace-pre-wrap text-[12px] leading-5 text-label-2">{proposal.reason}</p>}
                       <SnapshotComparison before={proposal.beforeState} after={proposal.afterState} />
                       {proposal.reviewedAt && (
-                        <p className="mt-3 text-[10.5px] text-[#6b8299]">
+                        <p className="mt-3 text-[11px] text-label-3">
                           Geprüft von {personName(proposal.reviewedBy)} am {formatDateTime(proposal.reviewedAt)}
                           {proposal.reviewNote ? ` · ${proposal.reviewNote}` : ''}
                         </p>
@@ -435,103 +435,103 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
             )}
           </section>
 
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-5">
+          <section className="glass-panel-elevated rounded-[12px] border border-line p-5">
             <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#38bdf8]/10 text-[#7dd3fc]"><MessageSquare size={14} /></span>
-              <h2 className="text-[14px] font-semibold text-white">Kommentare</h2>
-              <span className="text-[10.5px] text-[#536b86]">{entry.comments.length}</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-cyan/10 text-cyan"><MessageSquare size={14} /></span>
+              <h2 className="text-[14px] font-semibold text-label">Kommentare</h2>
+              <span className="text-[11px] text-label-4">{entry.comments.length}</span>
             </div>
             <div className="space-y-3">
-              {entry.comments.length === 0 && <p className="py-2 text-[12px] italic text-[#536b86]">Noch keine Kommentare.</p>}
+              {entry.comments.length === 0 && <p className="py-2 text-[12px] italic text-label-4">Noch keine Kommentare.</p>}
               {entry.comments.map((item) => {
                 const canDelete = item.authorId === data.currentUserId || data.permissions.canModerateComments
                 return (
-                  <div key={item.id} className="group flex gap-3 rounded-[10px] border border-[#18385f]/45 bg-[#091b31]/45 p-3">
+                  <div key={item.id} className="group flex gap-3 rounded-[10px] border border-line bg-white/[0.03] p-3">
                     <span
                       role="img"
                       aria-label={`Discord-Profilbild von ${personName(item.author)}`}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#4a6585]/60 bg-[#17375f]/65 bg-cover bg-center text-[#8ea4bd]"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface-3 bg-cover bg-center text-label-2"
                       style={{ backgroundImage: item.author?.avatarUrl ? `url(${item.author.avatarUrl})` : undefined }}
                     >
                       {!item.author?.avatarUrl && <UserRound size={14} aria-hidden />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11.5px] font-semibold text-[#edf4fb]">{personName(item.author)}</p>
+                        <p className="text-[11.5px] font-semibold text-label">{personName(item.author)}</p>
                         <div className="flex items-center gap-1.5">
-                          <time className="text-[10px] text-[#536b86]">{formatDateTime(item.createdAt)}</time>
+                          <time className="text-[11px] text-label-4">{formatDateTime(item.createdAt)}</time>
                           {canDelete && (
-                            <button onClick={() => removeComment(item.id)} className="rounded-[5px] p-1 text-[#4a6585] opacity-0 transition-all hover:bg-[#321218]/60 hover:text-[#fca5a5] group-hover:opacity-100 focus-visible:opacity-100" aria-label="Kommentar löschen">
+                            <button onClick={() => removeComment(item.id)} className="rounded-[5px] p-1 text-label-4 opacity-0 transition-all hover:bg-red/8 hover:text-red group-hover:opacity-100 focus-visible:opacity-100" aria-label="Kommentar löschen">
                               <Trash2 size={11} />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-[12.5px] leading-5 text-[#b7c5d8]">{item.content}</p>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-[12.5px] leading-5 text-label-2">{item.content}</p>
                     </div>
                   </div>
                 )
               })}
             </div>
             {data.permissions.canComment && (
-              <div className="mt-4 border-t border-[#18385f]/45 pt-4">
+              <div className="mt-4 border-t border-line pt-4">
                 <Textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Kommentar zur Rangänderung …" rows={3} maxLength={2000} />
                 <div className="mt-2 flex items-center justify-between gap-2">
-                  <span className="text-[10px] tabular-nums text-[#4a6585]">{comment.length}/2000</span>
+                  <span className="text-[11px] tabular-nums text-label-4">{comment.length}/2000</span>
                   <Button size="sm" loading={mutating} disabled={!comment.trim()} onClick={submitComment}><Send size={12} /> Kommentieren</Button>
                 </div>
               </div>
             )}
           </section>
 
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-5">
+          <section className="glass-panel-elevated rounded-[12px] border border-line p-5">
             <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#8ea4bd]/10 text-[#b7c5d8]"><History size={14} /></span>
-              <h2 className="text-[14px] font-semibold text-white">Versionsverlauf</h2>
+              <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-white/[0.03] text-label-2"><History size={14} /></span>
+              <h2 className="text-[14px] font-semibold text-label">Versionsverlauf</h2>
             </div>
             <div className="space-y-3">
               {entry.history.map((record) => (
-                <article key={record.id} className="relative border-l border-[#234568]/65 pl-4">
-                  <span className="absolute -left-[4.5px] top-1.5 h-2 w-2 rounded-full border border-[#d4af37]/60 bg-[#0a1a33]" />
+                <article key={record.id} className="relative border-l border-line pl-4">
+                  <span className="absolute -left-[4.5px] top-1.5 h-2 w-2 rounded-full border border-gold/60 bg-surface" />
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-[11.5px] font-semibold text-[#edf4fb]">
+                      <p className="text-[11.5px] font-semibold text-label">
                         {record.action === 'CREATED' ? 'Eintrag erstellt' : record.action === 'PROPOSAL_ACCEPTED' ? 'Vorschlag übernommen' : 'Direkt bearbeitet'}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-[#536b86]">Revision {record.revision} · {personName(record.actor)} · {formatDateTime(record.createdAt)}</p>
+                      <p className="mt-0.5 text-[11px] text-label-4">Revision {record.revision} · {personName(record.actor)} · {formatDateTime(record.createdAt)}</p>
                     </div>
                   </div>
                   {record.action !== 'CREATED' && <SnapshotComparison before={record.beforeState} after={record.afterState} />}
                 </article>
               ))}
               {entry.history.length === 0 && (
-                <p className="text-[12px] text-[#536b86]">Dieser ältere Eintrag besitzt noch keinen protokollierten Versionsstand.</p>
+                <p className="text-[12px] text-label-4">Dieser ältere Eintrag besitzt noch keinen protokollierten Versionsstand.</p>
               )}
             </div>
           </section>
         </main>
 
         <aside className="space-y-4">
-          <section className="glass-panel-elevated rounded-[14px] border border-[#1e3a5c]/45 p-4">
-            <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-[#536b86]">Akteninformationen</p>
+          <section className="glass-panel-elevated rounded-[12px] border border-line p-4">
+            <p className="mb-3 text-[11px] font-semibold text-label-4">Akteninformationen</p>
             <dl className="space-y-3">
               <div className="flex items-start gap-2.5">
-                <UserRound size={14} className="mt-0.5 text-[#d4af37]" />
-                <div><dt className="text-[10px] text-[#536b86]">Eingereicht von</dt><dd className="text-[12px] font-medium text-[#edf4fb]">{personName(entry.createdBy)}</dd></div>
+                <UserRound size={14} className="mt-0.5 text-gold" />
+                <div><dt className="text-[11px] text-label-4">Eingereicht von</dt><dd className="text-[12px] font-medium text-label">{personName(entry.createdBy)}</dd></div>
               </div>
               <div className="flex items-start gap-2.5">
-                <Clock3 size={14} className="mt-0.5 text-[#d4af37]" />
-                <div><dt className="text-[10px] text-[#536b86]">Eingereicht am</dt><dd className="text-[12px] font-medium text-[#edf4fb]">{formatDateTime(entry.createdAt)}</dd></div>
+                <Clock3 size={14} className="mt-0.5 text-gold" />
+                <div><dt className="text-[11px] text-label-4">Eingereicht am</dt><dd className="text-[12px] font-medium text-label">{formatDateTime(entry.createdAt)}</dd></div>
               </div>
               <div className="flex items-start gap-2.5">
-                <ShieldCheck size={14} className="mt-0.5 text-[#d4af37]" />
-                <div><dt className="text-[10px] text-[#536b86]">Freigabe</dt><dd className="text-[12px] font-medium text-[#edf4fb]">{entry.executed ? `Durchgeführt von ${personName(entry.executedBy)}` : 'Noch nicht durchgeführt'}</dd></div>
+                <ShieldCheck size={14} className="mt-0.5 text-gold" />
+                <div><dt className="text-[11px] text-label-4">Freigabe</dt><dd className="text-[12px] font-medium text-label">{entry.executed ? `Durchgeführt von ${personName(entry.executedBy)}` : 'Noch nicht durchgeführt'}</dd></div>
               </div>
             </dl>
           </section>
-          <section className="rounded-[14px] border border-[#d4af37]/20 bg-[#d4af37]/[0.055] p-4">
-            <p className="text-[11.5px] font-semibold text-[#f3d77a]">Wer darf was?</p>
-            <p className="mt-1.5 text-[11px] leading-5 text-[#8ea4bd]">
+          <section className="rounded-[12px] border border-gold/20 bg-gold/[0.055] p-4">
+            <p className="text-[11.5px] font-semibold text-gold-bright">Wer darf was?</p>
+            <p className="mt-1.5 text-[11px] leading-5 text-label-2">
               Der Ersteller und Nutzer mit Vollzugriff dürfen direkt bearbeiten und Vorschläge prüfen. Alle anderen reichen Änderungen zur Freigabe ein.
             </p>
           </section>

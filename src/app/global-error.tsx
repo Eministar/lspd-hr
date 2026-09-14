@@ -38,7 +38,7 @@ export default function GlobalError({
 
   return (
     <html lang="de" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#061426] text-[#edf4fb] font-sans" suppressHydrationWarning>
+      <body className="min-h-screen bg-canvas text-label font-sans" suppressHydrationWarning>
         <title>Schwerer Fehler · LSPD Department</title>
         <StatusPageFrame
           icon={ServerCrash}
