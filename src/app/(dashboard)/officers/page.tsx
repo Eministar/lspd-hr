@@ -873,7 +873,7 @@ export default function OfficersPage() {
                       >
                         {/* Desktop / tablet: table view */}
                         <div className="hidden lg:block glass-panel rounded-[10px] overflow-hidden mt-1 mb-2">
-                          <table className="w-full table-fixed">
+                          <table className="lspd-table w-full table-fixed">
                             <thead>
                               <tr>
                                 <th className="w-[3px] p-0" />

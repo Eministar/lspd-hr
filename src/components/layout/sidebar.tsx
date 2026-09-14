@@ -77,9 +77,7 @@ function isActivePath(pathname: string, href: string) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="department-nav-label">
-      <span>{children}</span>
-    </p>
+    <p className="lspd-nav-label">{children}</p>
   )
 }
 
@@ -93,14 +91,13 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
 
   return (
     <Link
-      href={item.href}
-      aria-current={active ? 'page' : undefined}
+      href={item.href} aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
       className={cn(
-        'department-nav-link group relative flex items-center gap-3 px-3 py-[9px] rounded-lg text-[13.5px] transition-colors duration-150 overflow-hidden',
+        'lspd-nav-link group relative flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] transition-colors duration-150 overflow-hidden',
         active
-          ? 'font-semibold'
-          : 'text-[#a6b5c3] hover:bg-[#1e2d3b] hover:text-[#edf4fb]'
+          ? 'bg-gradient-to-r from-[#d4af37] to-[#c9a52f] text-[#071b33] font-semibold shadow-[0_2px_8px_rgba(212,175,55,0.25)]'
+          : 'text-[#a0b3ca] hover:bg-[#153353] hover:text-[#edf4fb] '
       )}
     >
       {!active && (
@@ -144,10 +141,22 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="department-brand">
-        <Image src="/shield.webp" alt="LSPD Wappen" width={48} height={48} priority />
-        <div><strong>LSPD</strong><small>Personal & Einsatzverwaltung</small></div>
+      <div className="px-4 pt-5 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="relative h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_70%)]" />
+            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full relative" priority />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[19px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD</span>
+            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.14em] uppercase mt-0.5">Department</span>
+          </div>
+        </div>
+        <div className="relative mt-4 h-px bg-gradient-to-r from-transparent via-[#d4af37]/25 to-transparent">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] shadow-[0_0_6px_rgba(212,175,55,0.6)]" />
+        </div>
       </div>
+
       <nav className="flex-1 space-y-[2px] overflow-y-auto px-2.5 lg:pb-12">
         <SectionLabel>Navigation</SectionLabel>
         {mainNav
@@ -222,7 +231,7 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-12 flex items-center justify-between px-3 sidebar-gradient border-b border-[#d4af37]/15 backdrop-blur-md">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-12 flex items-center justify-between px-3 lspd-sidebar border-b border-[#d4af37]/15 backdrop-blur-md">
         <button
           onClick={() => setMobileOpen(true)}
           className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-[#d4af37] hover:bg-[#0d2444] transition-colors"
@@ -237,7 +246,7 @@ export function Sidebar() {
         <div className="w-9" aria-hidden />
       </div>
 
-      <aside className="hidden lg:flex lg:flex-col lg:w-[268px] lg:min-h-screen sidebar-gradient border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:w-[244px] lg:min-h-screen lspd-sidebar border-r border-[#d4af37]/10 fixed left-0 top-0 bottom-0 z-30">
         <NavContent pathname={pathname} onNavigate={closeMobile} user={user} logout={logout} />
       </aside>
 
@@ -256,7 +265,7 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: -260 }}
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-[268px] sidebar-gradient border-r border-[#d4af37]/10 z-50 shadow-2xl"
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-[244px] lspd-sidebar border-r border-[#d4af37]/10 z-50 shadow-2xl"
             >
               <button
                 onClick={() => setMobileOpen(false)}
@@ -270,7 +279,7 @@ export function Sidebar() {
         )}
       </AnimatePresence>
 
-      <div className="hidden lg:block lg:w-[268px] lg:shrink-0" />
+      <div className="hidden lg:block lg:w-[244px] lg:shrink-0" />
     </>
   )
 }

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Edit, ShieldCheck, UserCog } from 'lucide-react'
+import { Edit, Search, ShieldCheck, UserCog, X } from 'lucide-react'
+import { matchesSearch } from '@/lib/admin-search'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -69,13 +70,18 @@ function UserAvatar({ user }: { user: User }) {
 }
 
 export default function UsersPage() {
-  const { data: users, loading, refetch } = useFetch<User[]>('/api/users')
+  const { data: users, loading, error: loadError, refetch } = useFetch<User[]>('/api/users')
   const { data: groupOptions } = useFetch<GroupOption[]>('/api/users/group-options')
   const { data: unitOptions } = useFetch<UnitOption[]>('/api/units')
   const { user: currentUser, refreshUser } = useAuth()
   const { execute } = useApi()
   const { addToast } = useToast()
   const [editUser, setEditUser] = useState<User | null>(null)
+  const [query, setQuery] = useState('')
+  const visibleUsers = (users ?? []).filter(user => matchesSearch(query, [
+    user.displayName, user.username, user.discordUsername, user.discordId,
+    ...user.groups.map(group => group.name), ...user.units?.flatMap(unit => [unit.name, unit.key]) ?? [],
+  ]))
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([])
@@ -159,15 +165,26 @@ export default function UsersPage() {
         description="Discord-User mit Dashboard-Zugriff ansehen, Gruppen und direkte Rechte verwalten"
       />
 
+      <div className="lspd-card mb-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-lg">
+          <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9bb1cb]" />
+          <input type="search" aria-label="Benutzer suchen" value={query} onChange={event => setQuery(event.target.value)}
+            placeholder="Name, Discord-ID, Gruppe oder Unit suchen …"
+            className="h-11 w-full rounded-xl border border-[#355576]/70 bg-[#06172c]/70 pl-10 pr-10 text-[13px] text-white placeholder:text-[#8298b3] focus:border-[#d4af37] focus:outline-none" />
+          {query && <button type="button" onClick={() => setQuery('')} aria-label="Suche zurücksetzen" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[#b2c4da] hover:bg-[#17375f]"><X size={15} /></button>}
+        </div>
+        <p role="status" className="text-[12px] text-[#a3b8d0] tabular-nums">{visibleUsers.length} von {users?.length ?? 0} Benutzern</p>
+      </div>
+      {loadError && <div role="alert" className="mb-4 rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-[13px] text-red-200">Benutzer konnten nicht geladen werden. <button className="underline" onClick={() => void refetch()}>Erneut versuchen</button></div>}
       <div className="glass-panel-elevated rounded-[14px] overflow-hidden">
         <div className="divide-y divide-[#18385f]">
-          {users?.map((user, index) => (
+          {visibleUsers.map((user, index) => (
             <motion.div
               key={user.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.02 }}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#0f2340] transition-colors"
+              transition={{ duration: 0.15, delay: query ? 0 : Math.min(index * 0.015, 0.15) }}
+              className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 hover:bg-[#153353]/65 transition-colors"
             >
               <UserAvatar user={user} />
               <div className="flex-1 min-w-0">
@@ -179,22 +196,23 @@ export default function UsersPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-[11.5px] text-[#4a6585]">
+                <p className="mt-1 text-[12px] leading-5 text-[#92a9c3] break-words">
                   @{user.discordUsername || user.username} · {user.groups.length ? user.groups.map((g) => g.name).join(', ') : 'Keine Gruppe'} · {user.permissions.length} direkte Rechte · Letzter Login: {formatDate(user.lastLoginAt)}
                 </p>
               </div>
-              <span className="text-[11.5px] font-medium text-[#888] bg-[#0f2340] px-2 py-[3px] rounded-[5px]">
+              <span className="hidden sm:inline text-[11.5px] font-medium text-[#a8bdd5] bg-[#153353] px-2.5 py-1 rounded-lg shrink-0">
                 {user.groups.length ? `${user.groups.length} Gruppen` : 'Keine Gruppe'}
               </span>
-              <button onClick={() => openEdit(user)} className="p-1.5 rounded-[6px] hover:bg-[#0f2340] transition-colors">
-                <Edit size={13} className="text-[#4a6585]" />
+              <button onClick={() => openEdit(user)} aria-label={`${user.displayName} bearbeiten`} className="p-2.5 rounded-lg border border-[#345374]/50 hover:bg-[#17375f] transition-colors">
+                <Edit size={15} className="text-[#d9bd75]" />
               </button>
             </motion.div>
           ))}
-          {(!users || users.length === 0) && (
+          {!loadError && visibleUsers.length === 0 && (
             <div className="text-center py-16">
               <UserCog size={28} className="mx-auto mb-3 text-[#333]" strokeWidth={1.5} />
-              <p className="text-[13px] text-[#999]">Keine Discord-Benutzer gefunden</p>
+              <p className="text-[13px] text-[#a3b8d0]">{query ? 'Keine Benutzer für diese Suche gefunden.' : 'Keine Discord-Benutzer vorhanden.'}</p>
+              {query && <Button variant="secondary" size="sm" className="mt-4" onClick={() => setQuery('')}>Alle Benutzer anzeigen</Button>}
             </div>
           )}
         </div>

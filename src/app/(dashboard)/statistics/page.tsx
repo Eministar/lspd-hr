@@ -388,7 +388,7 @@ export default function StatisticsPage() {
         </div>
 
         <div className="overflow-x-auto rounded-[11px] border border-white/[0.055]">
-          <table className="w-full min-w-[920px] border-collapse text-left">
+          <table className="lspd-table w-full min-w-[920px] border-collapse text-left">
             <thead className="bg-[#07182c]/90">
               <tr className="text-[9.5px] uppercase tracking-[0.1em] text-[#647c96]">
                 <th className="px-3 py-2.5 font-semibold">PDler / Bearbeiter</th>

@@ -115,19 +115,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="department-shell flex min-h-screen">
-      <a href="#workspace-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-[#e4c477] focus:text-[#101923] focus:p-3">Zum Inhalt springen</a>
+    <div className="lspd-workspace flex min-h-screen">
       <Sidebar />
       <ChangeHistoryControls />
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="department-topbar">
-          <span><strong>LSPD</strong><span className="hidden sm:inline"> / Department-Verwaltung</span></span>
-          <div className="flex flex-wrap justify-end items-center gap-4">
-            {hasPermission(user, 'settings:manage') && <BackupStatus />}
-            <span className="hidden sm:inline truncate">{user.displayName}</span>
-          </div>
-        </header>
-        <div id="workspace-content" tabIndex={-1} className="department-content flex-1">
+        <div className="lspd-content flex-1 px-4 pb-10 pt-16 sm:px-6 lg:px-8 lg:pt-8">
+          {hasPermission(user, 'settings:manage') && (
+            <div className="mb-3 flex justify-end"><BackupStatus /></div>
+          )}
           {children}
         </div>
         <AppFooter />

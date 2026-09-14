@@ -47,6 +47,7 @@ import {
   type UnitModuleSelection,
 } from '@/lib/unit-modules'
 import { cn } from '@/lib/utils'
+import { hasMissingUnitGroup, matchesSearch } from '@/lib/admin-search'
 
 const MODULE_PERMISSIONS = moduleControlledPermissions()
 const EXTRA_PERMISSIONS = PERMISSIONS.filter((permission) => !MODULE_PERMISSIONS.has(permission))
@@ -373,11 +374,11 @@ export default function UnitsPage() {
     ...(discordData?.roles ?? []).filter((role) => !role.managed).sort((a, b) => (b.position ?? 0) - (a.position ?? 0)).map((role) => ({ value: role.id, label: `${role.name} · ${role.id}` })),
   ], [discordData?.roles])
   const groupOptions = useMemo<SelectOption[]>(() => [{ value: '', label: 'Keine Unitgruppe (eigenständig)' }, ...(localGroups ?? []).map((group) => ({ value: group.id, label: group.name }))], [localGroups])
-  const ungroupedUnits = useMemo(() => (units ?? []).filter((unit) => !unit.groupId), [units])
+  const orphanedUnits = useMemo(() => groups ? (units ?? []).filter(unit => hasMissingUnitGroup(unit, groups)) : [], [units, groups])
+  const ungroupedUnits = useMemo(() => (units ?? []).filter(unit => !unit.groupId || (groups !== null && hasMissingUnitGroup(unit, groups))), [units, groups])
+  const visibleUngroupedUnits = ungroupedUnits.filter(unit => matchesSearch(query, [unit.name, unit.key, unit.description]))
   const visibleGroups = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase('de')
-    if (!normalized) return localGroups ?? []
-    return (localGroups ?? []).filter((group) => [group.name, group.key, group.description ?? '', ...group.units.flatMap((unit) => [unit.name, unit.key])].some((value) => value.toLocaleLowerCase('de').includes(normalized)))
+    return (localGroups ?? []).filter(group => matchesSearch(query, [group.name, group.key, group.description, ...group.units.flatMap(unit => [unit.name, unit.key])]))
   }, [localGroups, query])
 
   const refreshAll = async () => { await Promise.all([refetchUnits(), refetchGroups()]) }
@@ -405,7 +406,8 @@ export default function UnitsPage() {
   }
   const openEditUnit = (unit: Unit) => {
     setEditingUnit(unit)
-    setUnitForm({ name: unit.name, description: unit.description ?? '', color: unit.color, icon: sanitizeUnitIcon(unit.icon), sortOrder: unit.sortOrder, active: unit.active, groupId: unit.groupId ?? '', isLeadership: unit.isLeadership, discordRoleId: unit.discordRoleId ?? '' })
+    const missingGroup = groups ? hasMissingUnitGroup(unit, groups) : false
+    setUnitForm({ name: unit.name, description: unit.description ?? '', color: unit.color, icon: sanitizeUnitIcon(unit.icon), sortOrder: unit.sortOrder, active: unit.active, groupId: missingGroup ? '' : unit.groupId ?? '', isLeadership: missingGroup ? false : unit.isLeadership, discordRoleId: unit.discordRoleId ?? '' })
     setUnitModalOpen(true)
   }
   const goToGroupStep = (step: number) => {
@@ -417,7 +419,7 @@ export default function UnitsPage() {
     try { await execute(editingGroup ? `/api/unit-groups/${editingGroup.id}` : '/api/unit-groups', { method: editingGroup ? 'PATCH' : 'POST', body: JSON.stringify(payload) }); addToast({ type: 'success', title: editingGroup ? 'Unitgruppe gespeichert' : 'Unitgruppe erstellt', message: 'Füge jetzt die Unterränge hinzu und markiere die Leitung.' }); setGroupModalOpen(false); await refreshAll() } catch (error) { addToast({ type: 'error', title: 'Unitgruppe konnte nicht gespeichert werden', message: error instanceof Error ? error.message : '' }) }
   }
   const saveUnit = async () => {
-    const payload = { name: unitForm.name.trim(), description: unitForm.description.trim(), color: unitForm.color, icon: unitForm.icon, sortOrder: unitForm.sortOrder, active: unitForm.active, groupId: unitForm.groupId || null, isLeadership: unitForm.isLeadership, discordRoleId: unitForm.discordRoleId || null, showInNavigation: false }
+    const payload = { name: unitForm.name.trim(), description: unitForm.description.trim(), color: unitForm.color, icon: unitForm.icon, sortOrder: unitForm.sortOrder, active: unitForm.active, groupId: unitForm.groupId || null, isLeadership: unitForm.isLeadership, discordRoleId: unitForm.discordRoleId || null, showInNavigation: unitForm.groupId ? false : editingUnit?.showInNavigation ?? false }
     try { await execute(editingUnit ? `/api/units/${editingUnit.id}` : '/api/units', { method: editingUnit ? 'PATCH' : 'POST', body: JSON.stringify(payload) }); addToast({ type: 'success', title: editingUnit ? 'Unterrang gespeichert' : 'Unterrang hinzugefügt', message: unitForm.isLeadership ? 'Die Leitungsrolle wird beim nächsten Discord-Sync berücksichtigt.' : '' }); setUnitModalOpen(false); await refreshAll() } catch (error) { addToast({ type: 'error', title: 'Unterrang konnte nicht gespeichert werden', message: error instanceof Error ? error.message : '' }) }
   }
   const handleReorderUnits = async (groupId: string, reorderedUnits: Unit[]) => {
@@ -466,40 +468,48 @@ export default function UnitsPage() {
   const loadError = unitsError || groupsError
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="lspd-units mx-auto max-w-7xl">
       <PageHeader
         eyebrow="Organisation"
-        title="Unitgruppen verwalten"
+        title="Units verwalten"
         description="Bündle Ränge zu übersichtlichen Unitgruppen. Die Gruppe steuert Arbeitsbereiche und Navigation; Unterränge steuern die Besetzung und Leitung."
         action={
-          <Button size="sm" onClick={openCreateGroup}>
+          <Button size="sm" onClick={openCreateGroup} disabled={Boolean(loadError)}>
             <Plus size={14} strokeWidth={2.2} /> Unitgruppe erstellen
           </Button>
         }
       />
-      <UnitFlowExplanation />
+      <details className="lspd-card mb-5 px-5 py-4">
+        <summary className="cursor-pointer text-[13px] font-medium text-[#b6cae2]">Wie funktionieren Gruppen, Units und Leitung?</summary>
+        <div className="mt-4"><UnitFlowExplanation /></div>
+      </details>
+      {orphanedUnits.length > 0 && <div role="status" className="mb-5 rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-[#e8cd8e]">
+        <strong>{orphanedUnits.length} Units ohne gültige Gruppe gefunden.</strong> Die frühere Gruppe existiert nicht mehr. Diese Units bleiben unter <a href="#einzelne-units" className="underline underline-offset-4">Einzelne Units</a> sichtbar. Über „Bearbeiten“ kannst du sie einer vorhandenen Gruppe zuordnen. Officer- und Benutzerzuweisungen bleiben erhalten.
+      </div>}
 
-      <div className="mb-4 rounded-[15px] border border-[#18385f]/70 bg-[#081a31]/55 p-3">
+      <div className="lspd-card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
         <label className="relative block max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#58718c]" size={14} />
-          <span className="sr-only">Unitgruppen durchsuchen</span>
+          <span className="sr-only">Units und Gruppen durchsuchen</span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Gruppe oder Unterrang suchen"
-            className="h-9 w-full rounded-[9px] border border-[#18385f]/70 bg-[#07182e]/70 pl-9 pr-3 text-[12px] text-[#edf4fb] outline-none transition-all placeholder:text-[#4a6585] focus:border-[#d4af37]"
+            placeholder="Unit, Gruppe oder Schlüssel suchen"
+            className="h-11 w-full rounded-xl border border-[#355576]/70 bg-[#07182e]/70 pl-9 pr-3 text-[13px] text-[#edf4fb] outline-none transition-colors placeholder:text-[#8298b3] focus:border-[#d4af37]"
           />
         </label>
+        <p className="text-[12px] text-[#a3b8d0]">{units?.length ?? 0} Units in {localGroups.length} Gruppen</p>
       </div>
       {loadError && (
         <div className="mb-4 rounded-[13px] border border-[#fb7185]/25 bg-[#fb7185]/[0.06] px-4 py-3 text-[11.5px] text-[#fda4af]">
           Unitgruppen konnten nicht geladen werden: {loadError}
+          <button type="button" onClick={() => void refreshAll()} className="ml-3 underline underline-offset-4">Erneut laden</button>
         </div>
       )}
 
       <div className="space-y-4">
         {visibleGroups.map((group, index) => {
-          const expanded = expandedGroup === group.id
+          const expanded = Boolean(query.trim()) || expandedGroup === group.id
           const leadershipCount = group.units.filter((unit) => unit.isLeadership).length
           const counts = group.assignmentCounts ?? { officers: 0, directUsers: 0 }
           return (
@@ -635,7 +645,7 @@ export default function UnitsPage() {
           )
         })}
 
-        <section className="overflow-hidden rounded-[16px] border border-dashed border-[#285078] bg-[#081a31]/45">
+        <section id="einzelne-units" className="scroll-mt-20 overflow-hidden rounded-[16px] border border-[#285078] bg-[#081a31]/45">
           <div className="flex flex-col gap-3 border-b border-[#18385f]/55 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#607994]">Einzelne Units</p>
@@ -648,13 +658,7 @@ export default function UnitsPage() {
             </Button>
           </div>
           <div className="divide-y divide-[#18385f]/50">
-            {ungroupedUnits
-              .filter(
-                (unit) =>
-                  !query.trim() ||
-                  `${unit.name} ${unit.key}`.toLocaleLowerCase('de').includes(query.trim().toLocaleLowerCase('de')),
-              )
-              .map((unit) => {
+            {visibleUngroupedUnits.map((unit) => {
                 const counts = unit.assignmentCounts ?? { officers: 0, directUsers: 0 }
                 return (
                   <div key={unit.id} className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center">
@@ -667,6 +671,8 @@ export default function UnitsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-[11.5px] font-semibold text-[#d9e4ef]">{unit.name}</span>
+                        {groups && hasMissingUnitGroup(unit, groups) && <span className="rounded-md bg-amber-300/10 px-2 py-0.5 text-[11px] text-[#e8cd8e]">Gruppe fehlt</span>}
+                        {!unit.active && <span className="text-[11px] text-[#91a7c2]">Inaktiv</span>}
                         <span className="font-mono text-[9px] text-[#526d89]">{unit.key}</span>
                       </div>
                       <span className="mt-1 block text-[10px] text-[#607994]">
@@ -677,7 +683,8 @@ export default function UnitsPage() {
                       <button
                         type="button"
                         onClick={() => void promoteUnitToGroup(unit)}
-                        disabled={saving}
+                        disabled={saving || Boolean(unit.groupId)}
+                        title={unit.groupId ? 'Zuerst über Bearbeiten die fehlende Gruppenzuordnung auflösen.' : undefined}
                         className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[#d4af37]/30 bg-[#d4af37]/[0.06] px-2.5 text-[10px] font-semibold text-[#e2c45d] transition-colors hover:border-[#d4af37]/60 hover:bg-[#d4af37]/[0.12] disabled:pointer-events-none disabled:opacity-50"
                       >
                         <Layers3 size={12} /> Als Gruppe nutzen
@@ -693,21 +700,19 @@ export default function UnitsPage() {
                   </div>
                 )
               })}
-            {ungroupedUnits.length === 0 && (
+            {visibleUngroupedUnits.length === 0 && (
               <div className="px-5 py-8 text-center text-[10.5px] text-[#607994]">
-                Alle Units sind bereits in einer Gruppe organisiert.
+                {query ? 'Keine einzelnen Units für diese Suche gefunden.' : 'Alle Units sind bereits in einer Gruppe organisiert.'}
               </div>
             )}
           </div>
         </section>
 
-        {visibleGroups.length === 0 && ungroupedUnits.length === 0 && (
+        {!loadError && visibleGroups.length === 0 && visibleUngroupedUnits.length === 0 && (
           <div className="rounded-[16px] border border-dashed border-[#234568] py-16 text-center">
             <Layers3 size={28} className="mx-auto mb-3 text-[#4f6c89]" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium text-[#9eb1c6]">Noch keine Unitgruppen vorhanden</p>
-            <Button className="mt-4" size="sm" onClick={openCreateGroup}>
-              <Plus size={13} /> Erste Unitgruppe erstellen
-            </Button>
+            <p className="text-[13px] font-medium text-[#9eb1c6]">{query ? 'Keine passenden Units oder Gruppen gefunden.' : 'Noch keine Unitgruppen vorhanden'}</p>
+            {query ? <Button className="mt-4" size="sm" variant="secondary" onClick={() => setQuery('')}>Suche zurücksetzen</Button> : <Button className="mt-4" size="sm" onClick={openCreateGroup}><Plus size={13} /> Erste Unitgruppe erstellen</Button>}
           </div>
         )}
       </div>
@@ -1058,11 +1063,12 @@ export default function UnitsPage() {
       <Modal
         open={unitModalOpen}
         onClose={() => setUnitModalOpen(false)}
-        title={editingUnit ? 'Unterrang bearbeiten' : 'Unterrang hinzufügen'}
+        title={editingUnit ? 'Unit bearbeiten' : 'Unit hinzufügen'}
         description="Rang, Gruppenzugehörigkeit und automatische Discord-Rollen festlegen."
         size="lg"
       >
         <div className="space-y-5">
+          {editingUnit && groups && hasMissingUnitGroup(editingUnit, groups) && <div className="rounded-xl border border-amber-300/25 bg-amber-300/[0.07] p-4 text-[13px] leading-6 text-[#e8cd8e]">Die bisherige Gruppe existiert nicht mehr. Wähle eine neue Gruppe oder speichere diese Unit als eigenständige Unit. Ihre bestehenden Zuweisungen bleiben erhalten.</div>}
           <div>
             <p className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#d4af37]/75">Unitrang</p>
             <h3 className="mt-1.5 text-[16px] font-semibold text-white">Welche Rolle hat dieser Unterrang?</h3>

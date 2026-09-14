@@ -180,7 +180,7 @@ export function ChangeHistoryControls() {
   }, [apply])
 
   return (
-    <div className="fixed right-3 top-1.5 z-50 inline-grid grid-cols-2 items-center gap-1 rounded-[9px] border border-[#d4af37]/15 bg-[#081a30]/95 p-1 shadow-[0_6px_20px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:bottom-[58px] lg:left-[10px] lg:right-auto lg:top-auto lg:w-[248px]">
+    <div className="fixed right-3 top-1.5 z-50 inline-grid grid-cols-2 items-center gap-1 rounded-[9px] border border-[#d4af37]/15 bg-[#081a30]/95 p-1 shadow-[0_6px_20px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:bottom-[58px] lg:left-[10px] lg:right-auto lg:top-auto lg:w-[224px]">
       <HistoryButton
         label="Rückgängig"
         shortcut="Strg/Cmd+Z"

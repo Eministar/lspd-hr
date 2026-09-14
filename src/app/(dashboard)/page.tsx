@@ -167,7 +167,7 @@ const ACCENTS: Record<AccentKey, AccentTokens> = {
   rose: { text: '#fda4af', bg: 'rgba(244,114,182,0.10)', ring: 'rgba(244,114,182,0.30)', glow: 'rgba(244,114,182,0.20)' },
 }
 
-const panelClass = 'department-card'
+const panelClass = 'lspd-card'
 const surfaceClass = 'rounded-[12px] border border-white/[0.05] bg-[#0a2240]/55'
 
 const statCards: { key: StatKey; label: string; icon: LucideIcon; href: string; permission: Permission; accent: AccentKey; hint: string }[] = [
@@ -483,23 +483,36 @@ export default function DashboardPage() {
   return (
       <div className="max-w-7xl mx-auto space-y-6 pb-4">
         {/* ===== HERO ===== */}
-        <section className="department-hero">
+        <section className="lspd-hero relative overflow-hidden rounded-[20px] border border-[#1a3559]/55 bg-gradient-to-br from-[#0c2545] via-[#0a1f3a] to-[#06152a] shadow-[0_2px_4px_rgba(0,0,0,0.18),0_18px_48px_rgba(0,0,0,0.28)]">
+          {/* decorative */}
+          <div className="absolute inset-0 pointer-events-none opacity-70" aria-hidden>
+            <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-[#d4af37]/10 blur-3xl" />
+            <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[#1e3a8a]/30 blur-3xl" />
+            <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(212,175,55,0.06) 1px, transparent 0)',
+                  backgroundSize: '28px 28px',
+                  maskImage: 'radial-gradient(ellipse at top, black 30%, transparent 80%)',
+                }}
+            />
+          </div>
           <div className="relative p-6 sm:p-7">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d4af37]/25 bg-[#d4af37]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#f0d060]">
                   <Sparkles size={10} strokeWidth={2.25} />
                   Übersicht
                 </span>
-                  <span className="department-hero-date">{dateLine}</span>
+                  <span className="text-[10.5px] font-medium text-[#6b8299] uppercase tracking-[0.16em]">{dateLine}</span>
                   {timeLine && (
                       <span className="hidden sm:inline-flex items-center gap-1 text-[10.5px] font-mono text-[#6b8299] uppercase tracking-[0.1em]">
                     · {timeLine} Uhr
                   </span>
                   )}
                 </div>
-                <h1 className="text-[26px] sm:text-[30px] font-semibold text-white tracking-[-0.025em] leading-tight">
+                <h1 className="text-[28px] sm:text-[34px] font-semibold text-white tracking-[-0.025em] leading-tight">
                   {greeting}{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}.
                 </h1>
                 <p className="text-[13.5px] text-[#9fb0c4] mt-1.5 max-w-xl leading-relaxed">
@@ -554,7 +567,7 @@ export default function DashboardPage() {
                 >
                   <Link
                       href={card.href}
-                      className="department-card department-stat group relative block p-5 transition-colors duration-150 hover:border-[var(--accent-ring)] overflow-hidden"
+                      className="lspd-kpi group relative block rounded-[14px] border border-[#1a3559]/55 bg-[#091e36]/70 backdrop-blur-md p-4 transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--accent-ring)] overflow-hidden"
                       style={{
                         // @ts-expect-error CSS custom prop
                         '--accent-ring': accent.ring,
@@ -575,9 +588,9 @@ export default function DashboardPage() {
                       <ArrowUpRight size={13} className="text-[#4a6585] group-hover:text-[#d4af37] transition-colors" strokeWidth={1.85} />
                     </div>
                     <div className="relative mt-3">
-                      <p className="text-[34px] font-semibold text-white tabular-nums leading-none tracking-tight">{stats[card.key]}</p>
+                      <p className="lspd-kpi-number text-white tabular-nums leading-none tracking-tight">{stats[card.key]}</p>
                       <p className="text-[12px] text-[#c2d2e3] mt-2 font-medium leading-tight">{label}</p>
-                      <p className="text-[10.5px] text-[#6b8299] mt-1 leading-tight">{subLine}</p>
+                      <p className="text-[11px] text-[#91a7c2] mt-1.5 leading-tight">{subLine}</p>
                     </div>
                   </Link>
                 </motion.div>

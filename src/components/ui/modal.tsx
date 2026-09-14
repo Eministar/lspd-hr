@@ -54,7 +54,7 @@ export function Modal({ open, onClose, title, description, children, className, 
                 <div className="p-6">
                   {title ? (
                     <div className="mb-5">
-                      <Dialog.Title className="text-[15px] font-semibold text-white">
+                      <Dialog.Title className="lspd-modal-title font-semibold text-white">
                         {title}
                       </Dialog.Title>
                       {description ? (

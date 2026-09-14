@@ -110,6 +110,14 @@ export async function POST(req: NextRequest) {
 
     const key = createUnitKey(name)
     if (!key) return error('Name ergibt keinen gültigen Unit-Key')
+    const existing = await prisma.unit.findUnique({
+      where: { key }, select: { name: true, active: true, groupId: true },
+    })
+    if (existing) {
+      const group = existing.groupId ? await prisma.unitGroup.findUnique({ where: { id: existing.groupId }, select: { name: true } }) : null
+      const location = group ? `in der Gruppe „${group.name}“` : existing.groupId ? 'unter „Einzelne Units“ mit dem Hinweis „Gruppe fehlt“' : 'unter „Einzelne Units“'
+      return error(`Die Unit „${existing.name}“ (${key}) existiert bereits${existing.active ? '' : ' und ist inaktiv'}. Du findest sie ${location}. Bearbeite die vorhandene Unit, statt sie neu anzulegen.`, 409)
+    }
     const modules = sanitizeUnitModules(body.modules)
     const groupId = typeof body.groupId === 'string' && body.groupId.trim() ? body.groupId.trim() : null
     if (groupId && !await prisma.unitGroup.findUnique({ where: { id: groupId }, select: { id: true } })) {
@@ -142,7 +150,7 @@ export async function POST(req: NextRequest) {
     if (groupId || unitDiscordRoleId) queueAllOfficerRoleSync()
     return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules) }, 201)
   } catch (e: unknown) {
-    if (isUniqueConstraintError(e)) return error('Unit existiert bereits')
+    if (isUniqueConstraintError(e)) return error('Eine Unit mit diesem Schlüssel wurde bereits angelegt. Aktualisiere die Verwaltung und suche nach dem Namen oder Schlüssel.', 409)
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()
     if (msg === 'Forbidden') return error('Keine Berechtigung', 403)

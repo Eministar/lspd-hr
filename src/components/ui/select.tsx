@@ -41,11 +41,11 @@ export interface SelectProps {
 
 const triggerBase = cn(
   'flex w-full min-w-0 items-center justify-between gap-2',
-  'bg-[#0a1a33] text-[#edf4fb] border border-[#405264]',
+  'bg-[#0a1a33] text-[#edf4fb] border border-[#355576]/70',
   'focus:outline-none focus:border-[#d4af37] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.08)]',
   'data-[state=open]:border-[#d4af37]/60',
   'disabled:cursor-not-allowed disabled:opacity-40',
-  'transition-[background-color,border-color,box-shadow] duration-150',
+  'transition-[border-color,box-shadow,background-color] duration-150',
   'px-3 text-left',
   '[&_[data-placeholder]]:text-[#4a6585]',
   'aria-invalid:border-red-900'
@@ -119,7 +119,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(function 
           className={cn(
             triggerBase,
             'cursor-pointer',
-            size === 'default' && 'h-[40px] rounded-[9px] text-[13.5px]',
+            size === 'default' && 'h-[36px] rounded-[9px] text-[13.5px]',
             size === 'sm' && 'h-[34px] rounded-[8px] text-[13px]',
             error && 'border-red-500/50'
           )}
