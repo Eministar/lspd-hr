@@ -104,7 +104,7 @@ export function VisitorPortal() {
   if (authLoading) return <PageLoader />
 
   return (
-    <main className="min-h-screen bg-[#061426] bg-pattern text-[#edf4fb]">
+    <main className="lspd-public min-h-screen text-[#edf4fb]">
       <div className="mx-auto flex w-full max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 border-b border-[#18385f]/55 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <Link href="/besucherportal" className="flex min-w-0 items-center gap-3">
@@ -139,14 +139,14 @@ export function VisitorPortal() {
           </div>
         </header>
 
-        <section className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-stretch">
-          <div className="lspd-portal-hero lspd-card p-6 sm:p-8">
+        <section id="bewerbung" className="scroll-mt-section mb-10 grid grid-cols-1 gap-8 py-6 lg:grid-cols-[1fr_320px] lg:items-center lg:py-10">
+          <div className="lspd-portal-intro py-2 lg:pr-10">
             <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#d4af37]/80">Öffentlicher Bereich</p>
             <h1 className="max-w-3xl text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[36px]">
-              Informationen für Besucher und Bewerber.
+              Dein Zugang zum LSPD.
             </h1>
             <p className="mt-4 max-w-2xl text-[13.5px] leading-6 text-[#9fb0c4]">
-              Hier findest du Bewerbungen, veröffentlichte Pressemitteilungen und die sichtbare Mitarbeiterliste. Interne HR- und Polizeiinhalte bleiben im Dashboard.
+              Bewirb dich für den Polizeidienst, entdecke Neuigkeiten aus dem Department und lerne unser Team kennen.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link href="/bewerbung">
@@ -155,18 +155,6 @@ export function VisitorPortal() {
                   Bewerbung öffnen
                 </Button>
               </Link>
-              <a href="#presse">
-                <Button size="lg" variant="secondary">
-                  <Megaphone size={16} />
-                  Pressemitteilungen
-                </Button>
-              </a>
-              <a href="#mitarbeiter">
-                <Button size="lg" variant="secondary">
-                  <Users size={16} />
-                  Mitarbeiterliste
-                </Button>
-              </a>
             </div>
           </div>
 
@@ -222,26 +210,6 @@ export function VisitorPortal() {
               </div>
             )}
           </aside>
-        </section>
-
-        <section id="bewerbung" className="scroll-mt-section mb-6 lspd-card p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="mb-2 flex items-center gap-2">
-                <Briefcase size={16} className="text-[#d4af37]" />
-                <h2 className="text-[15px] font-semibold text-white">Bewerbungen</h2>
-              </div>
-              <p className="max-w-2xl text-[12.5px] leading-5 text-[#8ea4bd]">
-                Im Bewerbungsbereich beantwortest du die Fragen und siehst danach live deinen aktuellen Status.
-              </p>
-            </div>
-            <Link href="/bewerbung">
-              <Button size="sm">
-                Bewerbung öffnen
-                <ArrowRight size={13} />
-              </Button>
-            </Link>
-          </div>
         </section>
 
         <section id="presse" className="scroll-mt-section mb-6">
@@ -326,6 +294,7 @@ export function VisitorPortal() {
               <div className="relative w-full sm:w-[320px]">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a6585]" strokeWidth={1.75} />
                 <input
+                  aria-label="Mitarbeiter durchsuchen"
                   value={officerSearch}
                   onChange={(event) => setOfficerSearch(event.target.value)}
                   placeholder="Name, DN, Rang oder Unit..."

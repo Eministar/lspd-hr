@@ -9,11 +9,11 @@ import {
   Shield, GraduationCap, UserCog, Settings, LogOut, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
   ClipboardList, Megaphone, FileText, Gavel,
-  History, DatabaseZap } from 'lucide-react'
+  History, DatabaseZap, Search, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
-import { hasAnyPermission, hasPermission, type Permission } from '@/lib/permissions'
+import { hasPermission, type Permission } from '@/lib/permissions'
 import Image from 'next/image'
 import { useFetch } from '@/hooks/use-fetch'
 import { unitIconComponent } from '@/components/units/unit-icon'
@@ -72,52 +72,30 @@ const accountNav: NavItem[] = [
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
-  return pathname.startsWith(href)
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="lspd-nav-label">{children}</p>
-  )
-}
-
-function SectionDivider() {
-  return <div className="my-3 mx-3 h-px bg-gradient-to-r from-transparent via-[#d4af37]/10 to-transparent" />
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate: () => void }) {
   const active = isActivePath(pathname, item.href)
   const Icon = item.icon
+  return <Link href={item.href} aria-current={active ? 'page' : undefined} onClick={onNavigate}
+    className={cn('lspd-nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-colors', active ? 'font-semibold text-[#e5c681]' : 'text-[#a8b8cb] hover:bg-white/[0.04] hover:text-white')}>
+    <Icon size={17} strokeWidth={1.7} className="shrink-0" />
+    <span className="truncate">{item.name}</span>
+  </Link>
+}
 
-  return (
-    <Link
-      href={item.href} aria-current={active ? 'page' : undefined}
-      onClick={onNavigate}
-      className={cn(
-        'lspd-nav-link group relative flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] transition-colors duration-150 overflow-hidden',
-        active
-          ? 'bg-gradient-to-r from-[#d4af37] to-[#c9a52f] text-[#071b33] font-semibold shadow-[0_2px_8px_rgba(212,175,55,0.25)]'
-          : 'text-[#a0b3ca] hover:bg-[#153353] hover:text-[#edf4fb] '
-      )}
-    >
-      {!active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-0 rounded-r-full bg-[#d4af37] transition-all duration-300 group-hover:h-[14px]" />
-      )}
-      {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] rounded-r-full bg-[#f0d060] shadow-[0_0_8px_rgba(240,208,96,0.6)]" />
-      )}
-      <Icon
-        size={18}
-        strokeWidth={active ? 2.25 : 1.75}
-        style={!active && item.color ? { color: item.color } : undefined}
-        className={cn('shrink-0 transition-transform duration-200', !active && 'group-hover:scale-110')}
-      />
-      <span className="truncate">{item.name}</span>
-      {active && (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#071b33]/40" />
-      )}
-    </Link>
-  )
+function NavGroup({ title, items, pathname, onNavigate, searching }: { title: string; items: NavItem[]; pathname: string; onNavigate: () => void; searching: boolean }) {
+  const active = items.some(item => isActivePath(pathname, item.href))
+  const [expanded, setExpanded] = useState(active)
+  if (!items.length) return null
+  const open = searching || expanded
+  return <section className="lspd-nav-group">
+    <button type="button" aria-expanded={open} disabled={searching} onClick={() => setExpanded(!open)} className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-[12px] font-medium text-[#91a4bc] hover:bg-white/[0.04] hover:text-white">
+      {title}<ChevronDown size={14} className={cn('transition-transform duration-150', open && 'rotate-180')} />
+    </button>
+    {open && <div className="space-y-0.5 pb-2">{items.map(item => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}</div>}
+  </section>
 }
 
 function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
@@ -128,62 +106,34 @@ function NavContent({ pathname, onNavigate, user, logout }: NavContentProps) {
     icon: unitIconComponent(unit.icon),
     color: unit.color,
   }))
-  const showAdmin = hasAnyPermission(user, [
-    'ranks:manage',
-    'trainings:manage',
-    'units:manage',
-    'users:manage',
-    'groups:manage',
-    'exports:view',
-    'updates:send',
-    'settings:manage',
-  ])
+  const [query, setQuery] = useState('')
+  const filter = (items: NavItem[]) => items.filter(item => (!item.permission || hasPermission(user, item.permission)) && item.name.toLocaleLowerCase('de').includes(query.trim().toLocaleLowerCase('de')))
+  const dailyPaths = ['/', '/officers', '/duty-times', '/patrol-board', '/calendar']
+  const primary = filter(mainNav.filter(item => dailyPaths.includes(item.href)))
+  const groups = [
+    { title: 'Personal & Vorgänge', items: filter(mainNav.filter(item => !dailyPaths.includes(item.href))) },
+    { title: 'Units', items: filter(unitNav) },
+    { title: 'Administration', items: filter(adminNav) },
+    { title: 'Konto & Historie', items: filter(accountNav) },
+  ]
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="relative h-[52px] w-[52px] rounded-[13px] bg-gradient-to-br from-[#0a2040] to-[#071833] border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(212,175,55,0.08)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_70%)]" />
-            <Image src="/shield.webp" alt="LSPD" width={46} height={46} className="rounded-full relative" priority />
-          </div>
-          <div className="min-w-0">
-            <span className="block text-[19px] font-semibold text-white leading-tight tracking-[-0.01em]">LSPD</span>
-            <span className="block text-[10.5px] font-semibold text-[#d4af37]/80 tracking-[0.14em] uppercase mt-0.5">Department</span>
-          </div>
-        </div>
-        <div className="relative mt-4 h-px bg-gradient-to-r from-transparent via-[#d4af37]/25 to-transparent">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#d4af37] shadow-[0_0_6px_rgba(212,175,55,0.6)]" />
-        </div>
+      <div className="px-5 py-6">
+        <Link href="/" onClick={onNavigate} className="flex items-center gap-3">
+          <Image src="/shield.webp" alt="" width={38} height={38} priority />
+          <div><span className="block text-base font-semibold tracking-tight text-white">LSPD</span><span className="text-[11px] text-[#91a4bc]">Personal & Organisation</span></div>
+        </Link>
       </div>
-
-      <nav className="flex-1 space-y-[2px] overflow-y-auto px-2.5 lg:pb-12">
-        <SectionLabel>Navigation</SectionLabel>
-        {mainNav
-          .filter((item) => !item.permission || hasPermission(user, item.permission))
-          .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
-
-        {unitNav.length > 0 && (
-          <>
-            <SectionDivider />
-            <SectionLabel>Units</SectionLabel>
-            {unitNav.map((item) => <NavLink key={`${item.href}:${item.name}`} item={item} pathname={pathname} onNavigate={onNavigate} />)}
-          </>
-        )}
-
-        {showAdmin && (
-          <>
-            <SectionDivider />
-            <SectionLabel>Administration</SectionLabel>
-            {adminNav
-              .filter((item) => !item.permission || hasPermission(user, item.permission))
-              .map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
-          </>
-        )}
-
-        <SectionDivider />
-        <SectionLabel>Konto</SectionLabel>
-        {accountNav.map((item) => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}
+      <div className="relative mx-3 mb-4">
+        <Search size={15} className="pointer-events-none absolute left-3 top-3 text-[#91a4bc]" />
+        <input aria-label="Navigation durchsuchen" placeholder="Seite finden …" value={query} onChange={event => setQuery(event.target.value)} className="h-10 w-full rounded-lg border border-white/10 bg-white/[0.03] pl-9 pr-8 text-[12px] text-white placeholder:text-[#91a4bc]" />
+        {query && <button type="button" aria-label="Navigationssuche leeren" onClick={() => setQuery('')} className="absolute right-1 top-1 p-2 text-[#91a4bc]"><X size={14} /></button>}
+      </div>
+      <nav aria-label="Hauptnavigation" className="flex-1 overflow-y-auto px-3 lg:pb-12">
+        <div className="space-y-1 pb-4">{primary.map(item => <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />)}</div>
+        {groups.map(group => <NavGroup key={`${group.title}:${pathname}:${group.items.some(item => isActivePath(pathname, item.href))}`} {...group} pathname={pathname} onNavigate={onNavigate} searching={!!query.trim()} />)}
+        {primary.length === 0 && groups.every(group => group.items.length === 0) && <p role="status" className="px-3 py-4 text-xs text-[#91a4bc]">Keine Seite gefunden.</p>}
       </nav>
 
       <div className="px-2.5 pb-2.5 shrink-0">
@@ -264,11 +214,12 @@ export function Sidebar() {
               initial={{ x: -260 }}
               animate={{ x: 0 }}
               exit={{ x: -260 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
               className="lg:hidden fixed left-0 top-0 bottom-0 w-[244px] lspd-sidebar border-r border-[#d4af37]/10 z-50 shadow-2xl"
             >
               <button
                 onClick={() => setMobileOpen(false)}
+                aria-label="Menü schließen"
                 className="absolute top-4 right-3 p-1.5 rounded-md text-[#6b8299] hover:text-[#d4af37]"
               >
                 <X size={16} />

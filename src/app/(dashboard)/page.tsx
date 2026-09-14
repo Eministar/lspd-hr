@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import * as Tabs from '@radix-ui/react-tabs'
 import { useFetch } from '@/hooks/use-fetch'
 import { useApi } from '@/hooks/use-api'
 import { PageLoader } from '@/components/ui/loading'
@@ -31,7 +32,6 @@ import {
   RefreshCw,
   ScrollText,
   Send,
-  Sparkles,
   TrendingUp,
   Trash2,
   UserCheck,
@@ -482,128 +482,40 @@ export default function DashboardPage() {
 
   return (
       <div className="max-w-7xl mx-auto space-y-6 pb-4">
-        {/* ===== HERO ===== */}
-        <section className="lspd-hero relative overflow-hidden rounded-[20px] border border-[#1a3559]/55 bg-gradient-to-br from-[#0c2545] via-[#0a1f3a] to-[#06152a] shadow-[0_2px_4px_rgba(0,0,0,0.18),0_18px_48px_rgba(0,0,0,0.28)]">
-          {/* decorative */}
-          <div className="absolute inset-0 pointer-events-none opacity-70" aria-hidden>
-            <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-[#d4af37]/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[#1e3a8a]/30 blur-3xl" />
-            <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(212,175,55,0.06) 1px, transparent 0)',
-                  backgroundSize: '28px 28px',
-                  maskImage: 'radial-gradient(ellipse at top, black 30%, transparent 80%)',
-                }}
-            />
+        <header className="flex flex-wrap items-end justify-between gap-5 py-2">
+          <div>
+            <p className="mb-2 text-xs text-[#91a4bc]">{dateLine}{timeLine ? ` · ${timeLine} Uhr` : ''}</p>
+            <h1 className="text-[28px] font-semibold tracking-tight text-white">{greeting}{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}.</h1>
+            <p className="mt-2 text-sm text-[#a7b7cb]">Dein Überblick für den heutigen Dienst.</p>
           </div>
-          <div className="relative p-6 sm:p-7">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d4af37]/25 bg-[#d4af37]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#f0d060]">
-                  <Sparkles size={10} strokeWidth={2.25} />
-                  Übersicht
-                </span>
-                  <span className="text-[10.5px] font-medium text-[#6b8299] uppercase tracking-[0.16em]">{dateLine}</span>
-                  {timeLine && (
-                      <span className="hidden sm:inline-flex items-center gap-1 text-[10.5px] font-mono text-[#6b8299] uppercase tracking-[0.1em]">
-                    · {timeLine} Uhr
-                  </span>
-                  )}
-                </div>
-                <h1 className="text-[28px] sm:text-[34px] font-semibold text-white tracking-[-0.025em] leading-tight">
-                  {greeting}{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}.
-                </h1>
-                <p className="text-[13.5px] text-[#9fb0c4] mt-1.5 max-w-xl leading-relaxed">
-                  Personalstand, Ausbildungen und Vorgänge des LSPD auf einen Blick. {stats.currentOfficers > 0 ? `${stats.activeOfficers} von ${stats.currentOfficers} Officers sind aktuell einsatzbereit.` : 'Aktuell sind keine Officers im System.'}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-[10px] border border-emerald-400/15 bg-emerald-400/[0.05]">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inset-0 rounded-full bg-emerald-400/50 animate-ping" />
-                  <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
-                </span>
-                  <span className="text-[12px] text-emerald-300 font-medium tabular-nums">
-                  {stats.dutyTimes?.activeCount ?? 0} im Dienst
-                </span>
-                </div>
-                <Button variant="outline" size="sm" onClick={refetch} className="shrink-0">
-                  <RefreshCw size={13} strokeWidth={2} />
-                  Aktualisieren
-                </Button>
-                <Button
-                    size="sm"
-                    onClick={openAbsenceModal}
-                    disabled={!user?.discordId && !canManageAbsences}
-                    title={!user?.discordId && !canManageAbsences ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}
-                >
-                  <CalendarPlus size={13} strokeWidth={2} />
-                  Abmelden
-                </Button>
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-2 flex items-center gap-2 text-xs text-[#a7b7cb]"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />{stats.dutyTimes?.activeCount ?? 0} im Dienst</span>
+            <Button variant="ghost" size="sm" onClick={refetch}><RefreshCw size={14} />Aktualisieren</Button>
+            <Button size="sm" onClick={openAbsenceModal} disabled={!user?.discordId && !canManageAbsences} title={!user?.discordId && !canManageAbsences ? 'Dein Dashboard-User braucht eine Discord-ID.' : undefined}><CalendarPlus size={14} />Abmelden</Button>
           </div>
-        </section>
-
-        {/* ===== KPI CARDS ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {statCards.filter((card) => hasPermission(user, card.permission)).map((card, i) => {
-            const Icon = card.icon
-            const accent = ACCENTS[card.accent]
-            const label = card.key === 'recentPromotions' || card.key === 'recentTerminations'
-                ? `${card.label}`
-                : card.label
-            const subLine = card.key === 'recentPromotions' || card.key === 'recentTerminations'
-                ? `Letzte ${stats.recentWindowDays} Tage`
-                : card.hint
-            return (
-                <motion.div
-                    key={card.key}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.035 }}
-                >
-                  <Link
-                      href={card.href}
-                      className="lspd-kpi group relative block rounded-[14px] border border-[#1a3559]/55 bg-[#091e36]/70 backdrop-blur-md p-4 transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--accent-ring)] overflow-hidden"
-                      style={{
-                        // @ts-expect-error CSS custom prop
-                        '--accent-ring': accent.ring,
-                      }}
-                  >
-                    <div
-                        className="absolute -top-12 -right-12 h-28 w-28 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        style={{ background: accent.glow }}
-                        aria-hidden
-                    />
-                    <div className="relative flex items-start justify-between gap-2">
-                  <span
-                      className="flex h-9 w-9 items-center justify-center rounded-[10px] border"
-                      style={{ background: accent.bg, borderColor: accent.ring, color: accent.text }}
-                  >
-                    <Icon size={16} strokeWidth={1.85} />
-                  </span>
-                      <ArrowUpRight size={13} className="text-[#4a6585] group-hover:text-[#d4af37] transition-colors" strokeWidth={1.85} />
-                    </div>
-                    <div className="relative mt-3">
-                      <p className="lspd-kpi-number text-white tabular-nums leading-none tracking-tight">{stats[card.key]}</p>
-                      <p className="text-[12px] text-[#c2d2e3] mt-2 font-medium leading-tight">{label}</p>
-                      <p className="text-[11px] text-[#91a7c2] mt-1.5 leading-tight">{subLine}</p>
-                    </div>
-                  </Link>
-                </motion.div>
-            )
-          })}
+        </header>
+        <div className="lspd-metrics">
+          {statCards.filter(card => hasPermission(user, card.permission)).map(card => (
+            <Link key={card.key} href={card.href} className="lspd-metric">
+              <span className="text-xs text-[#a7b7cb]">{card.label}</span>
+              <span className="flex items-center justify-between gap-2"><strong className="text-[30px] font-semibold tracking-tight text-white">{stats[card.key]}</strong><ArrowUpRight size={14} className="text-[#8297af]" /></span>
+              <span className="text-[11px] text-[#8297af]">{card.key === 'recentPromotions' || card.key === 'recentTerminations' ? `Letzte ${stats.recentWindowDays} Tage` : card.hint}</span>
+            </Link>
+          ))}
         </div>
 
-        {/* ===== NOTIFICATIONS ===== */}
+        <Tabs.Root defaultValue="overview" className="space-y-6">
+          <Tabs.List aria-label="Dashboard-Bereiche" className="lspd-view-tabs">
+            <Tabs.Trigger value="overview">Heute im Blick</Tabs.Trigger>
+            <Tabs.Trigger value="personnel">Personal & Ausbildung</Tabs.Trigger>
+            <Tabs.Trigger value="activity">Aktivitäten & Notizen</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="overview" className="space-y-5">{/* ===== NOTIFICATIONS ===== */}
         {stats.notifications.length > 0 && (
             <motion.section
-                initial={{ opacity: 0, y: 6 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.06 }}
+                transition={{ duration: 0.15 }}
                 className={cn(panelClass, 'p-5')}
             >
               <SectionHeader
@@ -632,9 +544,9 @@ export default function DashboardPage() {
 
         {/* ===== ABSENCES ===== */}
         <motion.section
-            initial={{ opacity: 0, y: 6 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.08 }}
+            transition={{ duration: 0.15 }}
             className={cn(panelClass, 'p-5')}
         >
           <SectionHeader
@@ -688,9 +600,9 @@ export default function DashboardPage() {
         {/* ===== OPERATIONAL + QUICK ===== */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <motion.section
-              initial={{ opacity: 0, y: 6 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.12 }}
+              transition={{ duration: 0.15 }}
               className={cn(panelClass, 'p-5 xl:col-span-2')}
           >
             <SectionHeader
@@ -767,9 +679,9 @@ export default function DashboardPage() {
           </motion.section>
 
           <motion.section
-              initial={{ opacity: 0, y: 6 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.16 }}
+              transition={{ duration: 0.15 }}
               className={cn(panelClass, 'p-5')}
           >
             <SectionHeader icon={ArrowUpRight} title="Schnellzugriffe" description="Direkt zu den häufigsten HR-Aufgaben" />
@@ -797,12 +709,13 @@ export default function DashboardPage() {
           </motion.section>
         </div>
 
-        {/* ===== TRAININGS + HR FOCUS ===== */}
+        </Tabs.Content>
+          <Tabs.Content value="personnel" className="space-y-5">{/* ===== TRAININGS + HR FOCUS ===== */}
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           <motion.section
-              initial={{ opacity: 0, y: 6 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
+              transition={{ duration: 0.15 }}
               className={cn(panelClass, 'p-5 xl:col-span-3')}
           >
             <SectionHeader icon={ClipboardCheck} title="Ausbildungsstand" description="Abdeckung pro Ausbildung über alle aktiven Officers" />
@@ -823,9 +736,9 @@ export default function DashboardPage() {
           </motion.section>
 
           <motion.section
-              initial={{ opacity: 0, y: 6 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.24 }}
+              transition={{ duration: 0.15 }}
               className={cn(panelClass, 'p-5 xl:col-span-2')}
           >
             <SectionHeader icon={AlertTriangle} title="HR-Fokus" description="Abgemeldete und inaktive Officers" />
@@ -861,12 +774,46 @@ export default function DashboardPage() {
           </motion.section>
         </div>
 
-        {/* ===== ACTIVITY + NOTES + HIRES ===== */}
+        {/* ===== RANK DISTRIBUTION ===== */}
+        {visibleRankDistribution.length > 0 && (
+            <motion.section
+                initial={false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15 }}
+                className={cn(panelClass, 'p-5')}
+            >
+              <SectionHeader icon={Users} title="Rangverteilung" description="Aktive Officers nach Rang" />
+              <div className="space-y-2.5">
+                {visibleRankDistribution.map((rank) => {
+                  const percentage = (rank.count / topRankCount) * 100
+                  return (
+                      <div key={rank.rank} className="flex items-center gap-3">
+                        <div className="w-36 sm:w-44 text-[12.5px] text-[#c2d2e3] truncate font-medium">{rank.rank}</div>
+                        <div className="flex-1 h-[24px] bg-[#06182e]/80 rounded-[7px] overflow-hidden ring-1 ring-inset ring-white/[0.03]">
+                          <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              transition={{ duration: 0.2, delay: 0, ease: [0.16, 1, 0.3, 1] }}
+                              className="h-full rounded-[7px] flex items-center justify-end pr-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                              style={{ minWidth: rank.count > 0 ? '1.75rem' : 0, backgroundColor: rank.color }}
+                          >
+                            <span className="text-[10.5px] font-semibold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] tabular-nums">{rank.count}</span>
+                          </motion.div>
+                        </div>
+                      </div>
+                  )
+                })}
+              </div>
+            </motion.section>
+        )}
+
+        </Tabs.Content>
+          <Tabs.Content value="activity" className="space-y-5">{/* ===== ACTIVITY + NOTES + HIRES ===== */}
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           <motion.section
-              initial={{ opacity: 0, y: 6 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.28 }}
+              transition={{ duration: 0.15 }}
               className={cn(panelClass, 'p-5 xl:col-span-3')}
           >
             <SectionHeader
@@ -931,9 +878,9 @@ export default function DashboardPage() {
 
           <div className="xl:col-span-2 space-y-4">
             <motion.section
-                initial={{ opacity: 0, y: 6 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.32 }}
+                transition={{ duration: 0.15 }}
                 className={cn(panelClass, 'p-5')}
             >
               <SectionHeader icon={Pin} title="Angepinnte Notizen" description="Wichtige Hinweise für HR & Führung" />
@@ -959,9 +906,9 @@ export default function DashboardPage() {
             </motion.section>
 
             <motion.section
-                initial={{ opacity: 0, y: 6 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.36 }}
+                transition={{ duration: 0.15 }}
                 className={cn(panelClass, 'p-5')}
             >
               <SectionHeader icon={CalendarDays} title="Neue Officers" description="Zuletzt eingestellte Mitarbeiter" />
@@ -990,39 +937,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ===== RANK DISTRIBUTION ===== */}
-        {visibleRankDistribution.length > 0 && (
-            <motion.section
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
-                className={cn(panelClass, 'p-5')}
-            >
-              <SectionHeader icon={Users} title="Rangverteilung" description="Aktive Officers nach Rang" />
-              <div className="space-y-2.5">
-                {visibleRankDistribution.map((rank) => {
-                  const percentage = (rank.count / topRankCount) * 100
-                  return (
-                      <div key={rank.rank} className="flex items-center gap-3">
-                        <div className="w-36 sm:w-44 text-[12.5px] text-[#c2d2e3] truncate font-medium">{rank.rank}</div>
-                        <div className="flex-1 h-[24px] bg-[#06182e]/80 rounded-[7px] overflow-hidden ring-1 ring-inset ring-white/[0.03]">
-                          <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                              className="h-full rounded-[7px] flex items-center justify-end pr-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                              style={{ minWidth: rank.count > 0 ? '1.75rem' : 0, backgroundColor: rank.color }}
-                          >
-                            <span className="text-[10.5px] font-semibold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] tabular-nums">{rank.count}</span>
-                          </motion.div>
-                        </div>
-                      </div>
-                  )
-                })}
-              </div>
-            </motion.section>
-        )}
-
+        </Tabs.Content>
+        </Tabs.Root>
         {/* ===== ABSENCE MODAL ===== */}
         <Modal open={absenceModalOpen} onClose={() => setAbsenceModalOpen(false)} title="Abmeldung eintragen" description="Trage eine Abwesenheit ein – sie endet automatisch zum gewählten Datum.">
           <div className="space-y-4">
