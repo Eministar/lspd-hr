@@ -1,7 +1,25 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-09-13T17:51:59.571Z",
+  "generatedAt": "2026-09-14T14:00:13.993Z",
   "entries": [
+    {
+      "buildId": "build-37d96646de",
+      "commit": "37d96646de1c7ac9d23d911ef1df81a4a2ea6aef",
+      "shortCommit": "37d96646de",
+      "subject": "feat: modernize LSPD design and user search, recover hidden units",
+      "author": "Eministar",
+      "date": "2026-09-14T13:59:24Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/37d96646de1c7ac9d23d911ef1df81a4a2ea6aef"
+    },
+    {
+      "buildId": "build-2eddd0b487",
+      "commit": "2eddd0b487e84479581dfeecd08ec7d4b30bd38e",
+      "shortCommit": "2eddd0b487",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-09-13T17:51:59Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/2eddd0b487e84479581dfeecd08ec7d4b30bd38e"
+    },
     {
       "buildId": "build-55008ab0ff",
       "commit": "55008ab0ff5f04c156e612c18f46bf453a78bdde",
