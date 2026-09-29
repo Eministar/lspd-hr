@@ -215,7 +215,22 @@ function getPrismaClient() {
   ensureGeneratedPrismaClient()
   const PrismaClient = requireGeneratedPrismaClient()
   const { PrismaMariaDb } = require('@prisma/adapter-mariadb')
-  const adapter = new PrismaMariaDb(url)
+  // Gleiche Timeouts wie src/lib/db-pool-config.ts — der Treiber-Default
+  // connectTimeout=1000 lässt den Pool bei langsamem Handshake leerlaufen.
+  const u = new URL(url)
+  const adapter = new PrismaMariaDb({
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 3306,
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ''),
+    connectionLimit: 10,
+    acquireTimeout: 20_000,
+    connectTimeout: 10_000,
+    keepAliveDelay: 30_000,
+    idleTimeout: 300,
+    minimumIdle: 1,
+  })
   prismaClient = prismaClient || new PrismaClient({ adapter })
   prismaCompat = new Proxy(prismaClient, {
     get(target, prop, receiver) {

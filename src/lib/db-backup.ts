@@ -6,6 +6,7 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import { resolveDelegate } from './db-models'
 import { backupFiles } from './backup-files'
 import { readFailoverState } from './failover-state'
+import { buildPoolConfig } from './db-pool-config'
 
 export const SNAPSHOT_FORMAT_VERSION = 3
 export function backupDir() {
@@ -30,7 +31,7 @@ export async function runBackup(options: { directory?: string; source?: 'primary
     ? readFailoverState().mode : 'primary'
   const url = (source === 'standby' ? process.env.DATABASE_URL_STANDBY : process.env.DATABASE_URL)?.trim()
   if (!url) throw new Error('Datenbank-URL fehlt – Backup nicht möglich.')
-  const prisma = new PrismaClient({ adapter: new PrismaMariaDb(url) })
+  const prisma = new PrismaClient({ adapter: new PrismaMariaDb(buildPoolConfig(url, { connectionLimit: 2 })) })
   const stamp = `${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}`
   const rotatedPath = path.join(/*turbopackIgnore: true*/ dir, `db-${stamp}.json`)
   const filesPath = `${rotatedPath}.files`

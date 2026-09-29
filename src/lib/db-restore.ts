@@ -3,6 +3,7 @@ import { PrismaClient } from '../generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import { DATA_MODEL_NAMES, JOURNAL_MODEL, resolveDelegate, tableName } from './db-models'
 import { verifyBackup } from './backup-verify'
+import { buildPoolConfig } from './db-pool-config'
 
 /**
  * Spielt einen JSON-Snapshot in eine Datenbank ein.
@@ -85,17 +86,9 @@ export function normalizeSnapshot(raw: unknown, includeJournal = false): { expor
 }
 
 function poolConfigFor(url: string) {
-  const u = new URL(url)
-  return {
-    host: u.hostname,
-    port: u.port ? Number(u.port) : 3306,
-    user: decodeURIComponent(u.username),
-    password: decodeURIComponent(u.password),
-    database: u.pathname.replace(/^\//, ''),
-    // Genau eine Verbindung: SET FOREIGN_KEY_CHECKS gilt sitzungsweise, bei
-    // mehreren Pool-Verbindungen liefe ein Teil der Inserts sonst mit Prüfung.
-    connectionLimit: 1,
-  }
+  // Genau eine Verbindung: SET FOREIGN_KEY_CHECKS gilt sitzungsweise, bei
+  // mehreren Pool-Verbindungen liefe ein Teil der Inserts sonst mit Prüfung.
+  return buildPoolConfig(url, { connectionLimit: 1 })
 }
 
 export async function restoreSnapshot(options: {

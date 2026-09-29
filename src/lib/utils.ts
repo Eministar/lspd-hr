@@ -142,6 +142,20 @@ export function getFlagRowClass(flag: string | null | undefined): string {
 }
 
 /**
+ * Deckender Hintergrund für Sticky-Zellen in Zeilen mit getFlagRowClass: derselbe Ton
+ * wie die halbtransparente Zeile über --color-surface, inkl. Hover (Zeile braucht `group`).
+ */
+export function getFlagStickyCellClass(flag: string | null | undefined): string {
+  const map: Record<string, string> = {
+    RED: 'bg-[color-mix(in_srgb,rgb(255_69_58)_7%,var(--color-surface))] group-hover:bg-[color-mix(in_srgb,rgb(255_69_58)_12%,var(--color-surface))]',
+    ORANGE: 'bg-[color-mix(in_srgb,rgb(255_159_10)_7%,var(--color-surface))] group-hover:bg-[color-mix(in_srgb,rgb(255_159_10)_12%,var(--color-surface))]',
+    YELLOW: 'bg-[color-mix(in_srgb,rgb(255_214_10)_7%,var(--color-surface))] group-hover:bg-[color-mix(in_srgb,rgb(255_214_10)_12%,var(--color-surface))]',
+    BLUE: 'bg-[color-mix(in_srgb,rgb(100_210_255)_7%,var(--color-surface))] group-hover:bg-[color-mix(in_srgb,rgb(100_210_255)_12%,var(--color-surface))]',
+  }
+  return (flag && map[flag]) || 'bg-surface group-hover:bg-surface-2'
+}
+
+/**
  * Stabile, numerische Sortierung von Dienstnummern. Nicht-numerische Bestandteile
  * (z. B. ein Präfix wie "LSPD-") werden nach hinten gestellt; bei gleicher Zahl wird
  * lexikographisch verglichen, damit Reihenfolge deterministisch bleibt.

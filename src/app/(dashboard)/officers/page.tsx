@@ -39,6 +39,7 @@ import {
   getFlagLabel,
   getFlagColor,
   getFlagRowClass,
+  getFlagStickyCellClass,
   compareBadgeNumbers,
 } from '@/lib/utils'
 import { OFFICER_FLAG_VALUES } from '@/lib/validations/officer'
@@ -314,9 +315,11 @@ function DraggableOfficerRow({
         </span>
       </td>
       <td
-        className="sticky left-0 z-[1] min-w-0 overflow-hidden bg-surface group-hover:bg-[color-mix(in_srgb,#fff_2.5%,var(--color-surface))] px-3 py-2.5 align-middle shadow-[1px_0_0_var(--color-line)]"
-        // Markierte Zeilen sind leicht eingefärbt; die deckende Sticky-Zelle übernimmt den Ton.
-        style={officer.flag ? { backgroundColor: `color-mix(in srgb, ${getFlagColor(officer.flag)} 7%, var(--color-surface))` } : undefined}
+        // Deckende Sticky-Zelle übernimmt den Zeilenton (Markierung + Hover).
+        className={cn(
+          'sticky left-0 z-[1] min-w-0 overflow-hidden px-3 py-2.5 align-middle shadow-[1px_0_0_var(--color-line)] transition-colors duration-100',
+          getFlagStickyCellClass(officer.flag)
+        )}
       >
         <div className="flex min-w-0 items-center gap-2.5">
           <OfficerAvatar officer={officer} size="sm" ringColor={officer.rank.color} />

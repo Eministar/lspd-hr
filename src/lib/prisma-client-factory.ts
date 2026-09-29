@@ -1,6 +1,9 @@
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import { completeMutationCapture, prepareMutationCapture, type SnapshotClient } from './change-history-tracking'
+import { buildPoolConfig, intEnv } from './db-pool-config'
+
+export { buildPoolConfig, intEnv }
 
 /**
  * Erzeugung einzelner Prisma-Clients.
@@ -10,34 +13,6 @@ import { completeMutationCapture, prepareMutationCapture, type SnapshotClient } 
  * dieselbe Change-History-Erweiterung brauchen. `prisma.ts` enthält nur noch
  * den nach außen sichtbaren Proxy, `db-failover.ts` die Umschaltlogik.
  */
-
-export function intEnv(name: string, fallback: number) {
-  const raw = process.env[name]?.trim()
-  const parsed = raw ? Number(raw) : NaN
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
-}
-
-/**
- * Baut eine explizite mariadb-Pool-Konfiguration aus einer Verbindungs-URL.
- *
- * Der Adapter-Default ist `connectionLimit=10`, was für ein Dashboard mit
- * mehreren pollenden Endpunkten + Hintergrund-Sync (bis zu 8 parallele
- * Verbindungen) zu knapp ist → Pool-Timeouts. Größe und Acquire-Timeout sind
- * per Env steuerbar; `acquireTimeout` sorgt außerdem für schnelles
- * Fehlschlagen statt minutenlangem Hängen.
- */
-export function buildPoolConfig(url: string, overrides: { connectionLimit?: number } = {}) {
-  const u = new URL(url)
-  return {
-    host: u.hostname,
-    port: u.port ? Number(u.port) : 3306,
-    user: decodeURIComponent(u.username),
-    password: decodeURIComponent(u.password),
-    database: u.pathname.replace(/^\//, ''),
-    connectionLimit: overrides.connectionLimit ?? intEnv('DB_CONNECTION_LIMIT', 15),
-    acquireTimeout: intEnv('DB_POOL_ACQUIRE_TIMEOUT_MS', 12_000),
-  }
-}
 
 /** Roher Client auf eine konkrete Verbindungs-URL, inklusive Slow-Query-Warnungen. */
 export function createRawPrismaClient(
