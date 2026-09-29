@@ -301,8 +301,8 @@ function DraggableOfficerRow({
           <span className="inline-block w-5" />
         )}
       </td>
-      <td className="px-2 py-2.5 align-middle font-mono text-[12.5px] tabular-nums text-label-2">
-        <span className="inline-flex items-center gap-1.5">
+      <td className="whitespace-nowrap px-2 py-2.5 align-middle font-mono text-[12.5px] tabular-nums text-label-2">
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
           {officer.flag && (
             <span
               className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -892,7 +892,7 @@ export default function OfficersPage() {
                               <tr>
                                 <th className="w-[3px] p-0" />
                                 <th className="w-[28px] px-1 py-2.5" />
-                                <th className="w-[58px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">DN</th>
+                                <th className="w-[104px] px-2 py-2.5 text-left text-[12px] font-medium text-label-3">DN</th>
                                 <th scope="col" data-shelf-sticky className="sticky left-0 z-[2] w-[170px] px-3 py-2.5 text-left text-[12px] font-medium text-label-3 shadow-[1px_0_0_var(--color-line)]">Name</th>
                                 {allTrainings.map((t) => (
                                   <th
