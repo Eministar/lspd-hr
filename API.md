@@ -841,3 +841,23 @@ io.Copy(os.Stdout, res.Body)
 ## Lizenz & Support
 
 LSPD HR Dashboard · MIT · [github.com/Eministar/lspd-hr](https://github.com/Eministar/lspd-hr)
+
+---
+
+## Externe Officer-API (FIB-Dashboard)
+
+Schreibgeschützte Schnittstelle für das FIB-Dashboard, unabhängig von Logins und `lspd_…`-Tokens.
+
+- **Aktivieren:** `FIB_API_SECRET` (mind. 24 Zeichen) in der `.env` setzen, Server neu starten. Ohne Secret antworten die Endpunkte mit `503`.
+- **Authentifizierung:** Header `x-api-secret: <FIB_API_SECRET>`. Falsches Secret → `401`.
+- Antworten sind `no-store`; ausgegeben werden nur Stammdaten und Laufbahn – keine internen Notizen, Flags oder Bearbeiter.
+
+| Methode | Pfad | Beschreibung |
+|---|---|---|
+| GET | `/api/external/officers?q=&status=&limit=` | Suche nach Name, Dienstnummer oder Discord-ID. `status` kommagetrennt (`ACTIVE,AWAY,INACTIVE,TERMINATED`), `limit` 1–100 (Standard 25). |
+| GET | `/api/external/officers/{id}` | Beamtenakte: Stammdaten, Beförderungen, Sanktionen, Trainings, Kündigungen. |
+
+```bash
+curl https://deine-domain/api/external/officers?q=Muster \
+  -H "x-api-secret: $FIB_API_SECRET"
+```
