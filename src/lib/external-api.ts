@@ -8,6 +8,8 @@
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
 
+import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
+
 export const EXTERNAL_SECRET_HEADER = 'x-api-secret'
 const MIN_SECRET_LENGTH = 24
 
@@ -100,7 +102,8 @@ export function toExternalOfficer(row: OfficerRow, unitNames: ReadonlyMap<string
     id: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
-    badgeNumber: row.badgeNumber,
+    // Gekündigte tragen intern „<DN>__terminated__<id>“ – nach außen nur die Dienstnummer.
+    badgeNumber: stripTerminatedBadgeNumber(row.badgeNumber),
     discordId: row.discordId,
     status: row.status,
     rank: { name: row.rank.name, color: row.rank.color, sortOrder: row.rank.sortOrder },

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 
 import { error, notFound, success } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
+import { stripTerminatedBadgeNumber } from '@/lib/badge-number'
 import { toExternalOfficer, type ExternalOfficerFile } from '@/lib/external-api'
 import { externalOfficerSelect, noStore, rejectExternalRequest, unitNameMap } from '@/lib/external-api-server'
 
@@ -64,8 +65,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         at: log.createdAt.toISOString(),
         fromRank: log.oldRank.name,
         toRank: log.newRank.name,
-        fromBadge: log.oldBadgeNumber,
-        toBadge: log.newBadgeNumber,
+        fromBadge: log.oldBadgeNumber ? stripTerminatedBadgeNumber(log.oldBadgeNumber) : null,
+        toBadge: log.newBadgeNumber ? stripTerminatedBadgeNumber(log.newBadgeNumber) : null,
         note: log.note,
       })),
       sanctions: officer.sanctions.map((sanction) => ({

@@ -11,9 +11,9 @@ import {
 const SECRET = 'x'.repeat(32)
 
 test('Secret: zu kurz oder fehlend schaltet die API ab', () => {
-  assert.equal(externalApiSecret({} as NodeJS.ProcessEnv), null)
-  assert.equal(externalApiSecret({ FIB_API_SECRET: 'kurz' } as NodeJS.ProcessEnv), null)
-  assert.equal(externalApiSecret({ FIB_API_SECRET: ` ${SECRET} ` } as NodeJS.ProcessEnv), SECRET)
+  assert.equal(externalApiSecret({} as unknown as NodeJS.ProcessEnv), null)
+  assert.equal(externalApiSecret({ FIB_API_SECRET: 'kurz' } as unknown as NodeJS.ProcessEnv), null)
+  assert.equal(externalApiSecret({ FIB_API_SECRET: ` ${SECRET} ` } as unknown as NodeJS.ProcessEnv), SECRET)
 })
 
 test('Secret-Vergleich', () => {
