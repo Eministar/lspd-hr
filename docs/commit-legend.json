@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-09-29T14:20:25.567Z",
+  "generatedAt": "2026-10-01T15:29:18.561Z",
   "entries": [
+    {
+      "buildId": "build-e0ac2f1d8c",
+      "commit": "e0ac2f1d8ce924e176a797ce4b0406f8ee809b66",
+      "shortCommit": "e0ac2f1d8c",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-10-01T15:28:38Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e0ac2f1d8ce924e176a797ce4b0406f8ee809b66"
+    },
+    {
+      "buildId": "build-d4db2921a2",
+      "commit": "d4db2921a2b82f869367b3988708e09450cef7fb",
+      "shortCommit": "d4db2921a2",
+      "subject": "feat: add external read-only Officer API for FIB-Dashboard with authentication via FIB_API_SECRET",
+      "author": "Eministar",
+      "date": "2026-10-01T15:28:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d4db2921a2b82f869367b3988708e09450cef7fb"
+    },
+    {
+      "buildId": "build-a22d58d1f8",
+      "commit": "a22d58d1f8addfd2bfe2eaaf437d5019863e5af5",
+      "shortCommit": "a22d58d1f8",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-09-29T14:20:25Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a22d58d1f8addfd2bfe2eaaf437d5019863e5af5"
+    },
     {
       "buildId": "build-05adc3f79a",
       "commit": "05adc3f79ad54d1dec3a29411f480f1755c10b00",
