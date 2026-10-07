@@ -1,4 +1,5 @@
-﻿import { prisma } from './prisma'
+﻿import { isSuspended } from './suspension'
+import { prisma } from './prisma'
 import { officerUnitKeys } from './officer-units'
 import { formatDuration, getDutyTimesSnapshot } from './duty-times'
 import { getActiveAbsenceNotices, runOfficerStatusAutomation } from './absence-status'
@@ -77,6 +78,7 @@ export type DiscordConfig = {
   absenceStatusMessageId: string
   humanResourcesRoleId: string
   promotionBlockRoleId: string
+  suspensionRoleId: string
   employeeRoleIds: string[]
   commandRoleIds: string[]
   authLoginRoleIds: string[]
@@ -194,6 +196,7 @@ export const DISCORD_SETTING_KEYS = {
   absenceStatusMessageId: 'discord.absenceStatusMessageId',
   humanResourcesRoleId: 'discord.humanResourcesRoleId',
   promotionBlockRoleId: 'discord.promotionBlockRoleId',
+  suspensionRoleId: 'discord.suspensionRoleId',
   employeeRoleIds: 'discord.employeeRoleIds',
   commandRoleIds: 'discord.commandRoleIds',
   authLoginRoleIds: 'discord.authLoginRoleIds',
@@ -793,6 +796,7 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     absenceStatusMessageId: map[DISCORD_SETTING_KEYS.absenceStatusMessageId] || '',
     humanResourcesRoleId: envFirst(envHumanResourcesRoleId(), map[DISCORD_SETTING_KEYS.humanResourcesRoleId]),
     promotionBlockRoleId: envFirst(envPromotionBlockRoleId(), map[DISCORD_SETTING_KEYS.promotionBlockRoleId]),
+    suspensionRoleId: snowflake(map[DISCORD_SETTING_KEYS.suspensionRoleId]),
     employeeRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.employeeRoleIds], [])),
     commandRoleIds: cleanRoleIds(parseJson(map[DISCORD_SETTING_KEYS.commandRoleIds], [])),
     authLoginRoleIds: Array.from(new Set([...envLoginRoles, ...dbLoginRoles])),
@@ -837,6 +841,8 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.rankRoleMap !== undefined) data[DISCORD_SETTING_KEYS.rankRoleMap] = JSON.stringify(cleanRoleMap(input.rankRoleMap))
   if (input.trainingRoleMap !== undefined) data[DISCORD_SETTING_KEYS.trainingRoleMap] = JSON.stringify(cleanRoleMap(input.trainingRoleMap))
   if (input.unitRoleMap !== undefined) data[DISCORD_SETTING_KEYS.unitRoleMap] = JSON.stringify(cleanRoleMap(input.unitRoleMap))
+
+  if (input.suspensionRoleId !== undefined) data[DISCORD_SETTING_KEYS.suspensionRoleId] = input.suspensionRoleId.trim()
 
   const entries = Object.entries(data)
   if (entries.length === 0) return
@@ -966,6 +972,7 @@ export function managedDiscordRoleIds(config: DiscordConfig, extraManagedRoleIds
     ...config.unitGroups.flatMap((group) => [group.memberDiscordRoleId, group.leadershipDiscordRoleId]),
     ...config.tiers.map((tier) => tier.discordRoleId),
     config.promotionBlockRoleId,
+    config.suspensionRoleId,
     ...extraManagedRoleIds,
   ].filter(Boolean)))
 }
@@ -1007,6 +1014,7 @@ function desiredRoleIds(officer: OfficerForDiscord, config: DiscordConfig) {
       .filter((tier) => tier.rankIds.includes(officer.rankId))
       .map((tier) => tier.discordRoleId),
     ...(officer.promotionBlocked ? [config.promotionBlockRoleId] : []),
+    ...(isSuspended(officer) ? [config.suspensionRoleId] : []),
   ].filter((roleId): roleId is string => !!roleId)))
 }
 

@@ -59,6 +59,7 @@ interface DiscordConfigResponse {
     absenceStatusMessageId: string
     humanResourcesRoleId: string
     promotionBlockRoleId: string
+    suspensionRoleId: string
     employeeRoleIds: string[]
     commandRoleIds: string[]
     authLoginRoleIds: string[]
@@ -138,6 +139,7 @@ export default function SettingsPage() {
     absenceStatusMessageId: '',
     humanResourcesRoleId: '',
     promotionBlockRoleId: '',
+    suspensionRoleId: '',
     employeeRoleIds: [],
     commandRoleIds: [],
     authLoginRoleIds: [],
@@ -693,6 +695,18 @@ export default function SettingsPage() {
                 />
                 <p className="text-[11px] text-label-3 mt-1.5">
                   Officer mit aktiver Uprank-Sperre erhalten diese Rolle automatisch (und verlieren sie beim Aufheben).
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Select
+                  label="Suspendierungsrolle"
+                  value={discordForm.suspensionRoleId}
+                  onValueChange={(suspensionRoleId) => setDiscordForm({ ...discordForm, suspensionRoleId })}
+                  options={roleOptions}
+                />
+                <p className="text-[11px] text-label-3 mt-1.5">
+                  Suspendierte Officer erhalten diese Rolle automatisch. Nach Ablauf oder Aufhebung wird sie wieder entfernt.
+                  Änderungen werden beim Speichern auch auf bereits suspendierte Officer angewendet.
                 </p>
               </div>
             </div>

@@ -96,6 +96,10 @@ export async function POST(req: NextRequest) {
     const user = await requireAuth(['ADMIN'], ['settings:manage', 'ranks:manage', 'trainings:manage', 'units:manage'])
     const body = await req.json()
     const canManageSettings = hasPermission(user, 'settings:manage')
+    if (canManageSettings && body.suspensionRoleId !== undefined &&
+      (typeof body.suspensionRoleId !== 'string' || !/^(?:\d{17,22})?$/.test(body.suspensionRoleId.trim()))) {
+      return error('Bitte eine gültige Discord-Rolle für Suspendierungen auswählen.')
+    }
     const previousConfig = await getDiscordConfig()
 
     invalidateDiscordCache()
@@ -110,6 +114,7 @@ export async function POST(req: NextRequest) {
       absenceStatusChannelId: canManageSettings && typeof body.absenceStatusChannelId === 'string' ? body.absenceStatusChannelId : undefined,
       humanResourcesRoleId: canManageSettings && typeof body.humanResourcesRoleId === 'string' ? body.humanResourcesRoleId : undefined,
       promotionBlockRoleId: canManageSettings && typeof body.promotionBlockRoleId === 'string' ? body.promotionBlockRoleId : undefined,
+      suspensionRoleId: canManageSettings && typeof body.suspensionRoleId === 'string' ? body.suspensionRoleId : undefined,
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
       authLoginRoleIds: canManageSettings && Array.isArray(body.authLoginRoleIds) ? body.authLoginRoleIds : undefined,
