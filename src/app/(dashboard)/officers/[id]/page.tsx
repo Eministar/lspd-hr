@@ -741,7 +741,6 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
-      <SuspensionControl officer={officer} canEdit={canEditOfficer} onChange={refetch} />
       <PageHeader
         title={`${isSuspended(officer) ? '[/] ' : ''}${officer.firstName} ${officer.lastName}`}
         description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}${officer.rank?.internalNumber != null ? ` · Rang ${officer.rank.internalNumber}` : ''}`}
@@ -1219,6 +1218,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
                     <Gavel size={15} strokeWidth={1.75} /> Sanktion
                   </button>
                 )}
+                <SuspensionControl officer={officer} canEdit={canEditOfficer} onChange={refetch} />
                 {canBlockPromotion && officer.status !== 'TERMINATED' && (
                   <button onClick={handleTogglePromotionBlock}
                     className={cn(

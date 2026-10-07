@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { CircleSlash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -42,15 +43,20 @@ export function SuspensionControl({ officer, canEdit, onChange }: {
 
   if (officer.status === 'TERMINATED' || (!canEdit && !active)) return null
   return (
-    <section className="mb-5 rounded-xl border border-separator bg-surface-1 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-label">{active ? '[/] Suspendiert' : 'Suspendierung'}</h2>
-          <p className="mt-1 text-sm text-label-3">{active ? `Bis ${formatDateTime(officer.suspendedUntil!)} · endet automatisch` : 'Zeitlich begrenzte Suspendierung in der Personalakte hinterlegen.'}</p>
-          {active && officer.suspensionReason && <p className="mt-2 whitespace-pre-wrap text-sm text-label-2">{officer.suspensionReason}</p>}
+    <div>
+      {canEdit && (
+        <button type="button" onClick={() => { setReason(''); setDuration('1'); setUnit('24'); setOpen(true) }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-[13px] text-yellow hover:bg-gold/12 transition-colors text-left">
+          <CircleSlash size={15} strokeWidth={1.75} />
+          {active ? 'Suspendierung verwalten' : 'Suspendieren'}
+        </button>
+      )}
+      {active && (
+        <div className="px-3 pb-2.5 pt-1 text-[12px] text-label-3">
+          <p>[/] Suspendiert bis {formatDateTime(officer.suspendedUntil!)}</p>
+          {officer.suspensionReason && <p className="mt-1 whitespace-pre-wrap break-words">{officer.suspensionReason}</p>}
         </div>
-        {canEdit && <Button variant="secondary" size="sm" onClick={() => { setReason(''); setDuration('1'); setUnit('24'); setOpen(true) }}>{active ? 'Suspendierung verwalten' : 'Suspendieren'}</Button>}
-      </div>
+      )}
       <Modal open={open} onClose={() => { if (!loading) setOpen(false) }} title="Suspendierung" description="Die Laufzeit beginnt beim Speichern. Eine bestehende Suspendierung wird ersetzt.">
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid && !loading) void save() }}>
           <Input label="Dauer" type="number" min={1} max={unit === '24' ? 365 : 8760} step={1} value={duration} onChange={(e) => setDuration(e.target.value)} required />
@@ -63,6 +69,6 @@ export function SuspensionControl({ officer, canEdit, onChange }: {
           </div>
         </form>
       </Modal>
-    </section>
+    </div>
   )
 }
