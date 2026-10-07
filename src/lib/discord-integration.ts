@@ -116,6 +116,7 @@ type OfficerForDiscord = {
   badgeNumber: string
   status: string
   promotionBlocked?: boolean | null
+  suspendedUntil?: Date | string | null
   units?: unknown
   unit?: string | null
   rankId: string

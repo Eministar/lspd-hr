@@ -183,6 +183,8 @@ const quickActions: { label: string; description: string; href: string; icon: Lu
 ]
 
 const actionLabels: Record<string, string> = {
+  OFFICER_SUSPENDED: 'Officer suspendiert',
+  OFFICER_UNSUSPENDED: 'Suspendierung aufgehoben',
   OFFICER_CREATED: 'Officer erstellt',
   OFFICER_UPDATED: 'Officer bearbeitet',
   OFFICER_DELETED: 'Officer gelöscht',

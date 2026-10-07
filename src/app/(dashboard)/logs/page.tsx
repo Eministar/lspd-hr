@@ -34,6 +34,8 @@ interface LogResponse {
 }
 
 const actionLabels: Record<string, string> = {
+  OFFICER_SUSPENDED: 'Officer suspendiert',
+  OFFICER_UNSUSPENDED: 'Suspendierung aufgehoben',
   OFFICER_CREATED: 'Erstellt',
   OFFICER_UPDATED: 'Bearbeitet',
   OFFICER_DELETED: 'Gelöscht',

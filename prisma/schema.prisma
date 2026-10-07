@@ -599,6 +599,8 @@ model Officer {
   flag             OfficerFlag?
   /// Uprank-Sperre: blockiert Beförderungen (Aufstieg). Degradierungen bleiben erlaubt.
   promotionBlocked Boolean       @default(false)
+  suspendedUntil   DateTime?
+  suspensionReason String?        @db.Text
   notes            String?
   hireDate         DateTime      @default(now())
   lastOnline       DateTime?

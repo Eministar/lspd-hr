@@ -1,5 +1,8 @@
 'use client'
 
+import { SuspensionControl } from '@/components/officers/suspension-control'
+import { isSuspended } from '@/lib/suspension'
+
 import { useState, useCallback, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -78,6 +81,8 @@ interface OfficerDetail {
   id: string
   avatarUrl: string | null
   badgeNumber: string
+  suspendedUntil?: string | null
+  suspensionReason?: string | null
   firstName: string
   lastName: string
   rankId: string
@@ -736,8 +741,9 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
+      <SuspensionControl officer={officer} canEdit={canEditOfficer} onChange={refetch} />
       <PageHeader
-        title={`${officer.firstName} ${officer.lastName}`}
+        title={`${isSuspended(officer) ? '[/] ' : ''}${officer.firstName} ${officer.lastName}`}
         description={`DN: ${displayBadgeNumber(officer.badgeNumber)} · ${officer.rank?.name}${officer.rank?.internalNumber != null ? ` · Rang ${officer.rank.internalNumber}` : ''}`}
         action={
           <div className="flex gap-1.5 flex-wrap">
@@ -1320,7 +1326,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       {/* Delete modal */}
       <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Officer löschen">
         <p className="text-[13px] text-label-2 mb-5">
-          Soll <strong className="text-label">{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
+          Soll <strong className="text-label">{isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}</strong> unwiderruflich gelöscht werden?
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setDeleteModal(false)}>Abbrechen</Button>
@@ -1332,7 +1338,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       <Modal open={terminateModal} onClose={() => setTerminateModal(false)} title="Officer kündigen">
         <div className="space-y-4">
           <p className="text-[13px] text-label-2">
-            <strong className="text-label">{officer.firstName} {officer.lastName}</strong> wird gekündigt.
+            <strong className="text-label">{isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}</strong> wird gekündigt.
           </p>
           <Textarea label="Kündigungsgrund" value={terminateReason} onChange={(e) => setTerminateReason(e.target.value)} rows={3} required placeholder="Grund..." />
           <div className="flex justify-end gap-2">
@@ -1348,7 +1354,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <Gavel size={15} className="text-yellow shrink-0" strokeWidth={1.75} />
             <p className="text-[13px] text-label-2">
               {editingSanction ? 'Sanktion bearbeiten für' : 'Neue Sanktion für'}{' '}
-              <strong className="text-label font-semibold">{officer.firstName} {officer.lastName}</strong>
+              <strong className="text-label font-semibold">{isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}</strong>
             </p>
           </div>
 
@@ -1479,7 +1485,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
         <div className="space-y-4">
           <div className="px-3 py-2.5 bg-surface-2 rounded-[8px]">
             <p className="text-[13px] text-label-2">
-              Officer: <strong className="text-label">{officer.firstName} {officer.lastName}</strong>
+              Officer: <strong className="text-label">{isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}</strong>
               <span className="ml-2 text-label-3">· Aktuell: {officer.rank?.name}</span>
             </p>
           </div>
@@ -1524,7 +1530,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
       <Modal open={absenceModal} onClose={() => setAbsenceModal(false)} title="Abmeldung eintragen">
         <div className="space-y-4">
           <p className="text-[13px] text-label-2">
-            Abmeldung für <strong className="text-label">{officer.firstName} {officer.lastName}</strong>.
+            Abmeldung für <strong className="text-label">{isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}</strong>.
           </p>
           <DateField
             label="Abgemeldet bis"
@@ -1568,7 +1574,7 @@ export default function OfficerDetailPage({ params }: { params: Promise<{ id: st
             <div className="rounded-[10px] border border-line bg-surface px-3.5 py-3">
               <p className="text-[12px] text-label-2">Officer</p>
               <p className="mt-1 text-[14px] font-semibold text-label">
-                {officer.firstName} {officer.lastName}
+                {isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}
               </p>
               <p className="mt-1 text-[12.5px] text-label-2">
                 DN {displayBadgeNumber(officer.badgeNumber)} · {officer.rank.name}

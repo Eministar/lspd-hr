@@ -1,3 +1,5 @@
+import { queueOfficerRoleSync } from '@/lib/discord-integration'
+import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import type { OfficerFlag, OfficerStatus } from '@/generated/prisma/client'
@@ -264,6 +266,20 @@ async function runOfficerStatusAutomationPass(options?: { force?: boolean }): Pr
     return { skipped: true, updated: 0, notesCreated: 0 }
   }
   lastAutomationRun = now.getTime()
+
+  // Expiry is time-based in every display; clear persisted markers and sync Discord too.
+  const expired = await prisma.officer.findMany({ where: { suspendedUntil: { lte: now } } })
+  for (const officer of expired) {
+    const cleared = await prisma.officer.updateMany({
+      where: { id: officer.id, suspendedUntil: officer.suspendedUntil },
+      data: { suspendedUntil: null, suspensionReason: null },
+    })
+    if (cleared.count) {
+      queueOfficerRoleSync(officer.id)
+      await syncLinkedUserDisplayNameForOfficer({ ...officer, suspendedUntil: null })
+        .catch((err) => console.error('[Suspension] Anzeigename:', err))
+    }
+  }
 
   const inactiveCutoff = new Date(now.getTime() - INACTIVITY_DAYS * 24 * 60 * 60 * 1000)
   const officers = await prisma.officer.findMany({

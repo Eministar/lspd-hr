@@ -1,3 +1,4 @@
+import { isSuspended } from '@/lib/suspension'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import { prisma } from '@/lib/prisma'
 import { getBadgePrefix } from '@/lib/settings-helpers'
@@ -19,6 +20,7 @@ export type LinkedOfficerDisplaySource = {
   discordId?: string | null
   status?: string | null
   promotionBlocked?: boolean | null
+  suspendedUntil?: Date | string | null
 }
 
 function bracketedBadgeNumber(badgeNumber: string, prefix: string) {
@@ -37,7 +39,7 @@ function bracketedBadgeNumber(badgeNumber: string, prefix: string) {
 export function formatLinkedOfficerDisplayName(officer: LinkedOfficerDisplaySource, prefix: string) {
   const name = `${officer.firstName} ${officer.lastName}`.replace(/\s+/g, ' ').trim()
   const marker = officer.promotionBlocked ? PROMOTION_BLOCK_MARKER : ''
-  return [marker, bracketedBadgeNumber(officer.badgeNumber, prefix), name].filter(Boolean).join(' ')
+  return [isSuspended(officer) ? '[/]' : '', marker, bracketedBadgeNumber(officer.badgeNumber, prefix), name].filter(Boolean).join(' ')
 }
 
 export async function resolveLinkedOfficerDisplayName(discordId: string | null | undefined) {
@@ -54,6 +56,7 @@ export async function resolveLinkedOfficerDisplayName(discordId: string | null |
       firstName: true,
       lastName: true,
       promotionBlocked: true,
+      suspendedUntil: true,
     },
   })
   if (!officer) return null

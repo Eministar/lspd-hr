@@ -1,5 +1,7 @@
 'use client'
 
+import { isSuspended } from '@/lib/suspension'
+
 import { useState, useMemo, useCallback, type ReactNode, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -89,6 +91,8 @@ interface Unit {
 interface Officer {
   id: string
   badgeNumber: string
+  suspendedUntil?: string | null
+  suspensionReason?: string | null
   firstName: string
   lastName: string
   rank: Rank
@@ -327,9 +331,9 @@ function DraggableOfficerRow({
             href={`/officers/${officer.id}`}
             onClick={(e) => e.stopPropagation()}
             className="block truncate text-[13.5px] font-medium text-label transition-colors hover:text-gold-bright"
-            title={`${officer.firstName} ${officer.lastName}`}
+            title={`${isSuspended(officer) ? '[/] ' : ''}${officer.firstName} ${officer.lastName}`}
           >
-            {officer.firstName} {officer.lastName}
+            {isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}
           </Link>
         </div>
       </td>
@@ -426,7 +430,7 @@ function MobileOfficerCard({
               href={`/officers/${officer.id}`}
               className="block truncate text-[14px] font-semibold text-label transition-colors hover:text-gold-bright"
             >
-              {officer.firstName} {officer.lastName}
+              {isSuspended(officer) ? '[/] ' : ''}{officer.firstName} {officer.lastName}
             </Link>
           </div>
         </div>

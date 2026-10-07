@@ -1,3 +1,4 @@
+import { isSuspended } from '@/lib/suspension'
 import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
@@ -63,6 +64,7 @@ export async function GET() {
         lastName: true,
         rankId: true,
         status: true,
+        suspendedUntil: true,
         hireDate: true,
         lastOnline: true,
         updatedAt: true,
@@ -142,7 +144,7 @@ export async function GET() {
   ])
 
   const totalOfficers = officers.length
-  const activeOfficers = officers.filter((officer) => officer.status === 'ACTIVE').length
+  const activeOfficers = officers.filter((officer) => officer.status === 'ACTIVE' && !isSuspended(officer)).length
   const awayOfficers = officers.filter((officer) => officer.status === 'AWAY').length
   const inactiveOfficers = officers.filter((officer) => officer.status === 'INACTIVE').length
   const terminatedOfficers = officers.filter((officer) => officer.status === 'TERMINATED').length
@@ -229,6 +231,13 @@ export async function GET() {
     ))
   )).length
   const notifications = [
+    ...officers.filter((officer) => isSuspended(officer)).map((officer) => ({
+      id: `suspension-${officer.id}`,
+      severity: 'warning',
+      title: `[/] ${officer.firstName} ${officer.lastName} · Suspendiert`,
+      description: `Bis ${officer.suspendedUntil!.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })} (Europe/Berlin)`,
+      href: `/officers/${officer.id}`,
+    })),
     ...(overdueSanctions > 0 ? [{
       id: 'overdue-sanctions',
       severity: 'error',
