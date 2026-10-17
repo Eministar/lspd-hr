@@ -3,8 +3,6 @@
 export const LIVE_UPDATE_EVENT = 'lspd:live-update'
 export const LIVE_UPDATE_CHANNEL = 'lspd-live-updates'
 export const LIVE_REFRESH_INTERVAL_MS = 5_000
-/** Wird gefeuert, sobald eine API-Anfrage mit 401 antwortet (z. B. nach einer Kündigung). */
-export const AUTH_INVALID_EVENT = 'lspd:auth-invalid'
 
 export function notifyLiveUpdate(): void {
   if (typeof window === 'undefined') {

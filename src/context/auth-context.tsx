@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { AUTH_INVALID_EVENT } from '@/lib/live-updates'
 
 interface User {
   id: string
@@ -64,9 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // gilt der User auch im Silent-Modus als ausgeloggt.
       setUser(data.data ?? null)
       setAuthError(null)
-      if (typeof data.signedOut === 'string') {
-        router.replace(`/login?error=${encodeURIComponent(data.signedOut)}`)
-      }
     } catch (err) {
       if (!silent) {
         setUser(null)
@@ -76,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [router])
+  }, [])
 
   const refreshUser = useCallback(() => loadUser(false), [loadUser])
 
@@ -149,11 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState === 'visible') revalidateUser()
     }
     window.addEventListener('focus', onFocus)
-    window.addEventListener(AUTH_INVALID_EVENT, onFocus)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
       window.removeEventListener('focus', onFocus)
-      window.removeEventListener(AUTH_INVALID_EVENT, onFocus)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [revalidateUser])

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { isTerminatedOfficerDiscordId, signToken, TERMINATED_OFFICER_MESSAGE } from '@/lib/auth'
+import { signToken } from '@/lib/auth'
 import {
-  DiscordAuthError,
   exchangeDiscordCode,
   fetchDiscordCurrentUser,
   syncDiscordApplicantProfile,
@@ -72,7 +71,6 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${baseUrl(req)}/api/auth/discord/callback`
     const token = await exchangeDiscordCode(code, redirectUri)
     const discordUser = await fetchDiscordCurrentUser(token.access_token)
-    if (await isTerminatedOfficerDiscordId(discordUser.id)) throw new DiscordAuthError(TERMINATED_OFFICER_MESSAGE)
     const user = mode === 'application'
       ? await syncDiscordApplicantProfile(discordUser)
       : mode === 'contract'
