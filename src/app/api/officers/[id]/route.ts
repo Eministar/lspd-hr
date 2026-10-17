@@ -215,12 +215,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       : undefined
     let nextBadgeNumber = requestedBadgeNumber || restoredBadgeNumber
 
-    if (nextBadgeNumber && nextBadgeNumber !== existing.badgeNumber) {
+    // Wiedereinstellung in einen anderen Rang: Dienstnummer muss zum neuen Rangbereich passen
+    const reactivationRank = reactivating && parsed.data.rankId && parsed.data.rankId !== existing.rankId
+      ? await prisma.rank.findUnique({ where: { id: parsed.data.rankId } })
+      : existing.rank
+    if (!reactivationRank) return notFound('Rang')
+    const restoredOutOfRange = (() => {
+      if (!reactivating || requestedBadgeNumber || !restoredBadgeNumber || !rankHasBadgeRange(reactivationRank)) return false
+      const restoredInt = parseBadgeNumberToInt(restoredBadgeNumber, prefix)
+      return restoredInt === null || restoredInt < reactivationRank.badgeMin || restoredInt > reactivationRank.badgeMax
+    })()
+
+    if (nextBadgeNumber && (nextBadgeNumber !== existing.badgeNumber || restoredOutOfRange)) {
       const allowDuplicateBadgeNumbers = await getAllowDuplicateBadgeNumbers()
-      let badgeConflict = await findBadgeNumberConflict(nextBadgeNumber, prefix, id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
+      let badgeConflict = restoredOutOfRange
+        ? 'Dienstnummer liegt außerhalb des Rangbereichs'
+        : await findBadgeNumberConflict(nextBadgeNumber, prefix, id, { allowOfficerDuplicate: allowDuplicateBadgeNumbers })
       if (badgeConflict && reactivating && !requestedBadgeNumber) {
-        // Alte Dienstnummer ist inzwischen vergeben/gesperrt → nächste freie Nummer vergeben
-        const fallback = await findReactivationBadgeNumber(existing.rank, nextBadgeNumber, prefix)
+        // Alte Dienstnummer ist vergeben/gesperrt oder passt nicht zum Rang → nächste freie Nummer vergeben
+        const fallback = await findReactivationBadgeNumber(reactivationRank, nextBadgeNumber, prefix)
         if (fallback) {
           nextBadgeNumber = fallback
           badgeConflict = null

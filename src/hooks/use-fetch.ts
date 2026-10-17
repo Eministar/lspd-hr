@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from 'react'
-import { LIVE_REFRESH_INTERVAL_MS, LIVE_UPDATE_CHANNEL, LIVE_UPDATE_EVENT } from '@/lib/live-updates'
+import { AUTH_INVALID_EVENT, LIVE_REFRESH_INTERVAL_MS, LIVE_UPDATE_CHANNEL, LIVE_UPDATE_EVENT } from '@/lib/live-updates'
 
 // Fokus und visibilitychange feuern beim Tab-Wechsel gemeinsam — ein Refetch reicht.
 const SILENT_REFRESH_MIN_GAP_MS = 1000
@@ -66,6 +66,7 @@ export function useFetch<T>(url: string | null): UseFetchResult<T> {
     setError(null)
     try {
       const res = await fetch(url, { cache: 'no-store' })
+      if (res.status === 401) window.dispatchEvent(new Event(AUTH_INVALID_EVENT))
       const payload = await res.text()
       const json = JSON.parse(payload)
       if (!res.ok || !json.success) {

@@ -73,6 +73,20 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
+export const TERMINATED_OFFICER_MESSAGE = 'Du wurdest gekündigt und hast keinen Zugriff mehr auf das Dashboard.'
+
+/**
+ * True, wenn die Discord-ID ausschließlich zu gekündigten Officern gehört.
+ * Solche Accounts verlieren sofort jeden Zugriff — bestehende Sitzungen und
+ * API-Tokens werden bei der nächsten Anfrage ungültig.
+ */
+export async function isTerminatedOfficerDiscordId(discordId: string | null | undefined): Promise<boolean> {
+  const id = discordId?.trim()
+  if (!id) return false
+  const officers = await prisma.officer.findMany({ where: { discordId: id }, select: { status: true } })
+  return officers.length > 0 && officers.every((officer) => officer.status === 'TERMINATED')
+}
+
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -139,7 +153,10 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
       where: { tokenHash },
       include: { user: true },
     })
-    if (row && !row.revokedAt && (!row.expiresAt || row.expiresAt.getTime() > Date.now()) && row.user) {
+    if (
+      row && !row.revokedAt && (!row.expiresAt || row.expiresAt.getTime() > Date.now()) && row.user &&
+      !(await isTerminatedOfficerDiscordId(row.user.discordId))
+    ) {
       const tokenScopes = effectiveTokenScopes(row.scopes, await loadUserPermissions(row.userId))
 
       // Optional: X-Discord-Id-Header = "handle als dieser User"
@@ -309,6 +326,7 @@ async function loadUserByDiscordId(discordId: string): Promise<CurrentUser | nul
     },
   })
   if (!user) return null
+  if (await isTerminatedOfficerDiscordId(user.discordId)) return null
 
   const groupsById = new Map(user.groupMemberships.map((m) => [m.group.id, m.group]))
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)
@@ -358,6 +376,7 @@ async function loadUserForAuth(userId: string): Promise<CurrentUser | null> {
     },
   })
   if (!user) return null
+  if (await isTerminatedOfficerDiscordId(user.discordId)) return null
 
   const groupsById = new Map(user.groupMemberships.map((m) => [m.group.id, m.group]))
   if (user.group && !groupsById.has(user.group.id)) groupsById.set(user.group.id, user.group)

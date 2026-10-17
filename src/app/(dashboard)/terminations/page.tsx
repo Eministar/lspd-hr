@@ -27,6 +27,11 @@ interface Officer {
   status: string
 }
 
+interface Rank {
+  id: string
+  name: string
+}
+
 interface Termination {
   id: string
   reason: string
@@ -41,6 +46,7 @@ interface Termination {
     lastName: string
     badgeNumber: string
     status: string
+    rankId: string
     rank: { name: string; color: string }
   } | null
   terminatedBy: { displayName: string } | null
@@ -58,10 +64,12 @@ export default function TerminationsPage() {
   const canManage = hasPermission(user, 'terminations:manage')
   const { data: terminations, loading, refetch } = useFetch<Termination[]>(canView ? '/api/terminations' : null)
   const { data: officers, refetch: refetchOfficers } = useFetch<Officer[]>(canManage ? '/api/officers' : null)
+  const { data: ranks } = useFetch<Rank[]>(canManage && hasPermission(user, 'ranks:view') ? '/api/ranks' : null)
   const { execute } = useApi()
   const { addToast } = useToast()
 
   const [rehireId, setRehireId] = useState<string | null>(null)
+  const [rehireRankId, setRehireRankId] = useState('')
   const [createModal, setCreateModal] = useState(false)
   const [selectedOfficerId, setSelectedOfficerId] = useState('')
   const [reason, setReason] = useState('')
@@ -110,16 +118,24 @@ export default function TerminationsPage() {
     }
   }
 
+  const openRehire = (officer: NonNullable<Termination['officer']>) => {
+    setRehireId(officer.id)
+    setRehireRankId(officer.rankId)
+  }
+
   const handleRehire = async (officerId: string) => {
     try {
       const updated = await execute(`/api/officers/${officerId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'ACTIVE' }),
-      }) as { badgeNumber?: string } | null
+        body: JSON.stringify({ status: 'ACTIVE', ...(rehireRankId ? { rankId: rehireRankId } : {}) }),
+      }) as { badgeNumber?: string; rank?: { name: string } } | null
       addToast({
         type: 'success',
         title: 'Officer wiedereingestellt',
-        message: updated?.badgeNumber ? `Dienstnummer: ${displayBadgeNumber(updated.badgeNumber)}` : undefined,
+        message: [
+          updated?.rank?.name ? `Rang: ${updated.rank.name}` : null,
+          updated?.badgeNumber ? `Dienstnummer: ${displayBadgeNumber(updated.badgeNumber)}` : null,
+        ].filter(Boolean).join(' · ') || undefined,
       })
       setRehireId(null)
       await refetch()
@@ -217,7 +233,7 @@ export default function TerminationsPage() {
                 {canManage && (
                 <div className="shrink-0">
                   {t.officer?.status === 'TERMINATED' ? (
-                    <Button variant="secondary" size="sm" onClick={() => setRehireId(t.officer!.id)}>
+                    <Button variant="secondary" size="sm" onClick={() => openRehire(t.officer!)}>
                       <UserPlus size={13} strokeWidth={1.75} />
                       Wiedereinstellen
                     </Button>
@@ -275,8 +291,18 @@ export default function TerminationsPage() {
       <Modal open={!!rehireId} onClose={() => setRehireId(null)} title="Officer wiedereinstellen">
         <p className="text-[13px] text-label-2 mb-5">
           Möchten Sie diesen Officer wirklich wiedereinstellen? Der Status wird auf &quot;Aktiv&quot; gesetzt.
-          Ist die alte Dienstnummer inzwischen vergeben, wird automatisch die nächste freie Nummer zugewiesen.
+          Ist die alte Dienstnummer inzwischen vergeben oder passt sie nicht zum gewählten Rang, wird automatisch die nächste freie Nummer zugewiesen.
         </p>
+        {ranks && ranks.length > 0 && (
+          <div className="mb-5">
+            <Select
+              label="Rang bei Wiedereinstellung"
+              value={rehireRankId}
+              onValueChange={setRehireRankId}
+              options={ranks.map(r => ({ value: r.id, label: r.name }))}
+            />
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setRehireId(null)}>Abbrechen</Button>
           <Button size="sm" onClick={() => rehireId && handleRehire(rehireId)}>Wiedereinstellen</Button>
