@@ -1,7 +1,25 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-10-07T17:17:26.843Z",
+  "generatedAt": "2026-10-17T17:15:06.978Z",
   "entries": [
+    {
+      "buildId": "build-7d1ca5849a",
+      "commit": "7d1ca5849ad41ec612d6fb97afb44e94c7fc2730",
+      "shortCommit": "7d1ca5849a",
+      "subject": "feat: implement termination handling for officers with Discord integration",
+      "author": "Eministar",
+      "date": "2026-10-17T17:14:13Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/7d1ca5849ad41ec612d6fb97afb44e94c7fc2730"
+    },
+    {
+      "buildId": "build-d8814e504a",
+      "commit": "d8814e504a40a3062a1924fa60d62c559446ab69",
+      "shortCommit": "d8814e504a",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-10-07T17:17:26Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d8814e504a40a3062a1924fa60d62c559446ab69"
+    },
     {
       "buildId": "build-df5dc91c89",
       "commit": "df5dc91c89a9794be57adf3cbaf086dda02412b9",
