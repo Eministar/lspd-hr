@@ -2,9 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requirePermission } from '@/lib/auth'
 import { success, error, unauthorized } from '@/lib/api-response'
-import { createAuditLog } from '@/lib/audit'
-import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
-import { releaseTerminatedBadgeNumber } from '@/lib/badge-blacklist'
+import { terminateOfficer } from '@/lib/officer-termination'
 
 export async function GET() {
   try {
@@ -39,43 +37,7 @@ export async function POST(req: NextRequest) {
     if (!officer) return error('Officer nicht gefunden')
     if (officer.status === 'TERMINATED') return error('Officer ist bereits gekündigt')
 
-    const termination = await prisma.termination.create({
-      data: {
-        officerId,
-        reason,
-        terminatedByUserId: user.id,
-        previousRank: officer.rank.name,
-        previousBadgeNumber: officer.badgeNumber,
-        previousFirstName: officer.firstName,
-        previousLastName: officer.lastName,
-      },
-    })
-
-    await prisma.$transaction(async (tx) => {
-      await tx.officer.update({
-        where: { id: officerId },
-        data: { status: 'TERMINATED' },
-      })
-      await releaseTerminatedBadgeNumber(officer, tx)
-    })
-
-    await createAuditLog({
-      action: 'OFFICER_TERMINATED',
-      userId: user.id,
-      officerId,
-      details: `${officer.firstName} ${officer.lastName} gekündigt. Grund: ${reason}`,
-    })
-
-    queueOfficerRoleSync(officerId, 'remove-all')
-    queueDiscordHrEvent({
-      type: 'termination',
-      title: `Kündigung: ${officer.firstName} ${officer.lastName}`,
-      officer,
-      actor: user,
-      fields: [
-        { name: 'Grund', value: String(reason), inline: false },
-      ],
-    })
+    const termination = await terminateOfficer({ officer, reason: String(reason), user })
 
     return success(termination, 201)
   } catch (e: unknown) {

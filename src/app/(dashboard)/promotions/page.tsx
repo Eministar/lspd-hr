@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpDown, Plus, Search, X } from 'lucide-react'
+import { ArrowUpDown, Plus, Search, UserX, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -41,8 +41,11 @@ interface Officer {
 type StatusFilter = '' | 'open' | 'executed'
 
 function actionLabel(direction: RankChangeDirection) {
+  if (direction === 'TERMINATION') return 'Kündigung'
   return direction === 'DEMOTION' ? 'Degradierung' : 'Beförderung'
 }
+
+const EMPTY_ENTRY_FORM = { officerId: '', proposedRankId: '', newBadgeNumber: '', note: '', isTermination: false }
 
 export default function RankChangeListsPage() {
   const { user } = useAuth()
@@ -64,7 +67,7 @@ export default function RankChangeListsPage() {
   const [votingEntryIds, setVotingEntryIds] = useState<Set<string>>(new Set())
 
   const [listForm, setListForm] = useState({ name: '', description: '' })
-  const [entryForm, setEntryForm] = useState({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+  const [entryForm, setEntryForm] = useState(EMPTY_ENTRY_FORM)
   const [officerSearch, setOfficerSearch] = useState('')
 
   const [search, setSearch] = useState('')
@@ -100,6 +103,9 @@ export default function RankChangeListsPage() {
   const entryDirectionPreview: RankChangeDirection | null = selectedOfficer && selectedTargetRank
     ? (selectedTargetRank.sortOrder > selectedOfficer.rank.sortOrder ? 'DEMOTION' : 'PROMOTION')
     : null
+  const canSubmitEntry = Boolean(entryForm.officerId) && (
+    entryForm.isTermination ? Boolean(entryForm.note.trim()) : Boolean(entryForm.proposedRankId)
+  )
 
   // Ränge und Einreicher für die Filter-Dropdowns aus den vorhandenen Einträgen ableiten.
   const { rankOptions, submitterOptions } = useMemo(() => {
@@ -222,15 +228,17 @@ export default function RankChangeListsPage() {
   }
 
   const handleAddEntry = async () => {
-    if (!addEntryListId || !entryForm.officerId || !entryForm.proposedRankId) return
+    if (!addEntryListId || !canSubmitEntry) return
     try {
       await execute(`/api/rank-change-lists/${addEntryListId}/entries`, {
         method: 'POST',
-        body: JSON.stringify(entryForm),
+        body: JSON.stringify(entryForm.isTermination
+          ? { officerId: entryForm.officerId, note: entryForm.note, isTermination: true }
+          : entryForm),
       })
-      addToast({ type: 'success', title: 'Officer hinzugefügt' })
+      addToast({ type: 'success', title: entryForm.isTermination ? 'Kündigung eingetragen' : 'Officer hinzugefügt' })
       setAddEntryListId(null)
-      setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+      setEntryForm(EMPTY_ENTRY_FORM)
       await refetch()
     } catch (err) {
       addToast({ type: 'error', title: 'Fehler', message: err instanceof Error ? err.message : '' })
@@ -316,7 +324,8 @@ export default function RankChangeListsPage() {
 
   const allEntries = rows.flatMap((list) => list.entries)
   const promotionEntries = allEntries.filter((entry) => entryDirection(entry) === 'PROMOTION').length
-  const demotionEntries = allEntries.length - promotionEntries
+  const terminationEntries = allEntries.filter((entry) => entry.isTermination).length
+  const demotionEntries = allEntries.length - promotionEntries - terminationEntries
   const executedEntries = allEntries.filter((entry) => entry.executed).length
   const pendingEntries = allEntries.length - executedEntries
   const visibleEntryCount = visibleLists.reduce((sum, { entries }) => sum + entries.length, 0)
@@ -325,7 +334,7 @@ export default function RankChangeListsPage() {
     <div>
       <PageHeader
         title="Up-/D-Rank-Listen"
-        description="Beförderungen und Degradierungen werden gemeinsam in einer Liste geführt und nach Rang sortiert."
+        description="Beförderungen, Degradierungen und Kündigungen werden gemeinsam in einer Liste geführt und nach Rang sortiert."
         action={canManage ? (
           <Button size="sm" onClick={openCreateModal}>
             <Plus size={14} strokeWidth={2} />
@@ -335,9 +344,10 @@ export default function RankChangeListsPage() {
       />
 
       {rows.length > 0 && (
-        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <RankChangeStat label="Up-Ranks" value={promotionEntries} tone="text-green" />
           <RankChangeStat label="D-Ranks" value={demotionEntries} tone="text-red" />
+          <RankChangeStat label="Kündigungen" value={terminationEntries} tone="text-orange" />
           <RankChangeStat label="Durchgeführt" value={executedEntries} tone="text-label" />
           <RankChangeStat label="Offen" value={pendingEntries} tone="text-yellow" />
         </div>
@@ -363,6 +373,7 @@ export default function RankChangeListsPage() {
                 { value: '', label: 'Alle Typen' },
                 { value: 'PROMOTION', label: 'Up-Rank' },
                 { value: 'DEMOTION', label: 'D-Rank' },
+                { value: 'TERMINATION', label: 'Kündigung' },
               ]}
             />
             <Select
@@ -455,7 +466,7 @@ export default function RankChangeListsPage() {
               onUndo={(entry) => setUndoEntry({ listId: list.id, entryId: entry.id, name: `${entry.officer.firstName} ${entry.officer.lastName}` })}
               onRemove={(entryId) => handleRemoveEntry(list.id, entryId)}
               onAddEntry={() => {
-                setEntryForm({ officerId: '', proposedRankId: '', newBadgeNumber: '', note: '' })
+                setEntryForm(EMPTY_ENTRY_FORM)
                 setOfficerSearch('')
                 setAddEntryListId(list.id)
               }}
@@ -496,6 +507,30 @@ export default function RankChangeListsPage() {
 
       <Modal open={!!addEntryListId} onClose={() => setAddEntryListId(null)} title="Officer zur Rangänderungsliste hinzufügen" size="md">
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-1 rounded-[9px] border border-line bg-surface p-1" role="radiogroup" aria-label="Art des Eintrags">
+            {([
+              [false, 'Rangänderung', ArrowUpDown],
+              [true, 'Kündigung', UserX],
+            ] as const).map(([value, label, Icon]) => {
+              const active = entryForm.isTermination === value
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setEntryForm({ ...entryForm, isTermination: value, proposedRankId: '', newBadgeNumber: '' })}
+                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-[7px] text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+                    active
+                      ? value ? 'bg-orange/16 text-orange' : 'bg-gold/16 text-gold-bright'
+                      : 'text-label-3 hover:bg-surface-2 hover:text-label'
+                  }`}
+                >
+                  <Icon size={13} /> {label}
+                </button>
+              )
+            })}
+          </div>
           <Input
             label="Officer suchen"
             value={officerSearch}
@@ -513,7 +548,25 @@ export default function RankChangeListsPage() {
             placeholder={filteredOfficers.length > 0 ? 'Officer wählen...' : 'Keine Treffer'}
             disabled={filteredOfficers.length === 0}
           />
-          {selectedOfficer && (
+          {selectedOfficer && entryForm.isTermination && (
+            <>
+              <div className="rounded-[8px] border border-orange/30 bg-orange/[0.07] px-3 py-2.5">
+                <p className="text-[13px] text-label-2">
+                  <strong className="text-label">{selectedOfficer.firstName} {selectedOfficer.lastName}</strong> ({selectedOfficer.rank.name}) wird beim Durchführen gekündigt. Discord-Rollen werden entfernt und die Dienstnummer wird freigegeben.
+                </p>
+              </div>
+              <Textarea
+                label="Kündigungsgrund"
+                value={entryForm.note}
+                onChange={(event) => setEntryForm({ ...entryForm, note: event.target.value })}
+                rows={3}
+                maxLength={5000}
+                required
+                placeholder="Grund für die Kündigung..."
+              />
+            </>
+          )}
+          {selectedOfficer && !entryForm.isTermination && (
             <>
               <div className="rounded-[8px] bg-surface-2 px-3 py-2.5">
                 <p className="text-[13px] text-label-2">
@@ -552,18 +605,22 @@ export default function RankChangeListsPage() {
           )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" size="sm" onClick={() => setAddEntryListId(null)}>Abbrechen</Button>
-            <Button size="sm" onClick={handleAddEntry} disabled={!entryForm.officerId || !entryForm.proposedRankId}>Hinzufügen</Button>
+            <Button size="sm" variant={entryForm.isTermination ? 'danger' : 'primary'} onClick={handleAddEntry} disabled={!canSubmitEntry}>
+              {entryForm.isTermination ? 'Kündigung eintragen' : 'Hinzufügen'}
+            </Button>
           </div>
         </div>
       </Modal>
 
       <Modal open={!!executeEntry} onClose={() => setExecuteEntry(null)} title={`${executeEntry ? actionLabel(executeEntry.direction) : 'Rangänderung'} ausführen`}>
         <p className="mb-5 text-[13px] text-label-2">
-          Die Rangänderung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?
+          {executeEntry?.direction === 'TERMINATION'
+            ? <>{executeEntry.name} wird jetzt gekündigt. Discord-Rollen werden entfernt und die Dienstnummer wird freigegeben. Fortfahren?</>
+            : <>Die Rangänderung für {executeEntry?.name} wird jetzt durchgeführt. Rang und Dienstnummer werden sofort geändert. Fortfahren?</>}
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => setExecuteEntry(null)}>Abbrechen</Button>
-          <Button size="sm" variant={executeEntry?.direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={handleExecuteEntry}>Durchführen</Button>
+          <Button size="sm" variant={executeEntry?.direction === 'PROMOTION' ? 'primary' : 'danger'} onClick={handleExecuteEntry}>Durchführen</Button>
         </div>
       </Modal>
 

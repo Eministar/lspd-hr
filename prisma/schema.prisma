@@ -1045,6 +1045,9 @@ model RankChangeListEntry {
   proposedRank   Rank                      @relation("EntryProposedRank", fields: [proposedRankId], references: [id])
   newBadgeNumber String?
   note           String?
+  /// Kündigung statt Rangänderung: proposedRankId bleibt auf dem aktuellen Rang,
+  /// note ist der Kündigungsgrund. Die Durchführung kündigt den Officer.
+  isTermination  Boolean                   @default(false)
   executed       Boolean                   @default(false)
   executedAt     DateTime?
   executedById   String?

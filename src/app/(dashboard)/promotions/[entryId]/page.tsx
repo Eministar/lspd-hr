@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Trash2,
   UserRound,
+  UserX,
   X,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
@@ -99,6 +100,7 @@ type DetailPayload = {
     }
     currentRank: Rank
     proposedRank: Rank
+    isTermination: boolean
     createdBy: Person | null
     executedBy: Person | null
     comments: Comment[]
@@ -191,9 +193,12 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
   const [voting, setVoting] = useState(false)
 
   const entry = data?.entry
-  const direction = entry && entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'DEMOTION' : 'PROMOTION'
-  const accent = direction === 'DEMOTION' ? '#ff453a' : '#32d74b'
-  const DirectionIcon = direction === 'DEMOTION' ? ArrowDownRight : ArrowUpRight
+  const direction = entry?.isTermination
+    ? 'TERMINATION'
+    : entry && entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'DEMOTION' : 'PROMOTION'
+  const accent = direction === 'TERMINATION' ? '#ff9f0a' : direction === 'DEMOTION' ? '#ff453a' : '#32d74b'
+  const DirectionIcon = direction === 'TERMINATION' ? UserX : direction === 'DEMOTION' ? ArrowDownRight : ArrowUpRight
+  const directionLabel = direction === 'TERMINATION' ? 'Kündigung' : direction === 'DEMOTION' ? 'D-Rank' : 'Up-Rank'
   const openProposals = useMemo(() => entry?.proposals.filter((item) => item.status === 'PENDING').length ?? 0, [entry?.proposals])
 
   if (authLoading) return <PageLoader />
@@ -314,11 +319,11 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
         <div className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: accent }} />
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-4">
-            <OfficerAvatar officer={entry.officer} size="lg" ringColor={entry.proposedRank.color} />
+            <OfficerAvatar officer={entry.officer} size="lg" ringColor={entry.isTermination ? accent : entry.proposedRank.color} />
             <div className="min-w-0">
               <div className="mb-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-semibold" style={{ color: accent }}>
-                  <span className="inline-flex items-center gap-1"><DirectionIcon size={12} /> {direction === 'DEMOTION' ? 'D-Rank' : 'Up-Rank'}</span>
+                  <span className="inline-flex items-center gap-1"><DirectionIcon size={12} /> {directionLabel}</span>
                 </span>
                 <span className={cn('rounded-[5px] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', entry.executed ? 'bg-green/12 text-green' : 'bg-yellow/12 text-gold-bright')}>
                   {entry.executed ? 'Durchgeführt' : 'Offen'}
@@ -333,8 +338,10 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RankTag rank={entry.currentRank} />
                 <ArrowRight size={14} className="text-label-4" />
-                <RankTag rank={entry.proposedRank} />
-                {entry.newBadgeNumber && <span className="text-[11px] font-medium text-gold">neue DN #{displayBadgeNumber(entry.newBadgeNumber)}</span>}
+                {entry.isTermination
+                  ? <span className="text-[11.5px] font-semibold text-orange">Dienstverhältnis beenden</span>
+                  : <RankTag rank={entry.proposedRank} />}
+                {entry.newBadgeNumber && !entry.isTermination && <span className="text-[11px] font-medium text-gold">neue DN #{displayBadgeNumber(entry.newBadgeNumber)}</span>}
               </div>
             </div>
           </div>
@@ -546,26 +553,30 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
         size="lg"
       >
         <div className="space-y-4">
-          <Select
-            label="Vorgeschlagener Rang"
-            value={form.proposedRankId}
-            onValueChange={(value) => setForm((current) => ({ ...current, proposedRankId: value }))}
-            options={data.ranks.map((rank) => ({ value: rank.id, label: rank.name }))}
-          />
-          <Input
-            label="Neue Dienstnummer (optional)"
-            numericOnly
-            value={form.newBadgeNumber}
-            onChange={(event) => setForm((current) => ({ ...current, newBadgeNumber: event.target.value }))}
-            placeholder="Leer lassen für automatische Vergabe"
-          />
+          {!entry.isTermination && (
+            <>
+              <Select
+                label="Vorgeschlagener Rang"
+                value={form.proposedRankId}
+                onValueChange={(value) => setForm((current) => ({ ...current, proposedRankId: value }))}
+                options={data.ranks.map((rank) => ({ value: rank.id, label: rank.name }))}
+              />
+              <Input
+                label="Neue Dienstnummer (optional)"
+                numericOnly
+                value={form.newBadgeNumber}
+                onChange={(event) => setForm((current) => ({ ...current, newBadgeNumber: event.target.value }))}
+                placeholder="Leer lassen für automatische Vergabe"
+              />
+            </>
+          )}
           <Textarea
-            label="Begründung im Eintrag"
+            label={entry.isTermination ? 'Kündigungsgrund' : 'Begründung im Eintrag'}
             value={form.note}
             onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
             rows={4}
             maxLength={5000}
-            placeholder="Warum soll diese Rangänderung erfolgen?"
+            placeholder={entry.isTermination ? 'Warum soll der Officer gekündigt werden?' : 'Warum soll diese Rangänderung erfolgen?'}
           />
           {formMode === 'proposal' && (
             <Textarea
@@ -579,7 +590,7 @@ export default function RankChangeEntryPage({ params }: { params: Promise<{ entr
           )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" onClick={() => setFormMode(null)}>Abbrechen</Button>
-            <Button loading={mutating} disabled={!form.proposedRankId} onClick={submitForm}>
+            <Button loading={mutating} disabled={entry.isTermination ? !form.note.trim() : !form.proposedRankId} onClick={submitForm}>
               {formMode === 'edit' ? <><Check size={13} /> Speichern</> : <><Send size={13} /> Vorschlag senden</>}
             </Button>
           </div>

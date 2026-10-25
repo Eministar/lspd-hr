@@ -45,12 +45,13 @@ export async function GET(req: NextRequest) {
 
   // Auto-DNs (newBadgeNumber = null) werden nicht gespeichert, sondern hier live aus dem
   // aktuellen Stand berechnet, damit sich die Vorschau an DN-Änderungen anpasst.
-  if (lists.some((list) => list.entries.some((entry) => !entry.executed && !entry.newBadgeNumber))) {
+  if (lists.some((list) => list.entries.some((entry) => !entry.executed && !entry.isTermination && !entry.newBadgeNumber))) {
     const prefix = await getBadgePrefix()
     const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
     const blacklistedBadges = await getBlacklistedBadgeRows()
     for (const list of lists) {
-      const openEntries = list.entries.filter((entry) => !entry.executed)
+      // Kündigungen bekommen keine neue DN.
+      const openEntries = list.entries.filter((entry) => !entry.executed && !entry.isTermination)
       if (!openEntries.some((entry) => !entry.newBadgeNumber)) continue
       const resolved = resolveEntryBadgeNumbers(openEntries, allRows, blacklistedBadges, prefix)
       for (const entry of openEntries) {

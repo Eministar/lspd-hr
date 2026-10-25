@@ -34,6 +34,9 @@ export async function undoPromotionListEntry(
   })
 
   if (!entry) return { ok: false, message: 'Eintrag nicht gefunden', status: 404 }
+  if (entry.isTermination) {
+    return { ok: false, message: 'Kündigungen können hier nicht rückgängig gemacht werden' }
+  }
   // Listen sind gemischt, deshalb zählt die Richtung des Eintrags:
   // kleinerer sortOrder = höherer Rang = Beförderung.
   if (entry.proposedRank.sortOrder >= entry.currentRank.sortOrder) {

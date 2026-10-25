@@ -13,8 +13,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params
     const body = await req.json()
 
-    const { officerId, proposedRankId, newBadgeNumber, note } = body
-    if (!officerId || !proposedRankId) return error('Officer und vorgeschlagener Rang sind erforderlich')
+    const { officerId, newBadgeNumber, note } = body
+    const isTermination = body.isTermination === true
+    const trimmedNote = typeof note === 'string' ? note.trim() : ''
+    if (!officerId) return error('Officer ist erforderlich')
+    if (!isTermination && !body.proposedRankId) return error('Officer und vorgeschlagener Rang sind erforderlich')
+    if (isTermination && !trimmedNote) return error('Für eine Kündigung ist ein Grund erforderlich')
 
     const list = await prisma.rankChangeList.findUnique({ where: { id } })
     if (!list) return error('Liste nicht gefunden', 404)
@@ -23,12 +27,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const officer = await prisma.officer.findUnique({ where: { id: officerId }, include: { rank: true } })
     if (!officer) return error('Officer nicht gefunden')
+    if (officer.status === 'TERMINATED') return error('Officer ist bereits gekündigt')
+    // Kündigungen behalten den aktuellen Rang als Platzhalter, die Richtung kommt aus isTermination.
+    const proposedRankId: string = isTermination ? officer.rankId : body.proposedRankId
     const proposedRank = await prisma.rank.findUnique({ where: { id: proposedRankId } })
     if (!proposedRank) return error('Vorgeschlagener Rang nicht gefunden')
 
     // Uprank-Sperre: gesperrte Officer dürfen nicht auf Beförderungslisten (Aufstieg).
     // Kleinerer sortOrder = höherer Rang = Beförderung. Degradierungen bleiben erlaubt.
-    const isPromotion = proposedRank.sortOrder < officer.rank.sortOrder
+    const isPromotion = !isTermination && proposedRank.sortOrder < officer.rank.sortOrder
     if (isPromotion && officer.promotionBlocked) {
       return error('Officer hat eine aktive Uprank-Sperre und kann nicht befördert werden.')
     }
@@ -38,19 +45,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
     if (existing) return error('Officer ist bereits in dieser Liste')
 
-    let nextBadge = typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
+    let nextBadge = !isTermination && typeof newBadgeNumber === 'string' ? newBadgeNumber.trim() : ''
     const prefix = await getBadgePrefix()
     if (nextBadge) nextBadge = normalizeBadgeNumber(nextBadge, prefix)
     // Auto-DN wird nicht gespeichert (newBadgeNumber bleibt null), sondern bei Anzeige und
     // Durchführung live aus dem aktuellen Stand berechnet. Hier nur validieren, dass derzeit
     // eine freie Nummer existiert, und die Vorschau für die Antwort ermitteln.
     let previewBadge: string | null = null
-    if (!nextBadge && rankHasBadgeRange(proposedRank)) {
+    if (!isTermination && !nextBadge && rankHasBadgeRange(proposedRank)) {
       // Exclude terminated officers so ihre Dienstnummern gelten als frei
       const allRows = await prisma.officer.findMany({ where: { status: { not: 'TERMINATED' } }, select: { badgeNumber: true } })
       const blacklistedBadges = await getBlacklistedBadgeRows()
       const siblingEntries = await prisma.rankChangeListEntry.findMany({
-        where: { listId: id, executed: false },
+        where: { listId: id, executed: false, isTermination: false },
         orderBy: { createdAt: 'asc' },
         select: {
           id: true,
@@ -92,7 +99,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           currentRankId: officer.rankId,
           proposedRankId,
           newBadgeNumber: nextBadge || null,
-          note: typeof note === 'string' && note.trim() ? note.trim() : null,
+          note: trimmedNote || null,
+          isTermination,
           createdById: user.id,
         },
         include: {

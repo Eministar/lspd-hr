@@ -21,6 +21,7 @@ type EditableEntry = {
   officerId: string
   newBadgeNumber: string | null
   note: string | null
+  isTermination: boolean
   officer: {
     badgeNumber: string
     promotionBlocked: boolean
@@ -61,6 +62,15 @@ export async function validateRankChangeDesiredState(
   entry: EditableEntry,
   input: { proposedRankId?: unknown; newBadgeNumber?: unknown; note?: unknown },
 ): Promise<RankChangeEntrySnapshot> {
+  if (entry.isTermination) {
+    // Kündigung: Rang und DN bleiben fix, nur der Grund ist änderbar.
+    const rawReason = input.note === undefined ? entry.note : input.note
+    const reason = typeof rawReason === 'string' ? rawReason.trim() : ''
+    if (!reason) throw new Error('Für eine Kündigung ist ein Grund erforderlich')
+    if (reason.length > 5_000) throw new Error('Begründung darf höchstens 5.000 Zeichen enthalten')
+    return { proposedRank: entry.proposedRank, newBadgeNumber: null, note: reason }
+  }
+
   const proposedRankId = typeof input.proposedRankId === 'string' && input.proposedRankId
     ? input.proposedRankId
     : entry.proposedRank.id

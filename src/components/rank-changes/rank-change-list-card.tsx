@@ -2,14 +2,14 @@
 
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowDownRight, ArrowRight, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronRight, Lock, LockOpen, MessageSquare, Play, Undo2, X } from 'lucide-react'
+import { ArrowDown, ArrowDownRight, ArrowRight, ArrowUp, ArrowUpRight, Check, ChevronDown, ChevronRight, Lock, LockOpen, MessageSquare, Play, Undo2, UserX, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OfficerAvatar } from '@/components/officers/officer-avatar'
 import { cn, formatDate } from '@/lib/utils'
 import { displayBadgeNumber } from '@/lib/badge-number'
 import type { RankChangeVoteSummary, RankChangeVoteValue } from '@/lib/rank-change-votes'
 
-export type RankChangeDirection = 'PROMOTION' | 'DEMOTION'
+export type RankChangeDirection = 'PROMOTION' | 'DEMOTION' | 'TERMINATION'
 
 export interface RankChangeEntry {
     id: string
@@ -18,6 +18,7 @@ export interface RankChangeEntry {
     proposedRank: { id: string; name: string; color: string; sortOrder: number }
     newBadgeNumber: string | null
     note: string | null
+    isTermination: boolean
     executed: boolean
     executedAt: string | null
     createdBy: { id: string; displayName: string } | null
@@ -40,14 +41,16 @@ export interface RankChangeList {
 }
 
 /** Kleinerer sortOrder = höherer Rang, also ist ein Aufstieg eine Beförderung. */
-export function entryDirection(entry: Pick<RankChangeEntry, 'currentRank' | 'proposedRank'>): RankChangeDirection {
+export function entryDirection(entry: Pick<RankChangeEntry, 'currentRank' | 'proposedRank' | 'isTermination'>): RankChangeDirection {
+    if (entry.isTermination) return 'TERMINATION'
     return entry.proposedRank.sortOrder > entry.currentRank.sortOrder ? 'DEMOTION' : 'PROMOTION'
 }
 
-/** Sortiert nach Zielrang (höchster zuerst), dann aktueller Rang, dann Nachname. */
-export function sortEntriesByRank<T extends Pick<RankChangeEntry, 'currentRank' | 'proposedRank' | 'officer'>>(entries: T[]): T[] {
+/** Sortiert nach Zielrang (höchster zuerst), dann aktueller Rang, dann Nachname. Kündigungen stehen am Ende. */
+export function sortEntriesByRank<T extends Pick<RankChangeEntry, 'currentRank' | 'proposedRank' | 'officer' | 'isTermination'>>(entries: T[]): T[] {
     return [...entries].sort((a, b) => (
-        a.proposedRank.sortOrder - b.proposedRank.sortOrder
+        Number(a.isTermination) - Number(b.isTermination)
+        || a.proposedRank.sortOrder - b.proposedRank.sortOrder
         || a.currentRank.sortOrder - b.currentRank.sortOrder
         || a.officer.lastName.localeCompare(b.officer.lastName, 'de')
     ))
@@ -56,11 +59,13 @@ export function sortEntriesByRank<T extends Pick<RankChangeEntry, 'currentRank' 
 export const DIRECTION_ACCENT: Record<RankChangeDirection, string> = {
     PROMOTION: '#32d74b',
     DEMOTION: '#ff453a',
+    TERMINATION: '#ff9f0a',
 }
 
 export const DIRECTION_LABEL: Record<RankChangeDirection, string> = {
     PROMOTION: 'Up-Rank',
     DEMOTION: 'D-Rank',
+    TERMINATION: 'Kündigung',
 }
 
 function RankPill({ name, color }: { name: string; color: string }) {
@@ -77,7 +82,7 @@ function RankPill({ name, color }: { name: string; color: string }) {
 
 function DirectionPill({ direction }: { direction: RankChangeDirection }) {
     const accent = DIRECTION_ACCENT[direction]
-    const Icon = direction === 'PROMOTION' ? ArrowUpRight : ArrowDownRight
+    const Icon = direction === 'PROMOTION' ? ArrowUpRight : direction === 'TERMINATION' ? UserX : ArrowDownRight
     return (
         <span
             className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
@@ -170,7 +175,8 @@ export function RankChangeListCard({
     const executed = list.entries.filter((e) => e.executed).length
     const pending = total - executed
     const promotions = list.entries.filter((e) => entryDirection(e) === 'PROMOTION').length
-    const demotions = total - promotions
+    const terminations = list.entries.filter((e) => e.isTermination).length
+    const demotions = total - promotions - terminations
     const isCompleted = list.status === 'COMPLETED'
     const isClosed = list.submissionsClosed
     const canAddEntries = !isCompleted && !isClosed
@@ -211,6 +217,15 @@ export function RankChangeListCard({
                             >
                                 <ArrowDownRight size={11} strokeWidth={2.5} />
                                 {demotions} D-Rank
+                            </span>
+                        )}
+                        {terminations > 0 && (
+                            <span
+                                className="inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+                                style={{ borderColor: '#ff9f0a40', backgroundColor: '#ff9f0a18', color: '#ff9f0a' }}
+                            >
+                                <UserX size={11} strokeWidth={2.5} />
+                                {terminations} Kündigung{terminations === 1 ? '' : 'en'}
                             </span>
                         )}
                         <span className={cn('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', statusTone)}>
@@ -258,14 +273,14 @@ export function RankChangeListCard({
                                                 : 'bg-surface-2 border-line hover:border-line',
                                         )}
                                     >
-                                        <OfficerAvatar officer={entry.officer} ringColor={entry.proposedRank.color} />
+                                        <OfficerAvatar officer={entry.officer} ringColor={entry.isTermination ? DIRECTION_ACCENT.TERMINATION : entry.proposedRank.color} />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <Link href={`/officers/${entry.officer.id}`} className="text-[13px] font-medium text-label hover:text-gold-bright transition-colors">
                                                     {entry.officer.firstName} {entry.officer.lastName}
                                                 </Link>
                                                 <span className="text-[11px] text-label-2">#{displayBadgeNumber(entry.officer.badgeNumber)}</span>
-                                                {entry.newBadgeNumber && (
+                                                {entry.newBadgeNumber && !entry.isTermination && (
                                                     <span className="text-[11px] text-label-2">
                           → <span className="text-gold">#{displayBadgeNumber(entry.newBadgeNumber)}</span>
                         </span>
@@ -275,10 +290,12 @@ export function RankChangeListCard({
                                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                                 <RankPill name={entry.currentRank.name} color={entry.currentRank.color} />
                                                 <ArrowRight size={11} className="text-label-4" />
-                                                <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />
+                                                {entry.isTermination
+                                                    ? <span className="text-[11px] font-semibold text-orange">Dienstverhältnis beenden</span>
+                                                    : <RankPill name={entry.proposedRank.name} color={entry.proposedRank.color} />}
                                             </div>
                                             {entry.note && (
-                                                <p className="text-[11px] text-label-2 mt-1.5 italic">„{entry.note}“</p>
+                                                <p className="text-[11px] text-label-2 mt-1.5 italic">{entry.isTermination && <span className="not-italic font-semibold text-label-3">Grund: </span>}„{entry.note}“</p>
                                             )}
                                             <p className="text-[11px] text-label-4 mt-1">
                                                 Eingereicht von <span className="text-label-3">{entry.createdBy?.displayName ?? list.createdBy?.displayName ?? 'Gelöscht'}</span>
@@ -304,16 +321,18 @@ export function RankChangeListCard({
                                                 </span>
                                                 <ChevronRight size={13} />
                                             </Link>
-                                            <EntryVoteControls
-                                                summary={entry.voteSummary}
-                                                disabled={entry.executed || isCompleted}
-                                                loading={votingEntryIds.has(entry.id)}
-                                                onVote={(vote) => onVote(entry, vote)}
-                                            />
+                                            {!entry.isTermination && (
+                                                <EntryVoteControls
+                                                    summary={entry.voteSummary}
+                                                    disabled={entry.executed || isCompleted}
+                                                    loading={votingEntryIds.has(entry.id)}
+                                                    onVote={(vote) => onVote(entry, vote)}
+                                                />
+                                            )}
                                             {entry.executed ? (
                                                 <div className="flex items-center gap-2 shrink-0">
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green bg-green/12 px-2 py-1 rounded-[6px]">
-                        ✓ Durchgeführt
+                        ✓ {entry.isTermination ? 'Gekündigt' : 'Durchgeführt'}
                       </span>
                                                     {canExecute && direction === 'PROMOTION' && (
                                                         <Button variant="secondary" size="sm" onClick={() => onUndo(entry)}>
@@ -323,7 +342,7 @@ export function RankChangeListCard({
                                                 </div>
                                             ) : canExecute ? (
                                                 <div className="flex items-center gap-1 shrink-0">
-                                                    <Button size="sm" variant={direction === 'DEMOTION' ? 'danger' : 'primary'} onClick={() => onExecute(entry)}>
+                                                    <Button size="sm" variant={direction === 'PROMOTION' ? 'primary' : 'danger'} onClick={() => onExecute(entry)}>
                                                         <Play size={12} /> Durchführen
                                                     </Button>
                                                     {canManage && (

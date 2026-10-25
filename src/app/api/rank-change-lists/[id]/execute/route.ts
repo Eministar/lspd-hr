@@ -10,6 +10,7 @@ import { findBadgeNumberConflict, getBlacklistedBadgeRows, releaseTerminatedBadg
 import { queueDiscordHrEvent, queueOfficerRoleSync } from '@/lib/discord-integration'
 import { undoPromotionListEntry } from '@/lib/rank-change-list-undo'
 import { syncLinkedUserDisplayNameForOfficer } from '@/lib/user-display-name'
+import { terminateOfficer } from '@/lib/officer-termination'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           where: { executed: false },
           orderBy: { createdAt: 'asc' },
           include: {
-            officer: true,
+            officer: { include: { rank: true } },
             currentRank: true,
             proposedRank: true,
             createdBy: { select: { id: true, displayName: true, discordId: true } },
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Auto-DNs werden erst hier aus dem aktuellen Stand vergeben; alle offenen Einträge der
     // Liste fließen ein, damit auch bei Einzel-Durchführung keine Nummer doppelt vergeben wird.
     // null bedeutet: Officer behält seine aktuelle Dienstnummer (z. B. Bereich voll).
-    const resolvedBadges = resolveEntryBadgeNumbers(list.entries, allRows, blacklistedBadges, prefix)
+    // Kündigungen bekommen keine neue DN und belegen keine Nummer.
+    const resolvedBadges = resolveEntryBadgeNumbers(list.entries.filter((entry) => !entry.isTermination), allRows, blacklistedBadges, prefix)
     const requestedBadges = new Map<string, string>()
     for (const entry of targetEntries) {
       const nextBadge = resolvedBadges.get(entry.id) ?? null
@@ -79,10 +81,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     let executed = 0
+    let terminated = 0
     let skippedBlocked = 0
 
     for (const entry of targetEntries) {
       if (entry.officer.status === 'TERMINATED') continue
+
+      if (entry.isTermination) {
+        const reason = entry.note?.trim() || `Kündigung via Liste "${list.name}"`
+        const submittedBy = entry.createdBy ?? null
+        await terminateOfficer({
+          officer: entry.officer,
+          reason,
+          user,
+          auditDetails: `Kündigung via "${list.name}": ${entry.officer.firstName} ${entry.officer.lastName}. Grund: ${reason}`,
+          description: `Die Kündigung wurde im Rahmen der Liste **${list.name}** vorgenommen.`,
+          extraFields: submittedBy
+            ? [{
+                name: 'Eingereicht von',
+                value: submittedBy.discordId ? `<@${submittedBy.discordId}>` : submittedBy.displayName,
+                inline: true,
+              }]
+            : [],
+        })
+        await prisma.rankChangeListEntry.update({
+          where: { id: entry.id },
+          data: { executed: true, executedAt: new Date(), executedById: user.id },
+        })
+        executed++
+        terminated++
+        continue
+      }
 
       // Uprank-Sperre: gesperrte Officer bei Beförderungen (Aufstieg = kleinerer
       // sortOrder) überspringen. Degradierungen bleiben erlaubt.
@@ -171,7 +200,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
 
-    return success({ executed, total: targetEntries.length, skippedBlocked })
+    return success({ executed, terminated, total: targetEntries.length, skippedBlocked })
   } catch (e: unknown) {
     // Log error for debugging (will appear in server console)
     console.error('Error executing rank-change-list:', e)
