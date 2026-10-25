@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-10-17T17:20:57.259Z",
+  "generatedAt": "2026-10-25T14:12:58.343Z",
   "entries": [
+    {
+      "buildId": "build-5a691eecae",
+      "commit": "5a691eecae1e07d0f7614e79f128dca27fa6709e",
+      "shortCommit": "5a691eecae",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-10-25T14:12:16Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/5a691eecae1e07d0f7614e79f128dca27fa6709e"
+    },
+    {
+      "buildId": "build-774ff7bc97",
+      "commit": "774ff7bc979dc0622809dd61fafffcabbdf2ccf8",
+      "shortCommit": "774ff7bc97",
+      "subject": "feat: add termination handling for officers in rank change process",
+      "author": "Eministar",
+      "date": "2026-10-25T14:12:10Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/774ff7bc979dc0622809dd61fafffcabbdf2ccf8"
+    },
+    {
+      "buildId": "build-c8c44c57ee",
+      "commit": "c8c44c57ee904f834e70698982553fdd950ec370",
+      "shortCommit": "c8c44c57ee",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-10-17T17:20:57Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/c8c44c57ee904f834e70698982553fdd950ec370"
+    },
     {
       "buildId": "build-f561e308b7",
       "commit": "f561e308b7cac27710d5af90b92fa301b56bf4bd",
