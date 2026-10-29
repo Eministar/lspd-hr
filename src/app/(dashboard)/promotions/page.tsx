@@ -79,7 +79,12 @@ export default function RankChangeListsPage() {
   const rows = useMemo(() => lists ?? [], [lists])
 
   const activeOfficers = officers?.filter((officer) => officer.status !== 'TERMINATED') || []
+  // Officer, die bereits auf der Zielliste stehen, nicht erneut zur Auswahl anbieten.
+  const officerIdsOnTargetList = new Set(
+    rows.find((list) => list.id === addEntryListId)?.entries.map((entry) => entry.officer.id) ?? [],
+  )
   const filteredOfficers = activeOfficers.filter((officer) => {
+    if (officerIdsOnTargetList.has(officer.id)) return false
     const query = officerSearch.trim().toLowerCase()
     if (!query) return true
     return (
