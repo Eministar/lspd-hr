@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-10-25T14:12:58.343Z",
+  "generatedAt": "2026-10-29T22:44:13.957Z",
   "entries": [
+    {
+      "buildId": "build-0f54a7bfed",
+      "commit": "0f54a7bfedb820faa0c62c738f78ceeab7e5d5be",
+      "shortCommit": "0f54a7bfed",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-10-29T22:43:29Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/0f54a7bfedb820faa0c62c738f78ceeab7e5d5be"
+    },
+    {
+      "buildId": "build-f7d9778553",
+      "commit": "f7d9778553ffc7570c07784b4832a96653c691cf",
+      "shortCommit": "f7d9778553",
+      "subject": "feat: filter out officers already on the target list from selection",
+      "author": "Eministar",
+      "date": "2026-10-29T22:43:12Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f7d9778553ffc7570c07784b4832a96653c691cf"
+    },
+    {
+      "buildId": "build-d4ac45babd",
+      "commit": "d4ac45babdd27294565f8660c7fa7747edb2bfee",
+      "shortCommit": "d4ac45babd",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-10-25T14:12:58Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/d4ac45babdd27294565f8660c7fa7747edb2bfee"
+    },
     {
       "buildId": "build-5a691eecae",
       "commit": "5a691eecae1e07d0f7614e79f128dca27fa6709e",
