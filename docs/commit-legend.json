@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-10-29T22:44:13.957Z",
+  "generatedAt": "2026-11-01T21:48:31.077Z",
   "entries": [
+    {
+      "buildId": "build-ecebab3019",
+      "commit": "ecebab301943c8a419219705dbf87a7e8e758ff5",
+      "shortCommit": "ecebab3019",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-11-01T21:47:11Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/ecebab301943c8a419219705dbf87a7e8e758ff5"
+    },
+    {
+      "buildId": "build-77857f91fc",
+      "commit": "77857f91fcaf3c534f1bc573edf0b7b0b2a4d766",
+      "shortCommit": "77857f91fc",
+      "subject": "feat: add initial setup for desktop application and update configurations",
+      "author": "Eministar",
+      "date": "2026-11-01T21:46:52Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/77857f91fcaf3c534f1bc573edf0b7b0b2a4d766"
+    },
+    {
+      "buildId": "build-b7d80029bb",
+      "commit": "b7d80029bbea27b1f88e0e95091d18e73fb1e481",
+      "shortCommit": "b7d80029bb",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-10-29T22:44:14Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b7d80029bbea27b1f88e0e95091d18e73fb1e481"
+    },
     {
       "buildId": "build-0f54a7bfed",
       "commit": "0f54a7bfedb820faa0c62c738f78ceeab7e5d5be",
