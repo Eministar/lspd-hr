@@ -647,9 +647,52 @@ function isTransientDiscordFetchError(error: unknown) {
   )
 }
 
+/* ── Rate-Limit-Buckets ──────────────────────────────────────────────
+ * Discord meldet pro Route, wie viele Anfragen im aktuellen Fenster noch
+ * erlaubt sind (X-RateLimit-Remaining / -Reset-After). Wir merken uns das je
+ * Route und warten VOR der Anfrage, sobald der Bucket leer ist – statt erst in
+ * einen 429 zu laufen. Gilt für alle Aufrufe, auch die ohne Warteschlange
+ * (z. B. parallele Member-Abfragen mehrerer Officer-Syncs).
+ */
+type RateBucket = { remaining: number; resetAt: number }
+const rateBuckets = new Map<string, RateBucket>()
+let globalRateLimitUntil = 0
+
+/** Route-Schlüssel wie bei Discord: Haupt-ID (Guild/Channel/Webhook) bleibt, andere IDs werden zusammengefasst. */
+function rateLimitKey(path: string, method: string) {
+  const route = path
+    .split('?')[0]
+    .replace(/\/(guilds|channels|webhooks)\/(\d{15,22})/, '/$1/<$2>')
+    .replace(/\/\d{15,22}/g, '/:id')
+  return `${method.toUpperCase()} ${route}`
+}
+
+async function waitForRateLimit(key: string) {
+  for (;;) {
+    const now = Date.now()
+    const bucket = rateBuckets.get(key)
+    const until = Math.max(globalRateLimitUntil, bucket && bucket.remaining <= 0 ? bucket.resetAt : 0)
+    if (until <= now) break
+    await wait(until - now + 50)
+  }
+  const bucket = rateBuckets.get(key)
+  // Gleichzeitige Anfragen sofort verbuchen, damit nicht alle denselben letzten Platz nehmen.
+  if (bucket && bucket.resetAt > Date.now()) bucket.remaining -= 1
+}
+
+function rememberRateLimit(key: string, res: Response) {
+  const remaining = Number(res.headers.get('x-ratelimit-remaining'))
+  const resetAfter = Number(res.headers.get('x-ratelimit-reset-after'))
+  if (!Number.isFinite(remaining) || !Number.isFinite(resetAfter) || res.headers.get('x-ratelimit-remaining') === null) return
+  rateBuckets.set(key, { remaining, resetAt: Date.now() + resetAfter * 1000 })
+}
+
 async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
   const token = botToken()
   if (!token) throw new Error('Discord Bot-Token fehlt')
+
+  const bucketKey = rateLimitKey(path, init?.method ?? 'GET')
+  await waitForRateLimit(bucketKey)
 
   let res: Response
   try {
@@ -672,12 +715,19 @@ async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0)
     throw error
   }
 
-  // Rate-Limit: warten und erneut versuchen
+  rememberRateLimit(bucketKey, res)
+
+  // Rate-Limit trotzdem erreicht (z. B. geteilter Bucket): Sperre merken und erneut versuchen.
   if (res.status === 429 && attempt < MAX_RETRIES) {
-    const body = await res.json().catch(() => ({ retry_after: 2 })) as { retry_after?: number }
+    const body = await res.json().catch(() => ({ retry_after: 2 })) as { retry_after?: number; global?: boolean }
     const waitMs = Math.min((body.retry_after ?? 2) * 1000, 30000)
-    console.warn(`[DiscordIntegration] Rate-Limited auf ${path}, warte ${Math.round(waitMs)}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
-    await wait(waitMs + 250)
+    const until = Date.now() + waitMs + 250
+    if (body.global || res.headers.get('x-ratelimit-global')) globalRateLimitUntil = until
+    else rateBuckets.set(bucketKey, { remaining: 0, resetAt: until })
+    // Kurze Sperren sind normal und werden still abgewartet; nur echte Wartezeiten melden.
+    if (waitMs >= 1000) {
+      console.warn(`[DiscordIntegration] Rate-Limited auf ${path}, warte ${Math.round(waitMs)}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
+    }
     return discordFetchRaw<T>(path, init, attempt + 1)
   }
 
@@ -1337,6 +1387,20 @@ export async function syncAllOfficerDiscordRoles(options?: {
 
   await emitProgress('starting', undefined, 'Lade Officers und Discord-Konfiguration')
 
+  // Mitgliederliste einmal frisch laden (bis zu 1000 je Anfrage) statt jedes
+  // Mitglied einzeln abzufragen – das waren sonst ~80 Anfragen auf denselben
+  // Discord-Bucket. Ohne Members-Intent bleibt es bei Einzelabfragen.
+  if (canSyncDiscord) guildMembersCache.delete(config.guildId)
+  const memberList = canSyncDiscord
+    ? await getDiscordGuildMembers(config.guildId).catch((error) => {
+      console.warn('[DiscordIntegration] Mitgliederliste nicht verfügbar, frage einzeln ab:', error)
+      return null
+    })
+    : null
+  const membersById = memberList
+    ? new Map(memberList.map((member) => [snowflake(member.user?.id), member] as const))
+    : null
+
   // Officers sequentiell verarbeiten (1 pro Batch) um Rate-Limits zu vermeiden
   for (const officer of officers) {
     const officerLabel = `${officer.firstName} ${officer.lastName} #${officer.badgeNumber}`
@@ -1354,7 +1418,7 @@ export async function syncAllOfficerDiscordRoles(options?: {
 
       // Fetch the member once per officer; reuse for both group and role sync.
       const member = canSyncDiscord && mode === 'sync'
-        ? await fetchGuildMember(config, officer.discordId)
+        ? (membersById ? membersById.get(snowflake(officer.discordId)) ?? null : await fetchGuildMember(config, officer.discordId))
         : null
 
       if (canSyncDiscord && mode === 'sync' && !member) {
