@@ -47,7 +47,7 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/start.js ./start.js
 
 # Persistente Uploads und vom Setup geschriebene Konfiguration
-RUN mkdir -p /app/uploads /app/config && chown -R nextjs:nodejs /app
+RUN mkdir -p /app/uploads /app/config /app/desktop-releases && chown -R nextjs:nodejs /app
 USER nextjs
 
 EXPOSE 3000

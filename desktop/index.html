@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LSPD Kill-Clips</title>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+  <div id="view-app" class="shell">
+    <nav class="navpane" aria-label="Navigation">
+      <div class="nav-brand">
+        <img src="/src/assets/lspd-logo.png" alt="" width="20" height="20">
+        <span>LSPD Kill-Clips</span>
+      </div>
+      <div class="nav-items" role="list">
+        <button class="nav-item" data-route="killclips" role="listitem" aria-current="page"><i data-icon="target"></i><span>Kill-Clips</span></button>
+        <button class="nav-item" data-route="about" role="listitem"><i data-icon="info"></i><span>Info &amp; Credits</span></button>
+      </div>
+      <div class="nav-footer">
+        <button class="nav-item" id="nav-settings"><i data-icon="settings"></i><span>Einstellungen</span></button>
+      </div>
+    </nav>
+
+    <main class="content" id="content">
+      <fluent-message-bar id="update-banner" intent="info" hidden>
+        <span id="update-banner-text"></span>
+        <fluent-button slot="actions" id="update-restart" size="small" appearance="primary" hidden>Jetzt neu starten</fluent-button>
+      </fluent-message-bar>
+
+      <!-- Kill-Clips -->
+      <section class="page" data-page="killclips">
+        <header class="page-header">
+          <h1 class="type-title">Kill-Clips</h1>
+          <p class="type-body muted">Erkennt deine Kills im Spiel und schneidet sie automatisch als Clip – fertig zum Hochladen in deinen Clips-Channel.</p>
+        </header>
+
+        <fluent-message-bar intent="warning" class="kc-disclaimer" id="kc-disclaimer">
+          <strong>Achtung:</strong> Die automatische Erkennung ist eine Hilfe, keine Garantie. Kills können übersehen oder fälschlich erkannt werden –
+          keine Software erkennt so etwas zu 100&nbsp;%. Pass deshalb trotzdem selbst auf und sichere wichtige Situationen zusätzlich manuell mit deinem Clip-Programm.
+        </fluent-message-bar>
+
+        <div class="card kc-hero">
+          <span class="kc-state-icon" id="kc-state-icon"><i data-icon="target"></i></span>
+          <div class="kc-state-text">
+            <span class="type-subtitle" id="kc-state-title">Aus</span>
+            <span class="type-body muted" id="kc-state-detail">Starte die Erkennung, bevor du ins Spiel gehst.</span>
+          </div>
+          <fluent-button id="kc-toggle" appearance="primary" size="large"><i data-icon="target" slot="start"></i>Starten</fluent-button>
+        </div>
+
+        <fluent-message-bar id="kc-error" intent="error" hidden></fluent-message-bar>
+        <fluent-message-bar id="kc-info" intent="warning" hidden></fluent-message-bar>
+
+        <h2 class="type-body-strong section-title">Ablage</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="folderOpen"></i></span>
+            <div class="setting-text"><span>Lokal im Ordner „Videos\LSPD Kill-Clips“</span><span class="type-caption muted" id="kc-limit">Videos bis 10 MB – passen ohne Boost in Discord, größere Serien werden aufgeteilt</span></div>
+            <fluent-button id="kc-folder-top" class="setting-control" appearance="subtle">Ordner öffnen</fluent-button>
+          </div>
+        </div>
+
+        <h2 class="type-body-strong section-title">Erkennung</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="screenshot"></i></span>
+            <div class="setting-text"><span>Kill-Feed</span><span class="type-caption muted" id="kc-setup-state">Noch nicht eingerichtet</span></div>
+            <fluent-button id="kc-setup" class="setting-control">Einrichten …</fluent-button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="target"></i></span>
+            <div class="setting-text"><span>Kill-Marker am Fadenkreuz · Türkis oder Rot</span><span class="type-caption muted">Nur ohne Kill-Feed-Bereich aktiv. Mit Kill-Feed zählen ausschließlich bestätigte Kill-Meldungen.</span></div>
+            <fluent-switch id="kc-marker" class="setting-control" aria-label="Kill-Marker nutzen"></fluent-switch>
+          </div>
+        </div>
+
+        <h2 class="type-body-strong section-title">Schnitt</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="cut"></i></span>
+            <div class="setting-text"><span>Vor und nach jedem Kill</span><span class="type-caption muted">So viel bleibt um den Kill herum stehen</span></div>
+            <fluent-dropdown id="kc-padding" class="setting-control kc-dropdown">
+              <fluent-listbox>
+                <fluent-option value="2">je 2 Sekunden</fluent-option>
+                <fluent-option value="3">je 3 Sekunden</fluent-option>
+                <fluent-option value="5">je 5 Sekunden</fluent-option>
+              </fluent-listbox>
+            </fluent-dropdown>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="filmstrip"></i></span>
+            <div class="setting-text"><span>Kills zusammenfassen</span><span class="type-caption muted">Kills mit so wenig Abstand landen in einem Video</span></div>
+            <fluent-dropdown id="kc-merge" class="setting-control kc-dropdown">
+              <fluent-listbox>
+                <fluent-option value="15">bis 15 Sekunden</fluent-option>
+                <fluent-option value="30">bis 30 Sekunden</fluent-option>
+                <fluent-option value="60">bis 1 Minute</fluent-option>
+                <fluent-option value="120">bis 2 Minuten</fluent-option>
+              </fluent-listbox>
+            </fluent-dropdown>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="delete"></i></span>
+            <div class="setting-text"><span>Originalaufnahme löschen</span><span class="type-caption muted">Nach dem Schneiden bleiben nur die Kill-Clips übrig</span></div>
+            <fluent-checkbox id="kc-delete" class="setting-control"></fluent-checkbox>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="videoClip"></i></span>
+            <div class="setting-text"><span>Clip-Programm</span><span class="type-caption muted" id="kc-clipper">NVIDIA Instant Replay</span></div>
+            <fluent-button id="kc-open-settings" class="setting-control" appearance="subtle">Ändern</fluent-button>
+          </div>
+        </div>
+
+        <div class="section-header kc-history-head">
+          <h2 class="type-body-strong">Verlauf</h2>
+          <span class="spacer"></span>
+          <fluent-button id="kc-folder" appearance="subtle" size="small"><i data-icon="folderOpen" slot="start"></i>Ordner öffnen</fluent-button>
+        </div>
+        <div class="card list" id="kc-history"></div>
+        <p class="type-caption muted kc-feed" id="kc-feed" hidden></p>
+
+        <p class="type-caption muted kc-credits">Kill-Clip-Erkennung von <strong>Emin</strong> · ursprünglich entwickelt für FIB Desktop</p>
+      </section>
+
+      <!-- Info & Credits -->
+      <section class="page" data-page="about" hidden>
+        <header class="page-header">
+          <h1 class="type-title">Info &amp; Credits</h1>
+        </header>
+
+        <div class="card about-card">
+          <img src="/src/assets/lspd-logo.png" alt="" width="56" height="56">
+          <div>
+            <span class="type-subtitle">LSPD Kill-Clips <span id="version" class="muted"></span></span>
+            <p class="type-body muted">Erkennt eigene Kills über den Kill-Feed („Du hast … getötet“) bzw. den Kill-Marker am Fadenkreuz und schneidet daraus kurze Clips.</p>
+          </div>
+        </div>
+
+        <h2 class="type-body-strong section-title">Updates</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="arrowSync"></i></span>
+            <div class="setting-text"><span>Automatische Updates</span><span class="type-caption muted" id="update-status" aria-live="polite">Beim Start und alle zehn Minuten wird geprüft.</span></div>
+            <fluent-button id="update-check" class="setting-control">Nach Updates suchen</fluent-button>
+          </div>
+        </div>
+
+        <h2 class="type-body-strong section-title">Credits</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="sparkle"></i></span>
+            <div class="setting-text"><span>Entwicklung: <strong>Emin</strong></span><span class="type-caption muted">Kill-Erkennung (Texterkennung &amp; Kill-Marker), Schnitt und Aufnahme stammen aus FIB Desktop und wurden für das LSPD übernommen.</span></div>
+          </div>
+        </div>
+
+        <h2 class="type-body-strong section-title">Wichtiger Hinweis</h2>
+        <fluent-message-bar intent="warning">
+          Die Erkennung arbeitet mit Bildschirm- und Texterkennung. Je nach Auflösung, HUD, Lichtverhältnissen oder Performance
+          kann sie Kills verpassen oder falsch erkennen – eine 100&nbsp;%-ige Erkennung ist technisch nicht möglich.
+          Verlasst euch also nicht blind darauf, sondern passt trotzdem selbst auf und speichert wichtige Szenen zusätzlich von Hand.
+        </fluent-message-bar>
+      </section>
+    </main>
+  </div>
+
+  <!-- ── Kill-Clips einrichten ─────────────────────────────────── -->
+  <fluent-dialog id="kc-setup-dialog" type="modal">
+    <fluent-dialog-body>
+      <span slot="title">Erkennung einrichten</span>
+      <fluent-button slot="close" appearance="transparent" icon-only aria-label="Schließen"><i data-icon="dismiss"></i></fluent-button>
+      <div class="kc-setup">
+        <strong id="kc-setup-progress" class="type-body-strong" role="status">Schritt 1 von 3 · Aufnahme wählen</strong>
+        <ol class="kc-steps type-body">
+          <li><strong>Aufnahme wählen</strong><span>Vorhandenen Clip öffnen oder im Spiel direkt nach einem Kill <kbd id="kc-hotkey">Strg+Alt+K</kbd> drücken.</span></li>
+          <li><strong>Kill markieren</strong><span>Zu „Du hast … getötet“ spulen und „Hier ist der Kill“ wählen. Die App durchsucht auch die Momente davor und danach.</span></li>
+          <li><strong>Ergebnis prüfen</strong><span>Die vollständige Meldung muss im Rahmen liegen, auch bei Zeilenumbrüchen. Nach erfolgreichem Lesetest speichern.</span></li>
+        </ol>
+        <div class="kc-setup-bar">
+          <span class="type-body muted" id="kc-setup-hint"></span>
+          <span class="spacer"></span>
+          <fluent-button id="kc-back" appearance="subtle" hidden><i data-icon="arrowReset" slot="start"></i>Anderen Moment wählen</fluent-button>
+          <fluent-button id="kc-pick" appearance="subtle"><i data-icon="folderOpen" slot="start"></i>Vorhandenen Clip wählen …</fluent-button>
+        </div>
+        <!-- Aufnahme mit Zeitleiste: hier den Kill markieren -->
+        <div class="kc-clip" id="kc-clip" hidden>
+          <div class="player kc-player">
+            <video id="kc-video" preload="auto" playsinline muted></video>
+          </div>
+          <div class="trim">
+            <div class="trim-track kc-track" id="kc-track" role="slider" tabindex="0" aria-label="Zeitleiste">
+              <div class="kc-kill-flag" id="kc-kill-flag" hidden></div>
+              <div class="trim-playhead" id="kc-playhead"></div>
+            </div>
+            <div class="trim-bar">
+              <fluent-button id="kc-play" appearance="subtle" icon-only aria-label="Abspielen"><i data-icon="play" id="kc-play-icon"></i></fluent-button>
+              <span class="type-caption time" id="kc-time">0:00,0 / 0:00</span>
+              <fluent-button id="kc-step-back" size="small" appearance="subtle" title="0,1 s zurück (←)">−0,1 s</fluent-button>
+              <fluent-button id="kc-step-forward" size="small" appearance="subtle" title="0,1 s vor (→)">+0,1 s</fluent-button>
+              <span class="spacer"></span>
+              <fluent-button id="kc-mark" appearance="primary"><i data-icon="target" slot="start"></i>Hier ist der Kill</fluent-button>
+            </div>
+          </div>
+        </div>
+        <div class="kc-review">
+          <div class="kc-review-image">
+            <div class="kc-canvas" id="kc-canvas">
+              <div class="kc-canvas-empty" id="kc-canvas-empty">
+                <i data-icon="videoClip"></i>
+                <span id="kc-canvas-empty-text">Noch keine Aufnahme – mach im Spiel einen Kill und drück <kbd>Strg+Alt+K</kbd></span>
+              </div>
+              <div class="kc-stage" id="kc-stage">
+                <img id="kc-shot" alt="Aufnahme zur Einrichtung. Einen Rahmen um die vollständige Kill-Feed-Meldung ziehen." hidden draggable="false">
+                <div class="kc-rect feed" id="kc-rect-feed" hidden><span>Kill-Feed</span></div>
+                <div class="kc-rect hit" id="kc-rect-hit" hidden><span>Kill-Marker</span></div>
+              </div>
+            </div>
+            <div class="kc-region-controls" id="kc-region-controls" hidden>
+              <span class="type-caption muted">Kill-Feed-Bereich in Pixeln</span>
+              <div class="kc-region-fields">
+                <label>X<input id="kc-region-x" type="number" min="0" step="1"></label>
+                <label>Y<input id="kc-region-y" type="number" min="0" step="1"></label>
+                <label>Breite<input id="kc-region-width" type="number" min="8" step="1"></label>
+                <label>Höhe<input id="kc-region-height" type="number" min="8" step="1"></label>
+                <fluent-button id="kc-retest" appearance="subtle">Erneut prüfen</fluent-button>
+                <fluent-button id="kc-clear-feed" appearance="subtle">Kill-Feed-Rahmen entfernen</fluent-button>
+              </div>
+            </div>
+          </div>
+          <div class="kc-test" id="kc-test" role="status" aria-live="polite" hidden></div>
+        </div>
+      </div>
+      <fluent-button slot="action" id="kc-setup-save" appearance="primary" disabled>Geprüfte Einrichtung speichern</fluent-button>
+      <fluent-button slot="action" id="kc-setup-cancel">Abbrechen</fluent-button>
+    </fluent-dialog-body>
+  </fluent-dialog>
+
+  <!-- ── Einstellungen ─────────────────────────────────────────── -->
+  <fluent-dialog id="settings-dialog" type="modal">
+    <fluent-dialog-body>
+      <span slot="title">Einstellungen</span>
+      <fluent-button slot="close" appearance="transparent" icon-only aria-label="Schließen"><i data-icon="dismiss"></i></fluent-button>
+
+      <div class="settings">
+        <h2 class="type-body-strong section-title">Allgemein</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="play"></i></span>
+            <div class="setting-text"><span>Mit Windows starten</span><span class="type-caption muted" id="s-auto-start-note">Öffnet LSPD Kill-Clips automatisch, sobald du dich bei Windows anmeldest.</span></div>
+            <fluent-switch id="s-auto-start" class="setting-control" aria-label="Mit Windows starten" aria-describedby="s-auto-start-note"></fluent-switch>
+          </div>
+        </div>
+        <h2 class="type-body-strong section-title">Aufnahme</h2>
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="videoClip"></i></span>
+            <div class="setting-text"><span>Clip-Programm</span><span class="type-caption muted">Womit deine Clips aufgenommen werden</span></div>
+            <fluent-dropdown id="s-clipper" class="setting-control">
+              <fluent-listbox>
+                <fluent-option value="selfclip">Self-Clip (eigene Aufnahme)</fluent-option>
+                <fluent-option value="nvidia">NVIDIA Instant Replay</fluent-option>
+                <fluent-option value="amd">AMD Software (Instant Replay)</fluent-option>
+                <fluent-option value="medal">Medal</fluent-option>
+              </fluent-listbox>
+            </fluent-dropdown>
+          </div>
+          <div class="setting-row selfclip-only" hidden>
+            <span class="setting-icon"><i data-icon="record"></i></span>
+            <div class="setting-text"><span>Self-Clip</span><span class="type-caption muted" id="s-selfclip-status">Wird geprüft …</span></div>
+            <div class="setting-control">
+              <fluent-progress-bar id="s-selfclip-progress" class="selfclip-progress" hidden></fluent-progress-bar>
+              <fluent-button id="s-selfclip-restart" appearance="subtle" hidden>Neu starten</fluent-button>
+              <fluent-button id="s-selfclip-install" appearance="primary" hidden>Einrichten</fluent-button>
+            </div>
+          </div>
+          <div class="setting-row selfclip-only" hidden>
+            <span class="setting-icon"><i data-icon="history"></i></span>
+            <div class="setting-text"><span>Rückwirkend speichern</span><span class="type-caption muted">So viel steht beim Speichern zur Verfügung</span></div>
+            <fluent-dropdown id="s-selfclip-buffer" class="setting-control">
+              <fluent-listbox>
+                <fluent-option value="30">30 Sekunden</fluent-option>
+                <fluent-option value="60">1 Minute</fluent-option>
+                <fluent-option value="120">2 Minuten</fluent-option>
+                <fluent-option value="300">5 Minuten</fluent-option>
+              </fluent-listbox>
+            </fluent-dropdown>
+          </div>
+          <div class="setting-row selfclip-only" hidden>
+            <span class="setting-icon"><i data-icon="videoClip"></i></span>
+            <div class="setting-text"><span>Aufnahmequalität</span><span class="type-caption muted">Höher sieht besser aus, braucht aber mehr Platz</span></div>
+            <fluent-dropdown id="s-selfclip-quality" class="setting-control">
+              <fluent-listbox>
+                <fluent-option value="10:60">Gut · 60 fps</fluent-option>
+                <fluent-option value="15:60">Hoch · 60 fps (empfohlen)</fluent-option>
+                <fluent-option value="25:60">Sehr hoch · 60 fps</fluent-option>
+                <fluent-option value="10:30">Sparsam · 30 fps</fluent-option>
+              </fluent-listbox>
+            </fluent-dropdown>
+          </div>
+          <div class="setting-row selfclip-only" hidden>
+            <span class="setting-icon"><i data-icon="play"></i></span>
+            <div class="setting-text"><span>Spielton aufnehmen</span><span class="type-caption muted">Alles, was aus deinen Lautsprechern oder dem Headset kommt</span></div>
+            <fluent-checkbox id="s-selfclip-audio" class="setting-control"></fluent-checkbox>
+          </div>
+          <div class="setting-row" id="s-clipper-hotkey-row">
+            <span class="setting-icon"><i data-icon="keyboard"></i></span>
+            <div class="setting-text"><span>Speichertaste im Programm</span><span class="type-caption muted">Entf setzt sie auf den Standard zurück</span></div>
+            <fluent-text-input id="s-clipper-hotkey" class="setting-control hotkey" readonly data-hotkey data-optional></fluent-text-input>
+          </div>
+          <div class="setting-row">
+            <span class="setting-icon"><i data-icon="folderOpen"></i></span>
+            <div class="setting-text"><span>Clip-Ordner des Programms</span><span class="type-caption muted truncate" id="s-clip-dir-label"></span></div>
+            <div class="setting-control">
+              <fluent-button id="s-clip-dir-reset" appearance="subtle" hidden>Standard</fluent-button>
+              <fluent-button id="s-clip-dir-browse">Durchsuchen …</fluent-button>
+            </div>
+          </div>
+        </div>
+        <fluent-message-bar id="settings-error" intent="error" hidden></fluent-message-bar>
+      </div>
+    </fluent-dialog-body>
+  </fluent-dialog>
+</body>
+</html>

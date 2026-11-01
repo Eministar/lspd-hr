@@ -100,6 +100,10 @@ export async function POST(req: NextRequest) {
       (typeof body.suspensionRoleId !== 'string' || !/^(?:\d{17,22})?$/.test(body.suspensionRoleId.trim()))) {
       return error('Bitte eine gültige Discord-Rolle für Suspendierungen auswählen.')
     }
+    if (canManageSettings && body.clipsAnalystRoleId !== undefined &&
+      (typeof body.clipsAnalystRoleId !== 'string' || !/^(?:\d{17,22})?$/.test(body.clipsAnalystRoleId.trim()))) {
+      return error('Bitte eine gültige Discord-Rolle für die Clips-Analysten auswählen.')
+    }
     const previousConfig = await getDiscordConfig()
 
     invalidateDiscordCache()
@@ -115,6 +119,8 @@ export async function POST(req: NextRequest) {
       humanResourcesRoleId: canManageSettings && typeof body.humanResourcesRoleId === 'string' ? body.humanResourcesRoleId : undefined,
       promotionBlockRoleId: canManageSettings && typeof body.promotionBlockRoleId === 'string' ? body.promotionBlockRoleId : undefined,
       suspensionRoleId: canManageSettings && typeof body.suspensionRoleId === 'string' ? body.suspensionRoleId : undefined,
+      clipsAnalystRoleId: canManageSettings && typeof body.clipsAnalystRoleId === 'string' ? body.clipsAnalystRoleId : undefined,
+      clipsCategoryName: canManageSettings && typeof body.clipsCategoryName === 'string' ? body.clipsCategoryName : undefined,
       employeeRoleIds: canManageSettings && Array.isArray(body.employeeRoleIds) ? body.employeeRoleIds : undefined,
       commandRoleIds: canManageSettings && Array.isArray(body.commandRoleIds) ? body.commandRoleIds : undefined,
       authLoginRoleIds: canManageSettings && Array.isArray(body.authLoginRoleIds) ? body.authLoginRoleIds : undefined,

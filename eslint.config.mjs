@@ -57,6 +57,7 @@ const eslintConfig = defineConfig([
     "next.config.ts",
     "prisma.config.ts",
     "prisma/**",
+    "desktop/**",
   ]),
 ]);
 

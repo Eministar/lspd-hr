@@ -69,6 +69,8 @@ interface DiscordConfigResponse {
     rankRoleMap: Record<string, string>
     trainingRoleMap: Record<string, string>
     unitRoleMap: Record<string, string>
+    clipsAnalystRoleId: string
+    clipsCategoryName: string
   }
   roles: DiscordRole[]
   channels: DiscordChannel[]
@@ -149,6 +151,8 @@ export default function SettingsPage() {
     rankRoleMap: {},
     trainingRoleMap: {},
     unitRoleMap: {},
+    clipsAnalystRoleId: '',
+    clipsCategoryName: 'Clips',
   })
 
   const settingsInitialized = useRef(false)
@@ -707,6 +711,28 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-label-3 mt-1.5">
                   Suspendierte Officer erhalten diese Rolle automatisch. Nach Ablauf oder Aufhebung wird sie wieder entfernt.
                   Änderungen werden beim Speichern auch auf bereits suspendierte Officer angewendet.
+                </p>
+              </div>
+              <div>
+                <Select
+                  label="Clips-Channels: Analysten-Rolle"
+                  value={discordForm.clipsAnalystRoleId}
+                  onValueChange={(clipsAnalystRoleId) => setDiscordForm({ ...discordForm, clipsAnalystRoleId })}
+                  options={roleOptions}
+                />
+                <p className="text-[11px] text-label-3 mt-1.5">
+                  Darf in allen Clips-Channels Videos hochladen und lesen. Ohne diese Rolle werden keine Clips-Channels angelegt; bei Kündigung wird der Channel samt Videos gelöscht. Der Bot braucht „Kanäle verwalten“ und „Rollen verwalten“.
+                </p>
+              </div>
+              <div>
+                <Input
+                  label="Clips-Channels: Kategorie-Name"
+                  value={discordForm.clipsCategoryName}
+                  onChange={(e) => setDiscordForm({ ...discordForm, clipsCategoryName: e.target.value })}
+                  placeholder="Clips"
+                />
+                <p className="text-[11px] text-label-3 mt-1.5">
+                  Jeder Officer mit Discord-Verknüpfung bekommt einen privaten Clips-Channel, sortiert wie die Mitarbeiterliste. Der Bot legt automatisch so viele Kategorien an wie nötig (höchstens 45 Channels je Kategorie, z. B. „Clips 1“, „Clips 2“) und entfernt leere wieder.
                 </p>
               </div>
             </div>

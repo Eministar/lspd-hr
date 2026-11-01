@@ -9,7 +9,7 @@ import {
   Shield, GraduationCap, UserCog, Settings, LogOut, Briefcase,
   Menu, X, KeyRound, Timer, Upload, CalendarDays, Download,
   ClipboardList, Megaphone, FileText, Gavel, Scale,
-  History, DatabaseZap, Search, ChevronRight } from 'lucide-react'
+  History, DatabaseZap, Search, ChevronRight, Crosshair } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/auth-context'
@@ -47,6 +47,8 @@ const mainNav: NavItem[] = [
   { name: 'Kündigungen', href: '/terminations', icon: UserX, permission: 'terminations:view' },
   // Ohne `permission`: Sanktionen sind für jeden eingeloggten Officer einsehbar.
   { name: 'Sanktionen', href: '/sanktionen', icon: Scale },
+  // Ohne `permission`: Die Kill-Clips-App darf jeder herunterladen.
+  { name: 'Kill-Clips App', href: '/desktop', icon: Crosshair },
   { name: 'Notizen', href: '/notes', icon: StickyNote, permission: 'notes:view' },
   { name: 'Protokoll', href: '/logs', icon: ScrollText, permission: 'logs:view' },
 ]

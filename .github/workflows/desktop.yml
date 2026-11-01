@@ -1,0 +1,119 @@
+# Desktop-App „LSPD Kill-Clips“: bei Änderungen in desktop/ den Windows-Installer bauen,
+# signieren und per HTTPS ans Dashboard schicken. Das Dashboard bietet ihn unter /desktop
+# jedem zum Download an, installierte Apps holen sich Updates über
+# /api/desktop/updates/latest.json selbst. (Aufbau übernommen aus FIB Desktop.)
+#
+# EINRICHTUNG (einmalig) — GitHub → Settings → Secrets and variables → Actions:
+#   DASHBOARD_URL (Variable oder Secret)    Öffentliche Dashboard-URL, z. B. https://pd.nero-v.cc
+#   Secret    TAURI_SIGNING_PRIVATE_KEY     Inhalt von ~/.tauri/lspd-killclips.key (Update-Signatur)
+#   Secret    DESKTOP_RELEASE_TOKEN         Langer Zufallswert; derselbe Wert steht auf dem
+#                                           Server in der .env (DESKTOP_RELEASE_TOKEN=…)
+#
+# Die Version ist 1.0.<Laufnummer>, steigt also bei jedem Lauf automatisch.
+
+name: Desktop-App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    env:
+      DASHBOARD_URL: ${{ vars.DASHBOARD_URL || secrets.DASHBOARD_URL }}
+      VERSION: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Einrichtung prüfen
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          DESKTOP_RELEASE_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+        run: |
+          [[ "$DASHBOARD_URL" == https://* ]] || { echo "::error::DASHBOARD_URL (Variable oder Secret) fehlt oder beginnt nicht mit https://"; exit 1; }
+          [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] || { echo "::error::Secret TAURI_SIGNING_PRIVATE_KEY fehlt."; exit 1; }
+          [ -n "$DESKTOP_RELEASE_TOKEN" ] || { echo "::error::Secret DESKTOP_RELEASE_TOKEN fehlt."; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Installer bauen und signieren
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          # Version und Update-Adresse kommen erst hier in die App.
+          node -e '
+            const [version, url] = process.argv.slice(1)
+            const endpoint = url.replace(/\/$/, "") + "/api/desktop/updates/latest.json"
+            // Lokal darf der Updater http (localhost), ausgeliefert wird nur https.
+            const config = { version, plugins: { updater: { endpoints: [endpoint], dangerousInsecureTransportProtocol: false } } }
+            require("fs").writeFileSync("release.conf.json", JSON.stringify(config))
+          ' "$VERSION" "$DASHBOARD_URL"
+          npx tauri build --config release.conf.json
+
+      - name: Installer bereitstellen
+        run: |
+          BUNDLE="src-tauri/target/release/bundle/nsis/LSPD Kill-Clips_${VERSION}_x64-setup.exe"
+          mkdir -p out
+          cp "$BUNDLE" "out/LSPD-KillClips-Setup-${VERSION}.exe"
+          cp "$BUNDLE.sig" "out/LSPD-KillClips-Setup-${VERSION}.exe.sig"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release
+          path: desktop/out/
+          retention-days: 7
+
+      # Läuft parallel zum Server-Deploy; hochgeladen wird erst, wenn das Dashboard die
+      # Release-Endpunkte ausliefert (beim allerersten Mal kommen sie mit demselben Push).
+      - name: Auf Dashboard warten
+        run: |
+          for attempt in $(seq 1 120); do
+            CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 15 "${DASHBOARD_URL%/}/api/desktop/updates/latest.json" || true)"
+            if [ "$CODE" = 200 ] || [ "$CODE" = 204 ]; then echo "Dashboard bereit (HTTP $CODE)."; exit 0; fi
+            echo "Dashboard antwortet mit HTTP $CODE – warte auf das Deploy ($attempt/120) …"
+            sleep 15
+          done
+          echo "::error::Das Dashboard liefert /api/desktop/updates/latest.json nach 30 Minuten nicht aus. Ist das Deploy durchgelaufen?"
+          exit 1
+
+      - name: Ans Dashboard hochladen
+        env:
+          DESKTOP_RELEASE_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          NOTES: ${{ github.event.head_commit.message || 'Manueller Build' }}
+        run: |
+          FILE="out/LSPD-KillClips-Setup-${VERSION}.exe"
+          printf '%s' "$NOTES" > out/notes.txt
+          # „<datei“ liest den Feldwert aus der Datei – Signatur und Commit-Text ohne Shell-Quoting.
+          curl --fail-with-body -sS --retry 2 \
+            -H "Authorization: Bearer $DESKTOP_RELEASE_TOKEN" \
+            -F "installer=@$FILE;type=application/octet-stream" \
+            -F "version=$VERSION" \
+            -F "signature=<$FILE.sig" \
+            -F "notes=<out/notes.txt" \
+            "${DASHBOARD_URL%/}/api/desktop/releases"

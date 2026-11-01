@@ -15,6 +15,7 @@ import {
   markdownRows,
   markdownTextDisplays,
 } from './discord-components'
+import { syncOfficerClipChannels } from './discord-clips'
 
 type DiscordRole = {
   id: string
@@ -94,6 +95,10 @@ export type DiscordConfig = {
   /// Ebenen: eine Discord-Rolle, die Officer mit einem der zugewiesenen Ränge
   /// automatisch erhalten. Aus der DB (Tier/TierRank) geladen.
   tiers: DiscordTier[]
+  /// Clips-Channels: Rolle mit Zugriff auf alle Clips-Channels. Leer = Feature aus.
+  clipsAnalystRoleId: string
+  /// Basisname der automatisch verwalteten Clips-Kategorien („Clips 1“, „Clips 2“ …).
+  clipsCategoryName: string
 }
 
 export type DiscordTier = {
@@ -208,6 +213,9 @@ export const DISCORD_SETTING_KEYS = {
   rankRoleMap: 'discord.rankRoleMap',
   trainingRoleMap: 'discord.trainingRoleMap',
   unitRoleMap: 'discord.unitRoleMap',
+  clipsAnalystRoleId: 'discord.clipsAnalystRoleId',
+  clipsCategoryName: 'discord.clipsCategoryName',
+  clipsCategoryIds: 'discord.clipsCategoryIds',
 } as const
 
 const EVENT_META = {
@@ -812,6 +820,8 @@ export async function getDiscordConfig(): Promise<DiscordConfig> {
     unitRoleMap,
     unitGroups,
     tiers,
+    clipsAnalystRoleId: snowflake(map[DISCORD_SETTING_KEYS.clipsAnalystRoleId]),
+    clipsCategoryName: map[DISCORD_SETTING_KEYS.clipsCategoryName]?.trim() || 'Clips',
   }
 }
 
@@ -843,6 +853,8 @@ export async function saveDiscordConfig(input: Partial<DiscordConfig>) {
   if (input.unitRoleMap !== undefined) data[DISCORD_SETTING_KEYS.unitRoleMap] = JSON.stringify(cleanRoleMap(input.unitRoleMap))
 
   if (input.suspensionRoleId !== undefined) data[DISCORD_SETTING_KEYS.suspensionRoleId] = input.suspensionRoleId.trim()
+  if (input.clipsAnalystRoleId !== undefined) data[DISCORD_SETTING_KEYS.clipsAnalystRoleId] = input.clipsAnalystRoleId.trim()
+  if (input.clipsCategoryName !== undefined) data[DISCORD_SETTING_KEYS.clipsCategoryName] = input.clipsCategoryName.trim().slice(0, 90)
 
   const entries = Object.entries(data)
   if (entries.length === 0) return
@@ -1252,6 +1264,8 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
   const config = await getDiscordConfig()
   const officer = await getOfficerForDiscord(officerId)
   if (!officer) return
+  // Neue Officers, Kündigungen und Rangwechsel ändern Clips-Channels und deren Reihenfolge.
+  queueClipChannelSync()
   if (mode === 'sync') await syncLinkedUserDisplayNameForOfficer(officer)
 
   // Fetch the member once and share it between group- and role-sync to avoid
@@ -1268,6 +1282,7 @@ export async function syncOfficerDiscordRoles(officerId: string, mode: 'sync' | 
 
 export async function syncFormerOfficerDiscordMember(officer: OfficerForDiscord) {
   const config = await getDiscordConfig()
+  queueClipChannelSync()
   await syncOfficerDashboardGroupsForOfficer(officer, config, 'remove-all')
 
   if (!config.guildId || !botToken()) return
@@ -1401,9 +1416,106 @@ export async function syncAllOfficerDiscordRoles(options?: {
     }
   }
 
+  if (canSyncDiscord && config.clipsAnalystRoleId) {
+    await emitProgress('syncing', undefined, 'Synchronisiere Clips-Channels')
+    await syncClipChannels(config).catch((error) => {
+      console.error('[DiscordIntegration] Clips-Channels konnten nicht synchronisiert werden:', error)
+    })
+  }
+
   await emitProgress('completed', undefined, 'Full-Sync abgeschlossen')
 
   return { synced, skipped, failed, total: officers.length }
+}
+
+// ── Clips-Channels ──────────────────────────────────────────────────
+
+/** Officers in Reihenfolge der Mitarbeiterliste: Rang, dann Dienstnummer. */
+async function clipRoster() {
+  const officers = await prisma.officer.findMany({
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      badgeNumber: true,
+      discordId: true,
+      status: true,
+      rank: { select: { sortOrder: true } },
+    },
+  })
+  return officers.sort((a, b) =>
+    a.rank.sortOrder - b.rank.sortOrder ||
+    a.badgeNumber.localeCompare(b.badgeNumber, 'de', { numeric: true }) ||
+    a.lastName.localeCompare(b.lastName, 'de'),
+  )
+}
+
+async function clipCategoryIds() {
+  const row = await prisma.systemSetting.findUnique({ where: { key: DISCORD_SETTING_KEYS.clipsCategoryIds } })
+  return cleanRoleIds(parseJson(row?.value, []))
+}
+
+async function saveClipCategoryIds(ids: string[]) {
+  const value = JSON.stringify(ids)
+  await prisma.systemSetting.upsert({
+    where: { key: DISCORD_SETTING_KEYS.clipsCategoryIds },
+    update: { value },
+    create: { key: DISCORD_SETTING_KEYS.clipsCategoryIds, value },
+  })
+}
+
+/** Legt fehlende Clips-Channels/Kategorien an, verschiebt, sortiert und räumt auf. */
+export async function syncClipChannels(config?: DiscordConfig) {
+  const cfg = config ?? await getDiscordConfig()
+  if (!cfg.guildId || !botToken()) return
+  const officers = (await clipRoster()).map((officer) => ({
+    id: officer.id,
+    firstName: officer.firstName,
+    lastName: officer.lastName,
+    badgeNumber: officer.badgeNumber,
+    discordId: officer.discordId,
+    status: officer.status,
+  }))
+  const members = cfg.clipsAnalystRoleId
+    ? await getDiscordGuildMembers(cfg.guildId).catch((error) => {
+      console.warn('[DiscordIntegration] Mitgliederliste für Clips-Channels nicht verfügbar:', error)
+      return null
+    })
+    : null
+  const memberIds = members
+    ? new Set(members.map((member) => snowflake(member.user?.id)).filter(Boolean))
+    : null
+
+  await syncOfficerClipChannels({
+    request: discordFetch,
+    guildId: cfg.guildId,
+    analystRoleId: cfg.clipsAnalystRoleId,
+    categoryName: cfg.clipsCategoryName,
+    officers,
+    memberIds,
+    categoryIds: await clipCategoryIds(),
+    saveCategoryIds: saveClipCategoryIds,
+  })
+}
+
+let clipSyncTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Mehrere Änderungen kurz hintereinander lösen nur einen Clips-Sync aus. */
+export function queueClipChannelSync() {
+  if (clipSyncTimer) clearTimeout(clipSyncTimer)
+  clipSyncTimer = setTimeout(() => {
+    clipSyncTimer = null
+    void syncClipChannels().catch((error) => {
+      console.error('[DiscordIntegration] Clips-Channels konnten nicht synchronisiert werden:', error)
+      queueDiscordWebhookEvent({
+        title: 'Clips-Channel-Sync fehlgeschlagen',
+        severity: 'error',
+        source: 'discord-integration',
+        error,
+      })
+    })
+  }, 3000)
+  clipSyncTimer.unref?.()
 }
 
 function bracketedServiceNumber(badgeNumber: string, prefix: string) {

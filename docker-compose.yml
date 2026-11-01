@@ -51,9 +51,11 @@ services:
       - "${APP_PORT:-3000}:3000"
     volumes:
       - app_uploads:/app/uploads
+      - app_desktop_releases:/app/desktop-releases
       - app_config:/app/config
 
 volumes:
   mariadb_data:
   app_uploads:
+  app_desktop_releases:
   app_config:

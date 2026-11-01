@@ -1,0 +1,81 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LSPD Kill-Clips",
+  "version": "1.0.0",
+  "identifier": "de.lspd.killclips",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LSPD Kill-Clips",
+        "width": 1040,
+        "height": 780,
+        "minWidth": 820,
+        "minHeight": 620,
+        "transparent": true,
+        "windowEffects": {
+          "effects": [
+            "mica"
+          ]
+        }
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: asset: http://asset.localhost; media-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "**/*.mp4",
+          "**/*.mkv",
+          "**/*.mov",
+          "**/*.webm",
+          "**/*.MP4",
+          "**/*.bmp"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installerHooks": "installer/hooks.nsh",
+        "installMode": "currentUser",
+        "languages": [
+          "German"
+        ],
+        "installerIcon": "icons/icon.ico"
+      }
+    },
+    "publisher": "Emin",
+    "copyright": "Kill-Clip-Erkennung: Emin"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQxMTAzNzVCMEQ2MzU3MkMKUldRc1YyTU5XemNRUWVSTldBcldDRjg5WHZOVUdvcTdxR0V6QnAyR3hLRWwxRWpnMWhKQXJobVQK",
+      "endpoints": [
+        "http://localhost:3000/api/desktop/updates/latest.json"
+      ],
+      "dangerousInsecureTransportProtocol": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

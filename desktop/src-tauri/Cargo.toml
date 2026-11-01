@@ -1,0 +1,44 @@
+[package]
+name = "lspd-killclips"
+version = "1.0.0"
+description = "LSPD Kill-Clips – basiert auf der Kill-Clip-Erkennung aus FIB Desktop (Credits: Emin)"
+authors = ["Emin"]
+edition = "2021"
+
+[lib]
+name = "lspd_killclips_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-global-shortcut = "2.4.1"
+tauri-plugin-opener = "2.7.2"
+tauri-plugin-dialog = "2.8.3"
+tauri-plugin-single-instance = "2"
+sha2 = "0.11.1"
+winreg = "0.56.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "native-tls", "charset", "http2"] }
+windows-sys = { version = "0.61.2", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_Foundation", "Win32_Security_Credentials"] }
+tokio = { version = "1.54.1", features = ["time", "sync", "fs", "io-util", "rt", "macros"] }
+windows = { version = "0.62.2", features = ["Foundation", "Foundation_Collections", "Media_Transcoding", "Media_MediaProperties", "Media_Editing", "Media_Ocr", "Globalization", "Graphics_Imaging", "Storage", "Storage_Streams", "Win32_System_WinRT", "Storage_Search", "Win32_Graphics_Direct3D", "Win32_Graphics_Direct3D11", "Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_System_Threading", "Win32_Media_Audio", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_System_JobObjects", "Win32_Security", "Win32_UI_WindowsAndMessaging", "Win32_UI_Accessibility", "Win32_UI_Input", "Win32_UI_Shell", "Win32_System_Registry", "Win32_System_LibraryLoader", "Win32_System_SystemInformation", "Win32_Graphics_Gdi", "Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Properties", "Win32_System_Diagnostics_ToolHelp", "Win32_UI_HiDpi", "Graphics_Capture", "Graphics_DirectX", "Graphics_DirectX_Direct3D11", "Win32_System_WinRT_Graphics_Capture", "Win32_System_WinRT_Direct3D11", "Win32_System_Performance", "Security_Authorization_AppCapabilityAccess", "Win32_System_ProcessStatus"] }
+windows-future = "0.3.2"
+windows-collections = "0.3.2"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+zip = { version = "4", default-features = false, features = ["deflate"] }
+windows-core = "0.62.2"
+tauri-plugin-notification = "2"
+
+# Kleine, schnelle Release-Binary.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

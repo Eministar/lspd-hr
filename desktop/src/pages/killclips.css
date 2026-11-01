@@ -1,0 +1,173 @@
+/* ── Kill-Clips ───────────────────────────────────────────────── */
+.kc-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  margin: 8px 0 4px;
+}
+.kc-state-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--subtle-selected);
+  color: var(--text-secondary);
+}
+.kc-state-icon .icon { width: 24px; height: 24px; }
+.kc-state-icon.live { background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); animation: kc-pulse 2s ease-in-out infinite; }
+.kc-state-icon.busy { background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); }
+@keyframes kc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--colorBrandBackground) 45%, transparent); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kc-state-icon.live { animation: none; }
+}
+.kc-state-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.kc-name { width: 220px; }
+.kc-dropdown { width: 200px; }
+.kc-history-head { margin-top: 16px; }
+
+.kc-event { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 52px; padding: 8px 16px; }
+.kc-event + .kc-event { border-top: 1px solid var(--card-stroke); }
+.kc-event-icon .icon { width: 18px; height: 18px; }
+.kc-event-text { display: flex; flex-direction: column; min-width: 0; }
+.kc-event.kill .kc-event-icon { color: var(--colorBrandForeground1); }
+.kc-event.uploaded .kc-event-icon { color: var(--ok); }
+.kc-event.error .kc-event-icon { color: var(--colorPaletteRedForeground1); }
+.kc-feed { margin: 4px 4px 0; font-family: Consolas, 'Cascadia Mono', monospace; user-select: text; -webkit-user-select: text; }
+
+/* Einrichtungsdialog: groß genug, um den Screenshot zu sehen */
+#kc-setup-dialog::part(dialog) { max-width: min(1180px, calc(100vw - 48px)); width: min(1180px, calc(100vw - 48px)); }
+.kc-setup { display: flex; flex-direction: column; gap: 12px; }
+.kc-steps { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; counter-reset: setup-step; }
+.kc-steps li { counter-increment: setup-step; padding: 10px 12px; border: 1px solid var(--card-stroke); border-radius: 6px; color: var(--text-secondary); }
+.kc-steps li::before { content: counter(setup-step) ". "; font-weight: 600; }
+.kc-steps li span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; }
+.kc-steps li[aria-current="step"] { border-color: var(--colorBrandForeground2); background: var(--colorBrandBackground2); color: var(--colorNeutralForeground1); }
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--control-stroke-button, var(--card-stroke));
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--control-fill, var(--card));
+  font: inherit;
+  font-size: 12px;
+}
+.kc-setup-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kc-setup-bar > #kc-setup-hint { flex: 1 1 260px; }
+.kc-region-fields { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 6px; }
+.kc-region-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.kc-region-fields input { width: 84px; padding: 6px 8px; border: 1px solid var(--card-stroke); border-radius: 4px; background: var(--card); color: var(--colorNeutralForeground1); font: inherit; }
+.kc-region-fields input:focus-visible { outline: 2px solid var(--colorStrokeFocus2); outline-offset: 2px; }
+.kc-review { display: grid; gap: 12px; }
+.kc-review:has(#kc-test:not([hidden])) { grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); }
+.kc-review-image { min-width: 0; }
+.kc-region-controls { margin-top: 10px; }
+.kc-review .kc-test { align-self: start; min-width: 0; overflow-wrap: anywhere; }
+.kc-review .kc-crops { flex-direction: column; align-items: flex-start; }
+.kc-review .kc-crop { width: 100%; }
+.kc-review .kc-crop-img { width: 100%; }
+@media (max-width: 760px) {
+  .kc-steps { grid-template-columns: 1fr; }
+  .kc-steps li:not([aria-current="step"]) span { display: none; }
+  .kc-review:has(#kc-test:not([hidden])) { grid-template-columns: 1fr; }
+}
+.kc-canvas {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-height: 220px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 6px;
+  background: var(--subtle-selected);
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+/* Die Bühne ist genau so groß wie das Bild – Rahmen sitzen in Prozent darauf. */
+.kc-stage { position: relative; max-width: 100%; align-self: flex-start; }
+/* Das ganze Bild bleibt sichtbar, Probelauf und Buttons rutschen nicht aus dem Dialog. */
+.kc-canvas img { display: block; max-width: 100%; max-height: max(200px, calc(100vh - 440px)); width: auto; height: auto; pointer-events: none; }
+.kc-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  cursor: default;
+}
+.kc-canvas-empty .icon { width: 32px; height: 32px; color: var(--text-tertiary); }
+.kc-rect { position: absolute; border: 2px solid; border-radius: 2px; pointer-events: none; }
+.kc-rect span { position: absolute; top: 0; left: 0; padding: 1px 6px; border-radius: 0 0 3px 0; font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; }
+.kc-rect.feed { border-color: #4cc2ff; background: rgba(76, 194, 255, 0.12); }
+.kc-rect.feed span { background: #0078d4; }
+.kc-rect.hit { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.14); }
+.kc-rect.hit span { background: #c42b1c; }
+
+.kc-test { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border: 1px solid var(--card-stroke); border-radius: 6px; background: var(--card); }
+.kc-test-line { display: flex; align-items: center; gap: 8px; font-family: Consolas, 'Cascadia Mono', monospace; font-size: 13px; color: var(--text-secondary); }
+.kc-test-line .icon { width: 16px; height: 16px; flex-shrink: 0; }
+.kc-test-line.hit { color: var(--colorNeutralForeground1); }
+.kc-test-line.hit .icon { color: var(--ok); }
+.kc-test-line.death .icon { color: var(--colorPaletteRedForeground1); }
+.kc-test-sep { width: 100%; border: 0; border-top: 1px solid var(--card-stroke); margin: 4px 0; }
+.kc-event.death .kc-event-icon { color: var(--colorPaletteRedForeground1); }
+.kc-event.warning .kc-event-icon { color: var(--colorPaletteYellowForeground2); }
+
+/* Aufnahme mit Zeitleiste: Kill markieren */
+.kc-clip { display: flex; flex-direction: column; }
+.kc-player { width: 100%; max-height: max(220px, calc(100vh - 460px)); }
+.kc-track { height: 28px; cursor: pointer; }
+.kc-track:focus-visible { outline: 2px solid var(--colorStrokeFocus2); outline-offset: 2px; }
+/* Zuletzt ausgewerteter Moment */
+.kc-kill-flag {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #c42b1c;
+  pointer-events: none;
+}
+.kc-kill-flag::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: -3px;
+  border: 5px solid transparent;
+  border-top-color: #c42b1c;
+}
+#kc-mark { margin-left: 8px; }
+
+/* Referenz: so sieht die App den Kill */
+.kc-crops { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.kc-crop { display: flex; flex-direction: column; gap: 4px; margin: 0; max-width: 100%; }
+.kc-crop-img {
+  width: min(420px, 100%);
+  max-height: 140px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 4px;
+  background-color: #000;
+  background-repeat: no-repeat;
+}
+/* Marker-Ausschnitt ist quadratisch und klein – vergrößert zeigen. */
+.kc-crop:nth-child(2) .kc-crop-img { width: 120px; image-rendering: pixelated; }
+
+/* LSPD: Warnhinweis und Credits */
+.kc-disclaimer { margin-bottom: 16px; }
+.kc-credits { margin-top: 24px; text-align: center; }
+.about-card { display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 8px; }
+.about-card p { margin: 4px 0 0; }
+
+/* Update-Hinweis oben im Inhalt */
+#update-banner { margin-bottom: 16px; }
