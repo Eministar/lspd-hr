@@ -83,6 +83,7 @@ export async function GET() {
             ...unitData,
             icon: sanitizeUnitIcon(unit.icon),
             modules: sanitizeUnitModules(unit.modules),
+            rankPermissions: sanitizePermissions(unit.rankPermissions),
             assignmentCounts: {
               officers: officersByUnit.get(unit.key)?.size ?? 0,
               directUsers: _count.userAssignments,

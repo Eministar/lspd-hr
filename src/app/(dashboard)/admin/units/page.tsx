@@ -53,6 +53,8 @@ const MODULE_PERMISSIONS = moduleControlledPermissions()
 const EXTRA_PERMISSIONS = PERMISSIONS.filter((permission) => !MODULE_PERMISSIONS.has(permission))
 const EXTRA_READ_PERMISSIONS = EXTRA_PERMISSIONS.filter((permission) => permission.endsWith(':view'))
 const EXTRA_MANAGE_PERMISSIONS = EXTRA_PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
+const RANK_READ_PERMISSIONS = PERMISSIONS.filter((permission) => permission.endsWith(':view'))
+const RANK_MANAGE_PERMISSIONS = PERMISSIONS.filter((permission) => !permission.endsWith(':view'))
 
 type Unit = {
   id: string
@@ -66,6 +68,7 @@ type Unit = {
   showInNavigation: boolean
   modules: UnitModuleSelection
   permissions?: Permission[]
+  rankPermissions?: Permission[]
   discordRoleId: string | null
   groupId: string | null
   isLeadership: boolean
@@ -114,6 +117,7 @@ type UnitForm = {
   groupId: string
   isLeadership: boolean
   discordRoleId: string
+  rankPermissions: Permission[]
 }
 
 type DiscordRole = { id: string; name: string; managed?: boolean; position?: number }
@@ -152,6 +156,7 @@ function emptyUnitForm(groupId = '', sortOrder = 10): UnitForm {
     groupId,
     isLeadership: false,
     discordRoleId: '',
+    rankPermissions: [],
   }
 }
 
@@ -384,6 +389,7 @@ export default function UnitsPage() {
   const refreshAll = async () => { await Promise.all([refetchUnits(), refetchGroups()]) }
   const toggleGroupModule = (key: UnitModuleKey) => setGroupForm((current) => { const modules = { ...current.modules }; if (modules[key]) delete modules[key]; else modules[key] = 'view'; return { ...current, modules } })
   const setGroupModuleAccess = (key: UnitModuleKey, access: UnitModuleAccess) => setGroupForm((current) => ({ ...current, modules: { ...current.modules, [key]: access } }))
+  const toggleRankPermission = (permission: Permission, checked: boolean) => setUnitForm((current) => ({ ...current, rankPermissions: checked ? Array.from(new Set([...current.rankPermissions, permission])) : current.rankPermissions.filter((item) => item !== permission) }))
   const togglePermission = (permission: Permission, checked: boolean) => setGroupForm((current) => ({ ...current, permissions: checked ? Array.from(new Set([...current.permissions, permission])) : current.permissions.filter((item) => item !== permission) }))
 
   const openCreateGroup = () => {
@@ -407,7 +413,7 @@ export default function UnitsPage() {
   const openEditUnit = (unit: Unit) => {
     setEditingUnit(unit)
     const missingGroup = groups ? hasMissingUnitGroup(unit, groups) : false
-    setUnitForm({ name: unit.name, description: unit.description ?? '', color: unit.color, icon: sanitizeUnitIcon(unit.icon), sortOrder: unit.sortOrder, active: unit.active, groupId: missingGroup ? '' : unit.groupId ?? '', isLeadership: missingGroup ? false : unit.isLeadership, discordRoleId: unit.discordRoleId ?? '' })
+    setUnitForm({ name: unit.name, description: unit.description ?? '', color: unit.color, icon: sanitizeUnitIcon(unit.icon), sortOrder: unit.sortOrder, active: unit.active, groupId: missingGroup ? '' : unit.groupId ?? '', isLeadership: missingGroup ? false : unit.isLeadership, discordRoleId: unit.discordRoleId ?? '', rankPermissions: missingGroup ? [] : unit.rankPermissions ?? [] })
     setUnitModalOpen(true)
   }
   const goToGroupStep = (step: number) => {
@@ -419,7 +425,7 @@ export default function UnitsPage() {
     try { await execute(editingGroup ? `/api/unit-groups/${editingGroup.id}` : '/api/unit-groups', { method: editingGroup ? 'PATCH' : 'POST', body: JSON.stringify(payload) }); addToast({ type: 'success', title: editingGroup ? 'Unitgruppe gespeichert' : 'Unitgruppe erstellt', message: 'Füge jetzt die Unterränge hinzu und markiere die Leitung.' }); setGroupModalOpen(false); await refreshAll() } catch (error) { addToast({ type: 'error', title: 'Unitgruppe konnte nicht gespeichert werden', message: error instanceof Error ? error.message : '' }) }
   }
   const saveUnit = async () => {
-    const payload = { name: unitForm.name.trim(), description: unitForm.description.trim(), color: unitForm.color, icon: unitForm.icon, sortOrder: unitForm.sortOrder, active: unitForm.active, groupId: unitForm.groupId || null, isLeadership: unitForm.isLeadership, discordRoleId: unitForm.discordRoleId || null, showInNavigation: unitForm.groupId ? false : editingUnit?.showInNavigation ?? false }
+    const payload = { name: unitForm.name.trim(), description: unitForm.description.trim(), color: unitForm.color, icon: unitForm.icon, sortOrder: unitForm.sortOrder, active: unitForm.active, groupId: unitForm.groupId || null, isLeadership: unitForm.isLeadership, discordRoleId: unitForm.discordRoleId || null, rankPermissions: unitForm.groupId ? unitForm.rankPermissions : [], showInNavigation: unitForm.groupId ? false : editingUnit?.showInNavigation ?? false }
     try { await execute(editingUnit ? `/api/units/${editingUnit.id}` : '/api/units', { method: editingUnit ? 'PATCH' : 'POST', body: JSON.stringify(payload) }); addToast({ type: 'success', title: editingUnit ? 'Unterrang gespeichert' : 'Unterrang hinzugefügt', message: unitForm.isLeadership ? 'Die Leitungsrolle wird beim nächsten Discord-Sync berücksichtigt.' : '' }); setUnitModalOpen(false); await refreshAll() } catch (error) { addToast({ type: 'error', title: 'Unterrang konnte nicht gespeichert werden', message: error instanceof Error ? error.message : '' }) }
   }
   const handleReorderUnits = async (groupId: string, reorderedUnits: Unit[]) => {
@@ -1125,6 +1131,51 @@ export default function UnitsPage() {
             }
             onChange={(isLeadership) => setUnitForm({ ...unitForm, isLeadership })}
           />
+          {unitForm.groupId && (
+            <details className="group rounded-[12px] border border-line bg-white/[0.03] p-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-[11.5px] font-semibold text-label-2">
+                <span className="flex items-center gap-2">
+                  <SlidersHorizontal size={14} className="text-label-3" /> Eigene Rechte dieses Unterrangs
+                </span>
+                <span className="flex items-center gap-2 text-[11px] font-normal text-label-4">
+                  {unitForm.rankPermissions.length} ausgewählt <ChevronRight size={13} className="transition-transform group-open:rotate-90" />
+                </span>
+              </summary>
+              <p className="mb-3 mt-3 text-[11px] leading-5 text-label-4">
+                Gelten nur für Officers mit diesem Unterrang – zusätzlich zu den Rechten der Unitgruppe. Beispiel: „Kündigungen verwalten“ nur für die Leitung.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-[11px] font-bold text-label-3">Ansehen</p>
+                  <div className="max-h-48 space-y-1.5 overflow-auto pr-1">
+                    {RANK_READ_PERMISSIONS.map((permission) => (
+                      <Checkbox
+                        key={permission}
+                        checked={unitForm.rankPermissions.includes(permission)}
+                        onCheckedChange={(checked) => toggleRankPermission(permission, checked)}
+                        label={PERMISSION_LABELS[permission]}
+                        className="rounded-lg border border-line bg-white/[0.03] px-3 py-2"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-[11px] font-bold text-label-3">Bearbeiten</p>
+                  <div className="max-h-48 space-y-1.5 overflow-auto pr-1">
+                    {RANK_MANAGE_PERMISSIONS.map((permission) => (
+                      <Checkbox
+                        key={permission}
+                        checked={unitForm.rankPermissions.includes(permission)}
+                        onCheckedChange={(checked) => toggleRankPermission(permission, checked)}
+                        label={PERMISSION_LABELS[permission]}
+                        className="rounded-lg border border-line bg-white/[0.03] px-3 py-2"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </details>
+          )}
           <div className="grid gap-4 sm:grid-cols-[150px_1fr]">
             <ColorField label="Rangfarbe" value={unitForm.color} onChange={(color) => setUnitForm({ ...unitForm, color })} />
             <div>

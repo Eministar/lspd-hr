@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
       ...unitData,
       icon: sanitizeUnitIcon(unit.icon),
       modules: sanitizeUnitModules(unit.modules),
+      rankPermissions: sanitizePermissions(unit.rankPermissions),
       permissions: Array.from(new Set([
         ...sanitizePermissions(unit.permissions),
         ...automaticPermissionsForRoleNames([unit.key, unit.name]),
@@ -139,6 +140,7 @@ export async function POST(req: NextRequest) {
         modules,
         groupId,
         isLeadership: Boolean(groupId) && body.isLeadership === true,
+        rankPermissions: groupId ? sanitizePermissions(body.rankPermissions) : [],
         discordRoleId: unitDiscordRoleId,
         permissions: Array.from(new Set([
           ...composeUnitPermissions(body.permissions, modules),
@@ -148,7 +150,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (groupId || unitDiscordRoleId) queueAllOfficerRoleSync()
-    return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules) }, 201)
+    return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules), rankPermissions: sanitizePermissions(unit.rankPermissions) }, 201)
   } catch (e: unknown) {
     if (isUniqueConstraintError(e)) return error('Eine Unit mit diesem Schlüssel wurde bereits angelegt. Aktualisiere die Verwaltung und suche nach dem Namen oder Schlüssel.', 409)
     const msg = e instanceof Error ? e.message : 'Serverfehler'

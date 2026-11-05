@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { cookies, headers } from 'next/headers'
 import { prisma } from './prisma'
 import { automaticPermissionsForRoleNames, hasAnyPermission, resolveEffectivePermissions, intersectPermissions, normalizePermissions, PERMISSIONS, type Permission } from './permissions'
+import { ensureRankPermissionDefaults } from './unit-rank-permissions'
 import { storedDiscordAvatarUrl } from './discord-auth'
 import { isDiscordUserAdmin } from './discord-integration'
 import { createHash } from 'node:crypto'
@@ -212,6 +213,9 @@ export async function getCurrentAuth(): Promise<CurrentAuth | null> {
 async function loadUserUnitPermissions(params: { userId: string; discordId: string | null }): Promise<unknown[]> {
   const { userId, discordId } = params
   const unitPermsLists: unknown[] = []
+  await ensureRankPermissionDefaults().catch((error) => {
+    console.error('[auth] Unterrang-Rechte konnten nicht vorbelegt werden', error)
+  })
   const seenUnitIds = new Set<string>()
   const seenGroupIds = new Set<string>()
 
@@ -220,6 +224,7 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
     key: string
     name: string
     permissions: unknown
+    rankPermissions?: unknown
     isLeadership?: boolean
     group?: {
       id: string
@@ -238,6 +243,8 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
         unitPermsLists.push(automaticPermissionsForRoleNames([unit.group.key, unit.group.name]))
       }
       if (unit.isLeadership) unitPermsLists.push(['unit-leadership:manage'])
+      // Eigene Rechte des Unterrangs (z. B. Kündigen nur für HR Leitung/Stv.).
+      unitPermsLists.push(unit.rankPermissions ?? [])
     } else {
       unitPermsLists.push(unit.permissions)
       unitPermsLists.push(automaticPermissionsForRoleNames([unit.key, unit.name]))
@@ -254,6 +261,7 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
           key: true,
           name: true,
           permissions: true,
+          rankPermissions: true,
           isLeadership: true,
           group: { select: { id: true, key: true, name: true, permissions: true, active: true } },
         },
@@ -278,6 +286,7 @@ async function loadUserUnitPermissions(params: { userId: string; discordId: stri
           key: true,
           name: true,
           permissions: true,
+          rankPermissions: true,
           isLeadership: true,
           group: { select: { id: true, key: true, name: true, permissions: true, active: true } },
         },

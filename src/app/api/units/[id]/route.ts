@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { success, error, unauthorized, notFound } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { queueAllOfficerRoleSync } from '@/lib/discord-integration'
-import { automaticPermissionsForRoleNames } from '@/lib/permissions'
+import { automaticPermissionsForRoleNames, sanitizePermissions } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import {
   composeUnitPermissions,
@@ -61,6 +61,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.isLeadership = Boolean(resultingGroupId) && body.isLeadership
     }
 
+    if (Array.isArray(body.rankPermissions)) {
+      const resultingGroupId = 'groupId' in data ? data.groupId : existing.groupId
+      data.rankPermissions = resultingGroupId ? sanitizePermissions(body.rankPermissions) : []
+    } else if ('groupId' in data && !data.groupId) {
+      data.rankPermissions = []
+    }
+
     const modules = 'modules' in body ? sanitizeUnitModules(body.modules) : sanitizeUnitModules(existing.modules)
     if ('modules' in body) data.modules = modules
     if (Array.isArray(body.permissions) || 'modules' in body) {
@@ -88,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           : [],
       })
     }
-    return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules) })
+    return success({ ...unit, icon: sanitizeUnitIcon(unit.icon), modules: sanitizeUnitModules(unit.modules), rankPermissions: sanitizePermissions(unit.rankPermissions) })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Serverfehler'
     if (msg === 'Unauthorized') return unauthorized()

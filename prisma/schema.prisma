@@ -273,6 +273,10 @@ model Unit {
   groupId          String?
   /// Leitungs-Unterunits erhalten automatisch Leitungsrecht und die gemeinsame Leitungsrolle der Gruppe.
   isLeadership     Boolean  @default(false)
+  /// Eigene Zusatzrechte eines gruppierten Unterrangs (zusätzlich zu den Gruppenrechten),
+  /// z. B. ["terminations:manage"] nur für HR Leitung / HR Stv. Leitung.
+  /// Bewusst getrennt von `permissions`, das für gruppierte Units ignoriert wird.
+  rankPermissions  Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
