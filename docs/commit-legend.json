@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-11-01T22:00:46.836Z",
+  "generatedAt": "2026-11-05T15:09:39.257Z",
   "entries": [
+    {
+      "buildId": "build-e8698d990d",
+      "commit": "e8698d990d26da80abf61fd2b232d9ae8b7ddc5d",
+      "shortCommit": "e8698d990d",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-11-05T15:08:17Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/e8698d990d26da80abf61fd2b232d9ae8b7ddc5d"
+    },
+    {
+      "buildId": "build-04482ac194",
+      "commit": "04482ac19430749045473dbc2c845ded40961423",
+      "shortCommit": "04482ac194",
+      "subject": "feat: add rank permissions management and ensure default permissions for HR roles",
+      "author": "Eministar",
+      "date": "2026-11-05T15:08:04Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/04482ac19430749045473dbc2c845ded40961423"
+    },
+    {
+      "buildId": "build-a8878ac9af",
+      "commit": "a8878ac9afa3aaa15673b7f329cf79848ba68c8c",
+      "shortCommit": "a8878ac9af",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-11-01T22:00:46Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a8878ac9afa3aaa15673b7f329cf79848ba68c8c"
+    },
     {
       "buildId": "build-166bccb092",
       "commit": "166bccb092fc2958bb345fae643a31681972515f",
