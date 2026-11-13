@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-11-13T23:25:36.682Z",
+  "generatedAt": "2026-11-13T23:36:53.463Z",
   "entries": [
+    {
+      "buildId": "build-fa2d377a07",
+      "commit": "fa2d377a072ae2cb191e875efe8ffecbd1a4e4bf",
+      "shortCommit": "fa2d377a07",
+      "subject": "Merge branch 'main' of https://github.com/Eministar/lspd-hr",
+      "author": "Eministar",
+      "date": "2026-11-13T23:36:27Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/fa2d377a072ae2cb191e875efe8ffecbd1a4e4bf"
+    },
+    {
+      "buildId": "build-b0fbaa1086",
+      "commit": "b0fbaa1086b5423f44276ace1d5914d33afadf19",
+      "shortCommit": "b0fbaa1086",
+      "subject": "chore: secure Docker build and update dependencies",
+      "author": "Eministar",
+      "date": "2026-11-13T23:36:21Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/b0fbaa1086b5423f44276ace1d5914d33afadf19"
+    },
+    {
+      "buildId": "build-f36a1c0945",
+      "commit": "f36a1c094582b1a461c0003a9397553ec86031d6",
+      "shortCommit": "f36a1c0945",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-11-13T23:25:36Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/f36a1c094582b1a461c0003a9397553ec86031d6"
+    },
     {
       "buildId": "build-aaa5038ae5",
       "commit": "aaa5038ae565d7bb7a7b24cca6b12d2f97025668",
