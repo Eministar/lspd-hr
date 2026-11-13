@@ -619,22 +619,30 @@ function startDiscordBotGateway() {
     }
   }
 
+  let reconnectAttempts = 0
+
   function scheduleReconnect(reason) {
     if (reconnectTimer) return
     clearHeartbeat()
+    const previous = socket
+    // Erst abkoppeln, dann schließen: close() auf einer noch verbindenden
+    // Verbindung feuert selbst error/close, die sonst erneut geloggt würden.
+    socket = null
     try {
-      socket?.close()
+      previous?.close()
     } catch {
       // ignore close errors
     }
-    socket = null
+    // 15 s, 30 s, 60 s … max. 5 min, solange Discord nicht erreichbar ist.
+    const delay = Math.min(15000 * 2 ** reconnectAttempts, 300000)
+    reconnectAttempts += 1
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null
       connect()
-    }, 15000)
+    }, delay)
 
     if (reason) {
-      console.warn('[DiscordGateway] Reconnect geplant:', reason)
+      console.warn(`[DiscordGateway] Reconnect in ${Math.round(delay / 1000)}s geplant:`, reason)
     }
   }
 
@@ -671,9 +679,13 @@ function startDiscordBotGateway() {
 
   function connect() {
     closedByReconnect = false
-    socket = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json')
+    const ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json')
+    socket = ws
+    // Ereignisse alter (bereits ersetzter oder verworfener) Sockets ignorieren.
+    const isCurrent = () => socket === ws
 
-    socket.addEventListener('message', (event) => {
+    ws.addEventListener('message', (event) => {
+      if (!isCurrent()) return
       let packet
       try {
         packet = JSON.parse(String(event.data))
@@ -711,6 +723,7 @@ function startDiscordBotGateway() {
       }
 
       if (packet.t === 'READY') {
+        reconnectAttempts = 0
         const botUser = packet.d?.user
         queueWebhookEvent({
           title: 'Discord Bot online',
@@ -773,7 +786,8 @@ function startDiscordBotGateway() {
       }
     })
 
-    socket.addEventListener('close', (event) => {
+    ws.addEventListener('close', (event) => {
+      if (!isCurrent()) return
       clearHeartbeat()
       if (event.code === 4014) {
         queueWebhookEvent({
@@ -788,9 +802,10 @@ function startDiscordBotGateway() {
       }
     })
 
-    socket.addEventListener('error', (event) => {
-      console.error('[DiscordGateway] Fehler:', event)
-      scheduleReconnect('Gateway-Fehler')
+    ws.addEventListener('error', (event) => {
+      if (!isCurrent()) return
+      const detail = event?.error?.cause?.code || event?.error?.code || event?.message || event?.error?.message || 'unbekannt'
+      scheduleReconnect(`Gateway-Fehler (${detail})`)
     })
   }
 

@@ -323,7 +323,10 @@ async function getDiscordMemberRoleIds(discordId: string, guildId?: string): Pro
     memberRolesCache.set(id, { data: roles, expiresAt: Date.now() + MEMBER_ROLES_CACHE_TTL_MS })
     return roles
   } catch (err) {
-    console.error('[DiscordIntegration] Mitglieds-Rollen konnten nicht geladen werden:', err)
+    // Ausfall wird bereits zentral vom Circuit Breaker gemeldet.
+    if (!(err instanceof DiscordUnavailableError)) {
+      console.error('[DiscordIntegration] Mitglieds-Rollen konnten nicht geladen werden:', err)
+    }
     // Serve stale cache during transient outages rather than dropping access.
     return entry ? entry.data : null
   }
@@ -687,9 +690,68 @@ function rememberRateLimit(key: string, res: Response) {
   rateBuckets.set(key, { remaining, resetAt: Date.now() + resetAfter * 1000 })
 }
 
+/* ── Circuit Breaker ─────────────────────────────────────────────────
+ * Ist discord.com nicht erreichbar (Connect-Timeout, DNS, Netz weg), würde
+ * sonst jede einzelne Anfrage bis zu MAX_RETRIES-mal ins Timeout laufen –
+ * bei einem Rollensync über viele Officers flutet das Log und Requests, die
+ * Rollen live prüfen, hängen ~40 s. Nach mehreren Verbindungsfehlern in Folge
+ * wird Discord deshalb kurz als "nicht erreichbar" markiert: Anfragen schlagen
+ * dann sofort fehl, bis die Sperre abläuft und ein neuer Versuch durchgeht.
+ */
+const CIRCUIT_FAILURE_THRESHOLD = 3
+const CIRCUIT_BASE_OPEN_MS = 30_000
+const CIRCUIT_MAX_OPEN_MS = 5 * 60_000
+let consecutiveTransientFailures = 0
+let circuitOpenUntil = 0
+let circuitOpenMs = CIRCUIT_BASE_OPEN_MS
+let circuitTripped = false
+
+export class DiscordUnavailableError extends Error {
+  constructor(readonly retryAt: number) {
+    super(`Discord nicht erreichbar, nächster Versuch ab ${new Date(retryAt).toISOString()}`)
+    this.name = 'DiscordUnavailableError'
+  }
+}
+
+function assertDiscordReachable() {
+  if (circuitOpenUntil > Date.now()) throw new DiscordUnavailableError(circuitOpenUntil)
+}
+
+function recordDiscordReachable() {
+  if (circuitTripped) {
+    console.info('[DiscordIntegration] Discord wieder erreichbar.')
+  }
+  consecutiveTransientFailures = 0
+  circuitOpenMs = CIRCUIT_BASE_OPEN_MS
+  circuitTripped = false
+  circuitOpenUntil = 0
+}
+
+function recordDiscordTransientFailure(error: unknown) {
+  consecutiveTransientFailures += 1
+  // Während die Sperre schon aktiv ist, nicht erneut verlängern (parallele Nachzügler).
+  if (circuitOpenUntil > Date.now()) return
+  if (consecutiveTransientFailures < CIRCUIT_FAILURE_THRESHOLD && !circuitTripped) return
+
+  // Nach einer Sperre reicht ein einziger weiterer Fehlschlag, um sie (länger) zu erneuern.
+  const openMs = circuitTripped ? Math.min(circuitOpenMs * 2, CIRCUIT_MAX_OPEN_MS) : CIRCUIT_BASE_OPEN_MS
+  circuitOpenMs = openMs
+  circuitTripped = true
+  circuitOpenUntil = Date.now() + openMs
+  const cause = errorRecord(errorRecord(error)?.cause)
+  const reason = (typeof cause?.code === 'string' && cause.code) || (error instanceof Error ? error.message : String(error))
+  console.warn(`[DiscordIntegration] Discord nicht erreichbar (${reason}), pausiere Anfragen für ${Math.round(openMs / 1000)}s.`)
+}
+
+export function isDiscordUnavailableError(error: unknown) {
+  return error instanceof DiscordUnavailableError
+}
+
 async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
   const token = botToken()
   if (!token) throw new Error('Discord Bot-Token fehlt')
+
+  assertDiscordReachable()
 
   const bucketKey = rateLimitKey(path, init?.method ?? 'GET')
   await waitForRateLimit(bucketKey)
@@ -706,7 +768,11 @@ async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0)
       signal: AbortSignal.timeout(DISCORD_API_TIMEOUT_MS),
     })
   } catch (error) {
-    if (attempt < MAX_RETRIES && isTransientDiscordFetchError(error)) {
+    if (!isTransientDiscordFetchError(error)) throw error
+    recordDiscordTransientFailure(error)
+    // Sperre aktiv (gerade ausgelöst oder von paralleler Anfrage): nicht weiter versuchen.
+    if (circuitOpenUntil > Date.now()) throw new DiscordUnavailableError(circuitOpenUntil)
+    if (attempt < MAX_RETRIES) {
       const waitMs = TRANSIENT_FETCH_RETRY_DELAYS_MS[Math.min(attempt, TRANSIENT_FETCH_RETRY_DELAYS_MS.length - 1)]
       console.warn(`[DiscordIntegration] Discord-Verbindung fehlgeschlagen auf ${path}, neuer Versuch in ${waitMs}ms (Versuch ${attempt + 1}/${MAX_RETRIES})`)
       await wait(waitMs)
@@ -715,6 +781,7 @@ async function discordFetchRaw<T>(path: string, init?: RequestInit, attempt = 0)
     throw error
   }
 
+  recordDiscordReachable()
   rememberRateLimit(bucketKey, res)
 
   // Rate-Limit trotzdem erreicht (z. B. geteilter Bucket): Sperre merken und erneut versuchen.
