@@ -1,6 +1,6 @@
 /** Öffentliches GitHub-Repository, optional per `NEXT_PUBLIC_GITHUB_URL`. */
 export const GITHUB_REPO_URL =
-  process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/Eministar/lspd-hr'
+  process.env.NEXT_PUBLIC_GITHUB_URL?.trim() || 'https://github.com/Eministar/lspd-hr'
 
 function firstForwardedValue(value: string | null | undefined) {
   return value?.split(',')[0]?.trim() || ''

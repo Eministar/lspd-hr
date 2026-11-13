@@ -1,6 +1,5 @@
 node_modules
 .next
-.git
 .gitignore
 .env
 .env.local
@@ -22,3 +21,6 @@ node_modules/.cache
 prisma/migrations/dev.db*
 *.tsbuildinfo
 desktop
+.failover
+desktop-releases
+.junie
