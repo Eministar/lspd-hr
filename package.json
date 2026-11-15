@@ -6,6 +6,10 @@
     "node": "22.x"
   },
   "scripts": {
+    "discord:recover": "node scripts/recover-discord.mjs",
+    "discord:recover:test": "node --test scripts/recover-discord.test.mjs",
+    "discord:import": "node scripts/import-discord-recovery.mjs",
+    "discord:import:test": "node --test scripts/import-discord-recovery.test.mjs",
     "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "prisma generate && next build",
