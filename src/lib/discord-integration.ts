@@ -1037,12 +1037,12 @@ export async function getDiscordGuildMember(discordId: string, guildId?: string)
   return discordFetchRaw<DiscordGuildMember>(`/guilds/${id}/members/${memberId}`).catch(() => null)
 }
 
-export async function getDiscordGuildMembers(guildId?: string) {
+export async function getDiscordGuildMembers(guildId?: string, options?: { fresh?: boolean }) {
   const config = await getDiscordConfig()
   const id = guildId || config.guildId
   if (!id || !botToken()) return []
 
-  const cached = getCached(guildMembersCache, id)
+  const cached = options?.fresh ? null : getCached(guildMembersCache, id)
   if (cached) return cached
 
   const existingRequest = guildMembersRequests.get(id)
@@ -1597,39 +1597,59 @@ async function saveClipCategoryIds(ids: string[]) {
 
 /** Legt fehlende Clips-Channels/Kategorien an, verschiebt, sortiert und räumt auf. */
 export async function syncClipChannels(config?: DiscordConfig) {
-  const cfg = config ?? await getDiscordConfig()
-  if (!cfg.guildId || !botToken()) return
-  const officers = (await clipRoster()).map((officer) => ({
-    id: officer.id,
-    firstName: officer.firstName,
-    lastName: officer.lastName,
-    badgeNumber: officer.badgeNumber,
-    discordId: officer.discordId,
-    status: officer.status,
-  }))
-  const members = cfg.clipsAnalystRoleId
-    ? await getDiscordGuildMembers(cfg.guildId).catch((error) => {
-      console.warn('[DiscordIntegration] Mitgliederliste für Clips-Channels nicht verfügbar:', error)
-      return null
-    })
-    : null
-  const memberIds = members
-    ? new Set(members.map((member) => snowflake(member.user?.id)).filter(Boolean))
-    : null
+  // Alle Daten erst laden, wenn ein laufender Sync fertig ist (sonst veraltete Kategorie-IDs → Duplikate).
+  await syncOfficerClipChannels(async () => {
+    const cfg = config ?? await getDiscordConfig()
+    if (!cfg.guildId || !botToken()) return null
+    const officers = (await clipRoster()).map((officer) => ({
+      id: officer.id,
+      firstName: officer.firstName,
+      lastName: officer.lastName,
+      badgeNumber: officer.badgeNumber,
+      discordId: officer.discordId,
+      status: officer.status,
+    }))
+    const members = cfg.clipsAnalystRoleId
+      // Frisch laden: Mit gecachter Liste fehlen gerade beigetretene Officers ihren Channel.
+      ? await getDiscordGuildMembers(cfg.guildId, { fresh: true }).catch((error) => {
+        console.warn('[DiscordIntegration] Mitgliederliste für Clips-Channels nicht verfügbar:', error)
+        return null
+      })
+      : null
+    const memberIds = members
+      ? new Set(members.map((member) => snowflake(member.user?.id)).filter(Boolean))
+      : null
 
-  await syncOfficerClipChannels({
-    request: discordFetch,
-    guildId: cfg.guildId,
-    analystRoleId: cfg.clipsAnalystRoleId,
-    categoryName: cfg.clipsCategoryName,
-    officers,
-    memberIds,
-    categoryIds: await clipCategoryIds(),
-    saveCategoryIds: saveClipCategoryIds,
+    return {
+      request: discordFetch,
+      guildId: cfg.guildId,
+      analystRoleId: cfg.clipsAnalystRoleId,
+      categoryName: cfg.clipsCategoryName,
+      officers,
+      memberIds,
+      categoryIds: await clipCategoryIds(),
+      saveCategoryIds: saveClipCategoryIds,
+    }
   })
 }
 
 let clipSyncTimer: ReturnType<typeof setTimeout> | null = null
+let clipSchedulerStarted = false
+
+/**
+ * Regelmäßiger Clips-Sync (Standard alle 10 Minuten, DISCORD_CLIPS_SYNC_INTERVAL_MS).
+ * Holt Channels nach, deren Anlage zur Laufzeit nicht ausgelöst wurde oder fehlschlug
+ * (z. B. Discord-Beitritt/Verknüpfung nach dem Officer-Update, Rate-Limits, Fehler).
+ */
+export function ensureClipChannelSyncScheduler() {
+  if (clipSchedulerStarted || typeof setInterval !== 'function') return
+  const configured = Number.parseInt(process.env.DISCORD_CLIPS_SYNC_INTERVAL_MS || '', 10)
+  const intervalMs = Number.isFinite(configured) ? configured : 10 * 60 * 1000
+  if (intervalMs <= 0) return
+  clipSchedulerStarted = true
+  queueClipChannelSync()
+  setInterval(queueClipChannelSync, Math.max(intervalMs, 60_000)).unref?.()
+}
 
 /** Mehrere Änderungen kurz hintereinander lösen nur einen Clips-Sync aus. */
 export function queueClipChannelSync() {

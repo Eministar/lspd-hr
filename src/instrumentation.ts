@@ -11,4 +11,7 @@ export async function register() {
 
   const { ensureStandbySyncScheduler } = await import('./lib/standby-sync-job')
   ensureStandbySyncScheduler()
+
+  const { ensureClipChannelSyncScheduler } = await import('./lib/discord-integration')
+  ensureClipChannelSyncScheduler()
 }

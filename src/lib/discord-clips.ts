@@ -58,9 +58,17 @@ const ACCESS = (VIEW | BigInt(2048) | BigInt(16384) | BigInt(32768) | BigInt(655
 
 let pending: Promise<unknown> = Promise.resolve()
 
-/** Serialisiert Läufe, damit sich überlappende Syncs keine Duplikate erzeugen. */
-export function syncOfficerClipChannels(input: ClipSyncInput) {
-  const result = pending.catch(() => undefined).then(() => reconcile(input))
+/**
+ * Serialisiert Läufe, damit sich überlappende Syncs keine Duplikate erzeugen.
+ * Wird ein Loader übergeben, lädt er Officers/Kategorien erst, wenn der vorherige Lauf
+ * fertig ist – sonst würde ein wartender Lauf mit veralteten Kategorie-IDs neue,
+ * doppelte Kategorien anlegen.
+ */
+export function syncOfficerClipChannels(input: ClipSyncInput | (() => Promise<ClipSyncInput | null>)) {
+  const result = pending.catch(() => undefined).then(async () => {
+    const resolved = typeof input === 'function' ? await input() : input
+    if (resolved) await reconcile(resolved)
+  })
   pending = result
   return result
 }
@@ -111,6 +119,17 @@ async function reconcile(input: ClipSyncInput) {
   const officerById = new Map(officers.map(officer => [officer.id, officer]))
   const clipChannels = channels.filter(channel => channel.type === TEXT && channel.topic?.startsWith(CLIP_TOPIC_PREFIX))
   const officerIdOf = (channel: ClipChannel) => channel.topic!.slice(CLIP_TOPIC_PREFIX.length)
+  // Einzelne fehlgeschlagene Channels dürfen den Rest des Laufs nicht abbrechen.
+  const errors: unknown[] = []
+  const attempt = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn()
+      return true
+    } catch (error) {
+      errors.push(error)
+      return false
+    }
+  }
 
   // 1) Gekündigte (und gelöschte) Officers: Channel samt Videos entfernen.
   //    Funktioniert auch ohne konfigurierte Rolle. Ohne Officer-Daten wird nichts gelöscht.
@@ -119,13 +138,15 @@ async function reconcile(input: ClipSyncInput) {
     for (const channel of clipChannels) {
       const officer = officerById.get(officerIdOf(channel))
       if (officer && officer.status !== 'TERMINATED') continue
-      await request(`/channels/${channel.id}`, { method: 'DELETE' })
-      removed.add(channel.id)
+      if (await attempt(() => request(`/channels/${channel.id}`, { method: 'DELETE' }))) removed.add(channel.id)
     }
   }
   if (removed.size) channels = channels.filter(channel => !removed.has(channel.id))
 
-  if (!analystRoleId) return
+  if (!analystRoleId) {
+    if (errors.length) throw new AggregateError(errors, 'Clips-Channels konnten nicht gelöscht werden.')
+    return
+  }
   if (analystRoleId === guildId) throw new Error('Die Clips-Analysten-Rolle darf nicht @everyone sein.')
   const roles = await request<{ id: string }[]>(`/guilds/${guildId}/roles`)
   if (!roles.some(role => role.id === analystRoleId)) throw new Error('Die konfigurierte Clips-Analysten-Rolle existiert nicht.')
@@ -155,6 +176,13 @@ async function reconcile(input: ClipSyncInput) {
     const category = channels.find(channel => channel.id === id && channel.type === CATEGORY)
     if (category && !categories.includes(category)) categories.push(category)
   }
+  // Verwaiste Kategorien (IDs verloren, z. B. durch parallele Läufe) wieder übernehmen,
+  // statt neue anzulegen und die alten liegen zu lassen.
+  const orphaned = channels
+    .filter(channel => channel.type === CATEGORY && !categories.includes(channel) &&
+      channels.some(child => child.parent_id === channel.id && child.type === TEXT && child.topic?.startsWith(CLIP_TOPIC_PREFIX)))
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  categories.push(...orphaned)
   while (categories.length < needed) {
     const created = await request<ClipChannel>(`/guilds/${guildId}/channels`, {
       method: 'POST',
@@ -202,16 +230,19 @@ async function reconcile(input: ClipSyncInput) {
     } else if (existing.parent_id !== parent.id) {
       moves.push({ channel: existing, payload })
     } else if (existing.name !== payload.name || normalizeOverwrites(existing.permission_overwrites ?? []) !== normalizeOverwrites(overwrites)) {
-      await request(`/channels/${existing.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+      await attempt(() => request(`/channels/${existing.id}`, { method: 'PATCH', body: JSON.stringify(payload) }))
     }
   }
 
   // Verschiebungen nur in Kategorien mit freiem Platz; jede Verschiebung schafft woanders Platz.
   while (moves.length) {
     const index = moves.findIndex(({ payload }) => (childCount.get(payload.parent_id as string) ?? 0) < DISCORD_CATEGORY_LIMIT)
-    if (index === -1) throw new Error('Clips-Channels konnten nicht verteilt werden: alle Ziel-Kategorien sind voll.')
+    if (index === -1) {
+      errors.push(new Error('Clips-Channels konnten nicht verteilt werden: alle Ziel-Kategorien sind voll.'))
+      break
+    }
     const [{ channel, payload }] = moves.splice(index, 1)
-    await request(`/channels/${channel.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+    if (!await attempt(() => request(`/channels/${channel.id}`, { method: 'PATCH', body: JSON.stringify(payload) }))) continue
     if (channel.parent_id) childCount.set(channel.parent_id, (childCount.get(channel.parent_id) ?? 1) - 1)
     childCount.set(payload.parent_id as string, (childCount.get(payload.parent_id as string) ?? 0) + 1)
     channel.parent_id = payload.parent_id as string
@@ -220,9 +251,10 @@ async function reconcile(input: ClipSyncInput) {
   for (const payload of creates) {
     const parentId = payload.parent_id as string
     if ((childCount.get(parentId) ?? 0) >= DISCORD_CATEGORY_LIMIT) {
-      throw new Error('Eine Clips-Kategorie ist voll (maximal 50 Channels). Bitte fremde Channels aus den Clips-Kategorien entfernen.')
+      errors.push(new Error('Eine Clips-Kategorie ist voll (maximal 50 Channels). Bitte fremde Channels aus den Clips-Kategorien entfernen.'))
+      continue
     }
-    await request(`/guilds/${guildId}/channels`, { method: 'POST', body: JSON.stringify(payload) })
+    if (!await attempt(() => request(`/guilds/${guildId}/channels`, { method: 'POST', body: JSON.stringify(payload) }))) continue
     childCount.set(parentId, (childCount.get(parentId) ?? 0) + 1)
   }
 
@@ -232,7 +264,7 @@ async function reconcile(input: ClipSyncInput) {
     const order = wanted.map(officer => officer.id)
     for (const category of categories.slice(0, needed)) {
       const positions = clipChannelPositions(fresh, category.id, order)
-      if (positions.length) await request(`/guilds/${guildId}/channels`, { method: 'PATCH', body: JSON.stringify(positions) })
+      if (positions.length) await attempt(() => request(`/guilds/${guildId}/channels`, { method: 'PATCH', body: JSON.stringify(positions) }))
     }
   }
 
@@ -243,9 +275,14 @@ async function reconcile(input: ClipSyncInput) {
       keep.push(category)
       continue
     }
-    await request(`/channels/${category.id}`, { method: 'DELETE' })
+    if (!await attempt(() => request(`/channels/${category.id}`, { method: 'DELETE' }))) keep.push(category)
   }
   await saveIfChanged(input, keep.map(category => category.id))
+
+  if (errors.length) {
+    const first = errors[0] instanceof Error ? errors[0].message : String(errors[0])
+    throw new AggregateError(errors, `${errors.length} Clips-Channel-Aktion(en) fehlgeschlagen, z. B.: ${first}`)
+  }
 }
 
 async function saveIfChanged(input: ClipSyncInput, ids: string[]) {

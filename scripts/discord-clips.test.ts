@@ -46,7 +46,8 @@ function fixture(count: number) {
   })
   const clips = () => channels.filter(c => c.type === 0 && c.topic?.startsWith(CLIP_TOPIC_PREFIX))
   const categories = () => channels.filter(c => c.type === 4)
-  return { channels, writes, officers, sync, clips, categories, ids: () => categoryIds }
+  const save = async (ids: string[]) => { categoryIds = ids }
+  return { channels, writes, officers, sync, clips, categories, request, save, ids: () => categoryIds }
 }
 
 test('80 Officers werden auf genug Kategorien verteilt, jede unter dem Discord-Limit', async () => {
@@ -99,4 +100,47 @@ test('ohne Analysten-Rolle werden keine Channels angelegt', async () => {
     guildId: 'guild', analystRoleId: '', categoryName: 'Clips', officers: f.officers, memberIds: null,
     categoryIds: [], saveCategoryIds: async () => assert.fail('darf nicht speichern'),
   })
+})
+
+test('parallele Läufe lesen Kategorie-IDs erst nach dem vorherigen Lauf – keine doppelten Kategorien', async () => {
+  const f = fixture(80)
+  const input = () => ({
+    request: f.request, guildId: 'guild', analystRoleId: 'analysts', categoryName: 'Clips', officers: f.officers, memberIds: null,
+    categoryIds: f.ids(), saveCategoryIds: f.save,
+  })
+  await Promise.all([syncOfficerClipChannels(async () => input()), syncOfficerClipChannels(async () => input())])
+  assert.equal(f.categories().length, 2)
+  assert.equal(f.clips().length, 80)
+})
+
+test('verlorene Kategorie-IDs: bestehende Clips-Kategorien werden übernommen statt neu angelegt', async () => {
+  const f = fixture(80)
+  await f.sync()
+  const before = f.categories().map(c => c.id)
+  f.save([])
+  await f.sync()
+  assert.deepEqual(f.categories().map(c => c.id), before)
+  assert.deepEqual(f.ids(), before)
+  assert.equal(f.clips().length, 80)
+})
+
+test('ein fehlgeschlagener Channel bricht den Lauf nicht ab, der nächste Lauf holt ihn nach', async () => {
+  const f = fixture(10)
+  let failOnce = true
+  const flaky = async <T>(path: string, init?: RequestInit): Promise<T> => {
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined
+    if (failOnce && init?.method === 'POST' && body?.topic === `${CLIP_TOPIC_PREFIX}o3`) {
+      failOnce = false
+      throw new Error('Discord API 400')
+    }
+    return f.request<T>(path, init)
+  }
+  const run = () => syncOfficerClipChannels({
+    request: flaky, guildId: 'guild', analystRoleId: 'analysts', categoryName: 'Clips', officers: f.officers, memberIds: null,
+    categoryIds: f.ids(), saveCategoryIds: f.save,
+  })
+  await assert.rejects(run(), /1 Clips-Channel-Aktion/)
+  assert.equal(f.clips().length, 9)
+  await run()
+  assert.equal(f.clips().length, 10)
 })
