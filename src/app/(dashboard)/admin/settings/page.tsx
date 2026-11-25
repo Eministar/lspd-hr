@@ -227,6 +227,22 @@ export default function SettingsPage() {
     }
   }
 
+  const [clipsSyncLoading, setClipsSyncLoading] = useState(false)
+
+  const syncClips = async () => {
+    setClipsSyncLoading(true)
+    try {
+      const res = await fetch('/api/discord/clips-sync', { method: 'POST', cache: 'no-store', credentials: 'include' })
+      const body = await res.json().catch(() => null) as { success?: boolean; data?: { message: string }; error?: string } | null
+      if (!res.ok || !body?.success) throw new Error(body?.error || 'Clips-Sync fehlgeschlagen')
+      addToast({ type: 'success', title: 'Clips-Channels', message: body.data?.message ?? '' })
+    } catch (err) {
+      addToast({ type: 'error', title: 'Clips-Sync fehlgeschlagen', message: err instanceof Error ? err.message : '' })
+    } finally {
+      setClipsSyncLoading(false)
+    }
+  }
+
   const [fullSyncLoading, setFullSyncLoading] = useState(false)
   const [fullSyncProgress, setFullSyncProgress] = useState<FullSyncProgress | null>(null)
   const [fullSyncResult, setFullSyncResult] = useState<FullSyncResult | null>(null)
@@ -733,6 +749,14 @@ export default function SettingsPage() {
                 />
                 <p className="text-[11px] text-label-3 mt-1.5">
                   Jeder Officer mit Discord-Verknüpfung bekommt einen privaten Clips-Channel, sortiert wie die Mitarbeiterliste. Der Bot legt automatisch so viele Kategorien an wie nötig (höchstens 45 Channels je Kategorie, z. B. „Clips 1“, „Clips 2“) und entfernt leere wieder.
+                </p>
+                <Button variant="secondary" size="sm" className="mt-2.5" onClick={syncClips} disabled={clipsSyncLoading}>
+                  {clipsSyncLoading
+                    ? <><RefreshCw size={13} className="animate-spin" /> Lege Clips-Channels an…</>
+                    : <><RefreshCw size={13} /> Alle Clips-Channels jetzt anlegen</>}
+                </Button>
+                <p className="text-[11px] text-label-3 mt-1.5">
+                  Nutzt die gespeicherten Einstellungen. Bei vielen fehlenden Channels kann das wegen Discord-Limits einige Minuten dauern.
                 </p>
               </div>
             </div>

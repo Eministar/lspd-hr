@@ -1598,7 +1598,7 @@ async function saveClipCategoryIds(ids: string[]) {
 /** Legt fehlende Clips-Channels/Kategorien an, verschiebt, sortiert und räumt auf. */
 export async function syncClipChannels(config?: DiscordConfig) {
   // Alle Daten erst laden, wenn ein laufender Sync fertig ist (sonst veraltete Kategorie-IDs → Duplikate).
-  await syncOfficerClipChannels(async () => {
+  return syncOfficerClipChannels(async () => {
     const cfg = config ?? await getDiscordConfig()
     if (!cfg.guildId || !botToken()) return null
     const officers = (await clipRoster()).map((officer) => ({
