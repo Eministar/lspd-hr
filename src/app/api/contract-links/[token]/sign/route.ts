@@ -20,38 +20,13 @@ function clientIp(req: NextRequest) {
 }
 
 /**
- * Unterschreiben darf ausschließlich der Officer selbst. Prüfrollen und HR
- * haben über denselben Link nur Leserecht — sie dürfen hier also nicht durch.
- *
- * Die Discord-ID wird gegen den Vertrags-Snapshot UND gegen die aktuelle
- * Officer-Akte geprüft. So bleibt die Unterschrift auch dann möglich, wenn HR
- * die Discord-ID nach Erstellung des Vertrags korrigiert hat.
+ * Jeder mit dem Link darf unterschreiben — der Token selbst ist das Geheimnis.
+ * Ist jemand eingeloggt, wird der Account trotzdem mitprotokolliert.
  */
 async function authorizeSigner(token: string) {
   const contract = await loadContractByToken(token)
   if (!contract) return { error: notFound('Vertrag') }
-
-  const user = await getCurrentUser()
-  if (!user) {
-    return { error: error('Bitte melde dich mit Discord an, um zu unterschreiben.', 401) }
-  }
-
-  const signerDiscordId = contract.signerDiscordId?.trim() || null
-  const officerDiscordId = contract.officer?.discordId?.trim() || null
-  if (!signerDiscordId && !officerDiscordId) {
-    return { error: error('Für diesen Vertrag ist keine Discord-ID hinterlegt.', 409) }
-  }
-
-  const ownsContract = Boolean(user.discordId && (
-    (signerDiscordId && user.discordId === signerDiscordId) ||
-    (officerDiscordId && user.discordId === officerDiscordId)
-  ))
-  if (!ownsContract) {
-    return {
-      error: error('Nur der Officer selbst kann diesen Vertrag unterschreiben.', 403),
-    }
-  }
-
+  const user = await getCurrentUser().catch(() => null)
   return { contract, user }
 }
 
@@ -96,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
       await createAuditLog({
         action: 'CONTRACT_DECLINED',
-        userId: user.id,
+        userId: user?.id,
         officerId: declined.officerId,
         oldValue: contract.status,
         newValue: 'DECLINED',
@@ -125,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         signedAt: new Date(),
         signedName: signedName || `${contract.officer.firstName} ${contract.officer.lastName}`.trim(),
         signerDiscordId: contractSignerDiscordId(contract),
-        signedByUserId: user.id,
+        signedByUserId: user?.id ?? null,
         signedIp: clientIp(req),
         signedUserAgent: req.headers.get('user-agent')?.slice(0, 200) ?? null,
         declinedAt: null,
@@ -157,7 +132,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
     await createAuditLog({
       action: 'CONTRACT_SIGNED',
-      userId: user.id,
+      userId: user?.id,
       officerId: signed.officerId,
       newValue: signed.signedName ?? '',
       details: signed.title,

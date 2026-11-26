@@ -174,7 +174,7 @@ export default function ContractSigningPage() {
         <Notice
           icon={Lock}
           title="Bitte mit Discord anmelden"
-          description="Dein Arbeitsvertrag ist persönlich. Melde dich mit dem Discord-Account an, an den der Vertrag geschickt wurde — nur dieser Account kann ihn öffnen und unterschreiben."
+          description="Melde dich an, um diesen Vertrag zu öffnen."
         >
           <a href={target}>
             <Button size="lg">Mit Discord anmelden</Button>

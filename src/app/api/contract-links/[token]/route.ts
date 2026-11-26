@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { success, error, notFound } from '@/lib/api-response'
-import { getCurrentUser } from '@/lib/auth'
 import { normalizeLinkToken } from '@/lib/contracts'
 import {
   loadContractByToken,
@@ -11,11 +10,7 @@ import {
 /**
  * Vertragslink.
  *
- * Der Link allein gewährt keinen Zugriff: entweder gehört der eingeloggte
- * Discord-Account zum Vertrag (dann darf er unterschreiben), oder er hat eine
- * Prüfrolle bzw. HR-Recht (dann nur Einsicht). Ohne Login wird bewusst 401 mit
- * Kontext geliefert, damit die Seite einen Discord-Login-Button zeigen kann
- * statt einer nackten Fehlermeldung.
+ * Wer den Link hat, darf den Vertrag öffnen und unterschreiben — ohne Login.
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -26,8 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     const contract = await loadContractByToken(token)
     if (!contract) return notFound('Vertrag')
 
-    const user = await getCurrentUser()
-    const access = await resolveContractAccess(contract, user)
+    const access = await resolveContractAccess()
     if (!access.ok) return error(access.message, access.status)
 
     return success(await serializeContractDocument(contract, access.access))

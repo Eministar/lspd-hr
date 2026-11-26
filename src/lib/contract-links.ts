@@ -1,7 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import type { CurrentUser } from '@/lib/auth'
-import { isDiscordContractAuditor } from '@/lib/discord-integration'
-import { hasAnyPermission } from '@/lib/permissions'
 import { getBadgePrefix } from '@/lib/settings-helpers'
 import {
   CONTRACT_PLACE,
@@ -75,60 +72,12 @@ export type ContractAccessResult =
   | { ok: false; status: number; message: string }
 
 /**
- * Entscheidet, ob und wie ein eingeloggter Nutzer diesen Vertrag sehen darf.
- *
- * Der Link allein reicht nie: entweder gehört der Discord-Account zum Vertrag,
- * oder er hat eine Prüfrolle bzw. das Recht, Verträge im Dashboard zu sehen.
+ * Wer den Link hat, darf den Vertrag öffnen und unterschreiben. Der Token ist
+ * 192 Bit zufällig und damit selbst das Geheimnis — ein Discord-Login oder ein
+ * Abgleich der Discord-ID ist nicht mehr nötig.
  */
-export async function resolveContractAccess(
-  contract: Pick<ContractLinkRecord, 'signerDiscordId' | 'officer'>,
-  user: CurrentUser | null,
-): Promise<ContractAccessResult> {
-  if (!user) {
-    return {
-      ok: false,
-      status: 401,
-      message: 'Bitte melde dich mit Discord an, um diesen Vertrag zu öffnen.',
-    }
-  }
-
-  // Der Officer selbst darf unterschreiben, wenn seine Discord-ID zum Vertrag
-  // passt. Bewusst in zwei Stufen geprüft: erst der Snapshot, dann die aktuelle
-  // Officer-Akte. HR kann die Discord-ID nachträglich korrigieren — ohne diesen
-  // Fallback bliebe sonst auch der richtige Account dauerhaft ausgesperrt (403).
-  const signerDiscordId = contract.signerDiscordId?.trim() || null
-  const officerDiscordId = contract.officer?.discordId?.trim() || null
-  const ownsContract = Boolean(user.discordId && (
-    (signerDiscordId && user.discordId === signerDiscordId) ||
-    (officerDiscordId && user.discordId === officerDiscordId)
-  ))
-  if (ownsContract) {
-    return { ok: true, access: 'signer' }
-  }
-
-  // HR sieht Verträge ohnehin im Dashboard — dann darf der Link nicht strenger sein.
-  if (hasAnyPermission(user, ['contracts:view', 'contracts:manage'])) {
-    return { ok: true, access: 'auditor' }
-  }
-
-  if (await isDiscordContractAuditor(user.discordId)) {
-    return { ok: true, access: 'auditor' }
-  }
-
-  if (!signerDiscordId && !officerDiscordId) {
-    return {
-      ok: false,
-      status: 409,
-      message:
-        'Für diesen Vertrag ist keine Discord-ID hinterlegt. Bitte melde dich bei der Personalabteilung.',
-    }
-  }
-
-  return {
-    ok: false,
-    status: 403,
-    message: 'Dieser Vertrag gehört zu einem anderen Discord-Account.',
-  }
+export async function resolveContractAccess(): Promise<ContractAccessResult> {
+  return { ok: true, access: 'signer' }
 }
 
 /**
