@@ -1,7 +1,34 @@
 {
   "repository": "Eministar/lspd-hr",
-  "generatedAt": "2026-11-25T20:36:47.724Z",
+  "generatedAt": "2026-11-26T16:31:54.192Z",
   "entries": [
+    {
+      "buildId": "build-a5f10f5f1a",
+      "commit": "a5f10f5f1a674c57fd05a357df4b093b36e6610d",
+      "shortCommit": "a5f10f5f1a",
+      "subject": "Merge remote-tracking branch 'origin/main'",
+      "author": "Eministar",
+      "date": "2026-11-26T16:31:19Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/a5f10f5f1a674c57fd05a357df4b093b36e6610d"
+    },
+    {
+      "buildId": "build-10f6a22a3a",
+      "commit": "10f6a22a3aa148dc8f5d20fe1c36bcaaa2b5767e",
+      "shortCommit": "10f6a22a3a",
+      "subject": "feat: simplify contract access logic by removing Discord ID checks and allowing link-based access",
+      "author": "Eministar",
+      "date": "2026-11-26T16:31:09Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/10f6a22a3aa148dc8f5d20fe1c36bcaaa2b5767e"
+    },
+    {
+      "buildId": "build-795cd27595",
+      "commit": "795cd27595341ccd11f97a839946849d170104c7",
+      "shortCommit": "795cd27595",
+      "subject": "chore: sync commit legend [skip ci]",
+      "author": "github-actions[bot]",
+      "date": "2026-11-25T20:36:47Z",
+      "url": "https://github.com/Eministar/lspd-hr/commit/795cd27595341ccd11f97a839946849d170104c7"
+    },
     {
       "buildId": "build-30fc7c83a0",
       "commit": "30fc7c83a09c7c4c402b65f4d9a834d0245999dc",
